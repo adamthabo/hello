@@ -3,108 +3,223 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hello Animation</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #f0f0f0;
-            overflow: hidden;
-        }
-        
-        .container {
-            text-align: center;
-            z-index: 1;
-            position: relative;
-        }
-        
-        h1 {
-            font-size: 5rem;
-            color: #333;
-            margin: 0;
-        }
-        
-        canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 0;
-        }
-    </style>
+    <title>RISD INTAR Interaction Design</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <canvas id="canvas"></canvas>
-    <div class="container">
-        <h1>Hello!</h1>
-    </div>
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <h1>INTAR RISD</h1>
+                <h2>Interaction Design</h2>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="#home" class="active">Home</a></li>
+                    <li><a href="#students">Students</a></li>
+                    <li><a href="#projects">Projects</a></li>
+                    <li><a href="#upload">Upload</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const canvas = document.getElementById('canvas');
-            const ctx = canvas.getContext('2d');
-            
-            // Set canvas dimensions
-            function resizeCanvas() {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
-            }
-            
-            resizeCanvas();
-            window.addEventListener('resize', resizeCanvas);
-            
-            // Particle class
-            class Particle {
-                constructor() {
-                    this.x = Math.random() * canvas.width;
-                    this.y = Math.random() * canvas.height;
-                    this.size = Math.random() * 5 + 2;
-                    this.speedX = Math.random() * 3 - 1.5;
-                    this.speedY = Math.random() * 3 - 1.5;
-                    this.color = `hsl(${Math.random() * 60 + 200}, 100%, 50%)`;
-                }
+    <main>
+        <!-- Home Section -->
+        <section id="home" class="active-section">
+            <div class="section-container">
+                <h2 class="section-title">Interaction Design</h2>
+                <p class="instructor">Instructor: Adam Thabo</p>
+                <div class="course-description">
+                    <p>Welcome to the Interaction Design course for the INTAR graduate program at RISD. This platform serves as a central hub for tracking student progress, showcasing projects, and documenting our collective journey through the realms of light, sound, and movement.</p>
+                </div>
                 
-                update() {
-                    this.x += this.speedX;
-                    this.y += this.speedY;
+                <div class="project-categories">
+                    <div class="category">
+                        <h3>Light / Memory</h3>
+                        <p>Individual product design focusing on how light interacts with memory and perception.</p>
+                        <span class="tag">Solo Work</span>
+                    </div>
+                    <div class="category">
+                        <h3>Sound / Presence</h3>
+                        <p>Collaborative installation exploring how sound creates and transforms presence in spaces.</p>
+                        <span class="tag">Groups of 3</span>
+                    </div>
+                    <div class="category">
+                        <h3>Movement / Play</h3>
+                        <p>Architectural interventions that investigate how movement and play can reshape environments.</p>
+                        <span class="tag">Groups of 4</span>
+                    </div>
+                </div>
+                
+                <div class="timeline">
+                    <h3>Course Timeline</h3>
+                    <div class="timeline-container">
+                        <div class="timeline-item">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <h4>Light / Memory</h4>
+                                <p>Weeks 1-4</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <h4>Sound / Presence</h4>
+                                <p>Weeks 5-8</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <h4>Movement / Play</h4>
+                                <p>Weeks 9-12</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <h4>Final Projects</h4>
+                                <p>Weeks 13-16</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Students Section -->
+        <section id="students">
+            <div class="section-container">
+                <h2 class="section-title">Students</h2>
+                <p class="section-description">Track individual progress and group assignments for all 12 students in the course.</p>
+                
+                <div class="filters">
+                    <button class="filter-btn active" data-filter="all">All Students</button>
+                    <button class="filter-btn" data-filter="solo">Solo Projects</button>
+                    <button class="filter-btn" data-filter="sound">Sound Groups</button>
+                    <button class="filter-btn" data-filter="movement">Movement Groups</button>
+                </div>
+                
+                <div class="students-grid">
+                    <!-- Student cards will be dynamically populated from students.js -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Projects Section -->
+        <section id="projects">
+            <div class="section-container">
+                <h2 class="section-title">Projects</h2>
+                <p class="section-description">Browse all student projects organized by category and group.</p>
+                
+                <div class="filters">
+                    <button class="filter-btn active" data-filter="all">All Projects</button>
+                    <button class="filter-btn" data-filter="light">Light / Memory</button>
+                    <button class="filter-btn" data-filter="sound">Sound / Presence</button>
+                    <button class="filter-btn" data-filter="movement">Movement / Play</button>
+                    <button class="filter-btn" data-filter="final">Final Projects</button>
+                </div>
+                
+                <div class="projects-grid">
+                    <!-- Project cards will be dynamically populated from projects.js -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Upload Section (admin only in real implementation) -->
+        <section id="upload">
+            <div class="section-container">
+                <h2 class="section-title">Upload Project</h2>
+                <p class="section-description">Add new student projects or update existing ones.</p>
+                
+                <form id="upload-form" class="upload-form">
+                    <div class="form-group">
+                        <label for="project-title">Project Title</label>
+                        <input type="text" id="project-title" name="project-title" required>
+                    </div>
                     
-                    // Bounce off edges
-                    if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
-                    if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
-                }
-                
-                draw() {
-                    ctx.fillStyle = this.color;
-                    ctx.beginPath();
-                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            }
-            
-            // Create particles
-            const particles = [];
-            for (let i = 0; i < 50; i++) {
-                particles.push(new Particle());
-            }
-            
-            // Animation loop
-            function animate() {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
-                particles.forEach(particle => {
-                    particle.update();
-                    particle.draw();
-                });
-                
-                requestAnimationFrame(animate);
-            }
-            
-            animate();
-        });
-    </script>
+                    <div class="form-group">
+                        <label for="project-category">Project Category</label>
+                        <select id="project-category" name="project-category" required>
+                            <option value="">Select Category</option>
+                            <option value="light">Light / Memory</option>
+                            <option value="sound">Sound / Presence</option>
+                            <option value="movement">Movement / Play</option>
+                            <option value="final">Final Project</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="project-students">Student(s)</label>
+                        <select id="project-students" name="project-students" multiple required>
+                            <!-- Options will be populated from students.js -->
+                        </select>
+                        <small>Hold Ctrl/Cmd to select multiple students</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="project-description">Project Description</label>
+                        <textarea id="project-description" name="project-description" rows="5" required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="project-image">Project Image</label>
+                        <input type="file" id="project-image" name="project-image" accept="image/*">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="project-files">Additional Files</label>
+                        <input type="file" id="project-files" name="project-files" multiple>
+                    </div>
+                    
+                    <div class="form-group skills-checkboxes">
+                        <label>Technologies Used</label>
+                        <div class="checkbox-group">
+                            <label><input type="checkbox" name="skills" value="arduino"> Arduino</label>
+                            <label><input type="checkbox" name="skills" value="processing"> Processing</label>
+                            <label><input type="checkbox" name="skills" value="maxmsp"> Max/MSP</label>
+                            <label><input type="checkbox" name="skills" value="fusion360"> Fusion 360</label>
+                            <label><input type="checkbox" name="skills" value="lasercutting"> Laser Cutting</label>
+                            <label><input type="checkbox" name="skills" value="3dprinting"> 3D Printing</label>
+                            <label><input type="checkbox" name="skills" value="javascript"> JavaScript</label>
+                            <label><input type="checkbox" name="skills" value="python"> Python</label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button type="submit" class="btn-submit">Upload Project</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- Project Detail Modal -->
+        <div id="project-modal" class="modal">
+            <div class="modal-content">
+                <span class="close-modal">&times;</span>
+                <div id="modal-content">
+                    <!-- Project details will be dynamically populated -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-container">
+            <div class="footer-left">
+                <p>&copy; 2025 INTAR RISD Interaction Design</p>
+            </div>
+            <div class="footer-right">
+                <p>Instructor: Adam Thabo</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/data.js"></script>
+    <script src="js/main.js"></script>
 </body>
 </html>
