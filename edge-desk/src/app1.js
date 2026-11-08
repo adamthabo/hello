@@ -10,7 +10,7 @@
   const DEFAULTS = {
     relayUrl: '', relayKey: '', env: 'prod', dataMode: 'auto', slim: false,
     pollTape: 4, pollMarkets: 10, pollBook: 3, universePages: isMobile() ? 4 : 8, universeRefreshMin: 15,
-    bankroll: 1000, kelly: 0.25, rounding: 'centicent', takerRate: 0.07, minSpread: 0.04, bigPrint: 500
+    bankroll: 1000, kelly: 0.25, rounding: 'centicent', takerRate: 0.07, minSpread: 0.04, minArbAnn: 0.08, bigPrint: 500
   };
   // Where is this page running? Inside the Claude artifact viewer (outside network blocked), self-hosted on the
   // Edge Desk worker (same-origin relay), or opened as a plain file.
@@ -109,6 +109,8 @@
       const relay = (S.settings.relayUrl || '').trim().replace(/\/+$/, '');
       if (relay) return relay;
       if ((S.sameOrigin || (opts && opts.sameOrigin)) && /^https?:$/.test(location.protocol)) return location.origin;
+      // A relay key without a relay URL means "this site's own relay, with a key"
+      if ((S.settings.relayKey || '').trim() && S.ctx === 'hosted' && /^https?:$/.test(location.protocol)) return location.origin;
       return '';
     },
     base(opts) {
@@ -257,10 +259,11 @@
         try { S.health.exchange = await API.get('/exchange/status', {}, { timeout: 10000 }); ok = true; how = 'relay'; }
         catch (e) { S.health.lastErr = 'Relay: ' + e.message; }
       }
+      let keyNeeded = false;
       if (!ok && !relay && mode !== 'direct' && S.ctx === 'hosted') {
         // the page may be served by the Edge Desk worker, which relays on the same origin
         try { S.health.exchange = await API.get('/exchange/status', {}, { timeout: 10000, sameOrigin: true }); ok = true; how = 'relay'; S.sameOrigin = true; }
-        catch (e) { S.health.lastErr = 'Same-origin relay: ' + e.message; }
+        catch (e) { S.health.lastErr = 'Same-origin relay: ' + e.message; if (e.status === 401) keyNeeded = true; }
       }
       if (!ok && mode !== 'relay') {
         try { S.health.exchange = await API.get('/exchange/status', {}, { timeout: 8000, direct: true }); ok = true; how = 'direct'; }
@@ -272,7 +275,7 @@
         UI.renderStatus();
         this.start();
       } else {
-        this.useSim(relay ? 'The relay did not answer' : 'Kalshi blocks browser requests');
+        this.useSim(keyNeeded ? 'This site\'s relay asked for a key (RELAY_KEY is set on the Worker): paste it under Setup → Relay key, or remove the variable in Cloudflare' : relay ? 'The relay did not answer (' + (S.health.lastErr || 'no response').replace(/^Relay: /, '') + ')' : 'Kalshi blocks browser requests');
       }
     },
     useSim(reason) {
