@@ -257,6 +257,8 @@ Workers Builds deploys every push, and the page lives at `https://live-culture.a
 "There nothing there yet!", "Yeah, it's empty why"). A push to `adamthabo/live-culture` started a build that deployed at 11:38.
 Each build reports to GitHub as the check run "Workers Builds: live-culture" on the pushed commit: that is how to see from here
 whether a push went live (`gh api repos/adamthabo/live-culture/commits/<sha>/check-runs`). The session cannot open workers.dev.
+A push is now and then not picked up (no check run after a few minutes, 10 Nov 13:51): an empty commit pushed after it starts
+the build at once.
 
 - `worker.js`: the page is static (`public/`); the Worker answers only `/api/feed/<name>` (a fixed list of public sources, each with
   mirrors to fall back on, kept in memory for minutes: Cloudflare's cache does nothing on workers.dev), `/api/cams` (the cameras) and
