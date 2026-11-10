@@ -1,25 +1,35 @@
 # Changelog
 
 ## For the owner
-10 Nov 2026, morning, after your second look:
+10 Nov 2026, late morning, after "needs to be more realistic ... Real time. That's the most important part":
 
-- **The blobs are gone** (Bloom). Smoke opens the page now. Its code is kept, in case you meant only the bursts of light at the
-  very start: say so and it comes back.
-- **No more music switch, no Band world.** The music is a row of little circles along the bottom of every world: the note is the
-  whole band, each circle one player. Unlit means silent; touch a circle and that player comes in or goes out.
-- **Wind: fingers no longer draw.** One finger turns the Earth; tap a place to read it: the wind there and where from, the hour by
-  the Sun and how high it stands, the aurora, lightning nearby. New, and real: the strongest fires burning on Earth in the last day
-  (NASA's fire satellites), glowing where they are, their smoke carried off by the real wind; and the tropical storms turning now,
-  by name. Tap a fire or a storm for what is known of it.
-- **Orbit: tap a satellite and its record comes up**: whose it is, when and where it was launched and how long it has been up, its
-  orbit (lowest and highest point, tilt, time round), where it is over now and how fast, sunlit or in shadow, how big it looks to
-  radar and how bright it can be, the radio it sends on, and when its orbit was last measured. All of it published data
-  (CelesTrak's catalogue, SatNOGS).
-- **The orbits are fresher:** four mirrors are read and each satellite gets its newest measured orbit; most are under a day old.
+- **Real time lives on your Cloudflare.** A Claude artifact cannot fetch anything live, so the live version is the same site served
+  from your own Worker: one tap on the Deploy button in `adamthabo/hello/live-culture`. There the satellites' orbits, the wind, the
+  clouds, the rain, the aurora, the lightning, the fires and the storms are read as they change, and a fourth world, **Live**, shows
+  camera streams from interesting places in a window over the Earth.
+- **The satellites are in real time** in both: Orbit opens on the present, second for second. Turning two fingers still winds time;
+  the chip brings it back.
+- **Wind has layers you can switch:** wind, clouds, rain, sun. (Clouds and rain only on the live version.)
+- **Smoke is a game now.** The smoke rises. At the right edge: walls, fans, drains, and seven puzzles: each source breathes coloured
+  smoke, each cup wants its colour; build to fill them. Every puzzle solved brings one more player into the band, the guitar last.
+  Two fingers turning make a whirlpool.
 
-Live video and fuller weather (clouds, rain) need the site served from your own Cloudflare, which is being prepared next.
+Tested by machine only (here, the live sources and YouTube were played by stand-ins).
 
-Still only tested by machine: not by ear, not on a real iPhone.
+## 10 Nov 2026, late morning: real-time Orbit, Wind's layers, Smoke's machine and puzzles, the hosted version
+- Orbit: `want=1` from the start; the two-finger turn no longer switches to x60; the hint is one finger turning the Earth; the chip
+  reads "Now" whenever the view is not the present and "×60" when it is.
+- Wind: `#lyr` row (`lyrBuild`, `lyrSync` in `12-wind.js`): wind, clouds, rain, sun; a switch shows only where its layer has data.
+  `07-globe.js`: clouds (`uCld`), rain (`uRain`, NASA IMERG colours), the Sun's layer (`uSunK`: warm light on clear sunlit ground, the
+  subsolar point, the 6, 12 and 18 degree dusk lines). With clouds on, the Earth is brighter and the wind's smoke lighter.
+- Smoke (`11-drift.js`): buoyancy pass (`buo`); walls as an obstacle grid (`obs`, drawn from segments with round ends) masking the
+  water and the ink (`msk`); fans (continuous pushes, ink outside puzzles); drains and whirlpools (`snk`); two-finger turning and
+  pinching; seven puzzles (`LEVELS`), cups measured by reading the ink back small (`readBack`, `sample`), filled by matching colour;
+  the band thins to two players in a puzzle and gains one per puzzle solved (`JOIN`), the band's own stirring is left out of puzzles,
+  smoke carries further there; `#tools` column; progress kept in `localStorage`. `tools/t_smoke.js` added to the suite.
+- Hosted version: `HOSTED` flag in `build.py` (`hosted/index.html`), `livePull()` and the raw-format parsers in `06-live.js`,
+  `14-live.js` (Live world), `ORBIT.above()` and `ORBIT.iss()`, `cf/live-culture/worker.js` (relay, cameras, stream finder),
+  `tools/hostmock.mjs` and `tools/t_hosted.js`. Pushed to `adamthabo/hello` (`live-culture/`) with a Deploy to Cloudflare button.
 
 ## 10 Nov 2026, morning: three worlds, the music as circles, the satellite card, fires and storms
 - Removed: the Bloom world and the Band world (kept as `dev/archive/world-bloom.js`, `world-band.js`), the music switch. Old links

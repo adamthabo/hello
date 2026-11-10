@@ -22,6 +22,13 @@
   public domain), read through the archive github.com/GefeiSHEN/NOAA-Aurora-Archive (`OVATION/latest.json`).
 - **Lightning:** NOAA GOES-16/18 Geostationary Lightning Mapper flashes of the last 30 minutes (public domain), as gathered every
   10 minutes by github.com/Meteoscience1/lightning-strikes-data (`recent_strikes.json`).
+- **Clouds (hosted version):** EUMETSAT's world cloud map (infrared, 10.8 µm, from the geostationary satellites), made into a
+  greyscale map every three hours by Matt Eason's Live Cloud Maps (clouds.matteason.co.uk, github.com/matteason/live-cloud-maps).
+- **Rain (hosted version):** NASA GPM IMERG precipitation rate, half-hourly, as drawn by NASA GIBS (Global Imagery Browse Services).
+- **The whole Earth (hosted version):** NOAA GOES-19 and GOES-18 ABI full-disk GeoColor, from NOAA NESDIS STAR (cdn.star.nesdis.noaa.gov).
+- **Live cameras (hosted version):** YouTube live streams by Sen (the ISS), explore.org with Polar Bears International (Churchill),
+  NASASpaceflight (Starbase), Monterey Bay Aquarium, NamibiaCam (Gondwana Collection Namibia), and streams of Sakurajima, Mount Fuji
+  and Shibuya. Their sound is never played.
 - **Stars:** the Extended Hipparcos Compilation (XHIP; Anderson and Francis 2012) to magnitude 6, 5,044 stars, as packaged by
   d3-celestial (Olaf Frohn, BSD 3-Clause): `data/stars.6.json` in github.com/ofrohn/d3-celestial. Packed by `tools/gen_data.py` (6 bytes a star).
 - **Sun and Moon:** the Astronomical Almanac's low-precision series. Coded in `src/05-astro.js`.
@@ -41,7 +48,8 @@ Both are used only by `tools/test_astro.js`; neither is in the page.
 - **The band:** nine stems rendered from sampled acoustic instruments (MuseScore General soundfont, MIT), cut as seamless
   four-bar loops at 104 beats a minute. Unchanged from the original site apart from the horn stem being left out.
 - **Touch voices:** computed in `src/03-audio.js`: sums of dying sine waves (glass, kalimba, wood, bowl) and three hand drums.
-- **The fluid in Smoke:** Jos Stam, "Stable Fluids" (1999), with vorticity confinement.
+- **The fluid in Smoke:** Jos Stam, "Stable Fluids" (1999), with vorticity confinement, buoyancy, and obstacles as in GPU Gems
+  (Mark Harris, "Fast Fluid Dynamics Simulation on the GPU", 2004, simplified to masking).
 - **The smoke in Wind:** semi-Lagrangian advection (the same paper) in the real wind field; the way of showing wind owes to
   Cameron Beccario's earth.nullschool.net and to Refik Anadol's wind "data paintings".
 

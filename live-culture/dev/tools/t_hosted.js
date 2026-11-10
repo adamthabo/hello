@@ -71,8 +71,8 @@ const clean = errs => [...new Set(errs)].filter(e => !/youtube\.com|requestfaile
     await page.evaluate(() => window.__lc.LIVEW.go('namib')); await sleep(1200); s = await D(); const y = s.d.box.y + s.d.box.h * .5;
     await swipe(300, 90, y); await sleep(1200); let s2 = await D(); ok(s2.d.id !== 'namib', 'a swipe to the left goes to the next camera east: ' + s2.d.id + ' ' + JSON.stringify(await page.evaluate(() => [window.__ups, window.__lc.errs.slice(0, 3)])) + ' y=' + y);
     await swipe(90, 300, y); await sleep(1200); s2 = await D(); ok(s2.d.id === 'namib' || s2.d.id === 'goes-east', 'a swipe to the right comes back west: ' + s2.d.id);
-    // a tap on another camera's mark on the globe
-    s = await D(); const mi = s.d.marks.findIndex((q, i) => q && q[2] > .3 && i !== s.d.cur && Math.hypot(q[0] - s.d.g.cx, q[1] - s.d.g.cy) < s.d.g.R * .9);
+    // a tap on another camera's mark on the globe (from Monterey, Starbase and Churchill are in view)
+    await page.evaluate(() => window.__lc.LIVEW.go('monterey')); await sleep(2500); s = await D(); const mi = s.d.marks.findIndex((q, i) => q && q[2] > .3 && i !== s.d.cur && Math.hypot(q[0] - s.d.g.cx, q[1] - s.d.g.cy) < s.d.g.R * .9 && Math.hypot(q[0] - s.d.marks[s.d.cur][0], q[1] - s.d.marks[s.d.cur][1]) > 30);
     if (mi >= 0) { await tap(s.d.marks[mi][0], s.d.marks[mi][1]); await sleep(1500); s2 = await D(); ok(s2.d.cur === mi, 'a tap on a mark on the globe goes to that camera: ' + s2.d.id); }
     else ok(false, 'no other camera\'s mark in view to tap');
     // two fingers: closer

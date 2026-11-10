@@ -1,8 +1,9 @@
 # Live Culture: working notes
 
-Live Culture is a published Claude artifact: three worlds to play in (Smoke, Wind, Orbit), with one band playing under all of them.
-It was rebuilt from nothing on 9 Nov 2026 after the owner said he hated the previous version, reshaped the same evening after his
-first look, and reshaped again on 10 Nov after his second (his words are under "Hard rules").
+Live Culture is a published Claude artifact: three worlds to play in (Smoke, Wind, Orbit), with one band playing under all of them,
+and the same page served live from the owner's own Cloudflare Worker, where it reads every source as it changes and has a fourth
+world, Live (camera streams). It was rebuilt from nothing on 9 Nov 2026 after the owner said he hated the previous version, reshaped
+the same evening after his first look, and twice more on 10 Nov (his words are under "Hard rules").
 
 Artifact: https://claude.ai/artifact/PCzaFJH2vjXe4Kv8KK4Xic (publish to this URL only; never make a second artifact)
 
@@ -47,12 +48,20 @@ Artifact: https://claude.ai/artifact/PCzaFJH2vjXe4Kv8KK4Xic (publish to this URL
    bring up more data on each satellite. Real data": a tapped satellite brings up its record, every line of it published fact.
    "Simulate for now, but prepare for cloudfare deployment. Find more live feeds and def give me live video feeds from interesting
    places": the artifact keeps its snapshot; the hosted version (below) is where live video and live data go.
+11. **What his third look (10 Nov, 09:50) settled:** "Nah, needs to be more realistic. The satellites should be in real time. The
+   wind should have more layers, rain, sun, clouds. Real time. That's the most important part. The smoke is cool, but more effects in
+   that section. Much more interesting and interactively cool. Like video games, building systems, puzzles, etc." So: Orbit opens on
+   the present, second for second, and nothing winds it by itself (the hint turns the Earth instead); Wind has layers he can switch
+   (wind, clouds, rain, sun), the clouds and the rain only in the hosted version (they cannot reach the artifact); Smoke is a machine
+   to build in (walls, fans, drains, smoke that rises, whirlpools) with seven puzzles, each of which brings one more player into the
+   band. Real time is the hosted version: say so plainly rather than dressing up the snapshot.
 
 ## What the page is
 
 One screen. The world fills it edge to edge; top left its name and a few lines of live readings; top right a photo button in
-Smoke, a save button where the viewer can take a file, "Now" in Orbit; along the bottom the music (a note for the whole band and
-nine circles, one a player) and under it the three worlds. The band starts with the first touch anywhere.
+Smoke, a save button where the viewer can take a file, "Now" in Orbit; at the right-hand edge in Smoke its tools; along the bottom
+Wind's layers (in Wind), the music (a note for the whole band and nine circles, one a player) and under it the worlds. The band
+starts with the first touch anywhere.
 
 **The first touch on an iPhone.** iOS starts no sound on a stroke, only on a plain tap (a touch that lifts where it landed; this is
 how WebKit has behaved since iOS 9, and it could not be tried here). So a first touch that is a stroke asks for the music and gets
@@ -62,9 +71,9 @@ the page stops asking. `node tools/t_lock.js` plays such a phone.
 
 | World | What it is | Hands | Its own sound |
 |---|---|---|---|
-| Smoke | a real fluid (GPU stable fluids) with ink; a photo becomes the ink and remembers itself | drag: push it, leave ink the colour of the note at that height; tap: a drop; stay: a spring | glass notes, nine rows |
-| Wind | the globe (Blue Marble, city lights, the real day/night line) wrapped in the real wind shown as smoke (NOAA's GFS 10 m wind carrying thousands of small plumes); the strongest fires of the last day (NASA FIRMS) as embers, their smoke carried off by the same wind; the tropical storms turning now, by name; the aurora where NOAA expects it; the last half hour's lightning as the GOES satellites saw it | one finger: turn the Earth (it coasts); tap a place: its wind, the Sun's height, the hour by the Sun, the aurora, lightning near (tap a fire or a storm: what is known of it); two fingers: slide to turn, pinch to come closer | glass notes by latitude; a soft shaker tick for each lightning flash (the half hour replayed over sixteen bars) |
-| Orbit | every working satellite (about 15,900) and four wreckage clouds (about 2,700 pieces) round the Earth, each solved from its published orbit by the graphics chip every frame; real stars behind; the Earth lit for the moment shown | one finger: turn; pinch: travel out to the geostationary ring; two fingers turning: wind time (one turn = 90 min); tap a satellite: its card; "Now": the present, second for second (otherwise time runs x60) | glass when the two space stations and a dozen Earth-watching satellites cross between sunlight and shadow; a glass note on a tap |
+| Smoke | a real fluid (GPU stable fluids) with ink that rises like smoke; a photo becomes the ink and remembers itself. A machine to build in: walls stop the water and the ink, fans push it (and breathe ink), drains swallow it. Seven puzzles: fixed sources breathe coloured smoke and each cup wants its colour (a white cup wants cyan and amber mixed); build a few walls, fans and drains to fill every cup; each solved brings one more player into the band (shekere, djembe, talking drum, agogo, balafon, kora, the electric guitar last) | the tools at the right: the hand (drag: push, ink; tap: a drop; stay: a spring), wall (drag: a straight wall whose ends join others; tap one: away), fan (drag: where and which way; tap one: away), drain (tap), the puzzles, and "again"; two fingers turning: a whirlpool, closing: pull the water in, opening: throw it out. In a puzzle the hand moves the water but leaves no ink | glass notes, nine rows; a thump for a wall, a kalimba note for a fan, a bowl for a drain, glass for each cup filled, a bowl and two glass notes for a puzzle solved |
+| Wind | layers that can be switched along the bottom: the wind, the clouds, the rain, the Sun (the clouds and the rain only where the page is served live). The globe (Blue Marble, city lights, the real day/night line) wrapped in the real wind shown as smoke (NOAA's GFS 10 m wind carrying thousands of small plumes); the strongest fires of the last day (NASA FIRMS) as embers, their smoke carried off by the same wind; the tropical storms turning now, by name; the aurora where NOAA expects it; the last half hour's lightning as the GOES satellites saw it | one finger: turn the Earth (it coasts); tap a place: its wind, the Sun's height, the hour by the Sun, the aurora, lightning near (tap a fire or a storm: what is known of it); two fingers: slide to turn, pinch to come closer | glass notes by latitude; a soft shaker tick for each lightning flash (the half hour replayed over sixteen bars) |
+| Orbit | every working satellite (about 15,900) and four wreckage clouds (about 2,700 pieces) round the Earth, each solved from its published orbit by the graphics chip every frame, in real time; real stars behind; the Earth lit for the moment shown | one finger: turn; pinch: travel out to the geostationary ring; two fingers turning: wind time (one turn = 90 min; it goes on at its own pace from there); tap a satellite: its card; the chip: "Now" back to the present when time is wound, "×60" to run it fast | glass when the two space stations and a dozen Earth-watching satellites cross between sunlight and shadow; a glass note on a tap |
 
 **The satellite card** (`cardBuild`, `cardLive` in `13-orbit.js`): name; kind, status and owner; catalogue number and international
 designator; launch date and site and years up; perigee and apogee, tilt and period (from the element set); where it is over now, its
@@ -73,8 +82,11 @@ height and speed, sunlit or in shadow (worked out every quarter second); radar c
 to the page, about 570 KB, read at the first tap; 20 bytes an object, layout in `tools/gen_live.py`). On a wide or a turned screen
 the card stands at the right and the Earth moves over; on a phone it lies above the circles and the Earth moves up.
 
-Deep links: `#smoke #wind #orbit` (old links still land: `#drift`, `#bloom`, `#loom` and `#band` on Smoke, `#earth` on Wind).
-Keys: 1-3 worlds, space music, arrows in Wind and Orbit, N in Orbit.
+| Live (hosted version only) | live camera streams from interesting places in a window over the Earth, which turns to where each camera is; the readout gives the place's hour by the Sun, the Sun's height, the wind there, the satellites above its horizon (counted from every published orbit) and how far the space station is; the space station's own camera moves with it; when YouTube's player cannot load, NOAA's GOES pictures of the whole Earth | swipe: the next camera east or west; tap a mark on the globe: that camera; two fingers: closer | a bowl note when a camera comes on |
+
+Deep links: `#smoke #wind #orbit`, and `#live` in the hosted version (old links still land: `#drift`, `#bloom`, `#loom` and `#band`
+on Smoke, `#earth` on Wind). Keys: 1-3 worlds (1-4 hosted), space music, arrows in Wind, Orbit and Live, N in Orbit.
+Smoke keeps the number of puzzles solved in the viewer's own browser (`localStorage`, `lc.smoke.solved`); nothing else is kept.
 
 ## Live data: what is live, what is a snapshot
 
@@ -217,5 +229,30 @@ Not measurable here and therefore unknown: how it sounds to an ear, and how an i
 
 ## Hosted version (Cloudflare)
 
-Being built on 10 Nov 2026 in the owner's repository `adamthabo/hello`, folder `live-culture/` (never in `adamthabo/edge-desk`,
-his trading app). Details are in that folder's README once it is pushed.
+In the owner's repository `adamthabo/hello`, folder `live-culture/` (never in `adamthabo/edge-desk`, his trading app). Its README has
+the Deploy to Cloudflare button; deploying makes a repository of its own in his GitHub (`live-culture`) from which Cloudflare's
+Workers Builds deploys every push, and the page lives at `https://live-culture.<his subdomain>.workers.dev`. Pushed on 10 Nov 2026;
+whether he has deployed it is not known here.
+
+- `worker.js`: the page is static (`public/`); the Worker answers only `/api/feed/<name>` (a fixed list of public sources, each with
+  mirrors to fall back on, kept in memory for minutes: Cloudflare's cache does nothing on workers.dev), `/api/cams` (the cameras) and
+  `/api/yt/<camera>` (which video a camera streams now). No keys, no settings, nothing stored. The user agent names no one.
+- The page built with `HOSTED=1` (`build.py` writes `hosted/index.html`; `sh tools/pack_hosted.sh` copies it and the pictures, the
+  sounds and the snapshot into the Worker's `public/`). It starts from the published snapshot, then `livePull()` in `06-live.js` reads
+  every source through the Worker on its own clock (aurora and lightning every 5 minutes, fires 15, wind, storms and rain 30, clouds
+  60, orbits 3 hours), unpacks each raw format itself (`pWind`, `pAurora`, `pStrikes`, `pFires`, `pStorms`, `pTLE`) and takes it only
+  when it is newer. The live orbit list is laid over the snapshot (`satsMerge`): each satellite keeps its kind, takes the newer
+  element set; satellites launched since join at the end, kinded by name.
+- Sources it adds beyond the artifact's: CelesTrak directly (then the mirrors), NOAA SWPC directly, the clouds (EUMETSAT world cloud
+  map via clouds.matteason.co.uk, 3-hourly), the rain (NASA IMERG precipitation rate from NASA GIBS WMS, the newest half hour that has
+  data, about four hours back), NOAA GOES-19 and GOES-18 full-disk GeoColor pictures, and YouTube streams.
+- The Live world is `src/14-live.js` (in the hosted build only). The cameras are listed in `worker.js` (`CAMS`); to add one, copy a
+  line. Streams found on 10 Nov: Sen's 4K camera on the ISS, explore.org's northern lights camera at Churchill, NASASpaceflight's
+  Starbase, Monterey Bay Aquarium's sea nettles, NamibiaCam's waterhole, Sakurajima, Mount Fuji, Shibuya. None could be checked from
+  here (the session reaches only GitHub): the Worker finds which are on the air and the page passes over the rest.
+- Testing here: `node tools/hostmock.mjs` (port 8758) runs the real `worker.js` with every upstream played from local files and a few
+  made-up YouTube pages; `node tools/t_hosted.js` checks the live reading, the clouds and rain on the globe, the merged orbits, and the
+  Live world with a stand-in for YouTube's player (and without it). What it cannot check: the real sources' answers from Cloudflare,
+  YouTube's player, and the look of the real clouds and rain.
+- To update the live copy after a change: build, `sh tools/pack_hosted.sh`, and push the folder's contents to his `live-culture`
+  repository (Workers Builds deploys it); keep `hello/live-culture/` the same.

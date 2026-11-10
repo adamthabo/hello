@@ -13,8 +13,11 @@ const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') 
   const names = ['Smoke', 'Wind', 'Orbit'], ids = ['smoke', 'wind', 'orbit'];
   for (let i = 1; i < 3; i++) { await page.click('#w_' + ids[i]); await sleep(6500); s = await look(); ok(s.world === names[i] && s.hash === '#' + ids[i] && s.lit > 8 && s.data.length > 8, names[i] + ': ' + s.data + ' (' + s.lit + ' lit)'); await page.screenshot({ path: 'shots/published_' + i + '.png' }); }
   ok(/fires seen from orbit/.test(await page.evaluate(() => { document.getElementById('w_wind').click(); return new Promise(r => setTimeout(() => r(document.getElementById('data').textContent), 2500)); })), 'Wind counts the fires');
+  ok(await page.evaluate(() => [...document.querySelectorAll('#lyr .lb')].filter(b => !b.hidden).length === 2 && !document.getElementById('lyr').hidden), 'Wind has its layer switches (the wind and the Sun here)');
+  ok(await page.evaluate(() => { document.getElementById('w_smoke').click(); return new Promise(r => setTimeout(() => r(!document.getElementById('tools').hidden && document.querySelectorAll('#tools .tb').length === 6), 900)); }), 'Smoke has its tools');
+  await page.click('#t_puz'); await sleep(1500); ok(/^puzzle \d of 7/.test(await page.evaluate(() => document.getElementById('data').textContent)), 'and its puzzles'); await page.screenshot({ path: 'shots/published_puzzle.png' }); await page.click('#t_puz'); await sleep(300);
   // Orbit: a tap on a satellite brings up its card, filled from the catalogue published beside the page
-  await page.click('#w_orbit'); await sleep(3000); let card = null;
+  await page.click('#w_orbit'); await sleep(3000); ok(/now · orbits of/.test(await page.evaluate(() => document.getElementById('data').textContent)), 'Orbit is in real time'); let card = null;
   for (const [x, y] of [[195, 400], [150, 380], [240, 420], [195, 330], [170, 450], [230, 360]]) { await page.mouse.click(x, y); await sleep(700); card = await page.evaluate(() => { const c = document.getElementById('card'); return c.hidden ? null : c.innerText; }); if (card) break; }
   for (let k = 0; k < 20 && card && !/LAUNCHED/i.test(card); k++) { await sleep(300); card = await page.evaluate(() => document.getElementById('card').innerText); }
   ok(card && /CATALOGUE/i.test(card) && /LAUNCHED/i.test(card) && /NOW OVER/i.test(card) && /km up/.test(card), 'a tapped satellite shows its card: ' + String(card).replace(/\n+/g, ' | ').slice(0, 300)); await page.screenshot({ path: 'shots/published_card.png' });
