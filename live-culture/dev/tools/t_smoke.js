@@ -18,11 +18,13 @@ const size = process.argv[2] || 'phone';
   const X = (s, u) => s.stg.x0 + s.stg.w * u, Y = (s, v) => s.stg.y0 + s.stg.h * v;
   const ink = (x, y, r) => page.evaluate(a => window.__lc.WORLDS[0].o.sample(a[0], a[1], a[2]).dens, [x, y, r]);
   let s = await D();
-  ok(s.tools === 'ink*,wall,fan,drain,puz', 'the tools are at the edge, moving the water first: ' + s.tools);
+  { const r = await page.evaluate(() => { const t = document.getElementById('tools').getBoundingClientRect(), f = document.getElementById('foot').getBoundingClientRect(); return { t: t.top, b: t.bottom, ft: f.top, fb: f.bottom, h: innerHeight }; });
+    ok(r.t >= r.ft && r.b <= r.fb && r.t > r.h * .7, 'the tools sit in the footer, under the water (' + Math.round(r.t) + '-' + Math.round(r.b) + ' of ' + r.h + ')'); }
+  ok(s.tools === 'ink*,wall,fan,drain,puz', 'the tools are in a row along the bottom, moving the water first: ' + s.tools);
   const mid = () => page.evaluate(() => window.__lc.WORLDS[0].o.mid());
   const simT = () => page.evaluate(() => window.__lc.WORLDS[0].o.dbg().simT);
   // a wall: drawn, and taken away with a tap
-  await click('t_wall'); await drag(X(s, .5), Y(s, .15), X(s, .5), Y(s, .92)); s = await D();
+  await click('t_wall'); await drag(X(s, .5), Y(s, .04), X(s, .5), Y(s, .97)); s = await D();
   ok(s.d.walls === 1 && s.d.wn > 0, 'a drag with the wall tool builds a wall (' + s.d.wn + ' corners in the water\'s grid)');
   await page.screenshot({ path: `shots/smoke_${size}_wall.png` });
   // the wall holds the smoke back: ink pushed at it from the left stays on the left
@@ -30,7 +32,7 @@ const size = process.argv[2] || 'phone';
   for (let k = 0; k < 5; k++) await drag(X(s, .08), Y(s, .3 + k * .12), X(s, .44), Y(s, .32 + k * .12), 10);
   await sleep(1800); await ink(0, 0, 1); await sleep(400);
   const L = await ink(X(s, .25), Y(s, .55), s.stg.w * .14), R = await ink(X(s, .75), Y(s, .55), s.stg.w * .14);
-  ok(L > 0.02 && L > R * 2, 'the wall holds the smoke back (some rises over its top end, as smoke does): left of it ' + L.toFixed(3) + ', right of it ' + R.toFixed(3));
+  ok(L > 0.02 && L > R * 1.5, 'the wall holds the smoke back (some goes round its ends, above and below the stage): left of it ' + L.toFixed(3) + ', right of it ' + R.toFixed(3));
   await page.screenshot({ path: `shots/smoke_${size}_held.png` });
   await click('t_wall'); await tap(X(s, .5), Y(s, .5)); s = await D(); ok(s.d.walls === 0, 'a tap on a wall takes it away');
   // smoke rises
@@ -38,7 +40,7 @@ const size = process.argv[2] || 'phone';
   await click('t_fan'); await drag(X(s, .2), Y(s, .4), X(s, .4), Y(s, .4), 6); await click('t_drain'); await tap(X(s, .75), Y(s, .4)); s = await D();
   ok(s.d.fans === 1 && s.d.drains === 1, 'a fan (drag for its direction) and a drain (a tap) are built');
   await sleep(2500); await page.screenshot({ path: `shots/smoke_${size}_machine.png` });
-  s = await D(); ok(/built: 1 fan · 1 drain/.test(s.data), 'the readout counts what is built: ' + s.data.replace(/\n/g, ' | '));
+  s = await D(); ok(/built: 1 fan · 1 drain/.test(s.data) && /^real smoke, worked out as it moves/.test(s.data), 'the readout says what this is, and counts what is built: ' + s.data.replace(/\n/g, ' | '));
   await click('t_fan'); await tap(X(s, .2), Y(s, .4)); await click('t_drain'); await tap(X(s, .75), Y(s, .4)); s = await D(); ok(s.d.fans === 0 && s.d.drains === 0, 'and a tap on each takes it away');
   // two fingers turning: a whirlpool (no errors, the water keeps going)
   await click('t_ink'); const cx = X(s, .5), cy = Y(s, .5);
@@ -48,22 +50,29 @@ const size = process.argv[2] || 'phone';
   await page.evaluate(() => { try { localStorage.removeItem('lc.smoke.solved'); } catch (e) {} });
   await click('t_puz'); await sleep(2900); s = await D();
   ok(s.d.pz === 0 && s.d.cups.length === 1 && s.d.fix.fans === 1 && s.on === '100001000', 'puzzle 1: one source, one cup, and the band is the low drum and the bass: ' + s.on);
-  ok(/^puzzle 1 of 7/.test(s.data) && s.tools.startsWith('ink,wall*,fan'), 'the readout and the tools say what may be built: ' + s.data.replace(/\n/g, ' | ') + ' / ' + s.tools);
+  ok(/^puzzle 1 of 5 · fill each ring with smoke of its colour/.test(s.data) && /cyan ring \d+%/.test(s.data) && /you can still build 3 walls, 1 fan/.test(s.data) && s.tools.startsWith('ink,wall*,fan'), 'the readout and the tools say what may be built: ' + s.data.replace(/\n/g, ' | ') + ' / ' + s.tools);
+  ok(await page.evaluate(() => [...document.querySelectorAll('#tools .tb span')].map(e => e.textContent).join()) === 'hand,wall,fan,drain,puzzles,again', 'each tool carries its name');
   await page.screenshot({ path: `shots/smoke_${size}_puzzle1.png` });
-  // smoke rises: with nothing built, the source's smoke (it blows sideways, at 0.8 of the way down the stage) ends up above it
+  // smoke rises: with nothing built, the source's smoke (it blows sideways) ends up above it
+  const L0 = await page.evaluate(() => JSON.parse(JSON.stringify(window.__lc.WORLDS[0].o.levels[0])));
   { const t0 = await simT(); for (let k = 0; k < 80 && (await simT()) - t0 < 3; k++) await sleep(400); await mid(); await sleep(250);
-    const m = await mid(), src = (s.stg.y0 + .8 * s.stg.h) / await page.evaluate(() => innerHeight);
+    const m = await mid(), src = (s.stg.y0 + L0.src[0][1] * s.stg.h) / await page.evaluate(() => innerHeight);
     ok(m !== null && m < src - .04, 'smoke rises: the source is ' + src.toFixed(2) + ' of the way down the screen, the middle of its smoke ' + (m || 0).toFixed(2)); }
-  // the source's smoke rises past the cup; a roof over it brings it along to the cup
-  const c0 = s.d.cups[0]; await drag(X(s, .06), Y(s, .7), X(s, .97), Y(s, .7), 14); s = await D(); ok(s.d.walls === 1, 'a roof built over the smoke');
-  let best = 0; for (let k = 0; k < 40; k++) { await sleep(1000); s = await D(); best = Math.max(best, s.d.cups[0].fill); if (s.d.won || s.d.pz > 0) break; }
-  ok(best > .5 || s.d.won || s.d.pz > 0, 'with the roof the cup fills: ' + Math.round(best * 100) + '% (match ' + (s.d.cups[0] ? s.d.cups[0].match.toFixed(3) : '-') + ')');
+  // the puzzle's own solution, drawn with real touches: walls dragged, fans dragged the way they blow, drains tapped
+  for (const b of L0.sol) { const a = b[1];
+    if (b[0] === 'wall') { await click('t_wall'); await drag(X(s, a[0]), Y(s, a[1]), X(s, a[2]), Y(s, a[3]), 14); }
+    else if (b[0] === 'fan') { await click('t_fan'); const m = Math.hypot(a[2], a[3]) || 1; await drag(X(s, a[0]), Y(s, a[1]), X(s, a[0]) + a[2] / m * 44, Y(s, a[1]) + a[3] / m * 44, 6); }
+    else if (b[0] === 'drain') { await click('t_drain'); await tap(X(s, a[0]), Y(s, a[1])); } }
+  s = await D(); ok(s.d.walls + s.d.fans + s.d.drains === L0.sol.length, 'puzzle 1\'s solution built with touches: ' + L0.sol.map(b => b[0]).join(', '));
+  let best = 0; for (let k = 0; k < 150; k++) { await sleep(1000); s = await D(); if (s.d.cups[0]) best = Math.max(best, s.d.cups[0].fill); if (s.d.won || s.d.pz > 0) break; }
+  ok(s.d.won || s.d.pz > 0, 'with it the ring fills: ' + Math.round(best * 100) + '% (match ' + (s.d.cups[0] ? s.d.cups[0].match.toFixed(3) : '-') + ')');
   await page.screenshot({ path: `shots/smoke_${size}_puzzle1_built.png` });
   // a win: the next puzzle, one more player (the shekere)
   if (s.d.pz === 0 && !s.d.won) await page.evaluate(() => window.__lc.WORLDS[0].o.win());
   for (let k = 0; k < 12; k++) { await sleep(500); s = await D(); if (s.d.pz === 1) break; }
   ok(s.d.pz === 1 && s.on === '110001000' && s.d.best >= 1, 'solved: on to puzzle 2, with the shekere in the band: ' + s.on);
-  for (let i = 1; i < 7; i++) { await page.evaluate(i => window.__lc.WORLDS[0].o.level(i), i); await sleep(900); s = await D(); await page.screenshot({ path: `shots/smoke_${size}_puzzle${i + 1}.png` });
+  const NP = await page.evaluate(() => window.__lc.WORLDS[0].o.levels.length);
+  for (let i = 1; i < NP; i++) { await page.evaluate(i => window.__lc.WORLDS[0].o.level(i), i); await sleep(900); s = await D(); await page.screenshot({ path: `shots/smoke_${size}_puzzle${i + 1}.png` });
     ok(s.d.pz === i && s.d.cups.length >= 1 && !s.errs.length, 'puzzle ' + (i + 1) + ' sets up: ' + s.d.cups.length + ' cups, ' + s.d.fix.fans + ' sources, ' + s.d.fix.walls + ' walls, ' + s.d.fix.drains + ' drains'); }
   await page.evaluate(() => window.__lc.WORLDS[0].o.win()); for (let k = 0; k < 12; k++) { await sleep(500); s = await D(); if (s.d.pz < 0) break; }
   ok(s.d.pz < 0 && s.on === '111111111', 'the last puzzle solved: the whole band plays, the guitar last in: ' + s.on);

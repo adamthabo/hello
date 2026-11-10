@@ -15,16 +15,19 @@ var DRIFT=(function(){
     /* the machine: walls (segments, in fractions of the screen), fans, drains; in a puzzle also its fixed sources, walls and drains, and
        its cups. obs is the walls drawn into the water's own grid: 1 where there is wall */
     obs=null,obsDirty=true,WB=null,WN=0,TOOL='ink',WALLS=[],FANS=[],DRAINS=[],CUPS=[],FIX={walls:[],fans:[],drains:[]},PZ=-1,pzWon=0,pzSaved=null,
-    rb=null,rbBuf=null,rbW=0,rbH=0,rbT=0,rbOk=false,simT=0,want=0,bdrag={},VQ=[],toolsOn=false,best=0,flash=[];
+    rb=null,rbBuf=null,rbW=0,rbH=0,rbT=0,rbS=0,rbOk=false,simT=0,NOWIN=false,TRACE=null,want=0,bdrag={},VQ=[],toolsOn=false,best=0,flash=[];
   /* the five notes of the scale as five inks: E cyan, G green, A amber, B rose, D violet */
   var INK=[[.12,.86,1],[.30,1,.62],[1,.62,.20],[1,.14,.50],[.56,.36,1]];
   var VSB='attribute vec2 a_p;varying vec2 vUv;varying vec2 vL;varying vec2 vR;varying vec2 vT;varying vec2 vB;uniform vec2 uTexel;\n'+
     'void main(){vUv=a_p*0.5+0.5;vL=vUv-vec2(uTexel.x,0.0);vR=vUv+vec2(uTexel.x,0.0);vT=vUv+vec2(0.0,uTexel.y);vB=vUv-vec2(0.0,uTexel.y);gl_Position=vec4(a_p,0.0,1.0);}';
   var H='precision highp float;varying vec2 vUv;varying vec2 vL;varying vec2 vR;varying vec2 vT;varying vec2 vB;\n';
   var F={
-    adv:H+'uniform sampler2D uVel;uniform sampler2D uSrc;uniform vec2 uVTexel;uniform vec2 uSTexel;uniform float uDt;uniform float uDiss;\n'+
+    /* carried along by the water. Nothing is carried through a wall: when the way back crosses one, nothing comes (a fast jet
+       would otherwise jump a thin wall in one step) */
+    adv:H+'uniform sampler2D uVel;uniform sampler2D uSrc;uniform sampler2D uObs;uniform vec2 uVTexel;uniform vec2 uSTexel;uniform float uDt;uniform float uDiss;uniform float uHO;\n'+
       'vec4 bil(sampler2D s,vec2 uv,vec2 ts){vec2 st=uv/ts-0.5;vec2 i=floor(st);vec2 f=fract(st);vec4 a=texture2D(s,(i+vec2(0.5,0.5))*ts);vec4 b=texture2D(s,(i+vec2(1.5,0.5))*ts);vec4 c=texture2D(s,(i+vec2(0.5,1.5))*ts);vec4 d=texture2D(s,(i+vec2(1.5,1.5))*ts);return mix(mix(a,b,f.x),mix(c,d,f.x),f.y);}\n'+
-      'void main(){\n#ifdef MANUAL\nvec2 c=vUv-uDt*bil(uVel,vUv,uVTexel).xy*uVTexel;gl_FragColor=uDiss*bil(uSrc,c,uSTexel);\n#else\nvec2 c=vUv-uDt*texture2D(uVel,vUv).xy*uVTexel;gl_FragColor=uDiss*texture2D(uSrc,c);\n#endif\n}',
+      'void main(){\n#ifdef MANUAL\nvec2 c=vUv-uDt*bil(uVel,vUv,uVTexel).xy*uVTexel;gl_FragColor=uDiss*bil(uSrc,c,uSTexel);\n#else\nvec2 c=vUv-uDt*texture2D(uVel,vUv).xy*uVTexel;gl_FragColor=uDiss*texture2D(uSrc,c);\n#endif\n'+
+      'if(uHO>0.5){float o=max(max(texture2D(uObs,mix(vUv,c,0.34)).x,texture2D(uObs,mix(vUv,c,0.67)).x),texture2D(uObs,c).x);gl_FragColor*=1.0-smoothstep(0.3,0.6,o);}\n}',
     /* add to a field around a point. Ink is added less where there is already plenty, so colours stay colours and never burn out to white */
     spl:H+'uniform sampler2D uT;uniform float uAR;uniform vec3 uCol;uniform vec2 uPt;uniform float uRad;uniform float uSat;\n'+
       'void main(){vec2 p=vUv-uPt;p.x*=uAR;vec3 s=exp(-dot(p,p)/uRad)*uCol;vec3 o=texture2D(uT,vUv).xyz;float full=clamp(max(o.r,max(o.g,o.b))/0.95,0.0,1.0);gl_FragColor=vec4(o+s*(1.0-uSat*full),1.0);}',
@@ -85,30 +88,38 @@ var DRIFT=(function(){
   function WX(u){return u*VW}function WY(v){return v*VH}
   /* a place in a puzzle is given in fractions of the stage (the part of the screen the chrome leaves); pieces are kept in fractions of the screen */
   function sx(u){return (STG.x0+u*STG.w)/VW}function sy(v){return (STG.y0+v*STG.h)/VH}
-  /* the seven puzzles. src: a source breathing ink (x, y, direction, colour: 0 cyan, 2 amber, 3 rose, 4 violet; 'mix' asks for cyan and amber
-     together); cups: where each colour must go; walls and drains: fixed; give: how many walls, fans and drains may be built */
+  /* the five puzzles. src: a source breathing ink (x, y, direction, colour: 0 cyan, 1 green, 2 amber, 3 rose, 4 violet); cups: the
+     rings, where each colour must go ('mix' wants cyan and amber together); walls and drains: fixed; give: how many walls, fans and
+     drains may be built; tip: the clue in the readout; sol: one way to solve it (tools/t_puzzles.js builds it and checks that every
+     ring fills, and that with nothing built none does). Every puzzle is carried by its sources' jets: smoke that only drifts (along
+     a wall, say) is too faint to carry far and barely rises. Places are in fractions of the stage */
   var LEVELS=[
-    {src:[[.16,.8,1,0,0]],cups:[[.82,.8,0]],walls:[],drains:[],give:[3,1,0]},
-    {src:[[.5,.88,0,-1,2]],cups:[[.16,.18,2]],walls:[[.25,.46,.75,.46]],drains:[],give:[3,1,0]},
-    {src:[[.12,.84,.7,-.7,0],[.88,.84,-.7,-.7,3]],cups:[[.2,.16,3],[.8,.16,0]],walls:[],drains:[],give:[4,2,0]},
-    {src:[[.2,.88,0,-1,4]],cups:[[.82,.18,4]],walls:[[.45,.55,.45,.98]],drains:[[.64,.34]],give:[4,1,0]},
-    {src:[[.14,.86,.8,-.6,0],[.86,.86,-.8,-.6,2]],cups:[[.5,.22,'mix']],walls:[],drains:[],give:[3,2,0]},
-    {src:[[.5,.9,0,-1,3]],cups:[[.15,.16,3]],walls:[[0,.7,.68,.7],[.32,.45,1,.45]],drains:[],give:[3,2,1]},
-    {src:[[.2,.9,0,-1,0],[.5,.9,0,-1,2],[.8,.9,0,-1,4]],cups:[[.16,.16,2],[.5,.16,4],[.84,.16,0]],walls:[],drains:[],give:[6,3,1]}];
-  /* who joins the band when each puzzle is solved: shekere, djembe, talking drum, agogo, balafon, kora, and the electric guitar last */
-  var JOIN=[1,2,3,4,6,7,8],MIXC=[.506,.668,.542];
+    {src:[[.1,.75,1,0,0]],cups:[[.72,.42,0]],walls:[],drains:[],give:[3,1,0],
+      tip:'a wall in its way turns the smoke',sol:[['wall',[.3,.8,.55,.6]]]},
+    {src:[[.5,.88,0,-1,2]],cups:[[.18,.5,2]],walls:[],drains:[],give:[2,1,0],
+      tip:'a fan pushes the water, and the smoke with it',sol:[['fan',[.56,.66,-1,0]]]},
+    {src:[[.1,.4,1,0,3]],cups:[[.84,.82,3]],walls:[[.86,.56,1,.56]],drains:[],give:[1,1,0],
+      tip:'smoke never sinks by itself',sol:[['fan',[.45,.32,0,1]]]},
+    {src:[[.1,.45,1,0,3],[.5,.9,0,-1,0]],cups:[[.84,.45,3]],walls:[],drains:[],give:[2,1,0],
+      tip:'one jet pushes another aside',sol:[['wall',[.42,.8,.58,.8]]]},
+    {src:[[.15,.88,0,-1,0],[.85,.88,0,-1,2]],cups:[[.5,.35,'mix']],walls:[],drains:[],give:[2,2,0],
+      tip:'white is cyan and amber together',sol:[['fan',[.08,.66,1,0]],['fan',[.92,.66,-1,0]]]}];
+  /* who joins the band when each puzzle is solved: the shekere, the djembe, the talking drum and the agogo, the balafon and the kora,
+     and the electric guitar last */
+  var JOIN=[[1],[2],[3,4],[6,7],[8]],MIXC=[.506,.668,.542];
+  function joined(i){var a=[];JOIN.slice(0,i).forEach(function(j){a=a.concat(j)});return a}
   function cupR(){return Math.min(STG.w,STG.h)*.085}
   function lsGet(){try{return +localStorage.getItem('lc.smoke.solved')||0}catch(e){return 0}}
   function lsSet(n){try{localStorage.setItem('lc.smoke.solved',String(n))}catch(e){}}
   function pzLoad(i){
-    var L=LEVELS[i];if(!L)return;PZ=i;pzWon=0;WALLS=[];FANS=[];DRAINS=[];
+    var L=LEVELS[i];if(!L)return;PZ=i;pzWon=0;rbS=simT;WALLS=[];FANS=[];DRAINS=[];
     FIX.walls=L.walls.map(function(w){return [sx(w[0]),sy(w[1]),sx(w[2]),sy(w[3]),1]});
     FIX.fans=L.src.map(function(f){var m=Math.hypot(f[2],f[3])||1;return {x:sx(f[0]),y:sy(f[1]),dx:f[2]/m,dy:f[3]/m,c:f[4],fixed:1,ph:0}});
     FIX.drains=L.drains.map(function(d){return {x:sx(d[0]),y:sy(d[1]),fixed:1,ph:0}});
     CUPS=L.cups.map(function(c){return {x:sx(c[0]),y:sy(c[1]),c:c[2],fill:0,match:0,done:false}});
     obsDirty=true;clearInk=true;
     /* the band: the low drum and the bass, and one more player for every puzzle already solved */
-    if(!pzSaved)pzSaved=ON.slice();for(var k=0;k<NL;k++){var on=k===0||k===5||JOIN.slice(0,i).indexOf(k)>=0;if(!!ON[k]!==on)setPlayer(k,on,true)}}
+    if(!pzSaved)pzSaved=ON.slice();for(var k=0;k<NL;k++){var on=k===0||k===5||joined(i).indexOf(k)>=0;if(!!ON[k]!==on)setPlayer(k,on,true)}}
   function pzRelayout(){if(PZ<0)return;var L=LEVELS[PZ];
     FIX.walls=L.walls.map(function(w){return [sx(w[0]),sy(w[1]),sx(w[2]),sy(w[3]),1]});L.src.forEach(function(f,k){FIX.fans[k].x=sx(f[0]);FIX.fans[k].y=sy(f[1])});
     L.drains.forEach(function(d,k){FIX.drains[k].x=sx(d[0]);FIX.drains[k].y=sy(d[1])});L.cups.forEach(function(c,k){CUPS[k].x=sx(c[0]);CUPS[k].y=sy(c[1])});obsDirty=true}
@@ -117,7 +128,7 @@ var DRIFT=(function(){
   var clearInk=false;
   function given(){var L=PZ>=0?LEVELS[PZ]:null;return L?{w:L.give[0],f:L.give[1],d:L.give[2]}:{w:MAXW,f:MAXF,d:MAXD}}
   function pzWin(){
-    pzWon=FT;best=Math.max(best,PZ+1);lsSet(best);var J=JOIN[PZ];if(J!==undefined&&!ON[J])setPlayer(J,true);
+    pzWon=FT;best=Math.max(best,PZ+1);lsSet(best);(JOIN[PZ]||[]).forEach(function(k){if(!ON[k])setPlayer(k,true)});
     tone('bowl',pent(0,52),.42,0);tone('glass',pent(7,52),.3,-.4,AC()+.12);tone('glass',pent(9,52),.3,.4,AC()+.24);
     CUPS.forEach(function(c){for(var k=0;k<14;k++){var a=k/14*TAU,col=c.c==='mix'?[.9,.95,1]:INK[c.c];push(WX(c.x)+Math.cos(a)*8,WY(c.y)+Math.sin(a)*8,Math.cos(a)*700,Math.sin(a)*700,col,.4,.0007)}})}
   function AC(){return AU&&AU.c?AU.c.currentTime:0}
@@ -133,7 +144,7 @@ var DRIFT=(function(){
       WALLS.push([a[0]/VW,a[1]/VH,e[0]/VW,e[1]/VH,0]);obsDirty=true;hit('thump',.32,pan(p.x));return}
     if(b.kind==='fan'){i=nearest(FANS,b.x0,b.y0,20);if(tap&&i>=0){FANS.splice(i,1);hit('tok',.3,pan(p.x));return}
       if(FANS.length>=g.f)return;var dx=p.x-b.x0,dy=p.y-b.y0,m=Math.hypot(dx,dy);if(m<18){dx=0;dy=-1;m=1}
-      FANS.push({x:b.x0/VW,y:b.y0/VH,dx:dx/m,dy:dy/m,c:rowOf(b.y0)%5,ph:Math.random()*TAU});tone('kal',pent(5+rowOf(b.y0),40),.4,pan(b.x0));return}
+      FANS.push({x:b.x0/VW,y:b.y0/VH,dx:dx/m,dy:dy/m,c:PZ>=0?-1:rowOf(b.y0)%5,ph:Math.random()*TAU});tone('kal',pent(5+rowOf(b.y0),40),.4,pan(b.x0));return}
     if(b.kind==='drain'){i=nearest(DRAINS,p.x,p.y,22);if(i>=0){DRAINS.splice(i,1);hit('tok',.3,pan(p.x));return}
       if(DRAINS.length>=g.d)return;DRAINS.push({x:p.x/VW,y:p.y/VH,ph:0});tone('bowl',pent(1,40),.3,pan(p.x))}}
   /* the walls into the water's grid: each a band TH pixels wide with round ends */
@@ -150,36 +161,47 @@ var DRIFT=(function(){
   function readBack(){
     if(!rb||!dye)return;var gl=GLX.gl,u=run(P.mul,rb,[1/rbW,1/rbH]);glBind(0,dye.r.tex,u.uT);gl.uniform1f(u.uK,1);glQuad(P.mul);
     try{gl.readPixels(0,0,rbW,rbH,gl.RGBA,gl.UNSIGNED_BYTE,rbBuf);rbOk=true}catch(e){rbOk=false}}
-  function sample(x,y,r,tc,tight){
+  /* how much smoke of a colour is in a circle: its density, times how close the circle's colour, taken all together, is to the
+     colour wanted. Smoke of another colour in the circle spoils it (jets push each other aside rather than mix, so a ring is only
+     its colour when nothing else reaches it); a white ring (mix) wants cyan and amber in it together, streaks and all */
+  function sample(x,y,r,tc,mix){
     if(!rbOk)return {dens:0,match:0};var i0=Math.max(0,Math.floor((x-r)/VW*rbW)),i1=Math.min(rbW-1,Math.ceil((x+r)/VW*rbW)),j0=Math.max(0,Math.floor((VH-y-r)/VH*rbH)),j1=Math.min(rbH-1,Math.ceil((VH-y+r)/VH*rbH)),
-      n=0,dn=0,mt=0,i,j,lo=tight?.955:.93,hi=tight?.99:.985;
+      n=0,dn=0,ds=0,i,j,sR=0,sG=0,sB=0;
     for(j=j0;j<=j1;j++)for(i=i0;i<=i1;i++){var px=(i+.5)/rbW*VW,py=VH-(j+.5)/rbH*VH;if(Math.hypot(px-x,py-y)>r)continue;var o=(j*rbW+i)*4,R=rbBuf[o]/255,G=rbBuf[o+1]/255,Bl=rbBuf[o+2]/255,d=Math.max(R,G,Bl);n++;dn+=d;
-      if(d>.04&&tc){var l=Math.sqrt(R*R+G*G+Bl*Bl),sim=(R*tc[0]+G*tc[1]+Bl*tc[2])/(l*Math.sqrt(tc[0]*tc[0]+tc[1]*tc[1]+tc[2]*tc[2]));mt+=Math.min(d,1)*smooth((sim-lo)/(hi-lo))}}
-    return n?{dens:dn/n,match:mt/n}:{dens:0,match:0}}
+      if(d>.04){ds+=Math.min(d,1);sR+=R;sG+=G;sB+=Bl}}
+    if(!n)return {dens:0,match:0};var mt=0;
+    if(tc&&ds>0){var sl=Math.sqrt(sR*sR+sG*sG+sB*sB),tl=Math.sqrt(tc[0]*tc[0]+tc[1]*tc[1]+tc[2]*tc[2]),sim=(sR*tc[0]+sG*tc[1]+sB*tc[2])/(sl*tl),lo=mix?.955:.93,hi=mix?.99:.985;
+      mt=ds*smooth((sim-lo)/(hi-lo))}
+    return {dens:dn/n,match:mt/n}}
+  /* a ring fills while smoke of its colour streams through it, and empties again when it stops: a passing puff is not enough */
+  var FILLK=8,FILL0=.025;
   function cupsCheck(dt){
     if(!CUPS.length||pzWon)return;var all=true,r=cupR();
     CUPS.forEach(function(c){var m=sample(WX(c.x),WY(c.y),r*.9,c.c==='mix'?MIXC:INK[c.c],c.c==='mix');c.match=m.match;
-      if(!c.done){c.fill=clamp(c.fill+dt*(3.4*m.match-.03),0,1);if(c.fill>=1){c.done=true;tone('glass',pent(6+CUPS.indexOf(c)*2,52),.38,pan(WX(c.x)))}}if(!c.done)all=false});
-    if(all)pzWin()}
+      if(!c.done){c.fill=clamp(c.fill+dt*FILLK*(m.match-FILL0),0,1);if(c.fill>=1){c.done=true;tone('glass',pent(6+CUPS.indexOf(c)*2,52),.38,pan(WX(c.x)))}}if(!c.done)all=false});
+    if(TRACE&&TRACE.length<4000)TRACE.push([dt].concat(CUPS.map(function(c){return c.match})));
+    if(all&&!NOWIN)pzWin()}
   /* the tools, along the right-hand edge in this world only */
-  var TOOLS=[['ink','Move the water','<path d="M6 13.5c-1.6-1.8-.9-3.9.6-5.4L10 4.8c.6-.6 1.5-.5 2 .1.4.5.3 1.2-.1 1.7l-1.3 1.4 2.1-2c.6-.6 1.4-.6 1.9 0 .5.5.4 1.3-.1 1.8l-2.2 2.2 1.4-1.3c.5-.5 1.3-.5 1.8 0s.4 1.3-.1 1.8l-3.4 3.4c-1.8 1.8-4.3 2-6 .2z"/>'],
-    ['wall','Build a wall','<path d="M3 15.5L15.5 3"/><circle cx="3" cy="15.5" r="1.4"/><circle cx="15.5" cy="3" r="1.4"/>'],
-    ['fan','Build a fan','<circle cx="9.2" cy="9.2" r="1.6"/><path d="M9.2 7.6c0-3 1.4-4.6 3.2-4.2 1.5.4 1.4 2.6-1.5 4.6M10.8 9.2c3 0 4.6 1.4 4.2 3.2-.4 1.5-2.6 1.4-4.6-1.5M9.2 10.8c0 3-1.4 4.6-3.2 4.2-1.5-.4-1.4-2.6 1.5-4.6M7.6 9.2c-3 0-4.6-1.4-4.2-3.2.4-1.5 2.6-1.4 4.6 1.5"/>'],
-    ['drain','Build a drain','<circle cx="9.2" cy="9.2" r="6.4"/><path d="M9.2 5.4a3.8 3.8 0 1 1-3.6 2.6M9.2 7.8a1.4 1.4 0 1 1-1.3 1.9"/>'],
-    ['puz','Puzzles','<circle cx="9.2" cy="9.2" r="6.6"/><circle cx="9.2" cy="9.2" r="3.4"/><circle cx="9.2" cy="9.2" r=".9"/>'],
-    ['undo','Start this puzzle again','<path d="M4.6 7.2A5.6 5.6 0 1 1 4 11.6M4.4 3.6v3.8h3.8"/>']];
+  var TOOLS=[['ink','hand','<path d="M6 13.5c-1.6-1.8-.9-3.9.6-5.4L10 4.8c.6-.6 1.5-.5 2 .1.4.5.3 1.2-.1 1.7l-1.3 1.4 2.1-2c.6-.6 1.4-.6 1.9 0 .5.5.4 1.3-.1 1.8l-2.2 2.2 1.4-1.3c.5-.5 1.3-.5 1.8 0s.4 1.3-.1 1.8l-3.4 3.4c-1.8 1.8-4.3 2-6 .2z"/>'],
+    ['wall','wall','<path d="M3 15.5L15.5 3"/><circle cx="3" cy="15.5" r="1.4"/><circle cx="15.5" cy="3" r="1.4"/>'],
+    ['fan','fan','<circle cx="9.2" cy="9.2" r="1.6"/><path d="M9.2 7.6c0-3 1.4-4.6 3.2-4.2 1.5.4 1.4 2.6-1.5 4.6M10.8 9.2c3 0 4.6 1.4 4.2 3.2-.4 1.5-2.6 1.4-4.6-1.5M9.2 10.8c0 3-1.4 4.6-3.2 4.2-1.5-.4-1.4-2.6 1.5-4.6M7.6 9.2c-3 0-4.6-1.4-4.2-3.2.4-1.5 2.6-1.4 4.6 1.5"/>'],
+    ['drain','drain','<circle cx="9.2" cy="9.2" r="6.4"/><path d="M9.2 5.4a3.8 3.8 0 1 1-3.6 2.6M9.2 7.8a1.4 1.4 0 1 1-1.3 1.9"/>'],
+    ['puz','puzzles','<circle cx="9.2" cy="9.2" r="6.6"/><circle cx="9.2" cy="9.2" r="3.4"/><circle cx="9.2" cy="9.2" r=".9"/>'],
+    ['undo','again','<path d="M4.6 7.2A5.6 5.6 0 1 1 4 11.6M4.4 3.6v3.8h3.8"/>']];
   function toolsBuild(){
     var r=$('tools');if(!r||r.childNodes.length)return;
-    TOOLS.forEach(function(t){var b=document.createElement('button');b.type='button';b.className='tb';b.id='t_'+t[0];b.setAttribute('aria-label',t[1]);
-      b.innerHTML='<svg viewBox="0 0 18.4 18.4" aria-hidden="true">'+t[2]+'</svg>';
+    TOOLS.forEach(function(t){var b=document.createElement('button');b.type='button';b.className='tb';b.id='t_'+t[0];
+      b.innerHTML='<span></span><svg viewBox="0 0 18.4 18.4" aria-hidden="true">'+t[2]+'</svg>';b.firstChild.textContent=t[1];
       b.addEventListener('click',function(){
         if(t[0]==='puz'){if(PZ>=0){pzOff()}else{best=lsGet();pzLoad(Math.min(best,LEVELS.length-1))}TOOL=PZ>=0?'wall':'ink';toolsSync();if(AU.auto)musicOn();return}
         if(t[0]==='undo'){if(PZ>=0)pzLoad(PZ);return}
         TOOL=t[0];toolsSync()});r.appendChild(b)})}
-  function toolsSync(){var g=given();TOOLS.forEach(function(t){var b=$('t_'+t[0]);if(!b)return;if(t[0]==='puz'){b.setAttribute('aria-pressed',PZ>=0?'true':'false');return}
-    if(t[0]==='undo'){b.hidden=PZ<0;return}b.setAttribute('aria-pressed',TOOL===t[0]?'true':'false');b.hidden=PZ>=0&&((t[0]==='wall'&&!g.w)||(t[0]==='fan'&&!g.f)||(t[0]==='drain'&&!g.d))})}
+  function toolsSync(){var g=given(),r=$('tools'),h0=r?r.offsetHeight:0;TOOLS.forEach(function(t){var b=$('t_'+t[0]);if(!b)return;if(t[0]==='puz'){b.setAttribute('aria-pressed',PZ>=0?'true':'false');return}
+    if(t[0]==='undo'){b.hidden=PZ<0;return}b.setAttribute('aria-pressed',TOOL===t[0]?'true':'false');b.hidden=PZ>=0&&((t[0]==='wall'&&!g.w)||(t[0]==='fan'&&!g.f)||(t[0]==='drain'&&!g.d))});
+    if(r&&!r.hidden&&r.offsetHeight!==h0){layout();pzRelayout()}}
   function enter(){if(GLX.ok&&gen!==GLX.gen)glSetup();size();t0=FT;lastT=0;toolsBuild();var r=$('tools');if(r)r.hidden=false;toolsSync();best=lsGet()}
   function leave(){last={};rows={};q.length=0;bdrag={};var r=$('tools');if(r)r.hidden=true}
+  /* (the stage is measured again by the world switch once the row is shown or put away) */
   function down(p){
     if(!p.ghost&&TOOL!=='ink'&&p.n<2){bdrag[p.id]={kind:TOOL,x0:p.x,y0:p.y};return}
     last[p.id]={x:p.x,y:p.y};rows[p.id]=rowOf(p.y);note(p,.5)}
@@ -200,10 +222,12 @@ var DRIFT=(function(){
       else if(t-p.t0>300){push(p.x+(r()-.5)*6,p.y+(r()-.5)*6,(r()-.5)*90,-60-r()*60,inkOf(p.y),.07*fk,.0016)}}
     /* the machine runs: fans push and (outside the puzzles) breathe ink; the puzzle's sources breathe their own colours */
     var fr=Math.min(1,dt*60);
-    FANS.forEach(function(f){f.ph+=dt*9;push(WX(f.x)+f.dx*10,WY(f.y)+f.dy*10,f.dx*820,f.dy*820,INK[f.c],PZ>=0?0:.05*fr,.0009)});
+    FANS.forEach(function(f){f.ph+=dt*9;push(WX(f.x)+f.dx*10,WY(f.y)+f.dy*10,f.dx*820,f.dy*820,INK[f.c]||INK[0],PZ>=0||f.c<0?0:.05*fr,.0009)});
     FIX.fans.forEach(function(f){f.ph+=dt*7;push(WX(f.x)+f.dx*8,WY(f.y)+f.dy*8,f.dx*760+(r()-.5)*50,f.dy*760+(r()-.5)*50,INK[f.c],.13*fr,.0013)});
-    DRAINS.concat(FIX.drains).forEach(function(d){d.ph+=dt*3;VQ.push([WX(d.x),WY(d.y),.2*fr,0,620],[WX(d.x),WY(d.y),300,1,900])});
-    if(CUPS.length&&FT-rbT>280){var dtc=(FT-rbT)/1000;rbT=FT;want=1;cupsCheck(Math.min(dtc,.6))}
+    /* a drain draws the water in and swallows the ink near it (most of a jet that passes over it) */
+    DRAINS.concat(FIX.drains).forEach(function(d){d.ph+=dt*3;VQ.push([WX(d.x),WY(d.y),.55*fr,0,1300],[WX(d.x),WY(d.y),300,1,900])});
+    /* the cups are measured a few times a second, and fill by the water's own time (a slow phone fills them no faster than the smoke moves) */
+    if(CUPS.length&&FT-rbT>280){var dtc=simT-rbS;rbS=simT;rbT=FT;want=1;cupsCheck(clamp(dtc,0,.6))}
     if(pzWon&&FT-pzWon>2600){pzWon=0;if(PZ+1<LEVELS.length)pzLoad(PZ+1);else{pzSaved=[1,1,1,1,1,1,1,1,1];pzOff();TOOL='ink'}toolsSync()}
     /* the band in the water. With a photo in it, the band only moves the water (and more gently): the photo stays the only ink */
     var pk=PHOTO.has?0:1,pv=PHOTO.has?.4:1;
@@ -247,8 +271,8 @@ var DRIFT=(function(){
       var it=[18,14,10][QL];for(i=0;i<it;i++){u=run(P.prs,prs.w,vt);glBind(0,prs.r.tex,u.uP);glBind(1,div.tex,u.uDiv);glQuad(P.prs);prs.swap()}
       u=run(P.grad,vel.w,vt);glBind(0,prs.r.tex,u.uP);glBind(1,vel.r.tex,u.uVel);glQuad(P.grad);vel.swap();
       if(WN){u=run(P.msk,vel.w,vt);glBind(0,vel.r.tex,u.uT);glBind(1,obs.tex,u.uObs);glQuad(P.msk);vel.swap()}
-      u=run(P.adv,vel.w,vt);glBind(0,vel.r.tex,u.uVel);glBind(1,vel.r.tex,u.uSrc);gl.uniform2f(u.uVTexel,vt[0],vt[1]);gl.uniform2f(u.uSTexel,vt[0],vt[1]);gl.uniform1f(u.uDt,dt);gl.uniform1f(u.uDiss,Math.exp(-.22*dtr));glQuad(P.adv);vel.swap();
-      u=run(P.adv,dye.w,dt2);glBind(0,vel.r.tex,u.uVel);glBind(1,dye.r.tex,u.uSrc);gl.uniform2f(u.uVTexel,vt[0],vt[1]);gl.uniform2f(u.uSTexel,dt2[0],dt2[1]);gl.uniform1f(u.uDt,dt);gl.uniform1f(u.uDiss,ph?1:Math.exp(-(PZ>=0?.16:.36)*dtr));glQuad(P.adv);dye.swap()}
+      u=run(P.adv,vel.w,vt);glBind(0,vel.r.tex,u.uVel);glBind(1,vel.r.tex,u.uSrc);glBind(2,obs?obs.tex:null,u.uObs);gl.uniform1f(u.uHO,WN&&obs?1:0);gl.uniform2f(u.uVTexel,vt[0],vt[1]);gl.uniform2f(u.uSTexel,vt[0],vt[1]);gl.uniform1f(u.uDt,dt);gl.uniform1f(u.uDiss,Math.exp(-.22*dtr));glQuad(P.adv);vel.swap();
+      u=run(P.adv,dye.w,dt2);glBind(0,vel.r.tex,u.uVel);glBind(1,dye.r.tex,u.uSrc);glBind(2,obs?obs.tex:null,u.uObs);gl.uniform1f(u.uHO,WN&&obs?1:0);gl.uniform2f(u.uVTexel,vt[0],vt[1]);gl.uniform2f(u.uSTexel,dt2[0],dt2[1]);gl.uniform1f(u.uDt,dt);gl.uniform1f(u.uDiss,ph?1:Math.exp(-(PZ>=0?.16:.36)*dtr));glQuad(P.adv);dye.swap()}
     else{u=run(P.mul,dye.w,dt2);glBind(0,dye.r.tex,u.uT);gl.uniform1f(u.uK,ph?1:Math.exp(-dtr*.5));glQuad(P.mul);dye.swap()}
     if(WN){u=run(P.msk,dye.w,dt2);glBind(0,dye.r.tex,u.uT);glBind(1,obs.tex,u.uObs);glQuad(P.msk);dye.swap()}
     if(ph){u=run(P.heal,dye.w,dt2);glBind(0,dye.r.tex,u.uT);glBind(1,ph.tex,u.uPh);gl.uniform4f(u.uRect,rc[0],rc[1],rc[2],rc[3]);gl.uniform1f(u.uK,1-Math.exp(-dtr/4.5));glQuad(P.heal);dye.swap()}}
@@ -270,7 +294,8 @@ var DRIFT=(function(){
     for(var id in bdrag){var b=bdrag[id],p=PT[id];if(!p)continue;
       if(b.kind==='wall'){var a=snap(b.x0,b.y0),e=snap(p.x,p.y);c.setLineDash([5,5]);c.strokeStyle='rgba(234,249,255,.7)';c.lineWidth=2;c.beginPath();c.moveTo(a[0],a[1]);c.lineTo(e[0],e[1]);c.stroke();c.setLineDash([])}
       else if(b.kind==='fan'){c.strokeStyle='rgba(234,249,255,.7)';c.lineWidth=1.5;c.beginPath();c.moveTo(b.x0,b.y0);c.lineTo(p.x,p.y);c.stroke()}}
-    function fan(f,fixed){var x=WX(f.x),y=WY(f.y),col=INK[f.c],cs='rgba('+Math.round(col[0]*255)+','+Math.round(col[1]*255)+','+Math.round(col[2]*255)+',';
+    /* a puzzle's own sources wear their colour; a fan built in a puzzle breathes no ink and is drawn plain */
+    function fan(f,fixed){var x=WX(f.x),y=WY(f.y),col=f.c<0?[.86,.93,1]:INK[f.c],cs='rgba('+Math.round(col[0]*255)+','+Math.round(col[1]*255)+','+Math.round(col[2]*255)+',';
       c.strokeStyle=cs+'.95)';c.lineWidth=1.4;c.beginPath();c.arc(x,y,fixed?9:11,0,TAU);c.stroke();
       for(k=0;k<3;k++){var a=f.ph+k*TAU/3;c.beginPath();c.moveTo(x,y);c.lineTo(x+Math.cos(a)*(fixed?7:9),y+Math.sin(a)*(fixed?7:9));c.stroke()}
       if(fixed){c.fillStyle=cs+'.9)';c.beginPath();c.arc(x,y,3,0,TAU);c.fill()}
@@ -286,11 +311,16 @@ var DRIFT=(function(){
     c.lineCap='butt'}
   function resize(){if(GLX.ok&&P)size()}
   var CN=['cyan','green','amber','rose','violet'];
+  function left(n,one,many){return n+' '+(n===1?one:many)}
   function hud(){
-    if(PZ>=0){var g=given(),l2=CUPS.map(function(c){return (c.c==='mix'?'cyan and amber':CN[c.c])+' '+(c.done?'full':Math.round(c.fill*100)+'%')}).join(' · ');
-      return 'puzzle '+(PZ+1)+' of '+LEVELS.length+(pzWon?' · solved':'')+'\n'+l2+'\n'+'walls '+WALLS.length+' of '+g.w+(g.f?' · fans '+FANS.length+' of '+g.f:'')+(g.d?' · drains '+DRAINS.length+' of '+g.d:'')}
+    if(PZ>=0){var g=given(),J=JOIN[PZ];
+      if(pzWon)return 'puzzle '+(PZ+1)+' of '+LEVELS.length+' solved'+(J&&J.length?'\n'+J.map(function(k){return 'the '+BNAMES[k].toLowerCase()}).join(' and ')+(J.length>1?' join':' joins')+' the band':'');
+      var l2=CUPS.map(function(c){return (c.c==='mix'?'white':CN[c.c])+' ring '+(c.done?'full':Math.round(c.fill*100)+'%')}).join(' · '),
+        b=[],w=g.w-WALLS.length,f=g.f-FANS.length,d=g.d-DRAINS.length;if(w>0)b.push(left(w,'wall','walls'));if(f>0)b.push(left(f,'fan','fans'));if(d>0)b.push(left(d,'drain','drains'));
+      return 'puzzle '+(PZ+1)+' of '+LEVELS.length+' · fill each ring with smoke of its colour'+(LEVELS[PZ].tip?'\n'+LEVELS[PZ].tip:'')+'\n'+l2+'\n'+(b.length?'you can still build '+b.join(', '):'nothing left to build')}
     var bt=(WALLS.length?WALLS.length+' wall'+(WALLS.length>1?'s':''):'')+(FANS.length?(WALLS.length?' · ':'')+FANS.length+' fan'+(FANS.length>1?'s':''):'')+(DRAINS.length?(WALLS.length||FANS.length?' · ':'')+DRAINS.length+' drain'+(DRAINS.length>1?'s':''):'');
-    return (simple?'ink':'water '+sw+' × '+sh+' cells · ink '+dw+' × '+dh)+(bt?'\nbuilt: '+bt:'')+(best?'\npuzzles solved: '+best+' of '+LEVELS.length:'')+(PHOTO.has?'\nyour photo is the ink: smear it and it remembers itself':'')}
+    if(PHOTO.has)return 'your photo is the ink: smear it and it remembers itself'+(bt?'\nbuilt: '+bt:'');
+    return 'real smoke, worked out as it moves: push it with a finger, tap for a drop\nbuild walls, fans and drains with the tools below, or play the puzzles'+(bt?'\nbuilt: '+bt:best?'\npuzzles solved: '+best+' of '+LEVELS.length:'')}
   /* the hint: a tap (a drop of ink bursts), then one finger drawn across. The tap comes first on purpose: this is the world the page
      opens on, and a tap is the one touch an iPhone will start the sound on */
   function ghost(t){if(PZ>=0||TOOL!=='ink')return [null];var u=(t*.21)%1,k=Math.floor(t*.21)%2;
@@ -303,5 +333,8 @@ var DRIFT=(function(){
     /* for the tests: how much ink there is around a point (pixels), from the last copy read back; and a puzzle by number */
     sample:function(x,y,r){want=1;return sample(x,y,r,null,false)},
     mid:function(){want=1;if(!rbOk)return null;var w=0,y=0,i,j;for(j=0;j<rbH;j++)for(i=0;i<rbW;i++){var o=(j*rbW+i)*4,d=Math.max(rbBuf[o],rbBuf[o+1],rbBuf[o+2])/255;w+=d;y+=d*(1-(j+.5)/rbH)}return w?y/w:null},level:function(i){if(i<0)pzOff();else pzLoad(i);toolsSync()},tool:function(k){TOOL=k;toolsSync()},
+    /* for the tests: the puzzles themselves, and pieces put in by hand (in fractions of the stage) */
+    levels:LEVELS,nowin:function(b){NOWIN=!!b},trace:function(on){var t=TRACE;TRACE=on?[]:null;return t},
+    put:function(k,a){if(k==='wall')WALLS.push([sx(a[0]),sy(a[1]),sx(a[2]),sy(a[3]),0]);else if(k==='fan'){var m=Math.hypot(a[2],a[3])||1;FANS.push({x:sx(a[0]),y:sy(a[1]),dx:a[2]/m,dy:a[3]/m,c:PZ>=0?-1:a[4]||0,ph:0})}else if(k==='drain')DRAINS.push({x:sx(a[0]),y:sy(a[1]),ph:0});obsDirty=true},
     win:function(){if(!CUPS.length||pzWon)return;CUPS.forEach(function(c){c.fill=1;c.done=true});pzWin()}}
 })();

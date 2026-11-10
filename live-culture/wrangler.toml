@@ -1,6 +1,8 @@
 name = "live-culture"
 main = "worker.js"
 compatibility_date = "2026-06-01"
+# served at https://live-culture.<your-subdomain>.workers.dev
+workers_dev = true
 
 # The page, its sounds and pictures. Anything not found here (only /api/...) goes to worker.js.
 [assets]

@@ -3,7 +3,7 @@
 Live Culture is a published Claude artifact: three worlds to play in (Smoke, Wind, Orbit), with one band playing under all of them,
 and the same page served live from the owner's own Cloudflare Worker, where it reads every source as it changes and has a fourth
 world, Live (camera streams). It was rebuilt from nothing on 9 Nov 2026 after the owner said he hated the previous version, reshaped
-the same evening after his first look, and twice more on 10 Nov (his words are under "Hard rules").
+the same evening after his first look, and three times more on 10 Nov (his words are under "Hard rules").
 
 Artifact: https://claude.ai/artifact/PCzaFJH2vjXe4Kv8KK4Xic (publish to this URL only; never make a second artifact)
 
@@ -26,8 +26,12 @@ Artifact: https://claude.ai/artifact/PCzaFJH2vjXe4Kv8KK4Xic (publish to this URL
    made here, are public data (NASA, the star catalogue), or are the viewer's own photo, which never leaves the device.
 4. **No tiles, no grids of image blocks.** He prefers the electronic look (thin light on black, condensed type, small mono
    readouts). An organic restyle (serif type, pebble buttons) was tried once and rejected: do not retry it.
-5. **Few controls, no words of instruction.** What a world does is shown by a ghost finger doing it, not by text.
-   The readout line states facts (counts, places, times), never tells anyone what to do.
+5. **Few controls, each with its name, and one plain line saying what a world is.** This rule first said "no words of
+   instruction" and left a ghost finger to show what to do. His fourth look (10 Nov, 11:15) overruled that: "I have no idea what
+   any of that first page does. Makes no sense." So every tool carries its name (Smoke: hand, wall, fan, drain, puzzles, again),
+   and the readout of a world opens with one plain line of what it is and what a finger does there ("real smoke, worked out as it
+   moves: push it with a finger, tap for a drop"); a puzzle's readout says what to do and how far along it is. Then facts (counts,
+   places, times). Keep the words few and plain: no paragraphs, no pop-ups, no tour. The ghost finger still shows the first touch.
    **The music is a row of small circles, not a switch.** Of the switch and the Band world he said (10 Nov) "I don't particularly
    like the music interface"; on his portfolio site he had asked for little track circles and called a toggle confusing. So: one
    note for the whole band, then nine circles, one a player. The note never moves by itself and is never lit over silence; while
@@ -53,14 +57,14 @@ Artifact: https://claude.ai/artifact/PCzaFJH2vjXe4Kv8KK4Xic (publish to this URL
    that section. Much more interesting and interactively cool. Like video games, building systems, puzzles, etc." So: Orbit opens on
    the present, second for second, and nothing winds it by itself (the hint turns the Earth instead); Wind has layers he can switch
    (wind, clouds, rain, sun), the clouds and the rain only in the hosted version (they cannot reach the artifact); Smoke is a machine
-   to build in (walls, fans, drains, smoke that rises, whirlpools) with seven puzzles, each of which brings one more player into the
-   band. Real time is the hosted version: say so plainly rather than dressing up the snapshot.
+   to build in (walls, fans, drains, smoke that rises, whirlpools) with puzzles, each of which brings more of the band in (seven
+   puzzles at first; five since noon on 10 Nov, when only five passed the test of not solving themselves). Real time is the hosted version: say so plainly rather than dressing up the snapshot.
 
 ## What the page is
 
 One screen. The world fills it edge to edge; top left its name and a few lines of live readings; top right a photo button in
-Smoke, a save button where the viewer can take a file, "Now" in Orbit; at the right-hand edge in Smoke its tools; along the bottom
-Wind's layers (in Wind), the music (a note for the whole band and nine circles, one a player) and under it the worlds. The band
+Smoke, a save button where the viewer can take a file, "Now" in Orbit; along the bottom Smoke's tools (in Smoke) or
+Wind's layers (in Wind), each with its name, the music (a note for the whole band and nine circles, one a player) and under it the worlds. The band
 starts with the first touch anywhere.
 
 **The first touch on an iPhone.** iOS starts no sound on a stroke, only on a plain tap (a touch that lifts where it landed; this is
@@ -71,7 +75,7 @@ the page stops asking. `node tools/t_lock.js` plays such a phone.
 
 | World | What it is | Hands | Its own sound |
 |---|---|---|---|
-| Smoke | a real fluid (GPU stable fluids) with ink that rises like smoke; a photo becomes the ink and remembers itself. A machine to build in: walls stop the water and the ink, fans push it (and breathe ink), drains swallow it. Seven puzzles: fixed sources breathe coloured smoke and each cup wants its colour (a white cup wants cyan and amber mixed); build a few walls, fans and drains to fill every cup; each solved brings one more player into the band (shekere, djembe, talking drum, agogo, balafon, kora, the electric guitar last) | the tools at the right: the hand (drag: push, ink; tap: a drop; stay: a spring), wall (drag: a straight wall whose ends join others; tap one: away), fan (drag: where and which way; tap one: away), drain (tap), the puzzles, and "again"; two fingers turning: a whirlpool, closing: pull the water in, opening: throw it out. In a puzzle the hand moves the water but leaves no ink | glass notes, nine rows; a thump for a wall, a kalimba note for a fan, a bowl for a drain, glass for each cup filled, a bowl and two glass notes for a puzzle solved |
+| Smoke | a real fluid (GPU stable fluids) with ink that rises like smoke; a photo becomes the ink and remembers itself. A machine to build in: walls stop the water and the ink, fans push it (and breathe ink), drains swallow it. Five puzzles: fixed sources breathe coloured jets of smoke and each ring ("cup" in the code) wants its colour (a white ring wants cyan and amber together); a ring fills only while smoke of its colour, and nothing else, streams through it, so no puzzle solves itself; build a wall or a fan or two to fill every ring (1: a wall turns a jet; 2: a fan pushes one; 3: a fan sends one down, which smoke never does by itself; 4: a lid stops the jet that pushes the right one aside; 5: two fans bring cyan and amber together). Each solved brings the band in: the shekere, the djembe, the talking drum and the agogo, the balafon and the kora, the electric guitar last | the tools along the bottom, each named: the hand (drag: push, ink; tap: a drop; stay: a spring), wall (drag: a straight wall whose ends join others; tap one: away), fan (drag: where and which way; tap one: away), drain (tap), the puzzles, and "again"; two fingers turning: a whirlpool, closing: pull the water in, opening: throw it out. In a puzzle the hand moves the water but leaves no ink | glass notes, nine rows; a thump for a wall, a kalimba note for a fan, a bowl for a drain, glass for each cup filled, a bowl and two glass notes for a puzzle solved |
 | Wind | layers that can be switched along the bottom: the wind, the clouds, the rain, the Sun (the clouds and the rain only where the page is served live). The globe (Blue Marble, city lights, the real day/night line) wrapped in the real wind shown as smoke (NOAA's GFS 10 m wind carrying thousands of small plumes); the strongest fires of the last day (NASA FIRMS) as embers, their smoke carried off by the same wind; the tropical storms turning now, by name; the aurora where NOAA expects it; the last half hour's lightning as the GOES satellites saw it | one finger: turn the Earth (it coasts); tap a place: its wind, the Sun's height, the hour by the Sun, the aurora, lightning near (tap a fire or a storm: what is known of it); two fingers: slide to turn, pinch to come closer | glass notes by latitude; a soft shaker tick for each lightning flash (the half hour replayed over sixteen bars) |
 | Orbit | every working satellite (about 15,900) and four wreckage clouds (about 2,700 pieces) round the Earth, each solved from its published orbit by the graphics chip every frame, in real time; real stars behind; the Earth lit for the moment shown | one finger: turn; pinch: travel out to the geostationary ring; two fingers turning: wind time (one turn = 90 min; it goes on at its own pace from there); tap a satellite: its card; the chip: "Now" back to the present when time is wound, "×60" to run it fast | glass when the two space stations and a dozen Earth-watching satellites cross between sunlight and shadow; a glass note on a tap |
 
@@ -153,6 +157,8 @@ says so; he has run out of usage on scheduled work before, so keep any schedule 
 5. Tests need the page served: `sh tools/serve.sh &` (port 8757), and for `test_astro.js` only: `cd tools && npm install`.
 6. `sh tools/check.sh all`. Headless Chromium draws with software (about 5-60 frames a second depending on the world): judge looks from
    screenshots in `shots/`, not from speed. `node tools/t_hero.js phone 2 10 2` gives a phone-sharp picture of world 2 after 10 s.
+7. After changing Smoke's puzzles, its water or its rings: `node tools/t_puzzles.js` (about twenty minutes: each puzzle with nothing
+   built, then with its own solution, `LEVELS[i].sol`). Not part of `check.sh`.
 
 ## Publishing
 
@@ -195,6 +201,14 @@ governor is live in this test and the headless browser draws slowly, so Smoke us
   The two worlds taken out on 10 Nov are in `dev/archive/`: `world-bloom.js` (`BLOOM`) and `world-band.js` (`BANDW`). To bring one
   back: put it in `src/` as `10-bloom.js` or `15-band.js`, add it to `mods` in `build.py`, add its row to `WORLDS` in `20-ui.js` (the
   rows that were there are in the v14 source of `20-ui.js` in this artifact's history), and rerun every test.
+  Smoke: stable fluids on the GPU (velocity at 128 cells across a phone, ink at 512), buoyancy by the ink's density. Walls are
+  drawn into a grid at the water's size (`obs`) that masks the water and the ink (`msk`) and that the advection reads (`uObs`):
+  nothing is carried across a wall in one step, or a fast jet jumps a 10-pixel wall. Rings are measured from the ink read back at
+  64 across (`readBack`, `sample`: density times how close the colour is) and fill by the water's own time at
+  `FILLK*(match - FILL0)`, so a stream fills a ring in seconds and drift empties it. Smoke that only drifts is faint and barely
+  rises (its lift is its density), so every puzzle is carried by its sources' jets: walls turn a jet, fans push one, drains eat
+  one. Each puzzle has its solution (`LEVELS[i].sol`); `node tools/t_puzzles.js` (slow, a minute a run) checks that none solves
+  itself and that each solution fills every ring. Change a puzzle, the water or the rings: run it.
   Wind: the smoke lives in a 1024 x 512 picture of the unrolled Earth (512 x 256 on slower phones); each frame every place takes what the
   real wind is bringing it (semi-Lagrangian, speeded up about 30,000 times), fed by small fixed "fires" that each burn a few seconds,
   by a haze where the wind is strong, and by the real fires (each a point drawn into the picture every frame, `P.pts`). The storms are
@@ -231,8 +245,11 @@ Not measurable here and therefore unknown: how it sounds to an ear, and how an i
 
 In the owner's repository `adamthabo/hello`, folder `live-culture/` (never in `adamthabo/edge-desk`, his trading app). Its README has
 the Deploy to Cloudflare button; deploying makes a repository of its own in his GitHub (`live-culture`) from which Cloudflare's
-Workers Builds deploys every push, and the page lives at `https://live-culture.<his subdomain>.workers.dev`. Pushed on 10 Nov 2026;
-whether he has deployed it is not known here.
+Workers Builds deploys every push, and the page lives at `https://live-culture.adamthabo.workers.dev`. He pressed the button on
+10 Nov at 11:12; the first build never reported back and the address showed Cloudflare's "There is nothing here yet" (his words:
+"There nothing there yet!", "Yeah, it's empty why"). A push to `adamthabo/live-culture` started a build that deployed at 11:38.
+Each build reports to GitHub as the check run "Workers Builds: live-culture" on the pushed commit: that is how to see from here
+whether a push went live (`gh api repos/adamthabo/live-culture/commits/<sha>/check-runs`). The session cannot open workers.dev.
 
 - `worker.js`: the page is static (`public/`); the Worker answers only `/api/feed/<name>` (a fixed list of public sources, each with
   mirrors to fall back on, kept in memory for minutes: Cloudflare's cache does nothing on workers.dev), `/api/cams` (the cameras) and

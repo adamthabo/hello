@@ -10,6 +10,11 @@ The same playground as the Live Culture artifact, served from your own Cloudflar
 
 **Terminal:** `npx wrangler deploy` in this folder.
 
+**If the address says "There is nothing here yet":** no build has finished. In Cloudflare open Workers & Pages, then
+live-culture: its latest build says whether it worked, and why not. Pushing any change to the repository starts a new build
+(the first build after the Deploy button once never reported back; the next push deployed in under a minute). A brand-new
+workers.dev address can also take a few minutes to start answering.
+
 Nothing to set up: no keys, no accounts, no settings. Every source it reads is public.
 
 ## What is live here

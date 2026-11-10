@@ -1,6 +1,45 @@
 # Changelog
 
 ## For the owner
+10 Nov 2026, early afternoon, after "I have no idea what any of that first page does. Makes no sense." and "There nothing there yet!":
+
+- **Smoke says what it is.** The line at the top now reads "real smoke, worked out as it moves: push it with a finger, tap for a
+  drop", then "build walls, fans and drains with the tools below, or play the puzzles". The tools moved from the right-hand edge to
+  a row along the bottom, each with its name: hand, wall, fan, drain, puzzles, again.
+- **Each puzzle says what to do:** which puzzle it is, "fill each ring with smoke of its colour", a one-line clue, how full each ring
+  is, and what you can still build.
+- **The puzzles are real puzzles now.** The first one solved itself within a second (its smoke blew straight into its ring), and
+  smoke leaked through walls. Walls now hold, and a ring fills only while smoke of its colour, and nothing else, streams through it.
+  Every puzzle was played here with nothing built (no ring fills) and with a solution (every ring fills). Five passed; the two that
+  could not be made fair were taken out, so solving a puzzle now brings one or two players in, the guitar still last.
+- **Your Cloudflare site is up.** The first build after the Deploy button never reported back; a fresh one, started by a push to
+  `adamthabo/live-culture`, went live at 11:38. This update is there too.
+
+Tested by machine only.
+
+## 10 Nov 2026, early afternoon: Smoke in plain words, walls that hold, five puzzles that need building
+- Smoke's readout (`hud` in `11-drift.js`): outside the puzzles it says what the world is and what a finger does; in a puzzle: which
+  puzzle and the goal, its clue (`LEVELS[i].tip`), each ring's fill, what can still be built; on solving, who joins.
+- `#tools` moved from the right-hand edge into the footer (`body.html`, `style.css`): a row of labelled pills like Wind's `#lyr`
+  (hand, wall, fan, drain, puzzles, again), tight enough for five on a phone. `toolsSync` measures the stage again when the row
+  changes height. Fans built in a puzzle are drawn plain (they breathe no ink there).
+- Walls hold: the advection pass (`adv`) reads the wall grid (`uObs`) and carries nothing across a wall. A jet moves up to 17 pixels
+  a step and used to jump the 10-pixel walls, so smoke leaked through shelves.
+- Rings: filled by the water's own time (`simT`), not the clock's (a slow phone or the headless browser filled them faster than the
+  smoke moved), at `FILLK*(match - FILL0)` = `8*(match - .025)` a second, so a stream fills a ring in 1 to 8 seconds and drift empties
+  it; judged by the colour of everything in the ring taken together (`sample`), so another colour in it spoils it and a white ring
+  takes cyan and amber in streaks. Drains swallow more (most of a jet that passes over one).
+- Puzzles, remade around the jets (smoke that only drifts is too faint to carry far): 1 a jet blowing past its ring, turned up by a
+  wall; 2 a column rising beside its ring, pushed over by a fan; 3 a jet over a low ring, sent down by a fan; 4 a jet pushed off its
+  ring by another rising across it, which a lid stops; 5 two columns brought together by two fans into a white ring. `JOIN` gives
+  players in ones and twos: shekere; djembe; talking drum and agogo; balafon and kora; electric guitar.
+- `tools/t_puzzles.js` (new, slow, not in `check.sh`): every puzzle with nothing built fills no ring, and with its solution
+  (`LEVELS[i].sol`) fills every ring. `t_smoke.js` builds puzzle 1's solution with real touches. Test hooks: `levels`, `put`,
+  `nowin`, `trace`. The design trials and what failed are in `ROADMAP.md`.
+- The Cloudflare copy: `wrangler.toml` says `workers_dev = true`; its README says what to do when the address shows "There is
+  nothing here yet".
+
+## For the owner (earlier)
 10 Nov 2026, late morning, after "needs to be more realistic ... Real time. That's the most important part":
 
 - **Real time lives on your Cloudflare.** A Claude artifact cannot fetch anything live, so the live version is the same site served
