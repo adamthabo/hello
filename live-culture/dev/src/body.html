@@ -1,0 +1,27 @@
+<canvas id="gl" aria-hidden="true"></canvas>
+<div class="vid" id="vid" hidden aria-hidden="true"><div class="vb" id="vidbox"><div id="vidp"></div><img id="vidi" alt="" hidden></div></div>
+<canvas id="ov" aria-hidden="true"></canvas>
+<div id="stage" role="application" aria-label="The world. Touch it, drag through it, use more than one finger"></div>
+
+<header class="top" id="top">
+  <div class="mark"><h1>Live Culture</h1><p class="wname" id="wname">Smoke</p></div>
+  <div class="acts">
+    <button class="chip" id="bNow" type="button" hidden aria-label="Return to the present moment">Now</button>
+    <button class="ic" id="bPhoto" type="button" aria-label="Use a photo of your own. It stays on this device"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="4" width="13" height="9.5" rx="2"/><circle cx="8" cy="8.8" r="2.6"/><path d="M5.5 4l1-1.8h3l1 1.8"/></svg></button>
+    <button class="ic" id="bClear" type="button" hidden aria-label="Take the photo away"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
+    <button class="ic" id="bSave" type="button" hidden aria-label="Save a picture of what is on the screen now"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8M4.8 7.2L8 10.4l3.2-3.2M2.5 13.5h11"/></svg></button>
+  </div>
+</header>
+<p class="data" id="data" aria-live="off"></p>
+
+<aside class="card" id="card" hidden aria-live="polite"></aside>
+
+<footer class="foot" id="foot">
+  <div class="lyr" id="lyr" hidden role="group" aria-label="Layers of the weather"></div>
+  <div class="dots" id="dotrow" role="group" aria-label="The music: the whole band, then each of its nine players">
+    <button class="dot mst" id="bSound" type="button" aria-pressed="false" aria-label="Music starts with your first touch. Turn it on now"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6.2 11.6V3.4l6-1.2v8.2"/><circle cx="4.6" cy="11.7" r="1.7"/><circle cx="10.6" cy="10.5" r="1.7"/></svg></button>
+    <span class="dots9" id="dots"></span>
+  </div>
+  <nav class="rail" id="rail" aria-label="Worlds"></nav>
+</footer>
+<input class="sr" type="file" id="file" accept="image/*" tabindex="-1" aria-hidden="true">

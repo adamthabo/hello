@@ -1,0 +1,11 @@
+{
+  "name": "live-culture",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Live Culture: a playground of live data and music (the wind as smoke, every satellite, fires, storms, the clouds, live cameras), served from one Cloudflare Worker that relays the public sources it reads.",
+  "scripts": {
+    "deploy": "npx wrangler deploy",
+    "dev": "npx wrangler dev"
+  }
+}
