@@ -50,8 +50,8 @@ const clean = errs => [...new Set(errs)].filter(e => !/youtube\.com|requestfaile
     const { page, errs, ctx } = await open(browser, 'phone', { base: BASE, hash: '#live', init: FAKEYT }); await sleep(1500);
     await page.evaluate(() => { window.__lc.GOV.n = -1e9; });
     const D = () => page.evaluate(() => ({ d: window.__lc.LIVEW.dbg(), data: document.getElementById('data').textContent, yt: window.__yt.slice(), hidden: document.getElementById('vid').hidden, on: document.getElementById('vidbox').classList.contains('on') }));
-    let s = null; for (let k = 0; k < 30; k++) { await sleep(400); s = await D(); if (s.d.stat === 'live') break; } await sleep(500); s = await D();
-    ok(s.d.cams === 10, 'the cameras came from the Worker: ' + s.d.cams); ok(!s.hidden && s.d.stat === 'live' && s.on, 'a camera is on the air in its window: ' + s.d.id + ' (' + s.d.kind + ', ' + s.d.stat + ')');
+    let s = null; for (let k = 0; k < 75; k++) { await sleep(400); s = await D(); if (s.d.stat === 'live') break; } await sleep(500); s = await D();
+    ok(s.d.cams >= 25, 'the cameras came from the Worker: ' + s.d.cams); ok(!s.hidden && s.d.stat === 'live' && s.on, 'a camera is on the air in its window: ' + s.d.id + ' (' + s.d.kind + ', ' + s.d.stat + ')');
     ok(s.data.split('\n').length === 3 && (s.d.kind === 'img' || /live/.test(s.data)), 'the readout gives the place, its hour and light, the satellites above: ' + s.data.replace(/\n/g, ' | '));
     await sleep(3500); s = await D(); ok(s.d.over && s.d.over.n > 100, 'satellites above its horizon were counted from the orbits: ' + (s.d.over && s.d.over.n));
     await page.screenshot({ path: 'shots/hosted_live_0.png' });

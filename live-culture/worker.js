@@ -52,15 +52,34 @@ const GIBS = 'https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?SERVICE=
 // To add a camera: copy a line, give it a short id (a-z, 0-9, -), its place, and its video address or channel handle.
 const CAMS = [
   { id: 'iss', kind: 'yt', name: 'Earth from the space station', place: '', lat: 0, lon: 0, moving: 'iss', v: ['fO9e9jnhYK8'], c: ['sen'], by: 'Sen, from the ISS', best: 'any' },
+  { id: 'kilauea', kind: 'yt', name: 'Kilauea volcano', place: 'Hawaii Island', lat: 19.4069, lon: -155.2834, c: ['doinghawaii'], by: 'doinghawaii, from the USGS cameras', best: 'any' },
   { id: 'goes-west', kind: 'img', name: 'The Earth from GOES-18', place: '35,786 km above 137.2°W', lat: 0, lon: -137.2, img: 'goes-west', every: 600, by: 'NOAA GOES-18 · GeoColor · a new picture every 10 minutes', best: 'any' },
+  { id: 'vancouver', kind: 'yt', name: 'Vancouver harbour', place: 'Vancouver, British Columbia', lat: 49.2888, lon: -123.1111, c: ['VancouverCityViews'], by: 'Vancouver City Views', best: 'any' },
   { id: 'monterey', kind: 'yt', name: 'Sea nettles', place: 'Monterey Bay Aquarium, California', lat: 36.6187, lon: -121.9025, v: ['gswNWtJlUco'], by: 'Monterey Bay Aquarium', best: 'any' },
+  { id: 'vegas', kind: 'yt', name: 'The Las Vegas Strip', place: 'Las Vegas, Nevada', lat: 36.1177, lon: -115.1728, v: ['Y-dnxuExye0'], by: '', best: 'any' },
+  { id: 'jackson', kind: 'yt', name: 'Town square', place: 'Jackson Hole, Wyoming', lat: 43.4799, lon: -110.7624, v: ['1EiC9bvVGnk', 'BN7gzH-i-zo'], by: '', best: 'day' },
   { id: 'starbase', kind: 'yt', name: 'Starbase', place: 'Boca Chica, Texas', lat: 25.997, lon: -97.156, c: ['NASASpaceflight'], by: 'NASASpaceflight', best: 'any' },
   { id: 'churchill', kind: 'yt', name: 'Northern lights', place: 'Churchill, Manitoba', lat: 58.77, lon: -94.17, v: ['a0i1Kg6fROg'], by: 'explore.org and Polar Bears International', best: 'night' },
+  { id: 'satbeach', kind: 'yt', name: 'The Space Coast', place: 'Satellite Beach, Florida', lat: 28.1761, lon: -80.5901, c: ['SatelliteBeachLive'], by: 'SatelliteBeachLive', best: 'day' },
   { id: 'goes-east', kind: 'img', name: 'The Earth from GOES-19', place: '35,786 km above 75.2°W', lat: 0, lon: -75.2, img: 'goes-east', every: 600, by: 'NOAA GOES-19 · GeoColor · a new picture every 10 minutes', best: 'any' },
+  { id: 'timessquare', kind: 'yt', name: 'Times Square', place: 'New York', lat: 40.758, lon: -73.9855, v: ['JQ_jwk_7OVE'], by: 'EarthCam', best: 'any' },
+  { id: 'maho', kind: 'yt', name: 'Planes over Maho Beach', place: 'Sint Maarten, Caribbean', lat: 18.0391, lon: -63.1188, v: ['2IQmpCXbOmM', 'iSeH45R-8R0'], by: '', best: 'day' },
+  { id: 'rio', kind: 'yt', name: 'Christ the Redeemer', place: 'Rio de Janeiro, Brazil', lat: -22.9519, lon: -43.2105, v: ['L6hJiLs7c7o', 'WoVyNFnecwk', 'HrZO_GrUwZM', 'c0AZN6rz8Jk', '6QoLEltTzIM'], by: '', best: 'any' },
+  { id: 'amsterdam', kind: 'yt', name: 'Amsterdam', place: 'the Netherlands', lat: 52.3731, lon: 4.8926, c: ['UCCbkDvw6wI4Z5VX3BhSuw7w'], by: 'Amsterdam Live', best: 'any' },
+  { id: 'venice', kind: 'yt', name: 'Venice', place: 'Italy', lat: 45.438, lon: 12.3359, c: ['UCMpn1qLudF-zb4M4bqxLIbw'], by: 'I Love You Venice', best: 'any' },
+  { id: 'rome', kind: 'yt', name: "St Peter's Basilica", place: 'Rome, Italy', lat: 41.9022, lon: 12.4539, v: ['89d3tEaqImM'], by: 'RealViewCam360', best: 'any' },
+  { id: 'etna', kind: 'yt', name: 'Mount Etna', place: 'Sicily, Italy', lat: 37.751, lon: 14.9934, v: ['iVP1lcwtQwM'], by: '', best: 'any' },
   { id: 'namib', kind: 'yt', name: 'A waterhole in the Namib', place: 'Gondwana Namib Park, Namibia', lat: -24.86, lon: 15.95, v: ['ydYDqZQpim8'], c: ['NamibiaCam'], by: 'NamibiaCam', best: 'any' },
+  { id: 'onguma', kind: 'yt', name: 'A waterhole by Etosha', place: 'Onguma, Namibia', lat: -18.7417, lon: 17.03, v: ['yuIm1V7Ne7I'], by: '', best: 'day' },
+  { id: 'hwange', kind: 'yt', name: 'A waterhole in Hwange', place: 'Linkwasha, Zimbabwe', lat: -19.1167, lon: 26.9667, v: ['-rXriX4SiQk'], by: 'Wilderness', best: 'day' },
+  { id: 'posio', kind: 'yt', name: 'Northern lights', place: 'Posio, Lapland, Finland', lat: 66.1103, lon: 28.1663, v: ['_WtUWtodDVA'], by: 'Hotel Lapin Satu', best: 'night' },
+  { id: 'singapore', kind: 'yt', name: 'Downtown Singapore', place: 'Singapore', lat: 1.2834, lon: 103.8607, v: ['rQ3VvxadJeo'], by: '', best: 'any' },
+  { id: 'hongkong', kind: 'yt', name: 'Victoria Harbour from the Peak', place: 'Hong Kong', lat: 22.2759, lon: 114.1455, v: ['bNOWG3jcOlQ'], by: '', best: 'any' },
   { id: 'sakurajima', kind: 'yt', name: 'Sakurajima volcano', place: 'from Kagoshima, Japan', lat: 31.6035, lon: 130.5507, v: ['GSJwOX3gZsk'], by: '', best: 'any' },
   { id: 'fuji', kind: 'yt', name: 'Mount Fuji', place: 'from Fuji, Shizuoka, Japan', lat: 35.1382, lon: 138.6919, v: ['Sv9hcJ3k5h4'], by: '', best: 'day' },
   { id: 'shibuya', kind: 'yt', name: 'Shibuya', place: 'Tokyo, Japan', lat: 35.6604, lon: 139.6983, v: ['d1JuNg7knNo'], by: '', best: 'any' },
+  { id: 'sydney', kind: 'yt', name: 'Sydney Harbour', place: 'Sydney, Australia', lat: -33.8568, lon: 151.2153, c: ['webcamsydney'], by: 'WebcamSydney', best: 'any' },
+  { id: 'auckland', kind: 'yt', name: 'Viaduct Harbour', place: 'Auckland, New Zealand', lat: -36.8431, lon: 174.759, c: ['UCfNoVlW5-BHsoCKTGs_F0WQ'], by: '', best: 'any' },
 ];
 
 const MEM = new Map(); // what has been fetched, for as long as this copy of the Worker is awake (Cloudflare's cache does nothing on workers.dev)
@@ -135,7 +154,8 @@ async function ytNow(cam) {
       if (t.includes('"isLiveNow":false') || t.includes('"playabilityStatus":{"status":"ERROR"')) out = { id: null, live: false };
     }
     if (!out.id) for (const c of cam.c || []) {
-      const t = await ytPage('@' + c + '/live');
+      // a handle (sen), or a channel's own id (UC and 22 more) for channels that have no handle
+      const t = await ytPage((/^UC[\w-]{22}$/.test(c) ? 'channel/' + c : '@' + c) + '/live');
       const k = /<link rel="canonical" href="https:\/\/www\.youtube\.com\/watch\?v=([\w-]{11})"/.exec(t);
       if (k && t.includes('"isLiveNow":true')) { out = { id: k[1], live: true }; break; }
       if (t && out.live === null && t.includes('"channelMetadataRenderer"')) out = { id: null, live: false };

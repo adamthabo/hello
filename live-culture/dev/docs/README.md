@@ -60,6 +60,12 @@ Artifact: https://claude.ai/artifact/PCzaFJH2vjXe4Kv8KK4Xic (publish to this URL
    to build in (walls, fans, drains, smoke that rises, whirlpools) with puzzles, each of which brings more of the band in (seven
    puzzles at first; five since noon on 10 Nov, when only five passed the test of not solving themselves). Real time is the hosted version: say so plainly rather than dressing up the snapshot.
 
+12. **What his fourth look (10 Nov, 11:15 to 13:05) settled.** "I have no idea what any of that first page does. Makes no sense":
+   rule 5 changed (names on the tools, one plain line saying what a world is). Then "More more more!!!! ... I want the satellites
+   animated in orbit. I want many many more videos. I want just more better." Asked whether Orbit should open sped up or in real
+   time, he chose "Real time, flowing trails": the satellites stay where they are this second, each with a trail of its last
+   minutes along which light runs; the ×60 chip still flies them. The Live world went from 10 cameras to 29.
+
 ## What the page is
 
 One screen. The world fills it edge to edge; top left its name and a few lines of live readings; top right a photo button in
@@ -77,7 +83,7 @@ the page stops asking. `node tools/t_lock.js` plays such a phone.
 |---|---|---|---|
 | Smoke | a real fluid (GPU stable fluids) with ink that rises like smoke; a photo becomes the ink and remembers itself. A machine to build in: walls stop the water and the ink, fans push it (and breathe ink), drains swallow it. Five puzzles: fixed sources breathe coloured jets of smoke and each ring ("cup" in the code) wants its colour (a white ring wants cyan and amber together); a ring fills only while smoke of its colour, and nothing else, streams through it, so no puzzle solves itself; build a wall or a fan or two to fill every ring (1: a wall turns a jet; 2: a fan pushes one; 3: a fan sends one down, which smoke never does by itself; 4: a lid stops the jet that pushes the right one aside; 5: two fans bring cyan and amber together). Each solved brings the band in: the shekere, the djembe, the talking drum and the agogo, the balafon and the kora, the electric guitar last | the tools along the bottom, each named: the hand (drag: push, ink; tap: a drop; stay: a spring), wall (drag: a straight wall whose ends join others; tap one: away), fan (drag: where and which way; tap one: away), drain (tap), the puzzles, and "again"; two fingers turning: a whirlpool, closing: pull the water in, opening: throw it out. In a puzzle the hand moves the water but leaves no ink | glass notes, nine rows; a thump for a wall, a kalimba note for a fan, a bowl for a drain, glass for each cup filled, a bowl and two glass notes for a puzzle solved |
 | Wind | layers that can be switched along the bottom: the wind, the clouds, the rain, the Sun (the clouds and the rain only where the page is served live). The globe (Blue Marble, city lights, the real day/night line) wrapped in the real wind shown as smoke (NOAA's GFS 10 m wind carrying thousands of small plumes); the strongest fires of the last day (NASA FIRMS) as embers, their smoke carried off by the same wind; the tropical storms turning now, by name; the aurora where NOAA expects it; the last half hour's lightning as the GOES satellites saw it | one finger: turn the Earth (it coasts); tap a place: its wind, the Sun's height, the hour by the Sun, the aurora, lightning near (tap a fire or a storm: what is known of it); two fingers: slide to turn, pinch to come closer | glass notes by latitude; a soft shaker tick for each lightning flash (the half hour replayed over sixteen bars) |
-| Orbit | every working satellite (about 15,900) and four wreckage clouds (about 2,700 pieces) round the Earth, each solved from its published orbit by the graphics chip every frame, in real time; real stars behind; the Earth lit for the moment shown | one finger: turn; pinch: travel out to the geostationary ring; two fingers turning: wind time (one turn = 90 min; it goes on at its own pace from there); tap a satellite: its card; the chip: "Now" back to the present when time is wound, "×60" to run it fast | glass when the two space stations and a dozen Earth-watching satellites cross between sunlight and shadow; a glass note on a tap |
+| Orbit | every working satellite (about 15,900) and four wreckage clouds (about 2,700 pieces) round the Earth, each solved from its published orbit by the graphics chip every frame, in real time, each with a trail of its last nine minutes along which light runs towards it (so in real time, when a lap takes an hour and a half, the eye still sees everything going round); real stars behind; the Earth lit for the moment shown | one finger: turn; pinch: travel out to the geostationary ring; two fingers turning: wind time (one turn = 90 min; it goes on at its own pace from there); tap a satellite: its card; the chip: "Now" back to the present when time is wound, "×60" to run it fast | glass when the two space stations and a dozen Earth-watching satellites cross between sunlight and shadow; a glass note on a tap |
 
 **The satellite card** (`cardBuild`, `cardLive` in `13-orbit.js`): name; kind, status and owner; catalogue number and international
 designator; launch date and site and years up; perigee and apogee, tilt and period (from the element set); where it is over now, its
@@ -213,7 +219,8 @@ governor is live in this test and the headless browser draws slowly, so Smoke us
   real wind is bringing it (semi-Lagrangian, speeded up about 30,000 times), fed by small fixed "fires" that each burn a few seconds,
   by a haze where the wind is strong, and by the real fires (each a point drawn into the picture every frame, `P.pts`). The storms are
   drawn over the globe; a tap goes to the storm's eye or the fire under the finger before the place.
-  Orbit: two vertices a satellite in one static buffer (the body, and the same body a little earlier for its tail); the vertex shader
+  Orbit: eight vertices a satellite in one static buffer (its trail in four pieces, from the body to the same body nine minutes
+  earlier, light running along it), and the bodies alone in a second (a stride of eight would pass WebGL's 255-byte limit); the vertex shader
   solves Kepler's equation; the angles are brought forward to a new base time every ten hours of shown time so the numbers stay small.
 - `20-ui.js` the worlds table, pointers (real fingers `PT`, ghost fingers `GP`, a hovering mouse), two-finger gestures, the hints, the
   music's note and circles (`swSync`, `dotsBuild`), the photo, saving, keys.
@@ -264,9 +271,13 @@ whether a push went live (`gh api repos/adamthabo/live-culture/commits/<sha>/che
   map via clouds.matteason.co.uk, 3-hourly), the rain (NASA IMERG precipitation rate from NASA GIBS WMS, the newest half hour that has
   data, about four hours back), NOAA GOES-19 and GOES-18 full-disk GeoColor pictures, and YouTube streams.
 - The Live world is `src/14-live.js` (in the hosted build only). The cameras are listed in `worker.js` (`CAMS`); to add one, copy a
-  line. Streams found on 10 Nov: Sen's 4K camera on the ISS, explore.org's northern lights camera at Churchill, NASASpaceflight's
-  Starbase, Monterey Bay Aquarium's sea nettles, NamibiaCam's waterhole, Sakurajima, Mount Fuji, Shibuya. None could be checked from
-  here (the session reaches only GitHub): the Worker finds which are on the air and the page passes over the rest.
+  line (west to east, so a swipe goes round the world). 29 cameras since 10 Nov, 13:30 (his words: "I want many many more videos"):
+  the ISS (Sen), Kilauea, Vancouver, Monterey's sea nettles, Las Vegas, Jackson Hole, Starbase, Churchill's aurora, Satellite Beach,
+  Times Square, Maho Beach, Rio's Christ the Redeemer, Amsterdam, Venice, St Peter's, Etna, three African waterholes (Namib, Onguma,
+  Hwange), Posio's aurora in Lapland, Singapore, Hong Kong, Sakurajima, Fuji, Shibuya, Sydney, Auckland, and the two GOES pictures.
+  Found by web search on 10 Nov; none could be checked from here (the session cannot reach YouTube, workers.dev, or play video): the
+  Worker asks YouTube which are on the air and the page passes over the rest. Video ids change when a stream restarts: give a channel
+  (`c`, a handle or a UC id) where one is known.
 - Testing here: `node tools/hostmock.mjs` (port 8758) runs the real `worker.js` with every upstream played from local files and a few
   made-up YouTube pages; `node tools/t_hosted.js` checks the live reading, the clouds and rain on the globe, the merged orbits, and the
   Live world with a stand-in for YouTube's player (and without it). What it cannot check: the real sources' answers from Cloudflare,

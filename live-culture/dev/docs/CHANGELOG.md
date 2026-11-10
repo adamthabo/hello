@@ -1,6 +1,29 @@
 # Changelog
 
 ## For the owner
+10 Nov 2026, 13:30, after "More more more!!!! ... I want the satellites animated in orbit. I want many many more videos" and your
+choice of "Real time, flowing trails":
+
+- **The satellites stream round the Earth.** Each one keeps its real place this second and now has a trail of its last nine minutes,
+  with light running along it towards the satellite, so the whole swarm visibly flows in its orbits. Pinch in to see them close.
+  The ×60 chip still makes them fly.
+- **29 live cameras instead of 10** (on your Cloudflare site): Kilauea, Vancouver, Las Vegas, Jackson Hole, Satellite Beach, Times
+  Square, planes over Maho Beach, Rio's Christ the Redeemer, Amsterdam, Venice, St Peter's in Rome, Etna, two more African waterholes,
+  the northern lights in Lapland, Singapore, Hong Kong, Sydney Harbour and Auckland join the ten from before. Swipe to go round the
+  world west to east, or tap a mark on the globe. A camera that is off the air is passed over.
+
+Tested by machine only: the cameras could not be watched from here.
+
+## 10 Nov 2026, 13:30: satellite trails, 29 cameras
+- `13-orbit.js`: trails. Each body has `2*TN` entries (`TN`=4 pieces) in the list the chip solves, `k` running 0 at the body to 1
+  at the far end, drawn as lines by `TVS`/`TFS` (from `VS` with one Kepler step fewer; `TFS` fades the trail and runs a band of light
+  towards the body, phase `uPh`, held still under reduced motion). Nine minutes long in real time, fourteen at speed. The bodies are
+  drawn from a list of their own (`HB`, `satH`): reading every eighth entry would need a stride over WebGL's limit of 255 bytes.
+  (Drawing copies with `ANGLE_instanced_arrays` was tried first: the headless browser drew Orbit at 2 frames a second, against 8 now
+  and 13 without trails.) "Now" returns to the present over a fixed second and a half of the clock (`ret={t0,from}`), not by frames.
+- `worker.js`: `CAMS` from 10 to 29, west to east; `c` may be a channel's UC id as well as a handle. `t_hosted.js` expects 25 or more.
+
+## For the owner (12:50)
 10 Nov 2026, early afternoon, after "I have no idea what any of that first page does. Makes no sense." and "There nothing there yet!":
 
 - **Smoke says what it is.** The line at the top now reads "real smoke, worked out as it moves: push it with a finger, tap for a

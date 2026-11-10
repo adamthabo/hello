@@ -31,7 +31,7 @@ Nothing to set up: no keys, no accounts, no settings. Every source it reads is p
 | Fires | NASA FIRMS, the strongest of the last day (github.com/juvenile454/planetary-lens-live-data) | every 15 minutes |
 | Storms | NOAA National Hurricane Center and GDACS (github.com/metacog-osint/elements) | hourly |
 | The whole Earth | NOAA GOES-19 and GOES-18 full-disk GeoColor pictures | every 10 minutes |
-| Live cameras | YouTube live streams: the space station (Sen), the northern lights at Churchill (explore.org), Starbase (NASASpaceflight), Monterey Bay Aquarium, a waterhole in the Namib (NamibiaCam), Sakurajima, Mount Fuji, Shibuya | live |
+| Live cameras | YouTube live streams, 27 of them, plus the two satellites' pictures: the space station (Sen); Kilauea; Vancouver harbour; Monterey Bay Aquarium's sea nettles; the Las Vegas Strip; Jackson Hole's town square; Starbase (NASASpaceflight); the northern lights at Churchill (explore.org) and at Posio in Lapland; the Space Coast at Satellite Beach; Times Square (EarthCam); planes over Maho Beach; Christ the Redeemer in Rio; Amsterdam; Venice; St Peter's in Rome; Etna; waterholes in the Namib, at Onguma by Etosha and in Hwange; downtown Singapore; Victoria Harbour from the Peak; Sakurajima; Mount Fuji; Shibuya; Sydney Harbour; Auckland's Viaduct Harbour | live |
 
 In the Live world the window sits over the Earth, turned to where the camera is; the readout gives the place's hour by the Sun, the Sun's height, the wind there, the satellites above its horizon. Swipe for the next camera east or west, tap a mark on the globe to go there, spread two fingers to come closer. The cameras' own sound is never played: the band is the sound. A camera that is off the air is passed over; if YouTube's player cannot load at all, the satellites' pictures of the whole Earth are shown instead.
 
@@ -45,7 +45,7 @@ In the Live world the window sits over the Earth, turned to where the camera is;
 
 It is not an open proxy: names outside its lists get a 404. It stores nothing. CelesTrak asks that the same list be fetched at most every two hours; the Worker keeps it that long.
 
-**To add a camera:** copy a line in `CAMS`, give it a short id (a-z, 0-9, -), a name and place, its latitude and longitude, and either the stream's video id (`v`) or the channel's handle (`c`, without the @). Push; it deploys.
+**To add a camera:** copy a line in `CAMS` (they run west to east, so a swipe goes round the world), give it a short id (a-z, 0-9, -), a name and place, its latitude and longitude, and the stream's video ids (`v`, tried in order) and/or the channel (`c`: its handle without the @, or its id beginning UC). Push; it deploys. A camera that is off the air is passed over.
 
 ## The source
 

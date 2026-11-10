@@ -9,7 +9,7 @@
    card, below): every line of it is a real figure, from the catalogue or worked out from the orbit. When one of the bright
    ones crosses between sunlight and the Earth's shadow, it rings. ---------- */
 var ORBIT=(function(){
-  var P=null,gen=-1,satB=null,satN=0,satV=-1,starB=null,starN=0,EL=null,GRP=null,FLG=null,VB=null,baseT=0,
+  var P=null,gen=-1,satB=null,satH=null,HB=null,satN=0,satV=-1,starB=null,starN=0,EL=null,GRP=null,FLG=null,VB=null,baseT=0,
     g={cx:0,cy:0,R:100,E:[0,0,0],N:[0,0,0],C:[0,0,0]},lat0=22,lon0=clamp(-(new Date().getTimezoneOffset())/4,-180,180),zoom=.86,vlon=0,vlat=0,idle=0,
     off=0,spd=1,want=1,ret=false,drag=0,keyRate=0,simMs=Date.now(),th=0,RE3=[0,0,0],RN3=[0,0,0],RC3=[0,0,0],
     sunV=[0,0,0],moonV=[0,0,0],sunE=[0,0,0],moonI=null,issI=-1,sel=-1,selQ=[0,0,0],selI=null,path=null,pathAt=0,notable=[],lit=[],tmp=[0,0,0],tq=[0,0,0],
@@ -35,6 +35,16 @@ var ORBIT=(function(){
     'v_c=vec4(a_c.rgb*hid*(q.z<0.0?0.5:1.0)*(a_e1.x<1.7?uGain:1.0),1.0-k);}';
   var FS='precision mediump float;varying vec4 v_c;uniform float uLine;\nvoid main(){if(uLine>0.0){gl_FragColor=vec4(v_c.rgb*v_c.a*uLine,1.0);return;}\n'+
     'vec2 d=gl_PointCoord-0.5;float r2=dot(d,d)*4.0;if(r2>1.0)discard;float a=exp(-r2*5.0)+exp(-r2*1.5)*0.22*(1.0-r2);gl_FragColor=vec4(v_c.rgb*a,1.0);}';
+  /* the trails: each satellite's path over the last minutes, as seen from the ground: TN short pieces, each piece's two ends the
+     same body at two moments (k runs 0 at the body to 1 at the far end). The body stays where it really is this second; light runs
+     along the trail towards it, so that in real time, when a lap takes an hour and a half, the eye still sees which way everything
+     is going. (Kepler's equation is solved a step less finely here: the trail is a few pixels wide) */
+  var TN=4,TRAILS=true;
+  var TVS=VS.replace('attribute vec4 a_c;','attribute vec4 a_c;varying float v_ph;')
+    .replace('E=E-(E-e*sin(E)-M)/(1.0-e*cos(E));E=E-(E-e*sin(E)-M)/(1.0-e*cos(E));E=E-(E-e*sin(E)-M)/(1.0-e*cos(E));','E=E-(E-e*sin(E)-M)/(1.0-e*cos(E));E=E-(E-e*sin(E)-M)/(1.0-e*cos(E));')
+    .replace('v_c=vec4(a_c.rgb*hid*(q.z<0.0?0.5:1.0)*(a_e1.x<1.7?uGain:1.0),1.0-k);}','v_c=vec4(a_c.rgb*hid*(q.z<0.0?0.4:1.0)*(a_e1.x<1.7?uGain:1.0),k);v_ph=fract(a_e3.x*0.1591549+a_e2.x*0.2347);}');
+  var TFS='precision mediump float;varying vec4 v_c;varying float v_ph;uniform float uLine;uniform float uPh;\n'+
+    'void main(){float f=v_c.a;float fade=(1.0-f)*(1.0-f);float w=fract(f*1.6+uPh+v_ph);float band=exp(-w*5.0);gl_FragColor=vec4(v_c.rgb*uLine*fade*(0.3+1.5*band),1.0);}';
   /* the stars, far behind: the half of the sky beyond the Earth, turning as the Earth turns */
   var SVS='attribute vec3 a_p;attribute vec4 a_c;uniform vec3 uE;uniform vec3 uN;uniform vec3 uV;uniform vec2 uC;uniform vec2 uRes;uniform float uR;uniform float uS;uniform float uPt;varying vec3 v_c;\n'+
     'void main(){vec3 q=vec3(dot(a_p,uE),dot(a_p,uN),dot(a_p,uV));vec2 s=uC+vec2(q.x,-q.y)*uS;float show=(q.z<0.0&&length(q.xy)*uS>uR*1.03)?1.0:0.0;\n'+
@@ -42,7 +52,8 @@ var ORBIT=(function(){
   var SFS='precision mediump float;varying vec3 v_c;\nvoid main(){vec2 d=gl_PointCoord-0.5;float r2=dot(d,d)*4.0;if(r2>1.0)discard;float a=exp(-r2*7.0)+exp(-r2*2.2)*0.28*(1.0-r2);gl_FragColor=vec4(v_c*a,1.0);}';
   function bvCol(bv){var t=clamp((bv+.4)/2.4,0,1),s=[[.61,.70,1],[.79,.85,1],[1,.97,.93],[1,.84,.63],[1,.71,.42],[1,.55,.3]],x=t*5,i=Math.min(4,Math.floor(x)),k=x-i;return [lerp(s[i][0],s[i+1][0],k),lerp(s[i][1],s[i+1][1],k),lerp(s[i][2],s[i+1][2],k)]}
   function glSetup(){
-    if(!GLX.ok)return;var gl=GLX.gl,i;gen=GLX.gen;satB=null;satV=-1;P={sat:glProg(VS,FS),star:glProg(SVS,SFS)};if(!P.sat||!P.star){P=null;return}
+    if(!GLX.ok)return;var gl=GLX.gl,i;gen=GLX.gen;satB=null;satH=null;satV=-1;P={sat:glProg(VS,FS),star:glProg(SVS,SFS)};if(!P.sat||!P.star){P=null;return}
+    P.trail=glProg(TVS,TFS);
     var b=b64bytes(STARS_B64),dv=new DataView(b.buffer),n=b.length/6,a=new Float32Array(n*7);starN=n;
     for(i=0;i<n;i++){var ra=dv.getUint16(i*6,true)/65536*TAU,dec=dv.getInt16(i*6+2,true)/32767*Math.PI/2,mag=b[i*6+4]/255*8-1.5,c=bvCol(b[i*6+5]/255*2.4-.4),br=clamp(1.1-mag*.15,.22,1.2);
       a[i*7]=Math.cos(dec)*Math.cos(ra);a[i*7+1]=Math.cos(dec)*Math.sin(ra);a[i*7+2]=Math.sin(dec);a[i*7+3]=c[0]*br;a[i*7+4]=c[1]*br;a[i*7+5]=c[2]*br;a[i*7+6]=clamp(4.6-mag*.6,1.3,6)}
@@ -59,9 +70,9 @@ var ORBIT=(function(){
         d0=.75*J2*RE*RE/(a0*a0)*(3*ci*ci-1)/(b*b*b),n0=nr/(1+d0),a=a0/(1-d0),p=a*(1-e*e),kk=J2*(RE/p)*(RE/p),q=k*11;
       EL[q]=a/RE;EL[q+1]=e;EL[q+2]=ci;EL[q+3]=Math.sin(inc);EL[q+4]=Om;EL[q+5]=-1.5*kk*n0*ci*60;EL[q+6]=w;EL[q+7]=.75*kk*n0*(5*ci*ci-1)*60;EL[q+8]=M;EL[q+9]=n0*(1+.75*kk*b*(3*ci*ci-1))*60;EL[q+10]=ep;
       GRP[k]=gr;FLG[k]=fl;if(k!==i){S.names[k]=S.names[i];if(S.ids)S.ids[k]=S.ids[i]}k++}
-    satN=k;VB=new Float32Array(satN*32);
+    satN=k;VB=new Float32Array(satN*TN*32);HB=new Float32Array(satN*16);
     for(i=0;i<satN;i++){var c=KCOL[GRP[i]],br=(GRP[i]===1?.62:GRP[i]===9?.55:1)*(FLG[i]&1?1.25:1),sz=KSZ[GRP[i]]+(FLG[i]&1?1.2:0),v;
-      for(v=0;v<2;v++){var o2=(i*2+v)*16,q2=i*11;VB[o2]=EL[q2];VB[o2+1]=EL[q2+1];VB[o2+2]=EL[q2+2];VB[o2+3]=EL[q2+3];VB[o2+5]=EL[q2+5];VB[o2+7]=EL[q2+7];VB[o2+9]=EL[q2+9];VB[o2+10]=GRP[i];VB[o2+11]=v;
+      for(v=0;v<TN*2;v++){var o2=(i*TN*2+v)*16,q2=i*11;VB[o2]=EL[q2];VB[o2+1]=EL[q2+1];VB[o2+2]=EL[q2+2];VB[o2+3]=EL[q2+3];VB[o2+5]=EL[q2+5];VB[o2+7]=EL[q2+7];VB[o2+9]=EL[q2+9];VB[o2+10]=GRP[i];VB[o2+11]=((v>>1)+(v&1))/TN;
         VB[o2+12]=c[0]*br;VB[o2+13]=c[1]*br;VB[o2+14]=c[2]*br;VB[o2+15]=sz}}
     /* the ones that ring: the two space stations, and a dozen of the satellites that watch the Earth (the weather and the land) */
     notable=[];lit=[];var watch=[];
@@ -72,9 +83,12 @@ var ORBIT=(function(){
   /* the chip counts time from a moment not far off, so its numbers stay small and exact: every ten hours of shown time the angles are
      brought forward to a new moment */
   function rebase(ms){
-    if(!VB)return;baseT=ms;for(var i=0;i<satN;i++){var q=i*11,dm=(ms-EL[q+10])/60000,O=(EL[q+4]+EL[q+5]*dm)%TAU,w=(EL[q+6]+EL[q+7]*dm)%TAU,M=(EL[q+8]+EL[q+9]*dm)%TAU,o=i*32;
-      VB[o+4]=O;VB[o+6]=w;VB[o+8]=M;VB[o+20]=O;VB[o+22]=w;VB[o+24]=M}
-    if(GLX.ok&&gen===GLX.gen){var gl=GLX.gl;if(!satB)satB=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,satB);gl.bufferData(gl.ARRAY_BUFFER,VB,gl.DYNAMIC_DRAW)}}
+    if(!VB)return;baseT=ms;for(var i=0;i<satN;i++){var q=i*11,dm=(ms-EL[q+10])/60000,O=(EL[q+4]+EL[q+5]*dm)%TAU,w=(EL[q+6]+EL[q+7]*dm)%TAU,M=(EL[q+8]+EL[q+9]*dm)%TAU,o=i*TN*32,v;
+      for(v=0;v<TN*2;v++,o+=16){VB[o+4]=O;VB[o+6]=w;VB[o+8]=M}}
+    /* the bodies alone, one entry each (a list read every eighth entry would need a stride WebGL does not allow) */
+    for(i=0;i<satN;i++)HB.set(VB.subarray(i*TN*32,i*TN*32+16),i*16);
+    if(GLX.ok&&gen===GLX.gen){var gl=GLX.gl;if(!satB)satB=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,satB);gl.bufferData(gl.ARRAY_BUFFER,VB,gl.DYNAMIC_DRAW);
+      if(!satH)satH=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,satH);gl.bufferData(gl.ARRAY_BUFFER,HB,gl.DYNAMIC_DRAW)}}
   /* the same sum on this side, for one body: where it is (Earth radii, the frame of the stars), for taps, names and bells */
   function place(i,ms,o){var q=i*11,dm=(ms-EL[q+10])/60000,e=EL[q+1],M=EL[q+8]+EL[q+9]*dm,E=AS.kepler(M,e),a=EL[q],xp=a*(Math.cos(E)-e),yp=a*Math.sqrt(1-e*e)*Math.sin(E),
       w=EL[q+6]+EL[q+7]*dm,O=EL[q+4]+EL[q+5]*dm,cw=Math.cos(w),sw=Math.sin(w),cO=Math.cos(O),sO=Math.sin(O),cI=EL[q+2],sI=EL[q+3];
@@ -120,7 +134,8 @@ var ORBIT=(function(){
   function resize(){geo()}
   /* the chip: from the present to fast time, and from fast or wound time back to the present. The present is where it starts: the owner
      asked for the satellites in real time */
-  function toNow(){if(live()){want=60;return}ret=true;want=1;spd=1}
+  /* back to the present: over a second and a half of the clock, however slowly the frames come */
+  function toNow(){if(live()){want=60;return}ret={t0:FT,from:off};want=1;spd=1}
   function ghostEnd(){}
   function down(p){idle=0;vlon=vlat=0}
   function move(p){if(p.n>=2)return;var k=57.2958/g.R;lon0-=(p.x-p.px)*k/Math.max(.35,Math.cos(lat0*AS.D));lat0=clamp(lat0+(p.y-p.py)*k,-85,85);
@@ -149,7 +164,7 @@ var ORBIT=(function(){
     lon0=AS.n180(lon0);GLOBE.basis(lat0,lon0,g);
     /* time */
     if(keyRate){off+=keyRate*dt*5400000*.35;ret=false}
-    if(ret){off*=Math.exp(-dt*5);if(Math.abs(off)<700){off=0;ret=false}}
+    if(ret){if(ret===true)ret={t0:FT,from:off};var rk=clamp((FT-ret.t0)/1500,0,1);off=ret.from*(1-smooth(rk));if(rk>=1){off=0;ret=false}}
     else if(drag===2){drag=0}
     else{spd+=(want-spd)*Math.min(1,dt*1.6);if(Math.abs(spd-want)<.02)spd=want;off+=(spd-1)*dt*1000}
     /* two days ahead is far enough: come home, and set off again */
@@ -180,7 +195,7 @@ var ORBIT=(function(){
     gl.uniform2f(u.uC,g.cx,g.cy);gl.uniform2f(u.uRes,VW,VH);gl.uniform1f(u.uR,g.R);gl.uniform1f(u.uS,Math.hypot(VW,VH)*.56);gl.uniform1f(u.uPt,DPR*(1+.2*HIT[1]*G[1]));
     gl.bindBuffer(gl.ARRAY_BUFFER,starB);gl.enableVertexAttribArray(a.a_p);gl.vertexAttribPointer(a.a_p,3,gl.FLOAT,false,28,0);gl.enableVertexAttribArray(a.a_c);gl.vertexAttribPointer(a.a_c,4,gl.FLOAT,false,28,12);
     gl.drawArrays(gl.POINTS,0,[starN,Math.min(starN,3000),Math.min(starN,1800)][QL]);
-    if(satB&&satN){
+    if(satB&&satH&&satN){
       var n=[satN,Math.min(satN,12500),Math.min(satN,8000)][QL],fast=clamp((Math.abs(spd)-1)/40,0,1);
       glAttrOff();u=P.sat.u;a=P.sat.a;gl.useProgram(P.sat.p);gl.uniform3f(u.uE,RE3[0],RE3[1],RE3[2]);gl.uniform3f(u.uN,RN3[0],RN3[1],RN3[2]);gl.uniform3f(u.uV,RC3[0],RC3[1],RC3[2]);
       gl.uniform2f(u.uC,g.cx,g.cy);gl.uniform2f(u.uRes,VW,VH);gl.uniform1f(u.uR,g.R);gl.uniform1f(u.uT,(simMs-baseT)/60000);gl.uniform1f(u.uTail,lerp(1.2,3.2,fast));
@@ -189,9 +204,15 @@ var ORBIT=(function(){
       gl.bindBuffer(gl.ARRAY_BUFFER,satB);
       var ptr=function(stride){gl.enableVertexAttribArray(a.a_e1);gl.vertexAttribPointer(a.a_e1,4,gl.FLOAT,false,stride,0);gl.enableVertexAttribArray(a.a_e2);gl.vertexAttribPointer(a.a_e2,4,gl.FLOAT,false,stride,16);
         gl.enableVertexAttribArray(a.a_e3);gl.vertexAttribPointer(a.a_e3,4,gl.FLOAT,false,stride,32);gl.enableVertexAttribArray(a.a_c);gl.vertexAttribPointer(a.a_c,4,gl.FLOAT,false,stride,48)};
-      /* the tails, then the bodies (every other entry of the same list) */
-      ptr(64);gl.uniform1f(u.uLine,.34+.3*fast);gl.drawArrays(gl.LINES,0,n*2);
-      ptr(128);gl.uniform1f(u.uLine,0);gl.drawArrays(gl.POINTS,0,n)}
+      /* the trails, then the bodies (the first entry of each body's run in the same list) */
+      if(P.trail&&TRAILS){var tu=P.trail.u,ta=P.trail.a;glAttrOff();gl.useProgram(P.trail.p);
+        gl.uniform3f(tu.uE,RE3[0],RE3[1],RE3[2]);gl.uniform3f(tu.uN,RN3[0],RN3[1],RN3[2]);gl.uniform3f(tu.uV,RC3[0],RC3[1],RC3[2]);gl.uniform2f(tu.uC,g.cx,g.cy);gl.uniform2f(tu.uRes,VW,VH);
+        gl.uniform1f(tu.uR,g.R);gl.uniform1f(tu.uT,(simMs-baseT)/60000);gl.uniform1f(tu.uTail,lerp(9,14,fast));gl.uniform1f(tu.uGain,clamp(.1+zoom*1.05,.2,1));gl.uniform1f(tu.uPt,1);
+        gl.uniform1f(tu.uLine,clamp(.1+zoom*.12,.12,.3)*(1+.5*fast));gl.uniform1f(tu.uPh,reduce?0:(t*.00055)%1);
+        [['a_e1',0],['a_e2',16],['a_e3',32],['a_c',48]].forEach(function(x){var l=ta[x[0]];if(l>=0){gl.enableVertexAttribArray(l);gl.vertexAttribPointer(l,4,gl.FLOAT,false,64,x[1])}});
+        gl.drawArrays(gl.LINES,0,n*TN*2);glAttrOff();gl.useProgram(P.sat.p)}
+      else if(!P.trail){ptr(64);gl.uniform1f(u.uLine,.34+.3*fast);gl.drawArrays(gl.LINES,0,n*TN*2)}
+      gl.bindBuffer(gl.ARRAY_BUFFER,satH);ptr(64);gl.uniform1f(u.uLine,0);gl.drawArrays(gl.POINTS,0,n)}
     gl.disable(gl.BLEND);
     /* the one that was asked about: its orbit, a ring round it, its name */
     var c=OV;
@@ -214,6 +235,8 @@ var ORBIT=(function(){
     place:function(i,ms){var p=place(i,ms,[0,0,0]);return [p[0]*RE,p[1]*RE,p[2]*RE]},nameOf:nameOf,
     look:function(la,lo,zm){lat0=la;lon0=lo;if(zm){zoom=zm;geo()}idle=-1e6;vlon=vlat=0},
     time:function(o,w){off=o;if(w!==undefined){want=w;spd=w}ret=false},
+    /* for the tests: the trails off (the governor's test wants a world whose drawing costs next to nothing) */
+    trails:function(b){TRAILS=!!b},
     /* how many satellites are above the horizon of a place now, and how far away the space station is (km; -1 if not known) */
     above:function(la,lo,ms){if(LIVE.sats&&satV!==LIVE.ver.sats)unpack();if(!EL||!satN)return null;var th=AS.gmst(ms)*AS.D,ct=Math.cos(th),st=Math.sin(th),s=AS.llv(la,lo,[0,0,0]),p=tq,n=0,iss=-1,i,X,Y,Z;
       for(i=0;i<satN;i++){place(i,ms,p);X=p[0]*ct+p[1]*st;Y=-p[0]*st+p[1]*ct;Z=p[2];if(X*s[0]+Y*s[1]+Z*s[2]>1.0008)n++;
