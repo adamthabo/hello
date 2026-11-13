@@ -69,7 +69,7 @@ function agoWords(ms){var m=Math.max(0,Math.round(ms/60000));return m<90?m+' min
    reads the sources for itself, through the Worker's /api/feed/<name>, every few minutes, and unpacks each into the same shape as the
    published snapshot, which it starts from. Each source is taken only when it is newer than what the page has. ---------- */
 var PULL={at:{},ok:{},err:{},n:0,timer:0};
-var PULLEVERY={wind:1800000,aurora:300000,strikes:300000,fires:900000,storms:1800000,sats:10800000,clouds:3600000,rain:1800000};
+var PULLEVERY={wind:1800000,aurora:300000,strikes:300000,fires:900000,storms:1800000,sats:10800000,clouds:3600000,rain:1800000,gfs:3600000};
 function hostGet(name,how){return fetch('/api/feed/'+name).then(function(r){if(!r.ok)throw new Error(name+' '+r.status);
   var mod=Date.parse(r.headers.get('last-modified')||'')||0,tm=Date.parse(r.headers.get('x-time')||'')||0;return (how==='text'?r.text():how==='blob'?r.blob():r.json()).then(function(b){return {b:b,mod:mod,time:tm}})})}
 function titleCase(s){return String(s||'').toLowerCase().replace(/(^|[\s\-])([a-z])/g,function(m,a,b){return a+b.toUpperCase()})}
@@ -138,6 +138,20 @@ function satsMerge(act,deb,fetched){
   LIVE.sats={asOf:base,src:'CelesTrak',n:m,bytes:out.subarray(0,m*20),names:names,ids:new Uint32Array(ids),fresh:fetched||now,live:act.length};LIVE.ver.sats++;return true}
 /* the real clouds, as the geostationary satellites see them (EUMETSAT's world cloud map, every three hours), for the globe */
 var CLOUD={img:null,at:0,ver:0},RAIN={img:null,at:0,ver:0};
+/* the weather model's own fields (NOAA's GFS, its newest run's picture of now), read from GRIB2 on the device: the temperature two
+   metres up, the pressure at sea level (and its highs and lows), the wind ten kilometres up (the jet streams), the height of the waves */
+var WX={t2m:null,mslp:null,jet:null,wave:null,at:0,ver:0,hl:[]};
+function wxTake(name,buf,tm){var m=GRIB.msgs(buf);if(!m.length)throw new Error(name+': nothing read');
+  if(name==='jet'){var u=null,v=null;m.forEach(function(f){if(f.cat===2&&f.par===2)u=f;if(f.cat===2&&f.par===3)v=f});if(!u||!v)throw new Error('jet: no wind');WX.jet={u:u,v:v}}
+  else WX[name]=m[0];
+  WX.at=Math.max(WX.at,Date.parse(tm||'')||m[0].time||0);if(name==='mslp')WX.hl=highsLows(m[0]);WX.ver++}
+/* the highs and lows: a point higher (or lower) than everything within ten degrees, and high or low enough to be one */
+function highsLows(m){var out=[],la,lo,k;function P(a,b){var v=GRIB.at(m,a,b);return v/100}
+  for(la=-74;la<=74;la+=2)for(lo=-180;lo<180;lo+=2){var p=P(la,lo);if(!(p>1019||p<1001))continue;var hi=p>1019,best=true;
+    for(var a=-10;a<=10&&best;a+=2)for(var b=-10;b<=10;b+=2){if(!a&&!b)continue;var q=P(clamp(la+a,-89,89),lo+b/Math.max(.3,Math.cos(la*AS.D)));if(hi?q>p:q<p){best=false;break}}
+    if(best){for(k=0;k<out.length;k++)if(out[k].h===hi&&Math.abs(out[k].lat-la)<9&&Math.abs(AS.n180(out[k].lon-lo))<12)break;if(k===out.length&&out.length<60)out.push({lat:la,lon:lo,hpa:Math.round(p),h:hi,v:AS.llv(la,lo)})}}
+  return out}
+function wxGet(name){return fetch('/api/gfs/'+name).then(function(r){if(!r.ok)throw new Error(name+' '+r.status);var tm=r.headers.get('x-time')||'';return r.arrayBuffer().then(function(b){wxTake(name,b,tm)})})}
 function cloudTake(b,mod){try{var u=URL.createObjectURL(b),im=new Image();im.onload=function(){CLOUD.img=im;CLOUD.at=mod||Date.now();CLOUD.ver++;GLOBE.cloud(im)};im.src=u}catch(e){}}
 /* the rain of the last half hour that NASA has finished (IMERG, from the satellites of the GPM constellation; a few hours behind the clock) */
 function rainTake(b,tm){try{var u=URL.createObjectURL(b),im=new Image();im.onload=function(){RAIN.img=im;RAIN.at=tm||0;RAIN.ver++;GLOBE.rain(im)};im.src=u}catch(e){}}
@@ -155,6 +169,8 @@ function livePull(force){
   if(due('sats')&&LIVE.sats)Promise.all([hostGet('tle-active','text')].concat(['fengyun-1c','cosmos-2251','iridium-33','cosmos-1408'].map(function(d){return hostGet('tle-'+d+'-debris','text').catch(function(){return {b:''}})}))).then(function(a){
     var t=Date.now(),act=pTLE(a[0].b,t),deb=a.slice(1).map(function(r){return pTLE(r.b,t)});if(!satsMerge(act,deb,a[0].mod||t))throw new Error('short orbit list '+act.length);PULL.ok.sats=Date.now()}).catch(fail('sats'));
   if(due('clouds'))hostGet('clouds','blob').then(function(r){cloudTake(r.b,r.mod);PULL.ok.clouds=Date.now()}).catch(fail('clouds'));
-  if(due('rain'))hostGet('rain','blob').then(function(r){rainTake(r.b,r.time);PULL.ok.rain=Date.now()}).catch(fail('rain'))}
+  if(due('rain'))hostGet('rain','blob').then(function(r){rainTake(r.b,r.time);PULL.ok.rain=Date.now()}).catch(fail('rain'));
+  /* the model's fields one after another (a few hundred kilobytes each), once an hour */
+  if(due('gfs'))['t2m','mslp','jet','wave'].reduce(function(p,k){return p.then(function(){return wxGet(k).catch(function(e){PULL.err['gfs-'+k]=String(e&&e.message||e).slice(0,80)})})},Promise.resolve()).then(function(){if(WX.t2m||WX.mslp)PULL.ok.gfs=Date.now()})}
 function liveHosted(){if(!HOSTED||PULL.timer)return;livePull(true);PULL.timer=setInterval(function(){livePull(false)},60000);
   document.addEventListener('visibilitychange',function(){if(!document.hidden)livePull(false)})}

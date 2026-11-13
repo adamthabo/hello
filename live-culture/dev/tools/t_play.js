@@ -63,7 +63,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await page.evaluate(() => window.__lc.WIND.look(15, -40, 1)); await sleep(300);
     await T.tap(cx - R * .2, cy + R * .15); await sleep(500); s = await S();
     ok(s.dbg.probe && s.dbg.probe.r && s.dbg.probe.r.wind && /wind \d+ km\/h from [a-z\-]+/.test(s.data) && /by the Sun/.test(s.data), 'wind: a tap should read the place: ' + s.data.replace(/\n/g, ' | '));
-    ok(s.data.split('\n').length === 3, 'wind: the reading is three lines'); await shot('1b_wind_place'); console.log('  ', s.data.replace(/\n/g, ' | '));
+    const rl = s.data.split('\n'); ok(rl.length === 3 || (rl.length === 4 && /^(\d[\d,]* km from )?[^·\d][^·]*, [^·]+$/.test(rl[0])), 'wind: the reading is three lines, after the name of the nearest town if there is one: ' + rl[0]); await shot('1b_wind_place'); console.log('  ', s.data.replace(/\n/g, ' | '));
     await T.tap(X(.03), Y(.02)); await sleep(300); s = await S(); ok(!s.dbg.probe, 'wind: a tap on the dark should put the reading away');
     // a tap on a fire reads the fire
     await page.evaluate(() => { const L = window.__lc, f = L.LIVE.fires.list[0]; L.WIND.look(f.lat, f.lon, 1.6); }); await sleep(1200); s = await S();
@@ -75,7 +75,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     if (st) { await sleep(1200); s = await S(); const sp = s.dbg.storms.find(k => k.name === st.name); await T.tap(sp.x, sp.y); await sleep(500); s = await S();
       ok(s.dbg.probe && s.dbg.probe.r.storm && s.data.indexOf(st.name) >= 0, 'wind: a tap on a storm should read the storm: ' + s.data.replace(/\n/g, ' | ')); await shot('1d_wind_storm'); console.log('  ', s.data.replace(/\n/g, ' | ')); }
     else console.log('   (no tropical storm today)');
-    // two fingers spreading: closer
+    // two fingers spreading: closer (from the whole Earth: a storm tapped has just brought it close)
+    await page.evaluate(() => window.__lc.WIND.look(15, -40, 1)); await sleep(400);
     s = await S(); const z0 = s.dbg.zoom, c2 = s.dbg.cx, c3 = s.dbg.cy; await T.down(1, c2 + 40, c3); await T.down(2, c2 - 40, c3); for (let k = 1; k <= 14; k++) { pts.set(1, { x: c2 + 40 + k * 5, y: c3 }); pts.set(2, { x: c2 - 40 - k * 5, y: c3 }); await send('touchMove'); await sleep(18); } pts.clear(); await send('touchEnd');
     s = await S(); ok(s.dbg.zoom > z0 * 1.2, 'wind: spreading two fingers should come closer, zoom=' + s.dbg.zoom.toFixed(2)); await shot('1e_wind_close');
     await page.evaluate(() => window.__lc.WIND.look(10, -80, 1));

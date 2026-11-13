@@ -31,21 +31,34 @@ Nothing to set up: no keys, no accounts, no settings. Every source it reads is p
 | Fires | NASA FIRMS, the strongest of the last day (github.com/juvenile454/planetary-lens-live-data) | every 15 minutes |
 | Storms | NOAA National Hurricane Center and GDACS (github.com/metacog-osint/elements) | hourly |
 | The whole Earth | NOAA GOES-19 and GOES-18 full-disk GeoColor pictures | every 10 minutes |
-| Live cameras | YouTube live streams, 27 of them, plus the two satellites' pictures: the space station (Sen); Kilauea; Vancouver harbour; Monterey Bay Aquarium's sea nettles; the Las Vegas Strip; Jackson Hole's town square; Starbase (NASASpaceflight); the northern lights at Churchill (explore.org) and at Posio in Lapland; the Space Coast at Satellite Beach; Times Square (EarthCam); planes over Maho Beach; Christ the Redeemer in Rio; Amsterdam; Venice; St Peter's in Rome; Etna; waterholes in the Namib, at Onguma by Etosha and in Hwange; downtown Singapore; Victoria Harbour from the Peak; Sakurajima; Mount Fuji; Shibuya; Sydney Harbour; Auckland's Viaduct Harbour | live |
+| Heat | NOAA GFS, the temperature two metres up, from the newest run's analysis (one value a degree) | each 6-hourly run |
+| Pressure | NOAA GFS, the air pressure at sea level: lines every 4 hPa, the highs and lows named | each 6-hourly run |
+| Jet streams | NOAA GFS, the wind at 250 hPa, about ten kilometres up | each 6-hourly run |
+| Waves | NOAA's wave model (GFS-Wave), the height of the sea's waves | each 6-hourly run |
+| A place, up close | Open-Meteo's forecast for the place you tap: now, the next 24 hours, three days; the rain radar of the last hour or so from RainViewer, over a dark map by CARTO from OpenStreetMap | radar every 10 minutes |
+| Live cameras | YouTube live streams, 84 of them, plus the two satellites' pictures, in eight kinds: animals (13: polar bears at Churchill, waterholes in Kenya, South Africa, Namibia and Zimbabwe, giant pandas, bird feeders, an eagle's nest, gorillas); volcanoes (8: Kilauea, Etna, Stromboli, Reykjanes, Sakurajima, Popocatépetl, Fuego, Merapi); space (7: the space station twice, Starbase twice, the launch pads, GOES-18 and GOES-19); cities (23, from Times Square and Bourbon Street to Shibuya, Tokyo Tower and Sydney Harbour); the sea (10: sea nettles, the kelp forest, sea otters, the open sea, whale sharks, a reef, Waikiki, the Space Coast, Bondi, Nazaré's big waves); night skies (7: northern lights at Churchill, Posio, Abisko, Tromsø, Yellowknife and Fairbanks, the sky over Maunakea); mountains (10: Fuji, the Matterhorn, the Jungfrau, the Dolomites, the Tatras, Old Faithful, Niagara, Banff, Kirkjufell, the Grand Canyon); planes, trains and ships (8: Maho Beach, LAX, La Grange, Ashland, the Panama Canal, the Bosphorus, Rotterdam, Hamburg) | live |
 
-In the Live world the window sits over the Earth, turned to where the camera is; the readout gives the place's hour by the Sun, the Sun's height, the wind there, the satellites above its horizon. Swipe for the next camera east or west, tap a mark on the globe to go there, spread two fingers to come closer. The cameras' own sound is never played: the band is the sound. A camera that is off the air is passed over; if YouTube's player cannot load at all, the satellites' pictures of the whole Earth are shown instead.
+The clouds and the rain are moved by the wind on the device, between the pictures, so the weather never stands still. Tap any place on the Earth for its card; spread two fingers to come closer. Up close, a tropical storm shows its spiral and where it is headed.
+
+In the Live world the camera fills the screen, and a small Earth in a corner shows where it is; tap the Earth for the map of every camera, tap a mark to go there. Swipe for the next camera east or west; the row of kinds picks animals, volcanoes, space and the rest. Left alone, the picture drifts slowly across the scene. The readout gives the place's hour by the Sun, the Sun's height, the wind there, the satellites above its horizon. The cameras' own sound is never played: the band is the sound. A camera that is off the air, or that YouTube will not let another site play, is passed over without being shown; if YouTube's player cannot load at all, the satellites' pictures of the whole Earth are shown instead.
 
 ## What the Worker does and does not do
 
-`worker.js` answers three kinds of request and nothing else:
+`worker.js` answers these requests and nothing else:
 
 - `/api/feed/<name>`: one source from its fixed list (`FEEDS`), fetched for the page and kept in memory for a few minutes. Each source lists where to get it, best first (the official source, then public mirrors); if all fail, the last good copy is served with its own time.
-- `/api/cams`: the list of cameras (`CAMS`).
-- `/api/yt/<camera>`: which video a camera is streaming now (streams restart and change their address).
+- `/api/cams`: the list of cameras (`CAMS`) and their kinds (`THEMES`).
+- `/api/yt/<camera>`: which video a camera is streaming now (streams restart and change their address); `/api/live?ids=a,b,c` asks the same for up to eight cameras at once. A camera is found by its video addresses first, then by what its channel is streaming now, then by a search of what is live on YouTube (its title and its channel must match, and a film looped as a "live" stream is passed over).
+- `/api/gfs/<field>`: one field of NOAA's GFS model, now (`t2m`, `mslp`, `jet`, `wave`). From NOAA's copy on Amazon's open data, then NOAA's own server; the run's index says where the field lies in the file, so only that part is fetched (a few hundred KB) and passed to the page as it is, GRIB2, for the page to read.
+- `/api/wx?lat=&lon=`: the weather at one place from Open-Meteo, now and for the next three days.
+
+Cloudflare's free plan gives a request fifty fetches and a few milliseconds of work: the Worker keeps within both (a request spends at most 46 fetches, what it finds is kept for a while, and the weather model is passed on, not read).
 
 It is not an open proxy: names outside its lists get a 404. It stores nothing. CelesTrak asks that the same list be fetched at most every two hours; the Worker keeps it that long.
 
-**To add a camera:** copy a line in `CAMS` (they run west to east, so a swipe goes round the world), give it a short id (a-z, 0-9, -), a name and place, its latitude and longitude, and the stream's video ids (`v`, tried in order) and/or the channel (`c`: its handle without the @, or its id beginning UC). Push; it deploys. A camera that is off the air is passed over.
+**To add a camera:** copy a line in `CAMS` (they run west to east, so a swipe goes round the world), give it a short id (a-z, 0-9, -), its kind (`t`), a name and place, its latitude and longitude, and a way to find the stream: its video ids (`v`, tried in order), its channel (`c`: its handle without the @, or its id beginning UC) and/or a search (`s`: the words, the title it must have, the channel it must come from). Push; it deploys. A camera that is off the air is passed over.
+
+RainViewer's radar is free for personal use, up to zoom 7, and the card stays within that; the card credits Open-Meteo, RainViewer, OpenStreetMap and CARTO.
 
 ## The source
 

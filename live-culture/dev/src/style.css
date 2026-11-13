@@ -31,11 +31,15 @@ body.sw #gl,body.sw #ov,body.sw .vid{opacity:0}
 .vid{position:fixed;inset:0;z-index:2;pointer-events:none;overflow:hidden;transition:opacity .22s}
 .vid .vb{position:absolute;left:0;top:0;opacity:0;transition:opacity .7s;background:#000;will-change:transform}
 .vid .vb.on{opacity:1}
-.vid .vb.port{-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 9%,#000 91%,transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 9%,#000 91%,transparent 100%)}
-.vid .vb.land{-webkit-mask-image:radial-gradient(ellipse 74% 72% at 50% 50%,#000 66%,transparent 100%);mask-image:radial-gradient(ellipse 74% 72% at 50% 50%,#000 66%,transparent 100%)}
-.vid .vb.disk{background:transparent;-webkit-mask-image:none;mask-image:none}
 .vid #vidp,.vid iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block}
 .vid img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+/* the video fills the screen; the readout and the footer sit on a little shade of their own */
+.vid::before,.vid::after{content:"";position:absolute;left:0;right:0;z-index:1;pointer-events:none}
+.vid::before{top:0;height:150px;background:linear-gradient(to bottom,rgba(1,4,10,.72),rgba(1,4,10,0))}
+.vid::after{bottom:0;height:calc(var(--foot,112px) + 60px);background:linear-gradient(to top,rgba(1,4,10,.8) 0,rgba(1,4,10,.55) 55%,rgba(1,4,10,0))}
+/* Live: the Earth is drawn over the video, cut to a small round window in the corner (the whole screen when the map is open) */
+body.livev .vid{z-index:1}
+body.livev #gl{z-index:2;-webkit-clip-path:circle(var(--gr,0px) at var(--gx,0px) var(--gy,0px));clip-path:circle(var(--gr,0px) at var(--gx,0px) var(--gy,0px))}
 .vid.tap{z-index:4}
 .vid.tap .vb{pointer-events:auto}
 /* a little dusk at the top, so the readings can be read over anything bright (a photo, the day side of the Earth) */
@@ -76,6 +80,10 @@ body.dropping::after{content:"";position:fixed;inset:10px;z-index:30;border:1px 
 @media (max-width:370px){.tb{padding:0 6px 0 5px;gap:3px;letter-spacing:.03em}}
 /* Wind's layers: small labelled switches in a row, each lit while its layer shows */
 .lyr{display:flex;justify-content:center;gap:6px;pointer-events:auto;flex-wrap:wrap;padding:0 8px}
+/* a row that is wider than the screen scrolls sideways (Live's themes) */
+.lyr.scr{align-self:stretch;max-width:100%;flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;touch-action:pan-x;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:0 12px}
+.lyr.scr::-webkit-scrollbar{display:none}
+.lyr.scr .lb{flex:none}.lyr.scr .lb:first-child{margin-left:auto}.lyr.scr .lb:last-child{margin-right:auto}
 .lb{display:flex;align-items:center;gap:5px;height:26px;padding:0 10px 0 8px;border-radius:13px;border:1px solid rgba(234,249,255,.14);color:var(--dim);
   font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;transition:color .25s,border-color .25s,background .25s}
 .lb svg{width:13px;height:13px;display:block;fill:none;stroke:currentColor;stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round}
@@ -98,6 +106,9 @@ body.dropping::after{content:"";position:fixed;inset:10px;z-index:30;border:1px 
 .card dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:1px 10px}
 .card dt{color:rgba(234,249,255,.45);text-transform:uppercase;font-size:8.5px;letter-spacing:.12em;padding-top:1.5px;white-space:nowrap}
 .card dd{margin:0;color:var(--ink);min-width:0;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.card .cx{position:absolute;top:2px;right:4px;width:30px;height:30px;color:var(--dim);font-size:18px;line-height:1}
+.card canvas{display:block;width:100%;margin:6px 0 0;border-radius:6px}
+.card .cd{display:flex;flex-wrap:wrap;gap:2px 12px;margin:6px 0 0;font-size:8.5px;letter-spacing:.1em;color:var(--ink)}
 .card .cs{margin:6px 0 0;font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:rgba(234,249,255,.35)}
 .rail{display:flex;justify-content:center;gap:clamp(0px,1vw,10px);pointer-events:auto;padding:5px 6px;border-radius:16px;background:rgba(1,4,10,.5);
   border:1px solid rgba(234,249,255,.1);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);max-width:100%}

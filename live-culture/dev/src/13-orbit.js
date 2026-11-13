@@ -149,7 +149,7 @@ var ORBIT=(function(){
   function key(e,dn){if(e.key==='ArrowRight')keyRate=dn?1:0;else if(e.key==='ArrowLeft')keyRate=dn?-1:0;else if(dn&&(e.key==='n'||e.key==='N'))toNow();else return false;return true}
   function pan(x){return clamp((x-g.cx)/Math.max(60,VW*.4),-1,1)}
   function up(p){
-    if(p.ghost||FT-p.t0>320||p.moved>12||!EL)return;var i,best=-1,bd=24*24,d;
+    if(p.ghost||FT-p.t0>600||p.moved>12||!EL)return;var i,best=-1,bd=24*24,d;
     for(i=0;i<satN;i++){view(place(i,simMs,tmp),tq);if(!shown(tq))continue;var x=g.cx+tq[0]*g.R-p.x,y=g.cy-tq[1]*g.R-p.y;d=x*x+y*y;if(GRP[i]===7||(FLG[i]&1))d*=.45;if(d<bd){bd=d;best=i}}
     sel=best;path=null;selI=null;if(best>=0){satInfoLoad();tone('glass',pent(clamp(Math.round(14-Math.log(EL[best*11])*9),2,14),52),.45,pan(p.x))}cardBuild()}
   /* is a body in sunlight? (in the frame of the stars; the Earth's shadow taken as a cylinder) */

@@ -17,7 +17,7 @@ var WIND=(function(){
     sunV=[0,0,0],moonV=[0,0,0],moonI=null,sunI=null,lastT=0,SK=[],byStep=[],flashes=[],STEPS=256,tmp=[0,0,0],probe=null,turned=0,
     FR=[],frV=-1,fireB=null,fireN=0,fireGen=-1,ST=[],stV=-1,
     /* the layers of the weather (the owner: "more layers, rain, sun, clouds. Real time"): each shown while it is on and there is data for it */
-    LY={wind:1,clouds:1,rain:1,sun:1},lyAt=0,lyKey='';
+    LY={wind:1,jet:0,heat:0,pressure:0,waves:0,clouds:1,rain:1,sun:1},lyAt=0,lyKey='',wxT=null,wxV=-1,jetT=null,HL=[],FOC=null;
   var VQ='attribute vec2 a_p;varying vec2 vUv;void main(){vUv=a_p*0.5+0.5;gl_Position=vec4(a_p,0.0,1.0);}';
   var H='precision highp float;varying vec2 vUv;\n';
   /* the fires' smoke: each fire is a point in the picture of the unrolled Earth, lit a little every frame, and the wind does the rest */
@@ -28,16 +28,18 @@ var WIND=(function(){
        burning in one place for a few seconds (more of them, and brighter, where the wind is strong), so that every one trails a plume
        down the wind; and a thin haze everywhere the wind is hard, so a storm glows as a whole.
        The picture is the Earth unrolled: across is longitude, up is north */
-    adv:H+'uniform sampler2D uDye;uniform sampler2D uWind;uniform float uDt;uniform float uK;uniform float uDiss;uniform float uTime;uniform float uRate;uniform float uEmit;uniform float uHaze;uniform vec2 uGrid;uniform float uHas;\n'+
+    adv:H+'uniform sampler2D uDye;uniform sampler2D uWind;uniform float uDt;uniform float uK;uniform float uDiss;uniform float uTime;uniform float uRate;uniform float uEmit;uniform float uHaze;uniform vec2 uGrid;uniform float uHas;uniform float uVS;uniform float uCS;uniform float uJet;\n'+
       'float hash(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}\n'+
       'void main(){float lat=(vUv.y-0.5)*3.14159265;float cl=max(cos(lat),0.16);\n'+
-      'vec2 vel=(texture2D(uWind,vec2(vUv.x,1.0-vUv.y)).xy-0.50196)*80.315*uHas;\n'+
+      'vec2 vel=(texture2D(uWind,vec2(vUv.x,1.0-vUv.y)).xy-0.50196)*80.315*uHas*uVS;\n'+
       'vec2 back=vUv-uDt*uK*vec2(vel.x/cl*0.15915494,vel.y*0.31830989);back.y=clamp(back.y,0.003,0.997);\n'+
-      'vec3 d=max(texture2D(uDye,back).rgb*uDiss-0.0012,0.0);float sp=length(vel);\n'+
+      'vec3 d=max(texture2D(uDye,back).rgb*uDiss-0.0012,0.0);float sp=length(vel)*uCS;\n'+
       'vec2 cell=floor(vUv*uGrid);float thr=uRate*(0.22+sp*0.085);float ta=uTime*0.2;float tb=ta+0.5;\n'+
       'float born=step(1.0-thr,hash(cell+floor(ta)*17.0))*(1.0-abs(fract(ta)*2.0-1.0))+step(1.0-thr,hash(cell+floor(tb)*31.0+7.0))*(1.0-abs(fract(tb)*2.0-1.0));\n'+
       'born*=smoothstep(1.5,1.2,abs(lat));\n'+
       'vec3 sc=mix(vec3(0.03,0.30,0.52),vec3(0.22,0.92,1.0),clamp(sp/13.0,0.0,1.0));sc=mix(sc,vec3(1.0,0.78,0.5),clamp((sp-15.0)/11.0,0.0,1.0));\n'+
+      /* the jet streams: violet, white where they run fastest */
+      'sc=mix(sc,mix(vec3(0.30,0.14,0.70),vec3(0.96,0.88,1.0),clamp((sp-6.0)/18.0,0.0,1.0)),uJet);\n'+
       'gl_FragColor=vec4(d+sc*(born*uEmit*(0.55+sp*0.05)+uHaze*sp*sp*0.0016)*uHas,1.0);}'
   };
   function mk(w,h,filt){var gl=GLX.gl,t=glTarget(w,h,type,filt);if(t){gl.bindTexture(gl.TEXTURE_2D,t.tex);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT)}return t}
@@ -69,35 +71,74 @@ var WIND=(function(){
       for(i=0;i<L.length;i++){var s={v:AS.llv(L[i].lat,L[i].lon),st:clamp(Math.floor((1-L[i].age/sp)*STEPS),0,STEPS-1),p:[0,0,0]};SK.push(s);(byStep[s.st]=byStep[s.st]||[]).push(s)}}
     if(LIVE.fires&&frV!==LIVE.ver.fires){frV=LIVE.ver.fires;FR=LIVE.fires.list.map(function(f){return {f:f,v:AS.llv(f.lat,f.lon),p:[0,0,0],ph:Math.random()*TAU,s:clamp(Math.sqrt(f.frp/150),1,3.4)}});fireGen=-1}
     if(LIVE.storms&&stV!==LIVE.ver.storms){stV=LIVE.ver.storms;ST=LIVE.storms.list.map(function(s){return {s:s,v:AS.llv(s.lat,s.lon),p:[0,0,0]}})}
+    if(typeof WX!=='undefined'&&WX.ver!==wxV){wxV=WX.ver;wxBuild();HL=WX.hl||[]}wxStep();
     if(P&&P.pts&&fireGen!==GLX.gen&&FR.length){var gl=GLX.gl,fb=new Float32Array(FR.length*3);for(i=0;i<FR.length;i++){fb[i*3]=(FR[i].f.lon+180)/360;fb[i*3+1]=.5+FR[i].f.lat/180;fb[i*3+2]=FR[i].s}
       if(!fireB)fireB=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,fireB);gl.bufferData(gl.ARRAY_BUFFER,fb,gl.STATIC_DRAW);fireN=FR.length;fireGen=GLX.gen}}
-  function geo(){g.R=Math.min(STG.w,STG.h-10)*.47*zoom;g.cx=STG.cx;g.cy=STG.cy}
-  var LYI={wind:'<path d="M2.5 6h8.2a2.2 2.2 0 1 0-2.2-2.2M2.5 9.8h11a2.3 2.3 0 1 1-2.3 2.3"/>',clouds:'<path d="M4.6 12.5h7a2.9 2.9 0 0 0 .2-5.8 4 4 0 0 0-7.6-.6 3.2 3.2 0 0 0 .4 6.4z"/>',
+  /* the model's fields as one picture the chip can read, the Earth unrolled from 180 W: red the temperature (-40 to 45 degrees), green
+     the waves (0 where there is no sea, then up to twelve metres), blue the pressure (940 to 1060 hPa) and alpha where there is pressure.
+     And the jet streams as a grid like the surface wind's, at two and a half times its scale */
+  /* (built a slice of rows a frame, so a phone does not stall the moment the model's fields arrive) */
+  var WXB=null;
+  function wxBuild(){if(!GLX.ok)return;WXB={y:0,px:new Uint8Array(1024*512*4),iso:WX.mslp?isobars(WX.mslp,1024,512):null}}
+  function wxStep(){
+    if(!WXB||!GLX.ok)return;var gl=GLX.gl,W=1024,Hh=512,px=WXB.px,iso=WXB.iso,x,y,T=WX.t2m,Wv=WX.wave,y1=Math.min(Hh,WXB.y+64);
+    for(y=WXB.y;y<y1;y++){var la=90-(y+.5)/Hh*180;for(x=0;x<W;x++){var lo=-180+(x+.5)/W*360,o=(y*W+x)*4,v;
+      if(T){v=GRIB.at(T,la,lo);px[o]=isNaN(v)?0:clamp(Math.round((v-233.15)/85*255),0,255)}
+      if(Wv){v=GRIB.at(Wv,la,lo);px[o+1]=isNaN(v)?0:clamp(Math.round(1+v/12*254),1,255)}
+      if(iso){px[o+2]=iso[o+3];px[o+3]=255}}}
+    WXB.y=y1;if(y1<Hh)return;WXB=null;
+    var t=wxT||gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,W,Hh,0,gl.RGBA,gl.UNSIGNED_BYTE,px);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);wxT=t;
+    if(WX.jet){var g2=new Uint8Array(360*181*2),i,j;for(j=0;j<181;j++)for(i=0;i<360;i++){var o2=(j*360+i)*2,uu=GRIB.at(WX.jet.u,90-j,i),vv=GRIB.at(WX.jet.v,90-j,i);
+      g2[o2]=clamp(Math.round((uu||0)/100*127+128),0,255);g2[o2+1]=clamp(Math.round((vv||0)/100*127+128),0,255)}jetT=gridTex(g2,2,jetT)}lyKey=''}
+  /* the isobars: lines of equal pressure every 4 hPa (every 20th brighter), traced through the model's degree grid (marching squares)
+     and drawn on a flat picture of the Earth */
+  function isobars(Pm,W,Hh){var cv=document.createElement('canvas');cv.width=W;cv.height=Hh;var c=cv.getContext('2d'),G=[],i,j,lv;
+    for(j=0;j<=180;j++){G.push([]);for(i=0;i<=360;i++)G[j].push(GRIB.at(Pm,90-j,-180+i)/100)}
+    var mn=1e9,mx=-1e9;for(j=0;j<=180;j++)for(i=0;i<=360;i++){var q=G[j][i];if(q<mn)mn=q;if(q>mx)mx=q}
+    c.lineCap='round';c.lineJoin='round';
+    for(lv=Math.ceil(mn/4)*4;lv<=mx;lv+=4){var major=lv%20===0;c.strokeStyle='rgba(255,255,255,'+(major?1:.62)+')';c.lineWidth=major?1.5:1.05;c.beginPath();
+      for(j=0;j<180;j++)for(i=0;i<360;i++){var a=G[j][i],b=G[j][i+1],d=G[j+1][i+1],e=G[j+1][i],k=(a>lv?8:0)|(b>lv?4:0)|(d>lv?2:0)|(e>lv?1:0);if(k===0||k===15)continue;
+        var X=W/360,Y=Hh/180,x0=i*X,y0=j*Y,pt=[];
+        function ed(p,q,u0,v0,u1,v1){var f=(lv-p)/(q-p);pt.push([u0+(u1-u0)*f,v0+(v1-v0)*f])}
+        if((a>lv)!==(b>lv))ed(a,b,x0,y0,x0+X,y0);if((b>lv)!==(d>lv))ed(b,d,x0+X,y0,x0+X,y0+Y);if((d>lv)!==(e>lv))ed(d,e,x0+X,y0+Y,x0,y0+Y);if((e>lv)!==(a>lv))ed(e,a,x0,y0+Y,x0,y0);
+        if(pt.length>=2){c.moveTo(pt[0][0],pt[0][1]);c.lineTo(pt[1][0],pt[1][1])}if(pt.length===4){c.moveTo(pt[2][0],pt[2][1]);c.lineTo(pt[3][0],pt[3][1])}}
+      c.stroke()}
+    return c.getImageData(0,0,W,Hh).data}
+  function geo(){var y1=STG.y1,cd=PCD&&PCD.on?$('card'):null;if(cd&&!cd.hidden){var ct=cd.getBoundingClientRect().top;if(ct>STG.y0+80&&ct<y1)y1=ct-6}
+    var h=y1-STG.y0;g.R=Math.min(STG.w,h-10)*.47*zoom;g.cx=STG.cx;g.cy=STG.y0+h/2}
+  var LYK=['wind','jet','heat','pressure','waves','clouds','rain','sun'],LYI={jet:'<path d="M1.6 9.4c2.4-3.6 5.4-3.6 7.6-1.2 2 2.2 3.8 2.1 5.2-.4M3.8 12.6c1.8-1.6 3.6-1.4 5 0"/>',heat:'<path d="M6.6 9.6V3.6a1.6 1.6 0 1 1 3.2 0v6a3.1 3.1 0 1 1-3.2 0z"/><path d="M8.2 7v4.6"/>',
+    pressure:'<path d="M2.2 5.6c2.6-2.4 9-2.4 11.6 0M2.6 9.4c2.4-1.6 8.4-1.6 10.8 0M4.6 12.9c1.6-.7 5.2-.7 6.8 0"/>',waves:'<path d="M1.6 7.4c1.6-1.6 3.1-1.6 4.4 0s2.9 1.6 4.4 0 3.1-1.6 4.1 0M1.6 11.4c1.6-1.6 3.1-1.6 4.4 0s2.9 1.6 4.4 0 3.1-1.6 4.1 0"/>',wind:'<path d="M2.5 6h8.2a2.2 2.2 0 1 0-2.2-2.2M2.5 9.8h11a2.3 2.3 0 1 1-2.3 2.3"/>',clouds:'<path d="M4.6 12.5h7a2.9 2.9 0 0 0 .2-5.8 4 4 0 0 0-7.6-.6 3.2 3.2 0 0 0 .4 6.4z"/>',
     rain:'<path d="M4.6 9.2h7a2.6 2.6 0 0 0 .2-5.2 3.6 3.6 0 0 0-6.9-.5 2.9 2.9 0 0 0-.3 5.7M5.6 11.6l-.9 2.2M8.4 11.6l-.9 2.2M11.2 11.6l-.9 2.2"/>',sun:'<circle cx="8" cy="8" r="2.9"/><path d="M8 1.6v1.6M8 12.8v1.6M1.6 8h1.6M12.8 8h1.6M3.5 3.5l1.1 1.1M11.4 11.4l1.1 1.1M3.5 12.5l1.1-1.1M11.4 4.6l1.1-1.1"/>'};
-  function lyrBuild(){var r=$('lyr');if(!r||r.childNodes.length)return;['wind','clouds','rain','sun'].forEach(function(k){var b=document.createElement('button');b.type='button';b.className='lb';b.id='l_'+k;
+  function lyrBuild(){var r=$('lyr');if(!r||r.childNodes.length)return;LYK.forEach(function(k){var b=document.createElement('button');b.type='button';b.className='lb';b.id='l_'+k;
     b.innerHTML='<svg viewBox="0 0 16 16" aria-hidden="true">'+LYI[k]+'</svg><span></span>';b.lastChild.textContent=k;b.setAttribute('aria-pressed','true');
-    b.addEventListener('click',function(){LY[k]=LY[k]?0:1;lyKey='';lyrSync(true)});r.appendChild(b)})}
+    /* the wind near the ground and the jet streams are one smoke or the other */
+    b.addEventListener('click',function(){LY[k]=LY[k]?0:1;if(LY[k]&&k==='jet')LY.wind=0;if(LY[k]&&k==='wind')LY.jet=0;lyKey='';lyrSync(true)});r.appendChild(b)})}
   /* which layers there are data for: the clouds and the rain only where the page is served from the owner's own host */
-  function lyrSync(force){var has={wind:!!LIVE.wind,clouds:GLOBE.hasCloud(),rain:GLOBE.hasRain(),sun:true},key='',k;for(k in LY)key+=(has[k]?1:0)+''+LY[k];if(key===lyKey&&!force)return;lyKey=key;
+  function lyrSync(force){var X=typeof WX!=='undefined'?WX:{},has={wind:!!LIVE.wind,jet:!!(X.jet&&jetT),heat:!!X.t2m,pressure:!!X.mslp,waves:!!X.wave,clouds:GLOBE.hasCloud(),rain:GLOBE.hasRain(),sun:true},key='',k;for(k in LY)key+=(has[k]?1:0)+''+LY[k];if(key===lyKey&&!force)return;lyKey=key;
     var r=$('lyr');if(!r)return;var vis=false;for(k in LY){var b=$('l_'+k);if(!b)continue;b.hidden=!has[k];b.setAttribute('aria-pressed',LY[k]?'true':'false');if(has[k])vis=true}
-    var was=r.hidden;r.hidden=!vis;if(was!==r.hidden){layout();geo()}}
+    var was=r.hidden,h0=r.offsetHeight;r.hidden=!vis;if(was!==r.hidden||r.offsetHeight!==h0){layout();geo()}}
   function enter(){if(GLX.ok&&gen!==GLX.gen)glSetup();GLOBE.load();liveLoad();size();lyrBuild();var r=$('lyr');if(r)r.hidden=false;lyKey='';lyrSync(true);geo();idle=0;lastT=0}
-  function leave(){flashes.length=0;var r=$('lyr');if(r)r.hidden=true}
+  function leave(){flashes.length=0;var r=$('lyr');if(r)r.hidden=true;cardOff()}
   function resize(){geo();if(GLX.ok&&P)size()}
   function pan(x){return clamp((x-g.cx)/Math.max(1,g.R)*.8,-1,1)}
   /* one finger turns the globe; let go while moving and it coasts */
-  function down(p){idle=0;vlon=vlat=0}
+  function down(p){idle=0;vlon=vlat=0;if(FOC&&FT-FOC.t>1400)FOC=null}
   function move(p){if(p.n>=2)return;var k=57.2958/g.R,c=Math.max(.35,Math.cos(lat0*AS.D));lon0-=(p.x-p.px)*k/c;lat0=clamp(lat0+(p.y-p.py)*k,-80,80);
     if(!p.ghost){turned=1;vlon=-p.vx*k/c;vlat=p.vy*k}idle=0}
-  /* a tap on a place reads it; a tap on the dark puts the reading away */
-  function up(p){idle=0;if(FT-p.t0>320||p.moved>12)return;var w=GLOBE.at(p.x,p.y,g),i,bd,d,tg=null;
-    if(!w){probe=null;return}
+  /* a tap on a place reads it; a tap on the dark puts the reading away. A finger down up to 600 ms and not moved is a tap (a slow
+     phone can be that long in passing the lifting on); the hints' ghost fingers keep to their own 320 */
+  function up(p){idle=0;if(FT-p.t0>(p.ghost?320:600)||p.moved>12)return;var w=GLOBE.at(p.x,p.y,g),i,bd,d,tg=null;
+    if(!w){probe=null;cardOff();return}
     /* a storm's eye or a fire under the finger is what was meant: the reading goes to it */
     for(i=0,bd=26*26;i<ST.length;i++){if(ST[i].p[2]<=.04)continue;d=(ST[i].p[0]-p.x)*(ST[i].p[0]-p.x)+(ST[i].p[1]-p.y)*(ST[i].p[1]-p.y);if(d<bd){bd=d;tg=ST[i].s}}
     if(!tg)for(i=0,bd=15*15;i<FR.length;i++){if(FR[i].p[2]<=.04)continue;d=(FR[i].p[0]-p.x)*(FR[i].p[0]-p.x)+(FR[i].p[1]-p.y)*(FR[i].p[1]-p.y);if(d<bd){bd=d;tg=FR[i].f}}
     if(tg)w={lat:tg.lat,lon:tg.lon};
+    /* a storm tapped: the Earth turns to it and comes close, so its spiral and its way can be seen */
+    if(tg&&!tg.frp&&!p.ghost)FOC={s:tg,t:FT,lat:lat0,lon:lon0,z:zoom,tz:Math.max(zoom,2.9)};else if(!p.ghost)FOC=null;
     probe={lat:w.lat,lon:w.lon,v:AS.llv(w.lat,w.lon),p:[0,0,0],q:[0,0,0],t:FT,ghost:!!p.ghost,fire:tg&&tg.frp?tg:null,storm:tg&&!tg.frp?tg:null};
-    if(!p.ghost)tone('glass',pent(5+clamp(Math.floor((w.lat+72)/144*9),0,8),40),.4,pan(p.x))}
+    if(!p.ghost){tone('glass',pent(5+clamp(Math.floor((w.lat+72)/144*9),0,8),40),.4,pan(p.x));if(!tg)placeCard(w.lat,w.lon);else cardOff()}}
   /* two fingers: sliding turns the globe too, a pinch comes closer */
   function gesture(e){var k=57.2958/g.R;lon0-=e.dx*k/Math.max(.35,Math.cos(lat0*AS.D));lat0=clamp(lat0+e.dy*k,-80,80);
     if(!e.ghost){zoom=clamp(zoom*e.scale,.7,3.2);geo();vlon=-e.dx/e.dt*k/Math.max(.35,Math.cos(lat0*AS.D))*.5;vlat=e.dy/e.dt*k*.5}idle=0}
@@ -110,18 +151,76 @@ var WIND=(function(){
     function at(jj,ii,c){return (G[(jj*360+ii)*2+c]-128)/127*40}
     var u=(at(j,i0,0)*(1-tx)+at(j,i1,0)*tx)*(1-ty)+(at(j+1,i0,0)*(1-tx)+at(j+1,i1,0)*tx)*ty,v=(at(j,i0,1)*(1-tx)+at(j,i1,1)*tx)*(1-ty)+(at(j+1,i0,1)*(1-tx)+at(j+1,i1,1)*tx)*ty;
     return {u:u,v:v,kmh:Math.hypot(u,v)*3.6,from:(Math.atan2(-u,-v)/AS.D+360)%360}}
+  /* the place by the nearest town: in it, or how far from it (a place far from any is just its latitude and longitude) */
+  function placeName(la,lo){var c=CITIES.near(la,lo);if(!c||c.km>450)return '';return (c.km<20?c.name:Math.round(c.km/5)*5+' km from '+c.name)+', '+c.country}
   function reading(){
     if(!probe)return null;var w=windAt(probe.lat,probe.lon),A=LIVE.aurora,sun=Math.asin(clamp(GLOBE.dot(probe.v,sunV),-1,1))/AS.D,d=new Date(),
       hr=(((12+AS.n180(probe.lon-(sunI?sunI.sublon:0))/15)%24)+24)%24,near=0,i,c=Math.cos(300/6371);
     for(i=0;i<SK.length;i++)if(GLOBE.dot(SK[i].v,probe.v)>c)near++;
-    return {wind:w,sun:sun,hour:hr,aurora:A?A.grid[clamp(Math.round(90-probe.lat),0,180)*360+((Math.round(probe.lon)%360)+360)%360]:null,near:near,fire:probe.fire,storm:probe.storm}}
+    var X=typeof WX!=='undefined'?WX:{},la=probe.lat,lo=probe.lon,tv=X.t2m?GRIB.at(X.t2m,la,lo):NaN,pv=X.mslp?GRIB.at(X.mslp,la,lo):NaN,wv=X.wave?GRIB.at(X.wave,la,lo):NaN,jv=null;
+    if(X.jet){var ju=GRIB.at(X.jet.u,la,lo),jw=GRIB.at(X.jet.v,la,lo);if(!isNaN(ju)&&!isNaN(jw))jv=Math.hypot(ju,jw)*3.6}
+    return {wind:w,sun:sun,hour:hr,aurora:A?A.grid[clamp(Math.round(90-probe.lat),0,180)*360+((Math.round(probe.lon)%360)+360)%360]:null,near:near,fire:probe.fire,storm:probe.storm,
+      t:isNaN(tv)?null:tv-273.15,hpa:isNaN(pv)?null:pv/100,wave:isNaN(wv)?null:wv,jet:jv}}
+  /* ---- the place card, where the page is served from the owner's own host: the weather at the place tapped, now and for the next three
+     days (Open-Meteo, from the national weather services' models), and the last hour of rain radar there (RainViewer) over a map (CARTO,
+     from OpenStreetMap). The figures are theirs; nothing is made up. A tap on the dark, or on the card's cross, puts it away ---- */
+  var PCD={lat:0,lon:0,seq:0,wx:null,err:'',fr:[],base:[],fi:0,ft:0,on:false},WMO={0:'clear',1:'mostly clear',2:'partly cloudy',3:'overcast',45:'fog',48:'freezing fog',51:'light drizzle',53:'drizzle',55:'heavy drizzle',
+    56:'freezing drizzle',57:'freezing drizzle',61:'light rain',63:'rain',65:'heavy rain',66:'freezing rain',67:'freezing rain',71:'light snow',73:'snow',75:'heavy snow',77:'snow grains',80:'showers',81:'showers',82:'heavy showers',
+    85:'snow showers',86:'heavy snow showers',95:'thunderstorms',96:'thunderstorms, hail',99:'thunderstorms, hail'},DAYS=['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  function cardOff(){var c=$('card');if(c&&PCD.on){c.hidden=true;PCD.on=false;geo()}PCD.on=false;PCD.seq++}
+  function placeCard(lat,lon){
+    if(!HOSTED)return;var my=++PCD.seq,c=$('card');if(!c)return;PCD.lat=lat;PCD.lon=lon;PCD.wx=null;PCD.err='';PCD.fr=[];PCD.base=[];PCD.on=true;cardDraw();c.hidden=false;
+    fetch('/api/wx?lat='+lat.toFixed(3)+'&lon='+lon.toFixed(3)).then(function(r){if(!r.ok)throw new Error(r.status);return r.json()}).then(function(d){if(my!==PCD.seq)return;if(!d||!d.current)throw new Error('empty');PCD.wx=d;cardDraw()})
+      .catch(function(){if(my!==PCD.seq)return;PCD.err='the forecast could not be read just now';cardDraw()});
+    fetch('/api/feed/radar').then(function(r){if(!r.ok)throw new Error(r.status);return r.json()}).then(function(d){if(my!==PCD.seq||!d||!d.radar||!Array.isArray(d.radar.past))return;
+      var host=/^https:\/\/[a-z0-9.\-]+$/.test(d.host||'')?d.host:'https://tilecache.rainviewer.com',z=6,n=64,xt=(lon+180)/360*n,s=Math.sin(lat*AS.D),yt=(.5-Math.log((1+s)/(1-s))/(4*Math.PI))*n,x0=Math.floor(xt-.5),y0=Math.floor(yt-.5);
+      PCD.tile={x0:x0,y0:y0,px:(xt-x0)*256,py:(yt-y0)*256};
+      function im(u){var i=new Image();i.decoding='async';i.onload=function(){if(my===PCD.seq)radarDraw()};i.src=u;return i}
+      for(var a=0;a<2;a++)for(var b=0;b<2;b++)PCD.base.push({x:a,y:b,i:im('https://basemaps.cartocdn.com/dark_all/'+z+'/'+(((x0+a)%n)+n)%n+'/'+clamp(y0+b,0,n-1)+'.png')});
+      d.radar.past.slice(-7).forEach(function(f){if(!/^\/[\w\/\-]+$/.test(f.path||''))return;var t=[];for(var a=0;a<2;a++)for(var b=0;b<2;b++)t.push({x:a,y:b,i:im(host+f.path+'/256/'+z+'/'+(((x0+a)%n)+n)%n+'/'+clamp(y0+b,0,n-1)+'/2/1_1.png')});PCD.fr.push({time:+f.time*1000,t:t})});
+      PCD.fi=PCD.fr.length-1;cardDraw()}).catch(function(){})}
+  function deg(v){return Math.round(v)+'°'}
+  function cardDraw(){
+    var c=$('card');if(!c||!PCD.on)return;while(c.firstChild)c.removeChild(c.firstChild);var d=PCD.wx,la=PCD.lat,lo=PCD.lon,cn=CITIES.near(la,lo),el;
+    function add(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=txt;c.appendChild(e);return e}
+    var x=add('button','cx','×');x.type='button';x.setAttribute('aria-label','Put the card away');x.addEventListener('click',function(){cardOff();probe=null});
+    add('p','cn',cn&&cn.km<450?(cn.km<20?cn.name:Math.round(cn.km/5)*5+' km from '+cn.name):'the open '+(la>66||la<-60?'ice':'sea'));
+    var tz=d&&isFinite(d.utc_offset_seconds)?d.utc_offset_seconds:null,now=new Date(Date.now()+(tz||0)*1000),hh=('0'+now.getUTCHours()).slice(-2)+':'+('0'+now.getUTCMinutes()).slice(-2);
+    add('p','ck',(cn&&cn.km<450?cn.country+' · ':'')+Math.abs(la).toFixed(1)+'°'+(la>=0?'N':'S')+' '+Math.abs(lo).toFixed(1)+'°'+(lo>=0?'E':'W')+(tz!==null?' · '+hh+' there':''));
+    if(!d){add('p','cs',PCD.err||'reading the forecast');geo();return}
+    var C=d.current||{},dl=add('dl'),t=C.temperature_2m,row=function(k,v){var a=document.createElement('dt');a.textContent=k;var b=document.createElement('dd');b.textContent=v;dl.appendChild(a);dl.appendChild(b)};
+    row('now',deg(t)+'C · '+deg(t*9/5+32)+'F'+(isFinite(C.apparent_temperature)&&Math.abs(C.apparent_temperature-t)>=2?' · feels '+deg(C.apparent_temperature)+'C':'')+(WMO[C.weather_code]?' · '+WMO[C.weather_code]:''));
+    row('wind',Math.round(C.wind_speed_10m)+' km/h from '+COMPASS[Math.round((+C.wind_direction_10m||0)/22.5)%16]+(isFinite(C.wind_gusts_10m)?' · gusts '+Math.round(C.wind_gusts_10m):''));
+    row('air',Math.round(C.relative_humidity_2m)+'% humid · '+Math.round(C.pressure_msl)+' hPa · '+Math.round(C.cloud_cover)+'% cloud'+(C.precipitation>0?' · '+C.precipitation+' mm now':''));
+    /* the next 24 hours: the temperature as a line, the rain as bars */
+    var H=d.hourly||{},T=H.time||[],k0=0,curT=Date.parse((C.time||'')+'Z');for(var i=0;i<T.length;i++){if(Date.parse(T[i]+'Z')>=curT-1800000){k0=i;break}}
+    var cv=add('canvas','c24');cv.width=Math.round(340*DPR);cv.height=Math.round(58*DPR);cv.style.height='58px';chart24(cv,H,k0,tz||0);
+    var D=d.daily||{},dd=add('p','cd');(D.time||[]).slice(0,4).forEach(function(day,j){var dt=new Date(day+'T12:00:00Z'),s=document.createElement('span');
+      s.textContent=(j?DAYS[dt.getUTCDay()]:'TODAY')+' '+deg(D.temperature_2m_max[j])+'/'+deg(D.temperature_2m_min[j])+(D.precipitation_sum[j]>=.5?' · '+Math.round(D.precipitation_sum[j])+' mm':'');dd.appendChild(s)});
+    if(PCD.fr.length){var rv=add('canvas','cr');rv.width=Math.round(340*DPR);rv.height=Math.round(128*DPR);rv.style.height='128px';radarDraw()}
+    add('p','cs','Open-Meteo'+(PCD.fr.length?' · radar RainViewer · map © OpenStreetMap, © CARTO':''));geo()}
+  function chart24(cv,H,k0,tz){var g2=cv.getContext('2d'),W=cv.width,Hh=cv.height,s=DPR,T=(H.temperature_2m||[]).slice(k0,k0+25),R=(H.precipitation||[]).slice(k0,k0+25),n=T.length;if(n<2)return;
+    var lo=Math.min.apply(null,T),hi=Math.max.apply(null,T),rm=Math.max(1,Math.max.apply(null,R.concat([0]))),x=function(i){return (6+i/(n-1)*(W/s-12))*s},y=function(v){return (8+(1-(v-lo)/Math.max(1,hi-lo))*(Hh/s-24))*s};
+    g2.fillStyle='rgba(62,240,255,.55)';R.forEach(function(v,i){if(v>0){var bh=v/rm*(Hh/s-20)*s;g2.fillRect(x(i)-2*s,Hh-12*s-bh,4*s,bh)}});
+    g2.strokeStyle='rgba(255,179,71,.95)';g2.lineWidth=1.5*s;g2.beginPath();T.forEach(function(v,i){if(i)g2.lineTo(x(i),y(v));else g2.moveTo(x(i),y(v))});g2.stroke();
+    g2.font=(8*s)+'px '+MONO;g2.fillStyle='rgba(234,249,255,.6)';g2.textBaseline='alphabetic';
+    var t0=Date.parse((H.time||[])[k0]+'Z');for(var i=0;i<n;i+=6){var hr=new Date(t0+i*3600000).getUTCHours();g2.fillText(('0'+hr).slice(-2),x(i)-5*s,Hh-2*s)}
+    g2.fillStyle='rgba(255,179,71,.9)';g2.fillText(deg(hi)+'C',(W/s-34)*s,9*s);g2.fillText(deg(lo)+'C',(W/s-34)*s,Hh-14*s)}
+  function radarDraw(){var c=$('card'),cv=c&&c.querySelector('canvas.cr');if(!cv||!PCD.tile)return;var g2=cv.getContext('2d'),W=cv.width,Hh=cv.height,s=DPR,T=PCD.tile,ox=W/2-T.px*s,oy=Hh/2-T.py*s;
+    g2.fillStyle='#01040a';g2.fillRect(0,0,W,Hh);PCD.base.forEach(function(b){if(b.i.complete&&b.i.naturalWidth)g2.drawImage(b.i,ox+b.x*256*s,oy+b.y*256*s,256*s,256*s)});
+    var f=PCD.fr[PCD.fi];if(f){g2.globalAlpha=.9;f.t.forEach(function(b){if(b.i.complete&&b.i.naturalWidth)g2.drawImage(b.i,ox+b.x*256*s,oy+b.y*256*s,256*s,256*s)});g2.globalAlpha=1;
+      var tz=PCD.wx&&isFinite(PCD.wx.utc_offset_seconds)?PCD.wx.utc_offset_seconds:0,dt=new Date(f.time+tz*1000);g2.font=(8.5*s)+'px '+MONO;g2.fillStyle='rgba(234,249,255,.85)';
+      g2.fillText('RADAR '+('0'+dt.getUTCHours()).slice(-2)+':'+('0'+dt.getUTCMinutes()).slice(-2),6*s,Hh-6*s)}
+    g2.strokeStyle='rgba(255,179,71,.95)';g2.lineWidth=1.4*s;g2.beginPath();g2.arc(W/2,Hh/2,6*s,0,TAU);g2.stroke()}
   /* the lightning's score: on the sound's clock a little ahead for the ticks, on the picture's clock for the flashes */
   function seq(s,when){var a=byStep[((s%STEPS)+STEPS)%STEPS];if(!a)return;var n=0;
     for(var i=0;i<a.length&&n<2;i++){var k=a[i];if(k.p[2]<=.08)continue;hit('tick',.3+.3*Math.random(),pan(k.p[0]),.8+.5*Math.random(),when+n*.03);n++}}
   function step(st,ab){var a=byStep[((ab%STEPS)+STEPS)%STEPS];if(!a)return;for(var i=0;i<a.length;i++)if(flashes.length<220)flashes.push({k:a[i],t:0})}
   function tick(dt,t){
     var i,now=Date.now();feeds();if(FT-lyAt>800){lyAt=FT;lyrSync(false)}
+    if(PCD.on&&PCD.fr.length>1&&FT-PCD.ft>(PCD.fi===PCD.fr.length-1?1500:420)){PCD.ft=FT;PCD.fi=(PCD.fi+1)%PCD.fr.length;radarDraw()}
     if(!PTN){lon0+=vlon*dt;lat0=clamp(lat0+vlat*dt,-80,80);var kk=Math.exp(-dt*2.4);vlon*=kk;vlat*=kk;idle+=dt;if(idle>5&&!reduce)lon0+=dt*1.3*smooth((idle-5)/4)}else idle=0;
+    if(FOC){var fk=smooth((FT-FOC.t)/1400);if(fk<1){lat0=lerp(FOC.lat,clamp(FOC.s.lat,-80,80),fk);lon0=FOC.lon+AS.n180(FOC.s.lon-FOC.lon)*fk;zoom=lerp(FOC.z,FOC.tz,fk);geo();idle=0}}
     lon0=AS.n180(lon0);GLOBE.basis(lat0,lon0,g);
     sunI=AS.sun(now);moonI=AS.moon(now);AS.llv(sunI.sublat,sunI.sublon,sunV);AS.llv(moonI.sublat,moonI.sublon,moonV);
     for(i=flashes.length-1;i>=0;i--){flashes[i].t+=dt/.55;if(flashes[i].t>=1)flashes.splice(i,1)}
@@ -132,7 +231,9 @@ var WIND=(function(){
     if(probe){GLOBE.pr(probe.v,g,probe.p);var w=windAt(probe.lat,probe.lon);if(w&&w.kmh>.5){var s=1.2/Math.max(1,Math.hypot(w.u,w.v));GLOBE.pr(AS.llv(clamp(probe.lat+w.v*s,-89,89),probe.lon+w.u*s/Math.max(.2,Math.cos(probe.lat*AS.D)),tmp),g,probe.q);probe.w=w}else probe.w=null}}
   function sim(dt){
     var gl=GLX.gl,u,i;
-    u=glUse(P.adv,dye.w);glBind(0,dye.r.tex,u.uDye);glBind(1,windT||dye.r.tex,u.uWind);gl.uniform1f(u.uHas,windT?1:0);gl.uniform1f(u.uDt,dt);gl.uniform1f(u.uK,reduce?.0016:.006);
+    var jet=LY.jet&&jetT,src=jet?jetT:windT;
+    u=glUse(P.adv,dye.w);glBind(0,dye.r.tex,u.uDye);glBind(1,src||dye.r.tex,u.uWind);gl.uniform1f(u.uHas,src?1:0);gl.uniform1f(u.uDt,dt);gl.uniform1f(u.uK,reduce?.0016:.006);
+    gl.uniform1f(u.uVS,jet?2.5:1);gl.uniform1f(u.uCS,jet?.38:1);gl.uniform1f(u.uJet,jet?1:0);
     gl.uniform1f(u.uDiss,Math.exp(-dt/(byte8?3.6:6.4)));gl.uniform1f(u.uTime,reduce?0:(FT*.001)%4000);gl.uniform2f(u.uGrid,dw/2,dh/2);gl.uniform1f(u.uRate,dw>600?.013:.03);
     /* the bass and the drums make the fires burn up */
     gl.uniform1f(u.uEmit,dt*2.3*(1+1.1*HIT[5]*G[5]+.7*HIT[0]*G[0]));gl.uniform1f(u.uHaze,dt*.1);glQuad(P.adv);dye.swap();
@@ -143,11 +244,12 @@ var WIND=(function(){
     var c=OV,i,k;
     if(!GLX.ok||GLX.lost)blank();else{if(gen!==GLX.gen)glSetup();if(P&&(ql!==QL||!dye))size();
       var gl=GLX.gl,bg=[ABYSS[0]*.6,ABYSS[1]*.6,ABYSS[2]*.7],dt=lastT?Math.min(.1,Math.max(.001,(t-lastT)/1000)):.016;lastT=t;
-      glAttrOff();gl.disable(gl.BLEND);if(P&&dye&&LY.wind)sim(dt);
+      var fl=LY.wind||(LY.jet&&jetT);glAttrOff();gl.disable(gl.BLEND);if(P&&dye&&fl)sim(dt);
       glClear(bg[0],bg[1],bg[2]);
       /* with the real clouds on, the Earth is shown nearer to how it looks from orbit and the wind's smoke is laid over it more lightly */
-      var cl=GLOBE.hasCloud()&&LY.clouds,rn=GLOBE.hasRain()&&LY.rain,dim=LY.wind?(cl?.64:.38):.82;
-      if(!GLOBE.draw(g,{sun:sunV,moon:moonV,moonK:moonI?moonI.phase:0,bg:bg,dim:dim,flow:P&&dye&&LY.wind?dye.r.tex:null,flowK:cl?.62:1.15,aur:aurT,aurK:1,cld:cl,cldK:.95,rain:rn,rainK:1,sunK:LY.sun?1:0,time:t*.001}))blank()}
+      var cl=GLOBE.hasCloud()&&LY.clouds,rn=GLOBE.hasRain()&&LY.rain,hk=LY.heat&&WX.t2m,dim=fl?(cl||hk?.64:.38):.82;
+      if(!GLOBE.draw(g,{sun:sunV,moon:moonV,moonK:moonI?moonI.phase:0,bg:bg,dim:dim,flow:P&&dye&&fl?dye.r.tex:null,flowK:cl||hk?.62:1.15,aur:aurT,aurK:1,cld:cl,cldK:hk?.7:.95,rain:rn,rainK:1,sunK:LY.sun?1:0,time:t*.001,
+        wx:wxT,windF:windT,heatK:hk?1:0,waveK:LY.waves&&WX.wave?1:0,isoK:LY.pressure&&WX.mslp?1:0}))blank()}
     /* the lightning: where the storms are (a faint violet dust), and each flash as its bar comes round */
     c.globalCompositeOperation='lighter';c.fillStyle='rgba(150,120,255,.28)';
     for(i=0;i<SK.length;i++){k=SK[i];if(k.p[2]>.04)c.fillRect(k.p[0]-.7,k.p[1]-.7,1.4,1.4)}
@@ -159,12 +261,28 @@ var WIND=(function(){
       c.fillStyle='rgba(255,96,36,'+(fa*.34).toFixed(3)+')';c.beginPath();c.arc(k.p[0],k.p[1],fr*2.4,0,TAU);c.fill();
       c.fillStyle='rgba(255,196,120,'+(fa*.95).toFixed(3)+')';c.beginPath();c.arc(k.p[0],k.p[1],fr*.62,0,TAU);c.fill()}
     c.globalCompositeOperation='source-over';
+    /* close to a storm: its arms of cloud turning (the way it turns), as wide as its winds are strong, and its way: where its present
+       motion would carry it in one and two days (NOAA's movement; a line of motion, not a forecast) */
+    var kmPx=g.R/6371;
+    for(i=0;i<ST.length;i++){k=ST[i];if(k.p[2]<=.1)continue;var S=k.s,rk=(110+clamp(S.kmh||60,30,300)*1.6)*kmPx;if(rk<26)continue;
+      var sgn=S.lat>=0?-1:1,spin=reduce?0:t*.0006*sgn*clamp((S.kmh||60)/80,.6,2.2),al=clamp((rk-26)/40,0,1)*clamp(k.p[2]*2,0,1),arms=4,j2,q2;
+      c.lineCap='round';for(j2=0;j2<arms;j2++){c.beginPath();for(q2=0;q2<=40;q2++){var u=q2/40,rr=rk*(.12+.88*u),an=spin+j2*TAU/arms-sgn*u*3.4;c.lineTo(k.p[0]+Math.cos(an)*rr,k.p[1]+Math.sin(an)*rr)}
+        c.strokeStyle='rgba(234,249,255,'+(.22*al).toFixed(3)+')';c.lineWidth=Math.max(2,rk*.09);c.stroke();c.strokeStyle='rgba(234,249,255,'+(.5*al).toFixed(3)+')';c.lineWidth=1.1;c.stroke()}
+      c.fillStyle='rgba(1,4,10,'+(.6*al).toFixed(3)+')';c.beginPath();c.arc(k.p[0],k.p[1],Math.max(3,rk*.08),0,TAU);c.fill();c.lineCap='butt';
+      if(S.mov&&S.mov[1]>0){var pts=[1,2].map(function(dd){var dist=S.mov[1]*24*dd/6371,b=S.mov[0]*AS.D,la1=S.lat*AS.D,lo1=S.lon*AS.D,la2=Math.asin(Math.sin(la1)*Math.cos(dist)+Math.cos(la1)*Math.sin(dist)*Math.cos(b)),
+          lo2=lo1+Math.atan2(Math.sin(b)*Math.sin(dist)*Math.cos(la1),Math.cos(dist)-Math.sin(la1)*Math.sin(la2));return GLOBE.pr(AS.llv(la2/AS.D,lo2/AS.D),g,[0,0,0])});
+        c.setLineDash([4,5]);c.strokeStyle='rgba(255,179,71,'+(.85*al).toFixed(3)+')';c.lineWidth=1.3;c.beginPath();c.moveTo(k.p[0],k.p[1]);pts.forEach(function(q3){c.lineTo(q3[0],q3[1])});c.stroke();c.setLineDash([]);
+        c.font='500 8px '+MONO;c.fillStyle='rgba(255,179,71,'+(.95*al).toFixed(3)+')';pts.forEach(function(q3,dd){if(q3[2]>.1){c.beginPath();c.arc(q3[0],q3[1],2.4,0,TAU);c.fill();c.fillText(dd?'+2 DAYS':'+1 DAY',q3[0]+6,q3[1]-6)}})}}
     /* the storms: a small wheel turning the way the storm turns (against the clock north of the equator), and its name */
     c.font='500 9px "JetBrains Mono",ui-monospace,Menlo,monospace';c.textBaseline='middle';c.textAlign='left';c.lineJoin='round';
     for(i=0;i<ST.length;i++){k=ST[i];if(k.p[2]<=.06)continue;var sx=k.p[0],sy=k.p[1],rot=(reduce?0:t*.0016)*(k.s.lat>=0?-1:1),j,nm=k.s.name.toUpperCase();
       for(j=0;j<2;j++){c.strokeStyle=j?'rgba(234,249,255,.95)':'rgba(1,4,10,.6)';c.lineWidth=j?1.3:3.2;c.beginPath();c.arc(sx,sy,7.5,rot,rot+2.1);c.stroke();c.beginPath();c.arc(sx,sy,7.5,rot+Math.PI,rot+Math.PI+2.1);c.stroke()}
       c.fillStyle='rgba(234,249,255,.95)';c.beginPath();c.arc(sx,sy,1.5,0,TAU);c.fill();
       var tw=c.measureText(nm).width,lx=sx+13+tw>VW-8?sx-13-tw:sx+13;c.lineWidth=3;c.strokeStyle='rgba(1,4,10,.7)';c.strokeText(nm,lx,sy);c.fillText(nm,lx,sy)}
+    /* the highs and lows of the pressure */
+    if(LY.pressure&&HL.length){c.font='700 12px '+MONO;c.textAlign='center';c.textBaseline='middle';for(i=0;i<HL.length;i++){var h=HL[i],q=GLOBE.pr(h.v,g,tmp);if(q[2]<=.15)continue;
+      c.lineWidth=3;c.strokeStyle='rgba(1,4,10,.75)';c.fillStyle=h.h?'rgba(255,179,71,.95)':'rgba(62,240,255,.95)';c.strokeText(h.h?'H':'L',q[0],q[1]);c.fillText(h.h?'H':'L',q[0],q[1]);
+      c.font='500 8px '+MONO;c.fillStyle='rgba(234,249,255,.8)';c.strokeText(String(h.hpa),q[0],q[1]+11);c.fillText(String(h.hpa),q[0],q[1]+11);c.font='700 12px '+MONO}c.textAlign='left'}
     /* the place being read: a ring, and an arrow down the wind, longer the harder it blows */
     if(probe&&probe.p[2]>.02){var px=probe.p[0],py=probe.p[1],al=clamp((t-probe.t)/250,0,1);c.strokeStyle='rgba(1,4,10,.55)';c.lineWidth=3.4;c.beginPath();c.arc(px,py,8,0,TAU);c.stroke();
       c.strokeStyle='rgba(234,249,255,'+(.92*al).toFixed(3)+')';c.lineWidth=1.2;c.beginPath();c.arc(px,py,8,0,TAU);c.stroke();
@@ -173,9 +291,11 @@ var WIND=(function(){
   function hud(){
     var w=LIVE.wind,a=LIVE.aurora,s=LIVE.strikes;if(!w)return LIVE.asked?'reading the wind':'';
     var r=reading();
-    if(r&&r.wind){var la=probe.lat,lo=probe.lon,h=Math.floor(r.hour),m=Math.floor((r.hour-h)*60),F=r.fire,S=r.storm,l3,
-        l1=Math.abs(la).toFixed(1)+'°'+(la>=0?'N':'S')+' '+Math.abs(lo).toFixed(1)+'°'+(lo>=0?'E':'W')+' · '+(h<10?'0':'')+h+':'+(m<10?'0':'')+m+' by the Sun · '+(r.sun>-.83?'Sun '+Math.round(Math.max(0,r.sun))+'° up':r.sun>-18?'dusk':'night'),
-        l2='wind '+Math.round(r.wind.kmh)+' km/h from '+COMPASS[Math.round(r.wind.from/22.5)%16]+(r.aurora>=3?' · aurora '+r.aurora+'%':'');
+    if(r&&r.wind){var la=probe.lat,lo=probe.lon,h=Math.floor(r.hour),m=Math.floor((r.hour-h)*60),F=r.fire,S=r.storm,l3,nm=placeName(la,lo),
+        l1=(nm?nm+'\n':'')+Math.abs(la).toFixed(1)+'°'+(la>=0?'N':'S')+' '+Math.abs(lo).toFixed(1)+'°'+(lo>=0?'E':'W')+' · '+(h<10?'0':'')+h+':'+(m<10?'0':'')+m+' by the Sun · '+(r.sun>-.83?'Sun '+Math.round(Math.max(0,r.sun))+'° up':r.sun>-18?'dusk':'night'),
+        l2='wind '+Math.round(r.wind.kmh)+' km/h from '+COMPASS[Math.round(r.wind.from/22.5)%16]+(r.aurora>=3?' · aurora '+r.aurora+'%':''),
+        l2b=[r.t!==null?Math.round(r.t)+'°C':'',r.hpa!==null?Math.round(r.hpa)+' hPa':'',r.wave!==null?'waves '+r.wave.toFixed(1)+' m':'',r.jet!==null&&LY.jet?'jet '+Math.round(r.jet)+' km/h':''].filter(Boolean).join(' · ');
+      if(l2b)l2+='\n'+l2b;
       /* a fire: how much heat it was giving off, which satellite saw it and how long ago. A storm: what its forecasters last said of it
          (the hurricane centre gives the wind it has now; GDACS, for the rest of the world, the highest it has reached) */
       if(F)l3='fire · '+F.frp.toLocaleString('en-US')+' MW · seen by '+(F.sat||'satellite')+' '+agoWords((Date.now()-LIVE.fires.asOf)+F.age*60000);
@@ -189,6 +309,8 @@ var WIND=(function(){
     if(FR.length)l4.push(FR.length+' fires seen from orbit');if(ST.length)l4.push(ST.length===1?'tropical storm '+ST[0].s.name:ST.length+' tropical storms');
     if(CLOUD.img&&GLOBE.hasCloud()&&LY.clouds)l4.push('clouds of '+stampUTC(CLOUD.at).replace(/^\d+ \w+ /,''));
     if(RAIN.img&&GLOBE.hasRain()&&LY.rain)l4.push(RAIN.at?'rain of '+stampUTC(RAIN.at).replace(/^\d+ \w+ /,''):'rain, the latest');
+    var X=typeof WX!=='undefined'?WX:{},on=[LY.jet&&X.jet?'jet streams':'',LY.heat&&X.t2m?'temperature':'',LY.pressure&&X.mslp?'pressure':'',LY.waves&&X.wave?'waves':''].filter(Boolean);
+    if(on.length)l4.push(on.join(', ')+': NOAA GFS of '+stampUTC(X.at).replace(/^\d+ \w+ /,''));
     return l1+(l3.length?'\n'+l3.join(' · '):'')+(l4.length?'\n'+l4.join(' · '):'')}
   /* the hint: one finger turns the globe a little, one way and then the other; then it taps a place */
   function ghost(t){var u=(t*.1)%1,R=g.R,dir=Math.floor(t*.1)%2?1:-1;
@@ -197,8 +319,8 @@ var WIND=(function(){
     return [null]}
   return {enter:enter,leave:leave,resize:resize,down:down,move:move,up:up,gesture:gesture,wheel:wheel,key:key,seq:seq,step:step,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
     dbg:function(){return {ok:!!(P&&dye),byte8:byte8,dw:dw,dh:dh,wind:!!windT,aurora:!!aurT,strikes:SK.length,flashes:flashes.length,ready:GLOBE.ready(),lat0:lat0,lon0:lon0,R:g.R,cx:g.cx,cy:g.cy,zoom:zoom,turned:turned,
-      LY:LY,lyr:!$('lyr').hidden,probe:probe?{lat:probe.lat,lon:probe.lon,ghost:probe.ghost,r:reading()}:null,vis:SK.filter(function(k){return k.p[2]>.3}).length,fires:FR.length,fireGL:fireN,storms:ST.map(function(k){return {name:k.s.name,x:k.p[0],y:k.p[1],z:k.p[2]}}),
+      LY:LY,lyr:!$('lyr').hidden,probe:probe?{lat:probe.lat,lon:probe.lon,ghost:probe.ghost,r:reading()}:null,vis:SK.filter(function(k){return k.p[2]>.3}).length,fires:FR.length,fireGL:fireN,storms:ST.map(function(k){return {name:k.s.name,lat:k.s.lat,lon:k.s.lon,x:k.p[0],y:k.p[1],z:k.p[2]}}),foc:!!FOC,
       fireAt:FR.filter(function(k){return k.p[2]>.3}).slice(0,3).map(function(k){return {x:k.p[0],y:k.p[1],frp:k.f.frp}})}},
     windAt:windAt,
-    look:function(la,lo,zm){lat0=la;lon0=lo;if(zm){zoom=zm;geo()}idle=-1e6;vlon=vlat=0}}
+    look:function(la,lo,zm){FOC=null;lat0=la;lon0=lo;if(zm){zoom=zm;geo()}idle=-1e6;vlon=vlat=0}}
 })();

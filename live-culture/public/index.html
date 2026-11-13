@@ -39,11 +39,15 @@ body.sw #gl,body.sw #ov,body.sw .vid{opacity:0}
 .vid{position:fixed;inset:0;z-index:2;pointer-events:none;overflow:hidden;transition:opacity .22s}
 .vid .vb{position:absolute;left:0;top:0;opacity:0;transition:opacity .7s;background:#000;will-change:transform}
 .vid .vb.on{opacity:1}
-.vid .vb.port{-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 9%,#000 91%,transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 9%,#000 91%,transparent 100%)}
-.vid .vb.land{-webkit-mask-image:radial-gradient(ellipse 74% 72% at 50% 50%,#000 66%,transparent 100%);mask-image:radial-gradient(ellipse 74% 72% at 50% 50%,#000 66%,transparent 100%)}
-.vid .vb.disk{background:transparent;-webkit-mask-image:none;mask-image:none}
 .vid #vidp,.vid iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block}
 .vid img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+/* the video fills the screen; the readout and the footer sit on a little shade of their own */
+.vid::before,.vid::after{content:"";position:absolute;left:0;right:0;z-index:1;pointer-events:none}
+.vid::before{top:0;height:150px;background:linear-gradient(to bottom,rgba(1,4,10,.72),rgba(1,4,10,0))}
+.vid::after{bottom:0;height:calc(var(--foot,112px) + 60px);background:linear-gradient(to top,rgba(1,4,10,.8) 0,rgba(1,4,10,.55) 55%,rgba(1,4,10,0))}
+/* Live: the Earth is drawn over the video, cut to a small round window in the corner (the whole screen when the map is open) */
+body.livev .vid{z-index:1}
+body.livev #gl{z-index:2;-webkit-clip-path:circle(var(--gr,0px) at var(--gx,0px) var(--gy,0px));clip-path:circle(var(--gr,0px) at var(--gx,0px) var(--gy,0px))}
 .vid.tap{z-index:4}
 .vid.tap .vb{pointer-events:auto}
 /* a little dusk at the top, so the readings can be read over anything bright (a photo, the day side of the Earth) */
@@ -84,6 +88,10 @@ body.dropping::after{content:"";position:fixed;inset:10px;z-index:30;border:1px 
 @media (max-width:370px){.tb{padding:0 6px 0 5px;gap:3px;letter-spacing:.03em}}
 /* Wind's layers: small labelled switches in a row, each lit while its layer shows */
 .lyr{display:flex;justify-content:center;gap:6px;pointer-events:auto;flex-wrap:wrap;padding:0 8px}
+/* a row that is wider than the screen scrolls sideways (Live's themes) */
+.lyr.scr{align-self:stretch;max-width:100%;flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;touch-action:pan-x;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:0 12px}
+.lyr.scr::-webkit-scrollbar{display:none}
+.lyr.scr .lb{flex:none}.lyr.scr .lb:first-child{margin-left:auto}.lyr.scr .lb:last-child{margin-right:auto}
 .lb{display:flex;align-items:center;gap:5px;height:26px;padding:0 10px 0 8px;border-radius:13px;border:1px solid rgba(234,249,255,.14);color:var(--dim);
   font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;transition:color .25s,border-color .25s,background .25s}
 .lb svg{width:13px;height:13px;display:block;fill:none;stroke:currentColor;stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round}
@@ -106,6 +114,9 @@ body.dropping::after{content:"";position:fixed;inset:10px;z-index:30;border:1px 
 .card dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:1px 10px}
 .card dt{color:rgba(234,249,255,.45);text-transform:uppercase;font-size:8.5px;letter-spacing:.12em;padding-top:1.5px;white-space:nowrap}
 .card dd{margin:0;color:var(--ink);min-width:0;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.card .cx{position:absolute;top:2px;right:4px;width:30px;height:30px;color:var(--dim);font-size:18px;line-height:1}
+.card canvas{display:block;width:100%;margin:6px 0 0;border-radius:6px}
+.card .cd{display:flex;flex-wrap:wrap;gap:2px 12px;margin:6px 0 0;font-size:8.5px;letter-spacing:.1em;color:var(--ink)}
 .card .cs{margin:6px 0 0;font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:rgba(234,249,255,.35)}
 .rail{display:flex;justify-content:center;gap:clamp(0px,1vw,10px);pointer-events:auto;padding:5px 6px;border-radius:16px;background:rgba(1,4,10,.5);
   border:1px solid rgba(234,249,255,.1);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);max-width:100%}
@@ -163,6 +174,7 @@ body.dropping::after{content:"";position:fixed;inset:10px;z-index:30;border:1px 
 <aside class="card" id="card" hidden aria-live="polite"></aside>
 
 <footer class="foot" id="foot">
+  <div class="lyr scr" id="themes" hidden role="group" aria-label="Kinds of camera"></div>
   <div class="lyr" id="lyr" hidden role="group" aria-label="Layers of the weather"></div>
   <div class="tools" id="tools" hidden role="toolbar" aria-label="Build in the water"></div>
   <div class="dots" id="dotrow" role="group" aria-label="The music: the whole band, then each of its nine players">
@@ -185,7 +197,7 @@ var BAND_DATA={"env":["/9Pj/8jj6M/QipaDkYdlgFFZTkpQOzo5OZuPiJ9/g4SDfVJbUVtXQFM1O
 var $=function(id){return document.getElementById(id)};
 var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 var COARSE=matchMedia('(pointer:coarse)').matches;
-var TAU=Math.PI*2;
+var TAU=Math.PI*2,MONO='"JetBrains Mono",ui-monospace,Menlo,monospace';
 function clamp(v,a,b){return v<a?a:v>b?b:v}
 function lerp(a,b,k){return a+(b-a)*k}
 function smooth(k){k=clamp(k,0,1);return k*k*(3-2*k)}
@@ -664,6 +676,92 @@ var AS=(function(){
     gmst:gmst,obliq:obliq,eclToEq:eclToEq,sun:sun,moon:moon,llv:llv,tle:tle,sat:sat,n360:n360,n180:n180,RE:RE}
 })();
 
+/* ---------- GRIB2, the format the world's weather models are published in, read on the device. Only what NOAA's GFS and its
+   wave model use: a regular latitude/longitude grid (template 3.0), simple packing (5.0) and complex packing with or without spatial
+   differencing (5.2, 5.3), a bitmap or missing values for points that have no value (land, for the sea). Each message comes back as
+   its grid: west to east from the first longitude, north to south, NaN where there is no value. Checked against ECMWF's ecCodes on
+   real files (tools/t_grib.js). ---------- */
+var GRIB=(function(){
+  function u8(b,o){return b[o]}function u16(b,o){return b[o]*256+b[o+1]}function u32(b,o){return ((b[o]*256+b[o+1])*256+b[o+2])*256+b[o+3]}
+  /* GRIB's signed numbers keep their sign in the top bit (not two's complement) */
+  function s8(b,o){var v=b[o];return v&128?-(v&127):v}function s16(b,o){var v=u16(b,o);return v&32768?-(v&32767):v}function s32(b,o){var v=u32(b,o);return v>=2147483648?-(v-2147483648):v}
+  function f32(b,o){var dv=new DataView(b.buffer,b.byteOffset+o,4);return dv.getFloat32(0,false)}
+  /* bits, read off a run of bytes from its start */
+  function Bits(b,o){this.b=b;this.p=o*8}
+  Bits.prototype.get=function(n){var v=0,b=this.b,p=this.p;while(n>0){var byte=b[p>>3],off=p&7,take=Math.min(8-off,n);v=v*(1<<take)+((byte>>(8-off-take))&((1<<take)-1));p+=take;n-=take}this.p=p;return v};
+  Bits.prototype.align=function(){this.p=(this.p+7)&~7};
+  /* a GRIB2 message may hold several fields (NOAA puts each wind's two components in one): sections 4 to 7 repeat, 3 is kept */
+  function msgs(buf){
+    var b=buf instanceof Uint8Array?buf:new Uint8Array(buf),out=[],i=0;
+    while(i+16<=b.length){
+      if(!(b[i]===71&&b[i+1]===82&&b[i+2]===73&&b[i+3]===66)){i++;continue}
+      var ed=b[i+7];if(ed!==2){i+=4;continue}
+      var len=u32(b,i+8)*4294967296+u32(b,i+12),end=i+len;if(len<16||end>b.length)break;
+      try{fields(b,i,end,out)}catch(e){}
+      i=end}
+    return out}
+  function fields(b,i,end,out){
+    var disc=b[i+6],time=0,grid=null,p4=null,bmp=null,s5=-1,j=i+16;
+    while(j<end-4){var sl=u32(b,j),sn=b[j+4];if(sl<5||j+sl>end)break;
+      if(sn===1){time=Date.UTC(u16(b,j+12),b[j+14]-1,b[j+15],b[j+16],b[j+17],b[j+18])}
+      else if(sn===3){grid=u16(b,j+12)===0?{ni:u32(b,j+30),nj:u32(b,j+34),la1:s32(b,j+46)/1e6,lo1:s32(b,j+50)/1e6,la2:s32(b,j+55)/1e6,lo2:s32(b,j+59)/1e6,di:u32(b,j+63)/1e6,dj:u32(b,j+67)/1e6,scan:b[j+71]}:null}
+      else if(sn===4){var t4=u16(b,j+7);p4={cat:b[j+9],par:b[j+10]};if(t4===0||t4===8){p4.fh=u32(b,j+18);p4.ltype=b[j+22];var sf=s8(b,j+23),sv=s32(b,j+24);p4.lev=sv*Math.pow(10,-sf)}}
+      else if(sn===5){s5=j}else if(sn===6){var ind=b[j+5];if(ind===0)bmp={o:j+6};else if(ind===255)bmp=null}
+      else if(sn===7){if(grid&&s5>=0&&p4){var m=field(b,grid,bmp,s5,j);if(m){m.disc=disc;m.time=time;for(var k in p4)m[k]=p4[k];out.push(m)}}}
+      j+=sl}}
+  function field(b,grid,bmp,s5,s7){
+    var n=grid.ni*grid.nj,nd=u32(b,s5+5),t5=u16(b,s5+9),vals=unpack(b,s5,s7,t5,nd);if(!vals)return null;
+    /* the values to the grid: through the bitmap, if there is one */
+    var full=new Float32Array(n),k,p=0;
+    if(bmp){var bits=new Bits(b,bmp.o);for(k=0;k<n;k++)full[k]=bits.get(1)?vals[p++]:NaN}else{for(k=0;k<n&&k<vals.length;k++)full[k]=vals[k];for(;k<n;k++)full[k]=NaN}
+    /* to north-to-south rows, each west to east */
+    var sc=grid.scan,ni=grid.ni,nj=grid.nj;
+    if(sc&0xf0){var o2=new Float32Array(n),r,c;for(r=0;r<nj;r++)for(c=0;c<ni;c++){var src=(sc&32)?c*nj+r:r*ni+c,cc=(sc&128)?ni-1-c:c;if((sc&16)&&(r&1))cc=ni-1-cc;var rr=(sc&64)?nj-1-r:r;o2[rr*ni+cc]=full[src]}full=o2}
+    return {ni:ni,nj:nj,la1:(sc&64)?grid.la2:grid.la1,lo1:(sc&128)?grid.lo2:grid.lo1,di:grid.di,dj:grid.dj,v:full}}
+  function unpack(b,s5,s7,t5,nd){
+    var R=f32(b,s5+11),E=s16(b,s5+15),D=s16(b,s5+17),nb=b[s5+19],e2=Math.pow(2,E),d10=Math.pow(10,-D),v=new Float32Array(nd),i,bits=new Bits(b,s7+5);
+    if(t5===0){if(nb===0){for(i=0;i<nd;i++)v[i]=R*d10;return v}for(i=0;i<nd;i++)v[i]=(R+bits.get(nb)*e2)*d10;return v}
+    if(t5!==2&&t5!==3)return null;
+    var miss=b[s5+22],ng=u32(b,s5+31),wref=b[s5+35],wbits=b[s5+36],lref=u32(b,s5+37),linc=b[s5+41],llast=u32(b,s5+42),lbits=b[s5+46],ord=t5===3?b[s5+47]:0,nos=t5===3?b[s5+48]:0;
+    var ival1=0,ival2=0,minsd=0;
+    function sgn(n){var s=bits.get(1),x=bits.get(n*8-1);return s?-x:x}
+    if(t5===3&&nos>0){ival1=sgn(nos);if(ord===2)ival2=sgn(nos);minsd=sgn(nos)}
+    var ref=new Float64Array(ng),wid=new Int32Array(ng),glen=new Int32Array(ng),g;
+    if(nb>0)for(g=0;g<ng;g++)ref[g]=bits.get(nb);bits.align();
+    if(wbits>0)for(g=0;g<ng;g++)wid[g]=bits.get(wbits)+wref;else for(g=0;g<ng;g++)wid[g]=wref;bits.align();
+    if(lbits>0)for(g=0;g<ng;g++)glen[g]=bits.get(lbits)*linc+lref;else for(g=0;g<ng;g++)glen[g]=lref;if(ng)glen[ng-1]=llast;bits.align();
+    /* the packed values, group by group; with missing values managed, the top one or two values of a group's width mean "none" */
+    var X=new Float64Array(nd),M=new Uint8Array(nd),k=0,allOnes=nb>0?Math.pow(2,nb)-1:0;
+    for(g=0;g<ng&&k<nd;g++){var w=wid[g],L=glen[g],r0=ref[g];
+      if(w===0){var mg=0;if(miss===1&&r0===allOnes)mg=1;else if(miss===2&&(r0===allOnes||r0===allOnes-1))mg=1;for(var q=0;q<L&&k<nd;q++){X[k]=r0;M[k]=mg;k++}}
+      else{var top=Math.pow(2,w)-1;for(var q2=0;q2<L&&k<nd;q2++){var x=bits.get(w);if(miss===1&&x===top)M[k]=1;else if(miss===2&&(x===top||x===top-1))M[k]=1;else X[k]=x+r0;k++}}}
+    /* spatial differencing undone, over the values that are there */
+    if(t5===3&&ord>0){var idx=[];for(i=0;i<nd;i++)if(!M[i])idx.push(i);var nn=idx.length;
+      if(ord===1){if(nn)X[idx[0]]=ival1;for(i=1;i<nn;i++)X[idx[i]]=X[idx[i]]+minsd+X[idx[i-1]]}
+      else{if(nn)X[idx[0]]=ival1;if(nn>1)X[idx[1]]=ival2;for(i=2;i<nn;i++)X[idx[i]]=X[idx[i]]+minsd+2*X[idx[i-1]]-X[idx[i-2]]}}
+    for(i=0;i<nd;i++)v[i]=M[i]?NaN:(R+X[i]*e2)*d10;
+    return v}
+  /* a value at a place, from a message's grid (bilinear; longitudes wrap) */
+  function at(m,lat,lon){var y=(m.la1-lat)/m.dj,x=((lon-m.lo1)%360+360)%360/m.di,x0=Math.floor(x),y0=Math.floor(y),fx=x-x0,fy=y-y0;
+    if(y0<0||y0>=m.nj-1){y0=Math.min(Math.max(y0,0),m.nj-1);fy=0}var ni=m.ni,x1=(x0+1)%ni;x0=x0%ni;
+    function V(c,r){return m.v[r*ni+c]}var r1=Math.min(y0+1,m.nj-1),a=V(x0,y0),b2=V(x1,y0),c=V(x0,r1),d=V(x1,r1);
+    if(isNaN(a)||isNaN(b2)||isNaN(c)||isNaN(d)){var best=[a,b2,c,d].filter(function(z){return !isNaN(z)});return best.length?best[0]:NaN}
+    return (a*(1-fx)+b2*fx)*(1-fy)+(c*(1-fx)+d*fx)*fy}
+  /* for the tests: every message's values as packed, in the file's own order, whatever its grid */
+  function raw(buf){var b=new Uint8Array(buf),out=[],i=0;while(i+16<=b.length){if(!(b[i]===71&&b[i+1]===82&&b[i+2]===73&&b[i+3]===66)){i++;continue}var len=u32(b,i+8)*4294967296+u32(b,i+12),end=i+len,j=i+16,s5=-1,s7=-1;
+    while(j<end-4){var sl=u32(b,j),sn=b[j+4];if(sl<5)break;if(sn===5)s5=j;if(sn===7)s7=j;j+=sl}out.push(s5>=0&&s7>=0?unpack(b,s5,s7,u16(b,s5+9),u32(b,s5+5)):null);i=end}return out}
+  return {msgs:msgs,at:at,raw:raw}
+})();
+if(typeof module!=='undefined')module.exports=GRIB;
+
+/* ---------- the world's towns and cities (Natural Earth, populated places at 1:50 million; public domain): the nearest names the place
+   a finger taps on the Earth. Generated by tools/gen_cities.py ---------- */
+var CITIES=(function(){var L="Bombo|Uganda|0.58|32.53\nFort Portal|Uganda|0.67|30.28\nPotenza|Italy|40.64|15.80\nCampobasso|Italy|41.56|14.66\nAosta|Italy|45.74|7.32\nMariehamn|Aland|60.10|19.95\nRamallah|Palestine|31.90|35.21\nVatican City|Vatican|41.90|12.45\nPoitier|France|46.58|0.33\nClermont-Ferrand|France|45.78|3.08\nBesançon|France|47.23|6.03\nArtigas Base|Antarctica|-62.17|-58.86\nChipata|Zambia|-13.63|32.64\nJinja|Uganda|0.44|33.20\nArua|Uganda|3.02|30.90\nMbale|Uganda|1.09|34.17\nMoroto|Uganda|2.54|34.64\nMasaka|Uganda|-0.33|31.73\nMbarara|Uganda|-0.60|30.65\nOtjiwarongo|Namibia|-20.46|16.64\nBologna|Italy|44.50|11.34\nCagliari|Italy|39.22|9.10\nCatanzaro|Italy|38.90|16.60\nBari|Italy|41.11|16.87\nL'Aquila|Italy|42.35|13.39\nAncona|Italy|43.60|13.50\nPerugia|Italy|43.11|12.39\nTrieste|Italy|45.65|13.80\nTrento|Italy|46.08|11.12\nFort-de-France|France|14.61|-61.08\nGifu|Japan|35.42|136.76\nSaint-Laurent-du-Maroni|France|5.50|-54.03\nCaen|France|49.18|-0.35\nNantes|France|47.21|-1.59\nAjaccio|France|41.93|8.73\nMontpellier|France|43.61|3.87\nDijon|France|47.33|5.03\nOrléans|France|47.90|1.90\nRouen|France|49.43|1.08\nReims|France|49.25|4.03\nAmiens|France|49.90|2.30\nNancy|France|48.68|6.20\nBasse-terre|France|16.01|-61.71\nNovi Sad|Serbia|45.25|19.85\nBanja Luka|Bosnia|44.78|17.18\nGeorge Town|Cayman Islands|19.28|-81.33\nGrand Turk|Turks and Caicos Islands|21.47|-71.14\nDouglas|Isle of Man|54.15|-4.48\nSan Marino|San Marino|43.94|12.44\nWillemstad|Curacao|12.20|-69.02\nOranjestad|Aruba|12.53|-70.03\nVaduz|Liechtenstein|47.13|9.52\nCapitan Arturo Prat Station|Antarctica|-62.50|-59.68\nMarambio Base|Antarctica|-64.23|-56.65\nZucchelli Station|Antarctica|-74.62|164.22\nRothera Station|Antarctica|-67.56|-68.12\nPalmer Station|Antarctica|-64.76|-64.05\nBase Presidente Montalva|Antarctica|-62.18|-58.91\nCarlini Base|Antarctica|-62.22|-58.65\nKing Sejong Station|Antarctica|-62.22|-58.77\nGreat Wall Station|Antarctica|-62.22|-58.97\nEscudero Base|Antarctica|-62.19|-58.95\nElephant Island|Antarctica|-62.00|-58.00\nScott Base|Antarctica|-77.85|166.75\nMcMurdo Station|Antarctica|-77.73|166.87\nZhongshan Station|Antarctica|-69.43|76.34\nVostok Station|Antarctica|-78.47|106.80\nPeter I Island|Antarctica|-68.80|-90.58\nMirny Station|Antarctica|-66.58|93.01\nMawson Station|Antarctica|-67.61|62.88\nDavis Station|Antarctica|-68.78|78.14\nConcordia Research Station|Antarctica|-74.67|124.17\nCasey Station|Antarctica|-66.29|110.54\nAmundsen–Scott South Pole Station|Antarctica|-90.00|176.99\nWasa Station|Antarctica|-73.05|-13.42\nTroll Station|Antarctica|-72.02|2.53\nSvea Station|Antarctica|-74.58|-11.22\nNovolazarevskaya Station|Antarctica|-71.30|-11.85\nNeumayer Station III|Antarctica|-70.89|-7.84\nMaitri Station|Antarctica|-70.78|11.73\nHalley Station|Antarctica|-76.09|-26.47\nBelgrano II Base|Antarctica|-77.87|-34.62\nSobral Base|Antarctica|-81.18|-40.50\nAboa Station|Antarctica|-75.05|-13.42\nSan Martín Base|Antarctica|-68.12|-67.10\nGen. O'Higgins Base|Antarctica|-63.33|-57.89\nEsperanza Base|Antarctica|-63.38|-57.03\nOrcadas Station|Antarctica|-60.73|-44.73\nSigny Research Station|Antarctica|-60.63|-45.60\nDumont d'Urville Station|Antarctica|-66.78|139.96\nShowa Station|Antarctica|-69.03|39.75\nGibraltar|Gibraltar|36.13|-5.38\nLobamba|eSwatini|-26.47|31.20\nEdinburgh|United Kingdom|55.95|-3.22\nCardiff|United Kingdom|51.50|-3.23\nLongyearbyen|Svalbard and Jan Mayen Islands|78.22|15.55\nLuxembourg|Luxembourg|49.61|6.13\nTurin|Italy|45.07|7.67\nNouméa|New Caledonia|-22.26|166.44\nMatsuyama|Japan|33.85|132.77\nRennes|France|48.10|-1.67\nToulouse|France|43.62|1.45\nLimoges|France|45.83|1.25\nLille|France|50.65|3.08\nStrasbourg|France|48.58|7.75\nBatumi|Georgia|41.60|41.63\nFunchal|Portugal|32.65|-16.88\nEl Fasher|Sudan|13.63|25.35\nKeetmanshoop|Namibia|-26.57|18.13\nSwakopmund|Namibia|-22.67|14.54\nGenoa|Italy|44.41|8.93\nSukhumi|Georgia|43.02|41.02\nPalikir|Federated States of Micronesia|6.92|158.15\nMajuro|Marshall Islands|7.10|171.38\nAgana|Guam|13.47|144.75\nFunafuti|Tuvalu|-8.52|179.22\nMelekeok|Palau|7.49|134.63\nBir Lehlou|Western Sahara|26.12|-9.65\nMonaco|Monaco|43.74|7.41\nTarawa|Kiribati|1.34|173.02\nMoroni|Comoros|-11.70|43.24\nMacau|Macau S.A.R|22.20|113.55\nAndorra|Andorra|42.50|1.52\nSan Bernardino|United States|34.12|-117.30\nBridgeport|United States|41.18|-73.20\nRochester|United States|43.17|-77.62\nManchester|United Kingdom|53.50|-2.25\nGujranwala|Pakistan|32.16|74.18\nIncheon|South Korea|37.48|126.64\nBenin City|Nigeria|6.34|5.62\nXiamen|China|24.45|118.08\nNanchong|China|30.78|106.13\nNeijiang|China|29.58|105.05\nNanyang|China|33.00|112.53\nJinxi|China|40.75|120.83\nYantai|China|37.53|121.40\nZaozhuang|China|34.88|117.57\nSuzhou|China|31.30|120.62\nXuzhou|China|34.28|117.18\nWuxi|China|31.58|120.30\nJilin|China|43.85|126.55\nChandigarh|India|30.72|76.78\nJammu|India|32.71|74.84\nSholapur|India|17.67|75.90\nAurangabad|India|19.90|75.32\nNasik|India|20.00|73.78\nDispur|India|26.14|91.77\nJullundur|India|31.34|75.57\nAllahabad|India|25.46|81.84\nMoradabad|India|28.84|78.75\nGhaziabad|India|28.66|77.41\nAgra|India|27.17|78.01\nAligarh|India|27.89|78.06\nMeerut|India|29.00|77.70\nDhanbad|India|23.80|86.42\nGwalior|India|26.23|78.18\nVadodara|India|22.31|73.18\nRajkot|India|22.31|70.80\nDurazno|Uruguay|-33.41|-56.51\nInternational Falls|United States|48.60|-93.41\nSt.  Paul|United States|44.94|-93.08\nBillings|United States|45.79|-108.54\nGreat Falls|United States|47.50|-111.30\nMissoula|United States|46.87|-113.99\nMinot|United States|48.23|-101.30\nFargo|United States|46.88|-96.79\nHilo|United States|19.70|-155.09\nOlympia|United States|47.04|-122.90\nSpokane|United States|47.67|-117.42\nVancouver|United States|45.63|-122.64\nFlagstaff|United States|35.20|-111.65\nTucson|United States|32.21|-110.89\nSanta Barbara|United States|34.43|-119.72\nFresno|United States|36.75|-119.77\nEureka|United States|40.80|-124.15\nColorado Springs|United States|38.86|-104.79\nReno|United States|39.53|-119.82\nElko|United States|40.83|-115.76\nAlbuquerque|United States|35.10|-106.64\nSalem|United States|44.93|-123.02\nCasper|United States|42.87|-106.31\nTopeka|United States|39.05|-95.67\nKansas City|United States|39.11|-94.61\nTulsa|United States|36.12|-95.93\nSioux Falls|United States|43.55|-96.73\nShreveport|United States|32.50|-93.77\nBaton Rouge|United States|30.46|-91.14\nFt.  Worth|United States|32.74|-97.34\nCorpus Christi|United States|27.74|-97.40\nAustin|United States|30.27|-97.74\nAmarillo|United States|35.23|-101.83\nEl Paso|United States|31.78|-106.51\nLaredo|United States|27.51|-99.51\nMérida|Venezuela|8.40|-71.13\nBurlington|United States|44.48|-73.21\nMontgomery|United States|32.36|-86.28\nTallahassee|United States|30.45|-84.28\nOrlando|United States|28.51|-81.38\nJacksonville|United States|30.33|-81.67\nSavannah|United States|32.02|-81.11\nColumbia|United States|34.04|-80.90\nIndianapolis|United States|39.75|-86.17\nWilmington|United States|34.23|-77.95\nKnoxville|United States|35.97|-83.92\nRichmond|United States|37.55|-77.45\nCharleston|United States|38.35|-81.63\nBaltimore|United States|39.30|-76.62\nSyracuse|United States|43.05|-76.15\nPuerto Ayacucho|Venezuela|5.66|-67.62\nPort-of-Spain|Trinidad and Tobago|10.65|-61.52\nAugusta|United States|44.31|-69.78\nSault Ste. Marie|United States|46.50|-84.35\nAtakpamé|Togo|7.53|1.12\nSousse|Tunisia|35.83|10.63\nTaizz|Yemen|13.61|44.04\nSitka|United States|57.06|-135.33\nLviv|Ukraine|49.83|24.03\nOdessa|Ukraine|46.49|30.71\nZhytomyr|Ukraine|50.25|28.66\nDnipro|Ukraine|48.48|35.00\nDonetsk|Ukraine|48.00|37.83\nKharkiv|Ukraine|50.00|36.25\nTürkmenbaşy|Turkmenistan|40.02|52.97\nBukhara|Uzbekistan|39.78|64.43\nNukus|Uzbekistan|42.47|59.62\nTürkmenabat|Turkmenistan|39.11|63.58\nMary|Turkmenistan|37.60|61.83\nAndijan|Uzbekistan|40.79|72.34\nHaiphong|Vietnam|20.83|106.68\nDa Nang|Vietnam|16.06|108.25\nKabwe|Zambia|-14.44|28.45\nMufulira|Zambia|-12.55|28.26\nKitwe|Zambia|-12.81|28.22\nLivingstone|Zambia|-17.86|25.86\nChitungwiza|Zimbabwe|-18.00|31.10\nDouala|Cameroon|4.06|9.71\nBirmingham|United Kingdom|52.48|-1.92\nBelfast|United Kingdom|54.60|-5.96\nİzmir|Turkey|38.44|27.15\nBursa|Turkey|40.20|29.07\nSamsun|Turkey|41.28|36.34\nKonya|Turkey|37.88|32.47\nAdana|Turkey|37.00|35.32\nGulu|Uganda|2.78|32.28\nKigali|Rwanda|-1.95|30.06\nCottica|Suriname|3.85|-54.23\nCórdoba|Spain|37.88|-4.77\nNiamey|Niger|13.49|7.10\nTahoua|Niger|14.90|5.26\nConstanța|Romania|44.20|28.61\nLuleå|Sweden|65.60|22.16\nSundsvall|Sweden|62.40|17.32\nIași|Romania|47.17|27.57\nSurat Thani|Thailand|9.15|99.34\nChiang Mai|Thailand|18.80|98.98\nNakhon Ratchasima|Thailand|15.00|102.10\nMbabane|eSwatini|-26.32|31.13\nPiura|Peru|-5.21|-80.63\nArequipa|Peru|-16.42|-71.53\nChimbote|Peru|-9.07|-78.57\nPucallpa|Peru|-8.37|-74.53\nIquitos|Peru|-3.75|-73.25\nHuancayo|Peru|-12.08|-75.20\nCiudad del Este|Paraguay|-25.52|-54.62\nPonta Delgada|Portugal|37.75|-25.67\nVigo|Spain|42.22|-8.73\nBilbao|Spain|43.25|-2.93\nKaolack|Senegal|14.15|-16.10\nKaédi|Senegal|16.15|-13.50\nGeneina|Sudan|13.45|22.44\nMedina|Saudi Arabia|24.50|39.58\nTabuk|Saudi Arabia|28.38|36.55\nJuba|South Sudan|4.83|31.58\nMalakal|South Sudan|9.54|31.66\nOmdurman|Sudan|15.62|32.48\nAl-Ubayyid|Sudan|13.18|30.22\nThe Hague|Netherlands|52.08|4.27\nKristiansand|Norway|58.17|8.00\nLjubljana|Slovenia|46.06|14.51\nBratislava|Slovakia|48.15|17.12\nHammerfest|Norway|70.66|23.69\nDoha|Qatar|25.29|51.53\nQuetta|Pakistan|30.22|67.02\nLarkana|Pakistan|27.56|68.21\nSpringbok|South Africa|-29.67|17.88\nUpington|South Africa|-28.46|21.23\nWorcester|South Africa|-33.64|19.44\nGeorge|South Africa|-33.95|22.45\nTete|Mozambique|-16.17|33.58\nPemba|Mozambique|-12.98|40.53\nNampula|Mozambique|-15.14|39.29\nWelkom|South Africa|-27.97|26.73\nXai-Xai|Mozambique|-25.04|33.64\nGoroka|Papua New Guinea|-6.08|145.39\nMt.  Hagen|Papua New Guinea|-5.86|144.22\nRabaul|Papua New Guinea|-4.21|152.14\nLae|Papua New Guinea|-6.73|146.99\nDavid|Panama|8.43|-82.43\nOujda|Morocco|34.69|-1.91\nSafi|Morocco|32.32|-9.24\nPodgorica|Montenegro|42.47|19.27\nQuelimane|Mozambique|-17.88|36.89\nEast London|South Africa|-32.97|27.87\nMiddelburg|South Africa|-31.50|25.01\nNalchik|Russia|43.50|43.62\nStavropol|Russia|45.05|41.98\nUgolnye Kopi|Russia|64.73|177.70\nKaliningrad|Russia|54.70|20.50\nPskov|Russia|57.83|28.33\nBryansk|Russia|53.26|34.43\nSmolensk|Russia|54.78|32.05\nPetrozavodsk|Russia|61.85|34.28\nTver|Russia|56.86|35.89\nVologda|Russia|59.21|39.92\nYaroslavl|Russia|57.62|39.87\nRostov|Russia|47.24|39.71\nSochi|Russia|43.59|39.73\nKrasnodar|Russia|45.02|39.00\nPenza|Russia|53.18|45.00\nRyazan|Russia|54.62|39.72\nVoronezh|Russia|51.73|39.27\nMagnitogorsk|Russia|53.42|58.98\nChelyabinsk|Russia|55.16|61.44\nVorkuta|Russia|67.50|64.01\nKirov|Russia|58.59|49.67\nNizhny Tagil|Russia|57.92|59.97\nAstrakhan|Russia|46.35|48.05\nOrenburg|Russia|51.78|55.11\nSaratov|Russia|51.58|46.03\nUlyanovsk|Russia|54.33|48.41\nOmsk|Russia|54.99|73.40\nTyumen|Russia|57.14|65.53\nNovokuznetsk|Russia|53.75|87.11\nKemerovo|Russia|55.34|86.09\nGrozny|Russia|43.32|45.70\nKandy|Sri Lanka|7.28|80.67\nSri Jayawardenepura Kotte|Sri Lanka|6.90|79.95\nDaejeon|South Korea|36.34|127.42\nGwangju|South Korea|35.17|126.91\nBusan|South Korea|35.10|129.01\nZamboanga|Philippines|6.92|122.08\nLaoag|Philippines|18.20|120.59\nBaguio|Philippines|16.43|120.57\nGeneral Santos|Philippines|6.11|125.17\nUst-Ilimsk|Russia|57.99|102.63\nAngarsk|Russia|52.56|103.92\nAbakan|Russia|53.70|91.45\nNorilsk|Russia|69.34|88.22\nKhatanga|Russia|72.04|102.47\nKyzyl|Russia|51.71|94.38\nUlan-Ude|Russia|51.82|107.62\nBlagoveshchensk|Russia|50.27|127.53\nBukachacha|Russia|52.98|116.92\nDalnegorsk|Russia|44.54|135.52\nAmbarchik|Russia|69.65|162.33\nBatagay|Russia|67.66|134.64\nChokurdakh|Russia|70.62|147.89\nUst-Nera|Russia|64.57|143.20\nLensk|Russia|60.73|114.95\nAldan|Russia|58.60|125.39\nMirny|Russia|62.54|113.96\nZhigansk|Russia|66.77|123.37\nOkhotsk|Russia|59.38|143.22\nKhabarovsk|Russia|48.45|135.12\nOkha|Russia|53.57|142.95\nYuzhno Sakhalinsk|Russia|46.96|142.74\nMexicali|Mexico|32.65|-115.48\nLa Paz|Mexico|24.14|-110.32\nTorreón|Mexico|25.57|-103.42\nCuliacán|Mexico|24.83|-107.38\nNogales|Mexico|31.30|-110.94\nHermosillo|Mexico|29.10|-110.95\nGuaymas|Mexico|27.93|-110.89\nSan Luis Potosí|Mexico|22.17|-101.00\nMatamoros|Mexico|25.88|-97.50\nNuevo Laredo|Mexico|27.50|-99.55\nColima|Mexico|19.23|-103.72\nCampeche|Mexico|19.83|-90.50\nOaxaca|Mexico|17.08|-96.67\nLeón|Mexico|21.15|-101.70\nMaiduguri|Nigeria|11.85|13.16\nPort Harcourt|Nigeria|4.81|7.01\nMakurdi|Nigeria|7.73|8.53\nIbadan|Nigeria|7.38|3.93\nOgbomosho|Nigeria|8.13|4.24\nWarri|Nigeria|5.52|5.76\nKaduna|Nigeria|10.52|7.44\nGdańsk|Poland|54.36|18.64\nKraków|Poland|50.06|19.96\nDalandzadgad|Mongolia|43.58|104.44\nWonsan|North Korea|39.16|127.43\nSinuiju|North Korea|40.09|124.42\nDund-Us|Mongolia|48.02|91.63\nChoibalsan|Mongolia|48.07|114.51\nLüderitz|Namibia|-26.65|15.16\nWalvis Bay|Namibia|-22.96|14.51\nMwanza|Tanzania|-2.52|32.93\nMorogoro|Tanzania|-6.82|37.66\nDodoma|Tanzania|-6.18|35.75\nArusha|Tanzania|-3.36|36.67\nBern|Switzerland|46.92|7.47\nMalmö|Sweden|55.58|13.03\nLaayoune|Morocco|27.15|-13.20\nTernate|Indonesia|0.79|127.36\nAmbon|Indonesia|-3.72|128.20\nRaba|Indonesia|-8.45|118.77\nJayapura|Indonesia|-2.53|140.70\nFlorence|Italy|43.78|11.25\nCatania|Italy|37.50|15.08\nPristina|Kosovo|42.67|21.17\nMeru|Kenya|0.06|37.64\nEldoret|Kenya|0.52|35.27\nBanda Aceh|Indonesia|5.55|95.32\nGeorge Town|Malaysia|5.41|100.33\nZhangye|China|38.93|100.45\nWuwei|China|37.93|102.64\nDunhuang|China|40.14|94.66\nTianshui|China|34.60|105.92\nDulan|China|36.17|98.27\nGolmud|China|36.42|94.88\nYulin|China|22.63|110.15\nBose|China|23.90|106.61\nWuzhou|China|23.48|111.32\nLiupanshui|China|26.60|104.83\nQuanzhou|China|24.90|118.58\nHefei|China|31.85|117.28\nSuzhou|China|33.64|116.98\nZhanjiang|China|21.20|110.38\nShaoguan|China|24.80|113.58\nBalikpapan|Indonesia|-1.25|116.83\nKuching|Malaysia|1.53|110.33\nAntsiranana|Madagascar|-12.28|49.31\nFianarantsoa|Madagascar|-21.43|47.08\nMahajanga|Madagascar|-15.67|46.35\nToliara|Madagascar|-23.36|43.69\nSurakarta|Indonesia|-7.56|110.83\nBandar Lampung|Indonesia|-5.43|105.27\nTanjung Pandan|Indonesia|-2.75|107.65\nMalang|Indonesia|-7.98|112.61\nKupang|Indonesia|-10.18|123.58\nParepare|Indonesia|-4.02|119.63\nCuenca|Ecuador|-2.90|-79.00\nSanta Cruz|Ecuador|-0.53|-90.35\nLimón|Costa Rica|10.00|-83.03\nSantiago de Cuba|Cuba|20.03|-75.82\nSantiago|Dominican Rep.|19.50|-70.67\nManizales|Colombia|5.06|-75.52\nPasto|Colombia|1.21|-77.28\nBarranquilla|Colombia|10.96|-74.80\nRoseau|Dominica|15.30|-61.39\nMbandaka|Congo (Kinshasa)|0.04|18.26\nMoundou|Chad|8.55|16.09\nSuez|Egypt|30.00|32.55\nBur Said|Egypt|31.26|32.29\nEl Faiyum|Egypt|29.31|30.84\nAswan|Egypt|24.09|32.90\nAsyut|Egypt|27.19|31.18\nKisangani|Congo (Kinshasa)|0.52|25.22\nAssab|Eritrea|13.01|42.73\nDjibouti|Djibouti|11.60|43.15\nDresden|Germany|51.05|13.75\nXigaze|China|29.25|88.88\nShache|China|38.43|77.25\nYining|China|43.90|81.35\nAltay|China|47.87|88.12\nPutrajaya|Malaysia|2.91|101.70\nShizuishan|China|39.23|106.77\nYulin|China|38.28|109.73\nAnkang|China|32.68|109.02\nHouma|China|35.62|111.21\nYueyang|China|29.38|113.10\nHengyang|China|26.88|112.59\nMianyang|China|31.47|104.77\nXichang|China|27.88|102.30\nBaoshan|China|25.12|99.15\nGejiu|China|23.38|103.15\nShijiazhuang|China|38.05|114.48\nHandan|China|36.58|114.48\nAnshan|China|41.12|122.94\nDalian|China|38.92|121.63\nQingdao|China|36.09|120.33\nLinyi|China|35.08|118.33\nHuaiyin|China|33.58|119.03\nWenzhou|China|28.02|120.65\nNingbo|China|29.88|121.55\nFukuoka|Japan|33.60|130.41\nMiyazaki|Japan|31.92|131.42\nNaha|Japan|26.21|127.67\nKōchi|Japan|33.56|133.54\nGorontalo|Indonesia|0.55|123.07\nTongliao|China|43.62|122.27\nHohhot|China|40.82|111.66\nChifeng|China|42.27|118.95\nUlan Hot|China|46.08|122.08\nHailar|China|49.20|119.70\nJiamusi|China|46.83|130.35\nBei'an|China|48.24|126.48\nDaqing|China|46.58|125.00\nJixi|China|45.30|130.97\nNagoya|Japan|35.16|136.91\nNagano|Japan|36.65|138.17\nKushiro|Japan|42.97|144.37\nHakodate|Japan|41.79|140.74\nKyoto|Japan|35.03|135.75\nSendai|Japan|38.29|141.02\nSakata|Japan|38.92|139.85\nBandundu|Congo (Kinshasa)|-3.31|17.38\nKananga|Congo (Kinshasa)|-5.89|22.40\nKasongo|Congo (Kinshasa)|-4.45|26.66\nMbuji-Mayi|Congo (Kinshasa)|-6.15|23.60\nKalemie|Congo (Kinshasa)|-5.93|29.20\nButembo|Congo (Kinshasa)|0.13|29.28\nGoma|Congo (Kinshasa)|-1.68|29.22\nMzuzu|Malawi|-11.46|34.02\nBlantyre|Malawi|-15.79|34.99\nQuetzaltenango|Guatemala|14.83|-91.52\nBanjul|The Gambia|13.45|-16.59\nFaridabad|India|28.44|77.31\nSrinagar|India|34.10|74.81\nVijayawada|India|16.52|80.63\nThiruvananthapuram|India|8.50|76.95\nKochi|India|10.02|76.22\nCuttack|India|20.47|85.89\nHubballi|India|15.36|75.12\nMangaluru|India|12.90|74.85\nMysuru|India|12.31|76.66\nKalaburagi|India|17.35|76.82\nKolhapur|India|16.70|74.22\nNanded|India|19.17|77.30\nAkola|India|20.71|77.01\nGuwahati|India|26.16|91.77\nKayes|Congo (Brazzaville)|-4.18|13.28\nFranceville|Gabon|-1.63|13.58\nBordeaux|France|44.85|-0.60\nMarseille|France|43.29|5.37\nLe Havre|France|49.50|0.10\nGao|Mali|16.27|-0.05\nCoihaique|Chile|-45.57|-72.07\nArica|Chile|-18.50|-70.29\nCopiapó|Chile|-27.36|-70.34\nLa Serena|Chile|-29.90|-71.25\nLos Angeles|Chile|-37.46|-72.36\nNarsarsuaq|Greenland|61.17|-45.42\nSisimiut|Greenland|66.95|-53.67\nUpernavik|Greenland|72.71|-56.14\nQaanaaq|Greenland|77.48|-69.33\nNouadhibou|Mauritania|20.90|-17.06\nKayes|Mali|14.45|-11.44\nAyoun el Atrous|Mauritania|16.67|-9.62\nSégou|Mali|13.44|-6.26\nSkopje|North Macedonia|42.00|21.43\nAl Jawf|Libya|24.20|23.29\nTmassa|Libya|26.37|15.80\nMisrata|Libya|32.38|15.10\nZuwara|Libya|32.93|12.08\nKirkuk|Iraq|35.47|44.39\nMosul|Iraq|36.35|43.14\nNajaf|Iraq|32.00|44.34\nBahir Dar|Ethiopia|11.60|37.38\nMekele|Ethiopia|13.50|39.47\nDire Dawa|Ethiopia|9.59|41.86\nRovaniemi|Finland|66.50|25.72\nVaasa|Finland|63.10|21.60\nTampere|Finland|61.50|23.75\nAqtobe|Kazakhstan|50.28|57.17\nRudniy|Kazakhstan|52.95|63.13\nQyzylorda|Kazakhstan|44.80|65.46\nAtyrau|Kazakhstan|47.11|51.92\nEkibastuz|Kazakhstan|51.73|75.32\nPavlodar|Kazakhstan|52.30|76.95\nSemey|Kazakhstan|50.43|80.28\nOskemen|Kazakhstan|49.99|82.61\nYazd|Iran|31.92|54.37\nAhvaz|Iran|31.28|48.72\nBasra|Iraq|30.52|47.81\nBandar-e-Abbas|Iran|27.20|56.27\nHamadan|Iran|34.80|48.52\nTabriz|Iran|38.09|46.30\nLudhiana|India|30.93|75.87\nKota|India|25.18|75.83\nJodhpur|India|26.29|73.01\nShymkent|Kazakhstan|42.32|69.60\nTaraz|Kazakhstan|42.90|71.36\nLucknow|India|26.86|80.91\nSaharanpur|India|29.97|77.55\nRanchi|India|23.37|85.33\nBhagalpur|India|25.23|86.98\nRaipur|India|21.24|81.63\nJabalpur|India|23.18|79.95\nIndore|India|22.72|75.86\nPuducherry|India|11.93|79.83\nSalem|India|11.67|78.18\nTiruchirappalli|India|10.81|78.69\nPointe-Noire|Congo (Brazzaville)|-4.77|11.88\nKankan|Guinea|10.39|-9.31\nNzérékoré|Guinea|7.76|-8.83\nBouaké|Ivory Coast|7.69|-5.03\nSt.-Denis|France|-20.88|55.45\nRio Branco|Brazil|-9.97|-67.80\nSão Luís|Brazil|-2.51|-44.27\nPorto Velho|Brazil|-8.75|-63.90\nAlvorada|Brazil|-12.47|-49.08\nCorumbá|Brazil|-19.02|-57.65\nBelo Horizonte|Brazil|-19.91|-43.92\nMontes Claros|Brazil|-16.72|-43.86\nUberlândia|Brazil|-18.90|-48.28\nColíder|Brazil|-10.82|-55.45\nAlta Floresta|Brazil|-9.90|-55.91\nCuiabá|Brazil|-15.57|-56.09\nPelotas|Brazil|-31.75|-52.33\nCaxias do Sul|Brazil|-29.18|-51.17\nPonta Grossa|Brazil|-25.09|-50.16\nTeresina|Brazil|-5.09|-42.78\nMaceió|Brazil|-9.62|-35.73\nVitória da Conquista|Brazil|-14.85|-40.84\nBarreiras|Brazil|-12.14|-45.00\nVila Velha|Brazil|-20.37|-40.32\nNatal|Brazil|-5.78|-35.24\nThompson|Canada|55.75|-97.87\nBrandon|Canada|49.83|-99.95\nFort Smith|Canada|60.00|-111.88\nFort McMurray|Canada|56.73|-111.38\nPeace River|Canada|56.23|-117.28\nFort St. John|Canada|56.25|-120.83\nIqaluit|Canada|63.75|-68.50\nCambridge Bay|Canada|69.12|-105.03\nKugluktuk|Canada|67.80|-115.13\nChesterfield Inlet|Canada|63.34|-90.70\nArviat|Canada|61.11|-94.06\nTaloyoak|Canada|69.53|-93.53\nIgloolik|Canada|69.26|-81.79\nDawson City|Canada|64.07|-139.42\nTimmins|Canada|48.47|-81.33\nNorth Bay|Canada|46.30|-79.45\nKuujjuarapik|Canada|55.28|-77.77\nKuujjuaq|Canada|58.10|-68.40\nSydney|Canada|46.07|-60.18\nLabrador City|Canada|52.94|-66.92\nEbolowa|Cameroon|2.90|11.15\nBambari|Central African Rep.|5.76|20.67\nVenice|Italy|45.44|12.33\nEl Calafate|Argentina|-50.33|-72.30\nSan Juan|Argentina|-31.55|-68.52\nRawson|Argentina|-43.30|-65.10\nNeuquén|Argentina|-38.95|-68.06\nTrinidad|Bolivia|-14.83|-64.90\nSanta Rosa|Argentina|-36.62|-64.30\nBariloche|Argentina|-41.15|-71.30\nSalta|Argentina|-24.78|-65.42\nTucumán|Argentina|-26.81|-65.22\nFormosa|Argentina|-26.17|-58.18\nSanta Fe|Argentina|-31.62|-60.69\nRosario|Argentina|-32.95|-60.67\nCampinas|Brazil|-22.90|-47.10\nSorocaba|Brazil|-23.49|-47.47\nRibeirão Preto|Brazil|-21.17|-47.83\nPetrolina|Brazil|-9.38|-40.51\nBamenda|Cameroon|5.96|10.15\nGaroua|Cameroon|9.30|13.39\nHerat|Afghanistan|34.33|62.17\nMazar-i-Sharif|Afghanistan|36.70|67.10\nBattambang|Cambodia|13.10|103.20\nSiem Reap|Cambodia|13.37|103.85\nMalanje|Angola|-9.54|16.34\nBenguela|Angola|-12.58|13.41\nLubango|Angola|-14.91|13.49\nMoçâmedes|Angola|-15.19|12.16\nTarija|Bolivia|-21.52|-64.75\nBridgetown|Barbados|13.10|-59.62\nAnnaba|Algeria|36.92|7.76\nParakou|Benin|9.34|2.62\nPorto-Novo|Benin|6.48|2.62\nConstantine|Algeria|36.36|6.60\nBrest|Belarus|52.10|23.70\nKhulna|Bangladesh|22.84|89.56\nFrancistown|Botswana|-21.17|27.50\nMahalapye|Botswana|-23.10|26.82\nSerowe|Botswana|-22.39|26.71\nKatherine|Australia|-14.47|132.27\nBusselton|Australia|-33.66|115.35\nMandurah|Australia|-32.52|115.75\nBroome|Australia|-17.96|122.23\nKalgoorlie|Australia|-30.74|121.46\nAlbany|Australia|-35.02|117.89\nPort Hedland|Australia|-20.31|118.61\nKarratha|Australia|-20.73|116.87\nGeraldton|Australia|-28.77|114.60\nGriffith|Australia|-34.29|146.04\nOrange|Australia|-33.28|149.10\nDubbo|Australia|-32.26|148.60\nArmidale|Australia|-30.51|151.67\nBroken Hill|Australia|-31.95|141.43\nPort Lincoln|Australia|-34.73|135.87\nWhyalla|Australia|-33.03|137.56\nPortland|Australia|-38.34|141.59\nBendigo|Australia|-36.76|144.28\nWangaratta|Australia|-36.36|146.30\nWindorah|Australia|-25.43|142.65\nMount Isa|Australia|-20.72|139.49\nRockhampton|Australia|-23.36|150.52\nCairns|Australia|-16.89|145.76\nGold Coast|Australia|-28.08|153.45\nDevonport|Australia|-41.19|146.33\nBobo Dioulasso|Burkina Faso|11.18|-4.29\nRajshahi|Bangladesh|24.38|88.60\nMandalay|Myanmar|21.97|96.08\nSittwe|Myanmar|20.14|92.88\nBujumbura|Burundi|-3.38|29.36\nPago Pago|American Samoa|-14.28|-170.71\nKingstown|Saint Vincent and the Grenadines|13.15|-61.21\nCastries|Saint Lucia|14.00|-61.00\nBasseterre|Saint Kitts and Nevis|17.30|-62.72\nLas Palmas|Spain|28.10|-15.43\nBerbera|Somaliland|10.44|45.02\nPort Louis|Mauritius|-20.17|57.50\nGaza City|Palestine|31.53|34.45\nSaint George's|Grenada|12.05|-61.74\nPapeete|French Polynesia|-17.53|-149.57\nManama|Bahrain|26.24|50.58\nFreeport|The Bahamas|26.53|-78.70\nSaint John's|Antigua and Barbuda|17.12|-61.85\nTaichung|Taiwan|24.15|120.68\nNapier|New Zealand|-39.49|176.93\nManukau|New Zealand|-37.00|174.88\nHamilton|New Zealand|-37.78|175.29\nBlenheim|New Zealand|-41.51|173.95\nDunedin|New Zealand|-45.89|170.49\nLeh|India|34.16|77.57\nAmaravati|India|16.53|80.52\nKozhikode|India|11.25|75.77\nBhubaneswar|India|20.27|85.83\nJamshedpur|India|22.79|86.20\nMontevideo|Uruguay|-34.86|-56.17\nHelena|United States|46.59|-112.04\nBismarck|United States|46.81|-100.78\nBoise|United States|43.61|-116.23\nSan Jose|United States|37.30|-121.85\nSacramento|United States|38.58|-121.47\nLas Vegas|United States|36.21|-115.22\nSanta Fe|United States|35.69|-105.94\nPortland|United States|45.52|-122.68\nSalt Lake City|United States|40.78|-111.93\nCheyenne|United States|41.14|-104.82\nDes Moines|United States|41.58|-93.62\nOmaha|United States|41.24|-96.01\nOklahoma City|United States|35.47|-97.52\nPierre|United States|44.37|-100.35\nSan Antonio|United States|29.49|-98.51\nSan Cristóbal|Venezuela|7.77|-72.25\nValencia|Venezuela|10.23|-67.98\nJackson|United States|32.30|-90.18\nRaleigh|United States|35.82|-78.64\nCleveland|United States|41.47|-81.70\nCincinnati|United States|39.16|-84.46\nNashville|United States|36.17|-86.78\nMemphis|United States|35.12|-90.00\nNorfolk|United States|36.85|-76.28\nMilwaukee|United States|43.05|-87.92\nBuffalo|United States|42.88|-78.88\nPittsburgh|United States|40.43|-80.00\nCiudad Guayana|Venezuela|8.37|-62.62\nLomé|Togo|6.13|1.22\nTunis|Tunisia|36.80|10.18\nKodiak|United States|57.79|-152.41\nCold Bay|United States|55.20|-162.72\nBethel|United States|60.79|-161.76\nPoint Hope|United States|68.35|-166.81\nUtqiaġvik|United States|71.29|-156.79\nNome|United States|64.51|-165.41\nValdez|United States|61.14|-146.35\nJuneau|United States|58.31|-134.42\nFairbanks|United States|64.84|-147.71\nPrudhoe Bay|United States|70.29|-148.67\nSevastopol|Russia|44.60|33.46\nAbu Dhabi|UAE|24.47|54.37\nAshgabat|Turkmenistan|37.95|58.38\nSamarkand|Uzbekistan|39.67|66.94\nLusaka|Zambia|-15.41|28.28\nHarare|Zimbabwe|-17.82|31.04\nBulawayo|Zimbabwe|-20.17|28.58\nDili|East Timor|-8.56|125.58\nPort Vila|Vanuatu|-17.73|168.32\nTegucigalpa|Honduras|14.10|-87.22\nGeorgetown|Guyana|6.80|-58.17\nReykjavík|Iceland|64.15|-21.95\nPort-au-Prince|Haiti|18.54|-72.34\nGlasgow|United Kingdom|55.88|-4.25\nKampala|Uganda|0.32|32.58\nAden|Yemen|12.78|45.01\nParamaribo|Suriname|5.84|-55.17\nSeville|Spain|37.41|-5.98\nZinder|Niger|13.80|8.98\nNiamey|Niger|13.52|2.11\nPort Sudan|Sudan|19.62|37.22\nDushanbe|Tajikistan|38.56|68.77\nCusco|Peru|-13.53|-71.97\nTacna|Peru|-18.00|-70.25\nTrujillo|Peru|-8.12|-79.02\nIca|Peru|-14.07|-75.73\nAsunción|Paraguay|-25.29|-57.64\nManagua|Nicaragua|12.15|-86.27\nFreetown|Sierra Leone|8.47|-13.24\nAgadez|Niger|17.00|7.98\nNyala|Sudan|12.06|24.89\nWau|South Sudan|7.70|27.99\nDongola|Sudan|19.17|30.48\nKassala|Sudan|15.46|36.39\nTromsø|Norway|69.64|18.99\nTrondheim|Norway|63.42|10.42\nBergen|Norway|60.39|5.32\nIslamabad|Pakistan|33.70|73.16\nMultan|Pakistan|30.20|71.45\nHyderabad|Pakistan|25.38|68.37\nPeshawar|Pakistan|34.01|71.53\nKathmandu|Nepal|27.72|85.31\nNacala|Mozambique|-14.52|40.72\nBloemfontein|South Africa|-29.12|26.23\nPretoria|South Africa|-25.70|28.23\nPort Moresby|Papua New Guinea|-9.46|147.19\nHoniara|Solomon Islands|-9.44|159.95\nPanama City|Panama|8.97|-79.53\nFez|Morocco|34.06|-5.00\nRabat|Morocco|34.03|-6.84\nMarrakesh|Morocco|31.63|-8.00\nChișinău|Moldova|47.01|28.86\nBeira|Mozambique|-19.82|34.87\nPort Elizabeth|South Africa|-33.97|25.60\nMaputo|Mozambique|-25.95|32.59\nTomsk|Russia|56.49|84.98\nAnadyr|Russia|64.74|177.47\nMurmansk|Russia|68.97|33.10\nArchangel|Russia|64.57|40.55\nNizhny Novgorod|Russia|56.33|44.00\nVolgograd|Russia|48.71|44.50\nUfa|Russia|54.79|56.04\nYekaterinburg|Russia|56.85|60.60\nSamara|Russia|53.20|50.15\nKazan|Russia|55.75|49.12\nSurgut|Russia|61.26|73.43\nBarnaul|Russia|53.35|83.75\nNovosibirsk|Russia|55.03|82.96\nMogadishu|Somalia|2.07|45.36\nMuscat|Oman|23.61|58.59\nColombo|Sri Lanka|6.93|79.86\nCebu|Philippines|10.32|123.90\nIloilo|Philippines|10.71|122.55\nDavao|Philippines|7.11|125.63\nBratsk|Russia|56.16|101.62\nIrkutsk|Russia|52.32|104.25\nKrasnoyarsk|Russia|56.02|92.86\nDikson|Russia|73.51|80.55\nChita|Russia|52.06|113.47\nVladivostok|Russia|43.13|131.91\nNizhneyansk|Russia|71.43|136.07\nYakutsk|Russia|62.03|129.74\nTiksi|Russia|71.63|128.83\nMagadan|Russia|59.57|150.81\nTijuana|Mexico|32.50|-117.08\nChihuahua|Mexico|28.65|-106.09\nMazatlán|Mexico|23.22|-106.42\nTampico|Mexico|22.30|-97.87\nAcapulco|Mexico|16.85|-99.92\nVeracruz|Mexico|19.18|-96.16\nTuxtla Gutiérrez|Mexico|16.75|-93.15\nCancún|Mexico|21.17|-86.83\nMérida|Mexico|20.97|-89.62\nEnugu|Nigeria|6.45|7.50\nSokoto|Nigeria|13.06|5.24\nPerm|Russia|58.00|56.25\nErdenet|Mongolia|49.05|104.12\nUlaanbaatar|Mongolia|47.92|106.91\nMbeya|Tanzania|-8.89|33.43\nWindhoek|Namibia|-22.57|17.08\nGrootfontein|Namibia|-19.57|18.12\nZanzibar|Tanzania|-6.16|39.20\nValencia|Spain|39.49|-0.40\nPalana|Russia|59.08|159.95\nPetropavlovsk-Kamchatsky|Russia|53.06|158.62\nAbuja|Nigeria|9.09|7.53\nPadang|Indonesia|-0.96|100.36\nBissau|Guinea Bissau|11.87|-15.60\nPalermo|Italy|38.13|13.35\nAmman|Jordan|31.95|35.93\nVilnius|Lithuania|54.68|25.32\nRiga|Latvia|56.95|24.10\nBishkek|Kyrgyzstan|42.88|74.58\nJiayuguan|China|39.82|98.30\nXining|China|36.62|101.77\nGuilin|China|25.28|110.28\nHuainan|China|32.63|116.98\nShantou|China|23.37|116.67\nTarakan|Indonesia|3.30|117.63\nMombasa|Kenya|-4.04|39.69\nMaseru|Lesotho|-29.32|27.48\nAntananarivo|Madagascar|-18.91|47.51\nSemarang|Indonesia|-6.96|110.42\nPalembang|Indonesia|-2.98|104.75\nBandjarmasin|Indonesia|-3.33|114.58\nMakassar|Indonesia|-5.14|119.43\nLyon|France|45.77|4.83\nQuito|Ecuador|-0.21|-78.50\nSan José|Costa Rica|9.94|-84.09\nSan Salvador|El Salvador|13.71|-89.20\nKingston|Jamaica|17.98|-76.77\nCartagena|Colombia|10.40|-75.52\nMitú|Colombia|1.20|-70.17\nBumba|Congo (Kinshasa)|2.19|22.46\nN'Djamena|Chad|12.12|15.05\nAbéché|Chad|13.84|20.83\nMalabo|Equatorial Guinea|3.75|8.78\nLuxor|Egypt|25.70|32.65\nAsmara|Eritrea|15.33|38.93\nZagreb|Croatia|45.80|16.00\nTallinn|Estonia|59.43|24.73\nLhasa|China|29.65|91.10\nHami|China|42.83|93.52\nHotan|China|37.10|79.93\nKashgar|China|39.48|75.97\nYinchuan|China|38.47|106.27\nPingxiang|China|27.62|113.85\nNagasaki|Japan|32.76|129.89\nQiqihar|China|47.35|123.99\nKikwit|Congo (Kinshasa)|-5.03|18.85\nMatadi|Congo (Kinshasa)|-5.82|13.45\nKolwezi|Congo (Kinshasa)|-10.72|25.47\nLubumbashi|Congo (Kinshasa)|-11.68|27.48\nLilongwe|Malawi|-13.98|33.78\nGuatemala City|Guatemala|14.62|-90.53\nCayenne|France|4.93|-52.33\nLibreville|Gabon|0.39|9.46\nVishakhapatnam|India|17.73|83.30\nSuva|Fiji|-18.13|178.44\nPort-Gentil|Gabon|-0.72|8.78\nTimbuktu|Mali|16.77|-3.02\nPunta Arenas|Chile|-53.16|-70.94\nIquique|Chile|-20.25|-70.13\nAntofagasta|Chile|-23.65|-70.40\nValparaíso|Chile|-33.05|-71.62\nValdivia|Chile|-39.80|-73.25\nConcepción|Chile|-36.83|-73.05\nPuerto Montt|Chile|-41.47|-72.93\nNuuk|Greenland|64.20|-51.73\nNouakchott|Mauritania|18.09|-15.98\nBamako|Mali|12.65|-8.00\nAtar|Mauritania|20.52|-13.05\nDjenné|Mali|13.90|-4.55\nSabha|Libya|27.03|14.43\nBanghazi|Libya|32.12|20.06\nThessaloniki|Greece|40.70|22.88\nBeirut|Lebanon|33.87|35.51\nTbilisi|Georgia|41.73|44.79\nGondar|Ethiopia|12.61|37.46\nNur-Sultan|Kazakhstan|51.18|71.43\nQaraghandy|Kazakhstan|49.88|73.12\nAlmaty|Kazakhstan|43.33|76.91\nIsfahan|Iran|32.70|51.70\nShiraz|Iran|29.63|52.57\nAmritsar|India|31.64|74.87\nVaranasi|India|25.33|83.00\nAsansol|India|23.69|86.98\nBhilai|India|21.22|81.43\nBhopal|India|23.25|77.41\nMadurai|India|9.92|78.12\nCoimbatore|India|11.00|76.95\nVientiane|Laos|17.97|102.60\nBrazzaville|Congo (Brazzaville)|-4.26|15.28\nConakry|Guinea|9.53|-13.68\nYamoussoukro|Ivory Coast|6.82|-5.28\nCruzeiro do Sul|Brazil|-7.63|-72.67\nLeticia|Colombia|-4.20|-69.96\nManaus|Brazil|-3.10|-60.00\nCaxias|Brazil|-4.83|-43.35\nSantarém|Brazil|-2.43|-54.70\nMarabá|Brazil|-5.35|-49.12\nVilhena|Brazil|-12.72|-60.12\nJi-Paraná|Brazil|-10.83|-61.97\nCampo Grande|Brazil|-20.45|-54.62\nFlorianópolis|Brazil|-27.58|-48.52\nFeira de Santana|Brazil|-12.25|-38.97\nWinnipeg|Canada|49.88|-97.17\nChurchill|Canada|58.77|-94.17\nRegina|Canada|50.45|-104.62\nSaskatoon|Canada|52.17|-106.67\nCalgary|Canada|51.08|-114.08\nPrince Rupert|Canada|54.32|-130.33\nVictoria|Canada|48.43|-123.35\nArctic Bay|Canada|73.03|-85.17\nResolute|Canada|74.68|-94.90\nNaujaat|Canada|66.53|-86.28\nYellowknife|Canada|62.44|-114.40\nFort Good Hope|Canada|66.27|-128.63\nWhitehorse|Canada|60.72|-135.05\nBoa Vista|Brazil|2.82|-60.67\nMacapá|Brazil|0.03|-51.05\nOttawa|Canada|45.42|-75.70\nFort Severn|Canada|55.98|-87.65\nThunder Bay|Canada|48.45|-89.27\nQuébec|Canada|46.84|-71.25\nHalifax|Canada|44.65|-63.60\nSt. John's|Canada|47.58|-52.68\nNain|Canada|56.55|-61.69\nCharlottetown|Canada|46.25|-63.13\nN'Délé|Central African Rep.|8.41|20.65\nBelgrade|Serbia|44.82|20.47\nObo|Central African Rep.|5.40|26.50\nBandar Seri Begawan|Brunei|4.88|114.93\nPuerto Deseado|Argentina|-47.75|-65.90\nRío Gallegos|Argentina|-51.63|-69.22\nComodoro Rivadavia|Argentina|-45.87|-67.50\nMendoza|Argentina|-32.88|-68.82\nSucre|Bolivia|-19.04|-65.26\nRiberalta|Bolivia|-10.98|-66.10\nBahía Blanca|Argentina|-38.74|-62.27\nMar del Plata|Argentina|-38.00|-57.58\nCórdoba|Argentina|-31.40|-64.18\nPosadas|Argentina|-27.36|-55.89\nBelmopan|Belize|17.25|-88.77\nBangui|Central African Rep.|4.37|18.56\nMaroua|Cameroon|10.60|14.32\nYaoundé|Cameroon|3.87|11.51\nTirana|Albania|41.33|19.82\nYerevan|Armenia|40.18|44.51\nBaku|Azerbaijan|40.40|49.86\nKandahar|Afghanistan|31.61|65.69\nPhnom Penh|Cambodia|11.55|104.91\nMenongue|Angola|-14.67|17.70\nHuambo|Angola|-12.75|15.76\nLa Paz|Bolivia|-16.50|-68.15\nSanta Cruz|Bolivia|-17.75|-63.23\nOran|Algeria|35.71|-0.62\nCotonou|Benin|6.40|2.52\nTamanrasset|Algeria|22.79|5.52\nGhardaia|Algeria|32.49|3.67\nSofia|Bulgaria|42.69|23.31\nMinsk|Belarus|53.90|27.56\nThimphu|Bhutan|27.47|89.64\nGaborone|Botswana|-24.65|25.91\nDarwin|Australia|-12.43|130.85\nAlice Springs|Australia|-23.70|133.88\nCanberra|Australia|-35.28|149.13\nNewcastle|Australia|-32.85|151.82\nAdelaide|Australia|-34.93|138.60\nTownsville|Australia|-19.25|146.77\nBrisbane|Australia|-27.45|153.03\nHobart|Australia|-42.85|147.30\nOuagadougou|Burkina Faso|12.37|-1.53\nSarajevo|Bosnia|43.85|18.38\nNaypyidaw|Myanmar|19.77|96.12\nSan Juan|Puerto Rico|18.44|-66.13\nStanley|Falkland Islands|-51.70|-57.85\nHamilton|Bermuda|32.29|-64.78\nNuku'alofa|Tonga|-21.14|-175.22\nHargeisa|Somaliland|9.56|44.07\nVictoria|Seychelles|-4.62|55.45\nSão Tomé|Sao Tome and Principe|0.33|6.73\nApia|Samoa|-13.84|-171.74\nValletta|Malta|35.90|14.51\nMalé|Maldives|4.17|73.50\nJerusalem|Israel|31.78|35.21\nPraia|Cape Verde|14.92|-23.52\nNassau|The Bahamas|25.08|-77.35\nNicosia|Cyprus|35.17|33.37\nKaohsiung|Taiwan|22.63|120.27\nWellington|New Zealand|-41.30|174.78\nChristchurch|New Zealand|-43.54|172.63\nShenzhen|China|22.55|114.12\nZibo|China|36.80|118.05\nMinneapolis|United States|44.98|-93.25\nHonolulu|United States|21.31|-157.86\nSeattle|United States|47.57|-122.34\nPhoenix|United States|33.54|-112.07\nSan Diego|United States|32.82|-117.18\nSt. Louis|United States|38.64|-90.24\nNew Orleans|United States|30.00|-90.04\nDallas|United States|32.82|-96.84\nMaracaibo|Venezuela|10.73|-71.66\nBoston|United States|42.33|-71.07\nTampa|United States|27.95|-82.46\nPhiladelphia|United States|40.00|-75.17\nDetroit|United States|42.33|-83.08\nAnchorage|United States|61.22|-149.90\nHanoi|Vietnam|21.04|105.85\nHo Chi Minh City|Vietnam|10.78|106.69\nAnkara|Turkey|39.93|32.86\nBudapest|Hungary|47.50|19.08\nSanaa|Yemen|15.36|44.20\nBarcelona|Spain|41.39|2.18\nBucharest|Romania|44.44|26.10\nAleppo|Syria|36.23|37.17\nDamascus|Syria|33.50|36.30\nZürich|Switzerland|47.38|8.55\nLisbon|Portugal|38.72|-9.15\nKhartoum|Sudan|15.59|32.53\nJeddah|Saudi Arabia|21.52|39.22\nMakkah|Saudi Arabia|21.43|39.82\nOslo|Norway|59.92|10.75\nLahore|Pakistan|31.56|74.35\nKarachi|Pakistan|24.87|66.99\nDurban|South Africa|-29.86|30.98\nSt.  Petersburg|Russia|59.94|30.31\nGuadalajara|Mexico|20.67|-103.33\nPuebla|Mexico|19.05|-98.20\nKano|Nigeria|12.00|8.52\nWarsaw|Poland|52.25|21.00\nPyongyang|North Korea|39.02|125.75\nDar es Salaam|Tanzania|-6.80|39.27\nMedan|Indonesia|3.58|98.65\nDublin|Ireland|53.34|-6.25\nMonrovia|Liberia|6.31|-10.80\nNaples|Italy|40.84|14.24\nMilan|Italy|45.47|9.20\nKuala Lumpur|Malaysia|3.17|101.70\nLanzhou|China|36.06|103.79\nNanning|China|22.82|108.32\nGuiyang|China|26.58|106.72\nChongqing|China|29.57|106.59\nFuzhou|China|26.08|119.30\nGuangzhou|China|23.15|113.32\nDongguan|China|23.05|113.74\nBandung|Indonesia|-6.95|107.57\nSurabaya|Indonesia|-7.25|112.75\nGuayaquil|Ecuador|-2.22|-79.92\nMedellín|Colombia|6.28|-75.58\nCali|Colombia|3.40|-76.50\nHavana|Cuba|23.13|-82.37\nAlexandria|Egypt|31.20|29.95\nFrankfurt|Germany|50.10|8.68\nHamburg|Germany|53.55|10.00\nMunich|Germany|48.13|11.57\nPrague|Czechia|50.09|14.46\nKuwait City|Kuwait|29.37|47.98\nXian|China|34.28|108.89\nTaiyuan|China|37.88|112.54\nWuhan|China|30.58|114.27\nChangsha|China|28.20|112.97\nKunming|China|25.07|102.68\nZhengzhou|China|34.76|113.66\nShenyeng|China|41.81|123.45\nJinan|China|36.68|116.99\nTianjin|China|39.13|117.20\nNanchang|China|28.68|115.88\nNanjing|China|32.05|118.78\nHangzhou|China|30.25|120.17\nHiroshima|Japan|34.39|132.44\nChangchun|China|43.87|125.34\nBaotou|China|40.65|109.82\nHarbin|China|45.75|126.65\nSapporo|Japan|43.08|141.34\nSanto Domingo|Dominican Rep.|18.47|-69.90\nAccra|Ghana|5.55|-0.22\nDelhi|India|28.67|77.23\nHyderabad|India|17.40|78.48\nPune|India|18.53|73.85\nNagpur|India|21.17|79.09\nTripoli|Libya|32.89|13.18\nTel Aviv|Israel|32.08|34.77\nHelsinki|Finland|60.18|24.93\nMashhad|Iran|36.27|59.57\nJaipur|India|26.92|75.81\nKanpur|India|26.46|80.32\nPatna|India|25.63|85.13\nChennai|India|13.09|80.28\nAhmedabad|India|23.03|72.58\nSurat|India|21.20|72.84\nKøbenhavn|Denmark|55.68|12.56\nAbidjan|Ivory Coast|5.32|-4.04\nBelém|Brazil|-1.45|-48.48\nBrasília|Brazil|-15.78|-47.92\nPorto Alegre|Brazil|-30.05|-51.20\nCuritiba|Brazil|-25.42|-49.32\nFortaleza|Brazil|-3.75|-38.58\nSalvador|Brazil|-12.97|-38.48\nEdmonton|Canada|53.55|-113.50\nMontréal|Canada|45.50|-73.59\nGoiânia|Brazil|-16.72|-49.30\nRecife|Brazil|-8.07|-34.92\nBrussels|Belgium|50.84|4.33\nDhaka|Bangladesh|23.73|90.41\nLuanda|Angola|-8.84|13.23\nAlgiers|Algeria|36.77|3.05\nChattogram|Bangladesh|22.33|91.80\nPerth|Australia|-31.95|115.84\nYangon|Myanmar|16.79|96.16\nSan Francisco|United States|37.77|-122.42\nDenver|United States|39.74|-104.99\nHouston|United States|29.82|-95.34\nMiami|United States|25.79|-80.23\nAtlanta|United States|33.83|-84.40\nChicago|United States|41.83|-87.75\nCaracas|Venezuela|10.50|-66.92\nKyiv|Ukraine|50.44|30.51\nDubai|UAE|25.23|55.28\nTashkent|Uzbekistan|41.31|69.29\nMadrid|Spain|40.40|-3.69\nGeneva|Switzerland|46.21|6.14\nStockholm|Sweden|59.35|18.10\nBangkok|Thailand|13.75|100.51\nLima|Peru|-12.05|-77.05\nDakar|Senegal|14.72|-17.48\nJohannesburg|South Africa|-26.17|28.03\nAmsterdam|Netherlands|52.35|4.91\nCasablanca|Morocco|33.60|-7.62\nSeoul|South Korea|37.57|127.00\nManila|Philippines|14.61|120.98\nMonterrey|Mexico|25.67|-100.33\nBerlin|Germany|52.52|13.40\nÜrümqi|China|43.81|87.57\nChengdu|China|30.67|104.07\nŌsaka|Japan|34.75|135.46\nKinshasa|Congo (Kinshasa)|-4.33|15.31\nNew Delhi|India|28.60|77.20\nBengaluru|India|12.97|77.56\nAthens|Greece|37.99|23.73\nBaghdad|Iraq|33.34|44.39\nAddis Ababa|Ethiopia|9.04|38.70\nTehran|Iran|35.67|51.42\nVancouver|Canada|49.28|-123.12\nToronto|Canada|43.70|-79.42\nBuenos Aires|Argentina|-34.60|-58.40\nKabul|Afghanistan|34.52|69.18\nVienna|Austria|48.20|16.36\nMelbourne|Australia|-37.82|144.97\nTaipei|Taiwan|25.04|121.57\nAuckland|New Zealand|-36.85|174.76\nLos Angeles|United States|33.99|-118.18\nWashington,  D.C.|United States|38.90|-77.01\nNew York|United States|40.75|-73.98\nLondon|United Kingdom|51.50|-0.12\nIstanbul|Turkey|41.11|29.01\nRiyadh|Saudi Arabia|24.64|46.77\nCape Town|South Africa|-33.92|18.43\nMoscow|Russia|55.75|37.61\nMexico City|Mexico|19.44|-99.13\nLagos|Nigeria|6.45|3.39\nRome|Italy|41.90|12.48\nBeijing|China|39.93|116.39\nNairobi|Kenya|-1.28|36.81\nJakarta|Indonesia|-6.17|106.83\nBogota|Colombia|4.60|-74.09\nCairo|Egypt|30.05|31.25\nShanghai|China|31.22|121.43\nTokyo|Japan|35.69|139.75\nMumbai|India|19.02|72.86\nParis|France|48.87|2.33\nSantiago|Chile|-33.45|-70.67\nKolkata|India|22.50|88.32\nRio de Janeiro|Brazil|-22.92|-43.23\nSão Paulo|Brazil|-23.56|-46.63\nSydney|Australia|-33.92|151.18\nSingapore|Singapore|1.29|103.85\nHong Kong|Hong Kong S.A.R.|22.31|114.18".split("\n").map(function(r){var a=r.split("|");return {n:a[0],c:a[1],la:+a[2],lo:+a[3]}});
+  /* the nearest, and how far (km), along the Earth */
+  function near(lat,lon){var b=null,bd=1e9,c1=Math.cos(lat*Math.PI/180);for(var i=0;i<L.length;i++){var p=L[i],dy=p.la-lat,dx=((p.lo-lon+540)%360-180)*c1,d=dx*dx+dy*dy;if(d<bd){bd=d;b=p}}
+    if(!b)return null;var r=Math.PI/180,s=Math.sin((b.la-lat)*r/2),t=Math.sin((b.lo-lon)*r/2),h=s*s+Math.cos(lat*r)*Math.cos(b.la*r)*t*t;return {name:b.n,country:b.c,km:2*6371*Math.asin(Math.min(1,Math.sqrt(h)))}}
+  return {near:near,n:L.length}})();
+
 /* ---------- what is known of the sky and the air right now: six things measured from orbit or for it.
    sats     every active satellite's orbit (CelesTrak element sets), and four clouds of wreckage
    wind     the wind ten metres above the whole Earth (NOAA's GFS model, one value per degree)
@@ -735,7 +833,7 @@ function agoWords(ms){var m=Math.max(0,Math.round(ms/60000));return m<90?m+' min
    reads the sources for itself, through the Worker's /api/feed/<name>, every few minutes, and unpacks each into the same shape as the
    published snapshot, which it starts from. Each source is taken only when it is newer than what the page has. ---------- */
 var PULL={at:{},ok:{},err:{},n:0,timer:0};
-var PULLEVERY={wind:1800000,aurora:300000,strikes:300000,fires:900000,storms:1800000,sats:10800000,clouds:3600000,rain:1800000};
+var PULLEVERY={wind:1800000,aurora:300000,strikes:300000,fires:900000,storms:1800000,sats:10800000,clouds:3600000,rain:1800000,gfs:3600000};
 function hostGet(name,how){return fetch('/api/feed/'+name).then(function(r){if(!r.ok)throw new Error(name+' '+r.status);
   var mod=Date.parse(r.headers.get('last-modified')||'')||0,tm=Date.parse(r.headers.get('x-time')||'')||0;return (how==='text'?r.text():how==='blob'?r.blob():r.json()).then(function(b){return {b:b,mod:mod,time:tm}})})}
 function titleCase(s){return String(s||'').toLowerCase().replace(/(^|[\s\-])([a-z])/g,function(m,a,b){return a+b.toUpperCase()})}
@@ -804,6 +902,20 @@ function satsMerge(act,deb,fetched){
   LIVE.sats={asOf:base,src:'CelesTrak',n:m,bytes:out.subarray(0,m*20),names:names,ids:new Uint32Array(ids),fresh:fetched||now,live:act.length};LIVE.ver.sats++;return true}
 /* the real clouds, as the geostationary satellites see them (EUMETSAT's world cloud map, every three hours), for the globe */
 var CLOUD={img:null,at:0,ver:0},RAIN={img:null,at:0,ver:0};
+/* the weather model's own fields (NOAA's GFS, its newest run's picture of now), read from GRIB2 on the device: the temperature two
+   metres up, the pressure at sea level (and its highs and lows), the wind ten kilometres up (the jet streams), the height of the waves */
+var WX={t2m:null,mslp:null,jet:null,wave:null,at:0,ver:0,hl:[]};
+function wxTake(name,buf,tm){var m=GRIB.msgs(buf);if(!m.length)throw new Error(name+': nothing read');
+  if(name==='jet'){var u=null,v=null;m.forEach(function(f){if(f.cat===2&&f.par===2)u=f;if(f.cat===2&&f.par===3)v=f});if(!u||!v)throw new Error('jet: no wind');WX.jet={u:u,v:v}}
+  else WX[name]=m[0];
+  WX.at=Math.max(WX.at,Date.parse(tm||'')||m[0].time||0);if(name==='mslp')WX.hl=highsLows(m[0]);WX.ver++}
+/* the highs and lows: a point higher (or lower) than everything within ten degrees, and high or low enough to be one */
+function highsLows(m){var out=[],la,lo,k;function P(a,b){var v=GRIB.at(m,a,b);return v/100}
+  for(la=-74;la<=74;la+=2)for(lo=-180;lo<180;lo+=2){var p=P(la,lo);if(!(p>1019||p<1001))continue;var hi=p>1019,best=true;
+    for(var a=-10;a<=10&&best;a+=2)for(var b=-10;b<=10;b+=2){if(!a&&!b)continue;var q=P(clamp(la+a,-89,89),lo+b/Math.max(.3,Math.cos(la*AS.D)));if(hi?q>p:q<p){best=false;break}}
+    if(best){for(k=0;k<out.length;k++)if(out[k].h===hi&&Math.abs(out[k].lat-la)<9&&Math.abs(AS.n180(out[k].lon-lo))<12)break;if(k===out.length&&out.length<60)out.push({lat:la,lon:lo,hpa:Math.round(p),h:hi,v:AS.llv(la,lo)})}}
+  return out}
+function wxGet(name){return fetch('/api/gfs/'+name).then(function(r){if(!r.ok)throw new Error(name+' '+r.status);var tm=r.headers.get('x-time')||'';return r.arrayBuffer().then(function(b){wxTake(name,b,tm)})})}
 function cloudTake(b,mod){try{var u=URL.createObjectURL(b),im=new Image();im.onload=function(){CLOUD.img=im;CLOUD.at=mod||Date.now();CLOUD.ver++;GLOBE.cloud(im)};im.src=u}catch(e){}}
 /* the rain of the last half hour that NASA has finished (IMERG, from the satellites of the GPM constellation; a few hours behind the clock) */
 function rainTake(b,tm){try{var u=URL.createObjectURL(b),im=new Image();im.onload=function(){RAIN.img=im;RAIN.at=tm||0;RAIN.ver++;GLOBE.rain(im)};im.src=u}catch(e){}}
@@ -821,7 +933,9 @@ function livePull(force){
   if(due('sats')&&LIVE.sats)Promise.all([hostGet('tle-active','text')].concat(['fengyun-1c','cosmos-2251','iridium-33','cosmos-1408'].map(function(d){return hostGet('tle-'+d+'-debris','text').catch(function(){return {b:''}})}))).then(function(a){
     var t=Date.now(),act=pTLE(a[0].b,t),deb=a.slice(1).map(function(r){return pTLE(r.b,t)});if(!satsMerge(act,deb,a[0].mod||t))throw new Error('short orbit list '+act.length);PULL.ok.sats=Date.now()}).catch(fail('sats'));
   if(due('clouds'))hostGet('clouds','blob').then(function(r){cloudTake(r.b,r.mod);PULL.ok.clouds=Date.now()}).catch(fail('clouds'));
-  if(due('rain'))hostGet('rain','blob').then(function(r){rainTake(r.b,r.time);PULL.ok.rain=Date.now()}).catch(fail('rain'))}
+  if(due('rain'))hostGet('rain','blob').then(function(r){rainTake(r.b,r.time);PULL.ok.rain=Date.now()}).catch(fail('rain'));
+  /* the model's fields one after another (a few hundred kilobytes each), once an hour */
+  if(due('gfs'))['t2m','mslp','jet','wave'].reduce(function(p,k){return p.then(function(){return wxGet(k).catch(function(e){PULL.err['gfs-'+k]=String(e&&e.message||e).slice(0,80)})})},Promise.resolve()).then(function(){if(WX.t2m||WX.mslp)PULL.ok.gfs=Date.now()})}
 function liveHosted(){if(!HOSTED||PULL.timer)return;livePull(true);PULL.timer=setInterval(function(){livePull(false)},60000);
   document.addEventListener('visibilitychange',function(){if(!document.hidden)livePull(false)})}
 
@@ -838,7 +952,11 @@ var GLOBE=(function(){
   var VS='attribute vec2 a_p;void main(){gl_Position=vec4(a_p,0.0,1.0);}';
   function fsrc(){return (GLX.deriv?'#extension GL_OES_standard_derivatives : enable\n#define DERIV\n':'')+
     'precision highp float;uniform vec2 uC;uniform float uR;uniform mat3 uM;uniform vec3 uSun;uniform vec3 uSunV;uniform vec3 uMoon;uniform float uMoonK;uniform float uReady;uniform vec3 uBg;\n'+
-    'uniform sampler2D uDay;uniform sampler2D uLit;uniform sampler2D uWater;uniform sampler2D uTopo;uniform sampler2D uFlow;uniform sampler2D uAur;uniform float uFlowK;uniform float uAurK;uniform float uDim;uniform float uTime;uniform sampler2D uCld;uniform float uCldK;uniform sampler2D uRain;uniform float uRainK;uniform float uSunK;\n'+
+    'uniform sampler2D uDay;uniform sampler2D uLit;uniform sampler2D uWater;uniform sampler2D uTopo;uniform sampler2D uFlow;uniform sampler2D uAur;uniform float uFlowK;uniform float uAurK;uniform float uDim;uniform float uTime;uniform sampler2D uCld;uniform float uCldK;uniform sampler2D uRain;uniform float uRainK;uniform float uSunK;uniform sampler2D uWx;uniform float uHeatK;uniform float uWaveK;uniform float uIsoK;uniform sampler2D uWindF;uniform float uFlowA;uniform float uFlowT;\n'+
+    /* the colours of the model's fields: the temperature (-40 to 45 degrees: violet, blue, ice, green, yellow, orange, red) and the waves (calm to ten metres and more) */
+    'vec3 heatCol(float t){vec3 c=mix(vec3(0.24,0.10,0.47),vec3(0.18,0.31,0.85),smoothstep(0.0,0.235,t));c=mix(c,vec3(0.62,0.85,1.0),smoothstep(0.235,0.47,t));c=mix(c,vec3(0.45,0.88,0.62),smoothstep(0.47,0.59,t));\n'+
+    'c=mix(c,vec3(0.96,0.84,0.35),smoothstep(0.59,0.71,t));c=mix(c,vec3(1.0,0.54,0.17),smoothstep(0.71,0.82,t));return mix(c,vec3(0.80,0.12,0.24),smoothstep(0.82,1.0,t));}\n'+
+    'vec3 waveCol(float h){vec3 c=mix(vec3(0.01,0.05,0.16),vec3(0.03,0.30,0.48),smoothstep(0.0,0.17,h));c=mix(c,vec3(0.10,0.72,0.82),smoothstep(0.17,0.36,h));c=mix(c,vec3(0.90,0.97,1.0),smoothstep(0.36,0.62,h));return mix(c,vec3(1.0,0.25,0.72),smoothstep(0.62,0.95,h));}\n'+
     'void main(){vec2 p=(gl_FragCoord.xy-uC)/uR;float rr=length(p);vec2 pc=rr>0.9995?p*(0.9995/rr):p;vec3 n=vec3(pc,sqrt(max(1.0-dot(pc,pc),0.0)));vec3 e=uM*n;\n'+
     'float lat=asin(clamp(e.z,-1.0,1.0));float lon=atan(e.y,e.x);float ua=lon*0.15915494+0.5;\n'+
     /* a picture wrapped round a ball meets itself along one line; near that line the same place is looked up by a second count that has its join on the other side */
@@ -857,10 +975,19 @@ var GLOBE=(function(){
     /* the Sun on the sea */
     'vec3 hv=normalize(uSunV+vec3(0.0,0.0,1.0));float sd=max(dot(n,hv),0.0);float dayk=smoothstep(0.0,0.2,d)*wat;col+=(vec3(1.0,0.90,0.70)*pow(sd,220.0)*0.3+vec3(0.5,0.62,0.75)*pow(sd,26.0)*0.06)*dayk*uDim;\n'+
     /* the clouds: thick ones hide the ground and the cities; by day as bright as the Sun makes them, by night a faint grey */
-    'float cw=smoothstep(0.10,0.80,texture2D(uCld,uv).r)*uCldK;vec3 cc=vec3(0.93,0.96,1.0)*(sunl*1.32+tw*vec3(0.05,0.07,0.11))*mix(uDim,1.0,0.55)+vec3(0.07,0.09,0.14)*night*(1.0+moonl*4.0);\n'+
+    /* the clouds and the rain drift with the real wind (as a flow, cycling every few seconds: the picture itself is three hours old) */
+    'vec2 wf=(texture2D(uWindF,uv).xy-0.50196)*80.315*uFlowA;vec2 du=vec2(wf.x/cl,-wf.y)*0.00045;float f1=fract(uFlowT),f2=fract(uFlowT+0.5),fwa=abs(f1*2.0-1.0);\n'+
+    'float cs=mix(texture2D(uCld,uv-du*f1).r,texture2D(uCld,uv-du*f2).r,fwa);\n'+
+    'float cw=smoothstep(0.10,0.80,cs)*uCldK;vec3 cc=vec3(0.93,0.96,1.0)*(sunl*1.32+tw*vec3(0.05,0.07,0.11))*mix(uDim,1.0,0.55)+vec3(0.07,0.09,0.14)*night*(1.0+moonl*4.0);\n'+
     'col=mix(col,cc,cw*0.9);\n'+
     /* the rain of the last half hour measured from orbit (NASA IMERG), in its own colours: light blue for a shower to red for a downpour */
-    'vec4 rn=texture2D(uRain,uv);col=mix(col,rn.rgb*1.05,rn.a*uRainK*0.8);\n'+
+    'vec4 rn=mix(texture2D(uRain,uv-du*f1),texture2D(uRain,uv-du*f2),fwa);col=mix(col,rn.rgb*1.05,rn.a*uRainK*0.8);\n'+
+    /* the weather model's fields (where the page is served from the owner's own host): the temperature two metres up as a colour over
+       everything, lit a little by the Sun; the height of the waves over the sea; the pressure as lines every 4 hPa, every 20th brighter */
+    'vec4 wx=texture2D(uWx,uv);float shade=0.55+0.45*max(sunl,0.3);\n'+
+    'if(uHeatK>0.0)col=mix(col,heatCol(wx.r)*shade,uHeatK*0.74);\n'+
+    'if(uWaveK>0.0){float sea=smoothstep(0.0,0.012,wx.g);col=mix(col,waveCol((wx.g-0.004)*1.004)*shade,uWaveK*0.62*sea);}\n'+
+    'if(uIsoK>0.0)col=mix(col,vec3(0.92,0.97,1.0),wx.b*uIsoK*0.78);\n'+
     /* the Sun: a warm light where it shines on clear ground, the point it stands straight over, and where dusk is six, twelve and eighteen degrees deep */
     'if(uSunK>0.0){col+=vec3(1.0,0.74,0.36)*(1.0-cw)*pow(max(d,0.0),1.6)*0.3*uSunK*mix(uDim,1.0,0.5);col+=vec3(1.0,0.86,0.6)*exp(-(1.0-d)*110.0)*0.9*uSunK;\n'+
     'col+=(vec3(1.0,0.55,0.25)*(1.0-smoothstep(0.0,0.006,abs(d+0.1045)))*0.34+vec3(0.75,0.45,1.0)*(1.0-smoothstep(0.0,0.006,abs(d+0.2079)))*0.22+vec3(0.45,0.40,1.0)*(1.0-smoothstep(0.0,0.006,abs(d+0.3090)))*0.16)*uSunK;}\n'+
@@ -907,6 +1034,8 @@ var GLOBE=(function(){
     glBind(0,(ready?tex.day:dot1).tex,u.uDay);glBind(1,(ready?tex.lit:dot1).tex,u.uLit);glBind(2,(ready?tex.water:dot1).tex,u.uWater);glBind(3,(ready?tex.topo:dot1).tex,u.uTopo);
     glBind(4,(o.flow||dot1.tex),u.uFlow);glBind(5,(o.aur||dot1.tex),u.uAur);var ck=o.cld&&tex.cld?(o.cldK===undefined?1:o.cldK):0;glBind(6,ck?tex.cld.tex:dot1.tex,u.uCld);gl.uniform1f(u.uCldK,ck);
     var rk=o.rain&&tex.rain?(o.rainK===undefined?1:o.rainK):0;glBind(7,rk?tex.rain.tex:dot1.tex,u.uRain);gl.uniform1f(u.uRainK,rk);gl.uniform1f(u.uSunK,o.sunK||0);
+    glBind(9,o.windF||dot1.tex,u.uWindF);gl.uniform1f(u.uFlowA,o.windF&&!reduce?1:0);gl.uniform1f(u.uFlowT,(o.time||0)/7);
+    glBind(8,o.wx||dot1.tex,u.uWx);gl.uniform1f(u.uHeatK,o.wx?o.heatK||0:0);gl.uniform1f(u.uWaveK,o.wx?o.waveK||0:0);gl.uniform1f(u.uIsoK,o.wx?o.isoK||0:0);
     /* only the square the globe and its glow fill is worked out */
     var k=R*1.6*DPR,x0=Math.max(0,Math.floor(cx*DPR-k)),y0=Math.max(0,Math.floor((VH-cy)*DPR-k)),x1=Math.min(GLX.w,Math.ceil(cx*DPR+k)),y1=Math.min(GLX.h,Math.ceil((VH-cy)*DPR+k));
     if(x1>x0&&y1>y0){gl.enable(gl.SCISSOR_TEST);gl.scissor(x0,y0,x1-x0,y1-y0);glQuad(P);gl.disable(gl.SCISSOR_TEST)}
@@ -917,24 +1046,29 @@ var GLOBE=(function(){
   return {load:load,basis:basis,pr:pr,at:at,draw:draw,dot:dot,cloud:cloud,rain:function(im){layer('rain',im)},hasCloud:function(){return !!tex.cld},hasRain:function(){return !!tex.rain},ready:function(){return ready},gl:function(){gen=-1}}
 })();
 
-/* ---------- DRIFT: ink in water. A real fluid on the graphics chip (Stam's stable fluids: carry the flow along itself, find the
+/* ---------- SMOKE: ink in water. A real fluid on the graphics chip (Stam's stable fluids: carry the flow along itself, find the
    pressure that keeps it from piling up, take that pressure's push out). A finger drags the water and leaves ink; a tap is a
    drop; a finger that stays is a spring. The screen is nine notes high, and the ink is the colour of the note it was drawn on.
    The bass rolls the water from below, the balafon and kora drip their notes into it as a score.
    Given a photo, the photo is the ink: smear it, and it slowly remembers itself.
-   It is also a machine to build in, and a run of puzzles. Smoke rises (warm ink is light). Walls stop the water and the ink; a fan
-   pushes the water one way for as long as it stands (and breathes ink, outside the puzzles); a drain swallows ink and draws the water
-   in. Two fingers turning make a whirlpool; two fingers closing pull the water in, opening throw it out. In a puzzle, fixed sources
-   breathe ink of their own colours and each cup wants its colour (or, for a white cup, two colours mixed): build walls, fans and
-   drains (a few of each) to bring the right smoke into every cup. A finger only moves the water there, it leaves no ink. Each puzzle
-   solved brings one more player into the band, the electric guitar last. ---------- */
+   It is also a machine to build in, and a game of 24 levels. Smoke rises (warm ink is light). Walls stop the water and the ink; a fan
+   pushes the water one way for as long as it stands (and breathes ink, outside the levels); a prism gives the smoke that passes
+   through it its own colour; a drain swallows ink and draws the water in; a tunnel takes the smoke that goes into one end out of the
+   other. Two fingers turning make a whirlpool; two fingers closing pull the water in, opening throw it out.
+   In a level, fixed sources breathe ink of their own colours inside a tank of fixed shape (so a level plays the same on any screen),
+   and each ring wants its colour (or, for a white ring, cyan and amber together): build a few pieces to bring the right smoke into
+   every ring. The fewer pieces, the more stars. Six chapters of four levels, each chapter bringing a new piece; each level open once
+   the one before it is solved; every third level solved brings one more player into the band, the electric guitar last.
+   (The owner, 12 Nov: "The smoke game needs to be better", and he chose: lots of levels, harder as they go, stars for using fewer
+   pieces, new parts unlocked as you go.) ---------- */
 var DRIFT=(function(){
   var P=null,gen=-1,vel=null,dye=null,prs=null,div=null,curl=null,sw=0,sh=0,dw=0,dh=0,type=0,filt=0,simple=false,ql=-1,szKey='',
     q=[],last={},rows={},photoVer=-1,ink=0,t0=0,
-    /* the machine: walls (segments, in fractions of the screen), fans, drains; in a puzzle also its fixed sources, walls and drains, and
-       its cups. obs is the walls drawn into the water's own grid: 1 where there is wall */
-    obs=null,obsDirty=true,WB=null,WN=0,TOOL='ink',WALLS=[],FANS=[],DRAINS=[],CUPS=[],FIX={walls:[],fans:[],drains:[]},PZ=-1,pzWon=0,pzSaved=null,
-    rb=null,rbBuf=null,rbW=0,rbH=0,rbT=0,rbS=0,rbOk=false,simT=0,NOWIN=false,TRACE=null,want=0,bdrag={},VQ=[],toolsOn=false,best=0,flash=[];
+    /* the machine: walls (segments, in fractions of the screen), fans, prisms, drains, tunnels; in a level also its fixed sources,
+       walls, winds, prisms and drains, and its rings. obs is the walls drawn into the water's own grid: 1 where there is wall */
+    obs=null,obsDirty=true,WB=null,WN=0,TOOL='ink',WALLS=[],FANS=[],DRAINS=[],PRISMS=[],TUNNELS=[],CUPS=[],FIX={walls:[],fans:[],drains:[],prisms:[]},
+    PZ=-1,pzWon=0,pzSaved=null,winStars=0,PATH=false,pathT=0,FIXDT=0,
+    rb=null,rbBuf=null,rbW=0,rbH=0,rbT=0,rbS=0,rbOk=false,simT=0,NOWIN=false,TRACE=null,want=0,bdrag={},VQ=[],STARS=[],FASTDYE=false;
   /* the five notes of the scale as five inks: E cyan, G green, A amber, B rose, D violet */
   var INK=[[.12,.86,1],[.30,1,.62],[1,.62,.20],[1,.14,.50],[.56,.36,1]];
   var VSB='attribute vec2 a_p;varying vec2 vUv;varying vec2 vL;varying vec2 vR;varying vec2 vT;varying vec2 vB;uniform vec2 uTexel;\n'+
@@ -973,7 +1107,14 @@ var DRIFT=(function(){
     /* a drain (mode 0: the ink fades; mode 1: the water is drawn in), and a whirlpool (mode 2: the water turns round a point) */
     snk:H+'uniform sampler2D uT;uniform vec2 uPt;uniform vec2 uWH;uniform float uRad;uniform float uK;uniform float uMode;uniform vec2 uCell;\n'+
       'void main(){vec2 pp=(vUv-uPt)*uWH;float r2=dot(pp,pp);float g=exp(-r2/uRad);vec4 o=texture2D(uT,vUv);\n'+
-      'if(uMode<0.5){gl_FragColor=vec4(o.rgb*(1.0-clamp(uK*g,0.0,1.0)),1.0);}else{vec2 dir=pp/(sqrt(r2)+1.0);if(uMode>1.5)dir=vec2(-dir.y,dir.x);gl_FragColor=vec4(o.xy-dir*uK*g*uCell,0.0,1.0);}}'
+      'if(uMode<0.5){gl_FragColor=vec4(o.rgb*(1.0-clamp(uK*g,0.0,1.0)),1.0);}else if(uMode>2.5){gl_FragColor=vec4(o.xy*(1.0-clamp(uK*g,0.0,1.0)),0.0,1.0);}else{vec2 dir=pp/(sqrt(r2)+1.0);if(uMode>1.5)dir=vec2(-dir.y,dir.x);gl_FragColor=vec4(o.xy-dir*uK*g*uCell,0.0,1.0);}}',
+    /* a prism: the smoke inside it takes the prism's colour, as bright as it was */
+    tint:H+'uniform sampler2D uT;uniform vec2 uPt;uniform vec2 uWH;uniform float uR;uniform vec3 uCol;\n'+
+      'void main(){float r=length((vUv-uPt)*uWH);float k=1.0-smoothstep(uR*0.7,uR,r);vec3 o=texture2D(uT,vUv).rgb;float m=max(o.r,max(o.g,o.b));gl_FragColor=vec4(mix(o,uCol*m,k),1.0);}',
+    /* a tunnel: what is in the mouth at A is taken out of it and laid into the mouth at B, place for place */
+    tun:H+'uniform sampler2D uT;uniform vec2 uA;uniform vec2 uB;uniform vec2 uWH;uniform float uR;uniform float uK;\n'+
+      'void main(){vec3 o=texture2D(uT,vUv).rgb;float ka=1.0-smoothstep(uR*0.55,uR,length((vUv-uA)*uWH));float kb=1.0-smoothstep(uR*0.55,uR,length((vUv-uB)*uWH));'+
+      'vec3 s=texture2D(uT,uA+(vUv-uB)).rgb;gl_FragColor=vec4(o*(1.0-uK*ka)+s*(uK*kb),1.0);}'
   };
   var VWL='attribute vec2 a_p;void main(){gl_Position=vec4(a_p,0.0,1.0);}',FWL='precision mediump float;void main(){gl_FragColor=vec4(1.0);}';
   function dbl(w,h){var a=glTarget(w,h,type,filt),b=glTarget(w,h,type,filt);if(!a||!b){glFree(a);glFree(b);return null}return {r:a,w:b,swap:function(){var t=this.r;this.r=this.w;this.w=t}}}
@@ -985,8 +1126,8 @@ var DRIFT=(function(){
     for(var k in F){P[k]=glProg(VSB,k==='adv'?F[k].replace(H,H+man):F[k]);if(!P[k]){P=null;return}}
     P.wall=glProg(VWL,FWL);WB=null;obsDirty=true}
   function size(){
-    if(!P)return;var ar=VW/VH,S=(COARSE?[128,96,64]:[160,128,96])[QL],D=(COARSE?[512,384,256]:[720,512,384])[QL],
-      w=Math.round(ar>=1?S*ar:S),h=Math.round(ar>=1?S:S/ar),W=Math.round(ar>=1?D*ar:D),Hh=Math.round(ar>=1?D:D/ar),key=w+'x'+h+'x'+W+'x'+Hh;
+    if(!P)return;var ar=VW/VH,S=(COARSE?[128,96,64]:[160,128,96])[QL],D=(COARSE?[512,384,256]:[720,512,384])[QL];if(FASTDYE)D=Math.min(D,256);
+    var w=Math.round(ar>=1?S*ar:S),h=Math.round(ar>=1?S:S/ar),W=Math.round(ar>=1?D*ar:D),Hh=Math.round(ar>=1?D:D/ar),key=w+'x'+h+'x'+W+'x'+Hh;
     if(key===szKey&&dye)return;freeAll();szKey=key;ql=QL;sw=w;sh=h;dw=W;dh=Hh;
     dye=dbl(dw,dh);if(!simple){vel=dbl(sw,sh);prs=dbl(sw,sh);div=glTarget(sw,sh,type,GLX.gl.NEAREST);curl=glTarget(sw,sh,type,GLX.gl.NEAREST);if(!vel||!prs||!div||!curl){freeAll();P=null;return}}
     if(!dye){P=null;return}photoVer=-1;
@@ -1003,57 +1144,113 @@ var DRIFT=(function(){
   function inkOf(y){return INK[rowOf(y)%5]}
   function note(p,vel){if(!p.ghost)tone('glass',pent(5+rowOf(p.y),40),vel,pan(p.x))}
   /* ---- the machine ---- */
-  var MAXW=24,MAXF=6,MAXD=4,TH=10;
+  var MAXW=24,MAXF=6,MAXP=5,MAXD=4,MAXT=3,TH=10;
+  /* a level's water: smoke rises less and fades sooner, and the water settles sooner, so what fills a ring is a jet aimed at it, not
+     the haze of everything that went before (at a phone's sixty frames a second, smoke left to linger would fill a ring above any jet) */
+  var LP={buo:.3,dye:.6,vel:.8,ink:.13,fk:8,f0:.025};
+  /* (in a level the water fades by its own time, not the clock's: a phone that steps it thirty times a second plays the level as one that
+     steps it sixty times does, only slower, so a level tested once is the same level everywhere) */
   function WX(u){return u*VW}function WY(v){return v*VH}
-  /* a place in a puzzle is given in fractions of the stage (the part of the screen the chrome leaves); pieces are kept in fractions of the screen */
-  function sx(u){return (STG.x0+u*STG.w)/VW}function sy(v){return (STG.y0+v*STG.h)/VH}
-  /* the five puzzles. src: a source breathing ink (x, y, direction, colour: 0 cyan, 1 green, 2 amber, 3 rose, 4 violet); cups: the
-     rings, where each colour must go ('mix' wants cyan and amber together); walls and drains: fixed; give: how many walls, fans and
-     drains may be built; tip: the clue in the readout; sol: one way to solve it (tools/t_puzzles.js builds it and checks that every
-     ring fills, and that with nothing built none does). Every puzzle is carried by its sources' jets: smoke that only drifts (along
-     a wall, say) is too faint to carry far and barely rises. Places are in fractions of the stage */
+  /* the level's tank: a fixed shape (a little narrower than a phone held upright) fitted into the stage. A level's places are in
+     fractions of the tank, and its jets and pieces are as strong, for the tank's size, on any screen */
+  var BA=.64,B={x0:0,y0:0,w:1,h:1};
+  function boardFit(){var h=Math.max(80,STG.h-6),w=Math.min(STG.w-14,h*BA);h=Math.min(h,w/BA);B.w=w;B.h=h;B.x0=STG.x0+(STG.w-w)/2;B.y0=STG.y0+(STG.h-h)/2}
+  function bx(u){return (B.x0+u*B.w)/VW}function by(v){return (B.y0+v*B.h)/VH}
+  /* how strong, for the tank: speeds (pixels a second) and areas (pixels squared) scale with it; splat sizes are in screen heights */
+  function KS(){return PZ>=0?B.h/580:1}function KP(){var k=KS();return k*k}function KR(){if(PZ<0)return 1;var f=B.h/VH/.69;return f*f}
+  function cupR(){return PZ>=0?Math.min(B.w,B.h)*.085:Math.min(STG.w,STG.h)*.085}
+  function tank(){return [[0,0,1,0],[1,0,1,1],[1,1,0,1],[0,1,0,0]].map(function(w){return [bx(w[0]),by(w[1]),bx(w[2]),by(w[3]),2]})}
+  /* the chapters: each brings a new piece, and its first level says what the piece does */
+  var CH=[{n:'walls',i:0,k:'wall'},{n:'fans',i:4,k:'fan'},{n:'prisms',i:8,k:'prism'},{n:'drains',i:12,k:'drain'},{n:'tunnels',i:16,k:'tunnel'},{n:'all together',i:20,k:''}];
+  function chapterOf(i){var c=0;for(var k=0;k<CH.length;k++)if(i>=CH[k].i)c=k;return c}
+  /* the 24 levels (places in fractions of the tank, across then down).
+     src: a source breathing ink: x, y, direction, colour (0 cyan, 1 green, 2 amber, 3 rose, 4 violet); wind: a fixed fan that only
+     pushes the water; cups: the rings, and the colour each wants ('mix': cyan and amber together); walls, prisms, drains: fixed ones;
+     give: how many of each piece may be built (w walls, f fans, p the prisms' colours, d drains, t tunnels); par: the fewest pieces
+     known to solve it (three stars); tip: the clue; sol: one way to solve it, which tools/t_puzzles.js builds and checks (every ring
+     fills; and with nothing built, none does). Every level is carried by its sources' jets: smoke that only drifts is too faint to
+     carry far, and barely rises */
   var LEVELS=[
-    {src:[[.1,.75,1,0,0]],cups:[[.72,.42,0]],walls:[],drains:[],give:[3,1,0],
-      tip:'a wall in its way turns the smoke',sol:[['wall',[.3,.8,.55,.6]]]},
-    {src:[[.5,.88,0,-1,2]],cups:[[.18,.5,2]],walls:[],drains:[],give:[2,1,0],
-      tip:'a fan pushes the water, and the smoke with it',sol:[['fan',[.56,.66,-1,0]]]},
-    {src:[[.1,.4,1,0,3]],cups:[[.84,.82,3]],walls:[[.86,.56,1,.56]],drains:[],give:[1,1,0],
-      tip:'smoke never sinks by itself',sol:[['fan',[.45,.32,0,1]]]},
-    {src:[[.1,.45,1,0,3],[.5,.9,0,-1,0]],cups:[[.84,.45,3]],walls:[],drains:[],give:[2,1,0],
-      tip:'one jet pushes another aside',sol:[['wall',[.42,.8,.58,.8]]]},
-    {src:[[.15,.88,0,-1,0],[.85,.88,0,-1,2]],cups:[[.5,.35,'mix']],walls:[],drains:[],give:[2,2,0],
-      tip:'white is cyan and amber together',sol:[['fan',[.08,.66,1,0]],['fan',[.92,.66,-1,0]]]}];
-  /* who joins the band when each puzzle is solved: the shekere, the djembe, the talking drum and the agogo, the balafon and the kora,
-     and the electric guitar last */
-  var JOIN=[[1],[2],[3,4],[6,7],[8]],MIXC=[.506,.668,.542];
-  function joined(i){var a=[];JOIN.slice(0,i).forEach(function(j){a=a.concat(j)});return a}
-  function cupR(){return Math.min(STG.w,STG.h)*.085}
-  function lsGet(){try{return +localStorage.getItem('lc.smoke.solved')||0}catch(e){return 0}}
-  function lsSet(n){try{localStorage.setItem('lc.smoke.solved',String(n))}catch(e){}}
+    /*LEVELS-BEGIN*/
+    {name:'ramp',src:[[0.1,0.75,1,0,0]],cups:[[0.72,0.42,0]],give:{w:2},par:1,tip:'new: the wall. drag to build one, tap it to take it away. a wall in its way turns the smoke',sol:[['wall',[0.3,0.8,0.55,0.6]]]},
+    {name:'up and left',src:[[0.75,0.9,0,-1,1]],cups:[[0.22,0.37,1]],give:{w:2},par:1,tip:'a wall that leans turns a rising jet',sol:[['wall',[0.88,0.62,0.48,0.45]]]},
+    {name:'shield',src:[[0.1,0.45,1,0,3],[0.5,0.9,0,-1,0]],cups:[[0.84,0.45,3]],give:{w:2},par:1,tip:'one jet pushes another aside',sol:[['wall',[0.42,0.8,0.58,0.8]]]},
+    {name:'two shields',src:[[0.1,0.45,1,0,3],[0.36,0.78,0,-1,0],[0.66,0.78,0,-1,2]],cups:[[0.86,0.45,3]],give:{w:3},par:2,tip:'two jets from below push the rose aside: hold both down',sol:[['wall',[0.27,0.66,0.45,0.66]],['wall',[0.57,0.66,0.75,0.66]]],bad:[['one shield',[['wall',[0.27,0.66,0.45,0.66]]]],['other shield',[['wall',[0.57,0.66,0.75,0.66]]]]]},
+    {name:'push',src:[[0.5,0.88,0,-1,2]],cups:[[0.18,0.5,2]],give:{f:1,w:1},par:1,tip:'new: the fan. drag the way it should blow. a fan pushes the water, and the smoke with it',sol:[['fan',[0.56,0.66,-1,0]]]},
+    {name:'the other way',src:[[0.5,0.88,0,-1,4]],cups:[[0.82,0.5,4]],give:{f:1,w:1},par:1,tip:'a fan can blow any way you drag it',sol:[['fan',[0.44,0.66,1,0]]]},
+    {name:'down',src:[[0.1,0.4,1,0,3]],walls:[[0.86,0.56,1,0.56]],cups:[[0.84,0.82,3]],give:{f:1,w:1},par:1,tip:'smoke never sinks by itself',sol:[['fan',[0.45,0.32,0,1]]]},
+    {name:'white',src:[[0.15,0.88,0,-1,0],[0.85,0.88,0,-1,2]],cups:[[0.5,0.35,'mix']],give:{f:2,w:1},par:2,tip:'white is cyan and amber together',sol:[['fan',[0.1,0.66,1,0]],['fan',[0.9,0.66,-1,0]]]},
+    {name:'new colour',src:[[0.1,0.55,1,0,0]],cups:[[0.8,0.55,2]],give:{p:[2]},par:1,tip:'new: the prism. tap to place one. smoke that passes through it takes its colour',sol:[['prism',[0.4,0.55,2]]]},
+    {name:'two in a row',src:[[0.1,0.5,1,0,0]],cups:[[0.45,0.5,2],[0.82,0.5,3]],give:{p:[2,3]},par:2,tip:'a prism after a ring changes the smoke again',sol:[['prism',[0.27,0.5,2]],['prism',[0.64,0.5,3]]]},
+    {name:'swap',src:[[0.1,0.3,1,0,0],[0.1,0.72,1,0,2]],cups:[[0.82,0.3,2],[0.82,0.72,0]],give:{p:[2,0]},par:2,tip:'each ring wants the other jet\'s colour',sol:[['prism',[0.45,0.3,2]],['prism',[0.45,0.72,0]]]},
+    {name:'white from cyan',src:[[0.15,0.88,0,-1,0],[0.85,0.88,0,-1,0]],wind:[[0.08,0.66,1,0],[0.92,0.66,-1,0]],cups:[[0.5,0.35,'mix']],give:{p:[2],f:1},par:1,tip:'two cyan jets meet in the white ring: white needs amber too',sol:[['prism',[0.85,0.8,2]]]},
+    {name:'swallow',src:[[0.1,0.5,1,0,3],[0.5,0.1,0,1,1]],cups:[[0.8,0.5,3]],give:{d:1},par:1,tip:'new: the drain. tap to place one. a jet that runs into it is swallowed',sol:[['drain',[0.5,0.3]]]},
+    {name:'two intruders',src:[[0.1,0.5,1,0,0],[0.35,0.08,0,1,2],[0.65,0.08,0,1,3]],cups:[[0.88,0.5,0]],give:{d:2},par:2,tip:'two jets fall across the cyan: swallow them both',sol:[['drain',[0.35,0.28]],['drain',[0.65,0.28]]],bad:[['one drain',[['drain',[0.35,0.28]]]]]},
+    {name:'prism and drain',src:[[0.1,0.5,1,0,0],[0.6,0.08,0,1,1]],cups:[[0.86,0.5,3]],give:{d:1,p:[3]},par:2,tip:'the ring wants rose, and the green falls into its way',sol:[['drain',[0.6,0.28]],['prism',[0.33,0.5,3]]],bad:[['prism only',[['prism',[0.33,0.5,3]]]],['drain only',[['drain',[0.6,0.28]]]]]},
+    {name:'fan and drain',src:[[0.1,0.4,1,0,1],[0.84,0.97,0,-1,3]],walls:[[0.86,0.56,1,0.56]],cups:[[0.84,0.82,1]],give:{d:1,f:1},par:2,tip:'push the green down into the ring, and swallow the rose rising into it',sol:[['fan',[0.45,0.32,0,1]],['drain',[0.84,0.93]]],bad:[['fan only',[['fan',[0.45,0.32,0,1]]]],['drain only',[['drain',[0.84,0.93]]]]]},
+    {name:'out of the box',src:[[0.2,0.82,1,0,0]],walls:[[0.0,0.65,0.45,0.65],[0.45,0.65,0.45,1.0]],cups:[[0.75,0.4,0]],give:{t:1},par:1,tip:'new: the tunnel. drag from where the smoke goes in to where it comes out',sol:[['tunnel',[0.35,0.82,0.6,0.55]]]},
+    {name:'box and prism',src:[[0.2,0.82,1,0,2]],walls:[[0.0,0.65,0.45,0.65],[0.45,0.65,0.45,1.0]],cups:[[0.75,0.4,4]],give:{t:1,p:[4]},par:2,tip:'out of the box, and another colour',sol:[['tunnel',[0.35,0.82,0.6,0.55]],['prism',[0.68,0.47,4]]]},
+    {name:'through the wall',src:[[0.1,0.75,1,0,3]],walls:[[0.5,0.25,0.5,1.0]],cups:[[0.8,0.75,3]],give:{t:1,w:1},par:1,tip:'the wall is too high to go over',sol:[['tunnel',[0.38,0.75,0.64,0.75]]]},
+    {name:'two boxes',src:[[0.15,0.85,1,0,0],[0.85,0.85,-1,0,2]],walls:[[0.0,0.68,0.34,0.68],[0.34,0.68,0.34,1.0],[0.66,0.68,1.0,0.68],[0.66,0.68,0.66,1.0]],cups:[[0.5,0.4,'mix']],give:{t:2},par:2,tip:'white is cyan and amber together',sol:[['tunnel',[0.26,0.84,0.42,0.55]],['tunnel',[0.74,0.84,0.58,0.55]]]},
+    {name:'three colours',src:[[0.08,0.55,1,0,0]],cups:[[0.33,0.55,2],[0.58,0.55,3],[0.83,0.55,4]],give:{p:[2,3,4]},par:3,tip:'all together: each ring wants its own colour from the one jet',sol:[['prism',[0.2,0.55,2]],['prism',[0.455,0.55,3]],['prism',[0.705,0.55,4]]]},
+    {name:'shield and prism',src:[[0.1,0.4,1,0,3],[0.5,0.92,0,-1,2]],cups:[[0.85,0.4,4]],give:{w:1,p:[4],d:1},par:2,tip:'the amber pushes the rose aside, and the ring wants violet',sol:[['wall',[0.4,0.78,0.6,0.78]],['prism',[0.3,0.4,4]]]},
+    {name:'boxes and colours',src:[[0.15,0.85,1,0,0],[0.85,0.85,-1,0,0]],walls:[[0.0,0.7,0.3,0.7],[0.3,0.7,0.3,1.0],[0.7,0.7,1.0,0.7],[0.7,0.7,0.7,1.0]],cups:[[0.5,0.4,'mix']],give:{t:2,p:[2]},par:3,tip:'two cyan jets in boxes, and a white ring: white is cyan and amber',sol:[['tunnel',[0.24,0.85,0.4,0.55]],['tunnel',[0.76,0.85,0.6,0.55]],['prism',[0.62,0.52,2]]]},
+    {name:'the long way',src:[[0.1,0.85,1,0,1]],walls:[[0.0,0.62,0.78,0.62]],cups:[[0.27,0.33,3]],give:{w:1,p:[3],t:1},par:2,tip:'under a long shelf: get the green out, and make it rose',sol:[['tunnel',[0.62,0.85,0.4,0.5]],['prism',[0.34,0.42,3]]]}
+    /*LEVELS-END*/
+  ];
+  /* who joins the band when a level is solved: every third level one more player (the shekere, the djembe, the talking drum, the
+     agogo, the balafon, the kora), and the electric guitar when the last level is solved */
+  var JOIN={2:[1],5:[2],8:[3],11:[4],14:[6],17:[7],23:[8]},MIXC=[.506,.668,.542];
+  function joined(i){var a=[];for(var k in JOIN)if(+k<i)a=a.concat(JOIN[k]);return a}
+  function joinAt(i){return JOIN[i]||[]}
+  /* the stars won on each level, kept in the viewer's own browser */
+  function lsGet(){try{var a=JSON.parse(localStorage.getItem('lc.smoke.stars')||'[]');if(Array.isArray(a))return a.map(function(v){return clamp(Math.round(+v)||0,0,3)})}catch(e){}return []}
+  function lsSet(){try{localStorage.setItem('lc.smoke.stars',JSON.stringify(STARS))}catch(e){}}
+  function isOpen(i){return i===0||(STARS[i-1]||0)>0||(STARS[i]||0)>0}
+  function reach(){var r=0;for(var i=0;i<LEVELS.length;i++)if(isOpen(i))r=i;return r}
+  function firstUnsolved(){for(var i=0;i<LEVELS.length;i++)if(!(STARS[i]>0))return i;return 0}
+  function starTotal(){var t=0;for(var i=0;i<LEVELS.length;i++)t+=STARS[i]||0;return t}
+  /* free play has the wall, the fan and the drain from the start (they were there before the levels); the prism and the tunnel come
+     once their chapter is reached */
+  function unlocked(k){if(k!=='prism'&&k!=='tunnel')return true;for(var c=0;c<CH.length;c++)if(CH[c].k===k)return CH[c].i<=reach();return true}
+  function give(L){var g=L.give||{};return {w:g.w||0,f:g.f||0,p:(g.p||[]).slice(),d:g.d||0,t:g.t||0}}
+  function given(){if(PZ<0)return {w:MAXW,f:MAXF,p:null,d:MAXD,t:MAXT};return give(LEVELS[PZ])}
+  function used(){return WALLS.length+FANS.length+PRISMS.length+DRAINS.length+TUNNELS.length}
+  function starsFor(n,par){return n<=par?3:n<=par+1?2:1}
+  /* the prism colours still to place in a level (in the order given), or, outside the levels, the colour of the row it is put on */
+  function prismsLeft(){var g=given();if(!g.p)return null;var a=g.p.slice();PRISMS.forEach(function(p){var k=a.indexOf(p.c);if(k>=0)a.splice(k,1)});return a}
+  function placeFix(){var L=LEVELS[PZ];
+    FIX.walls=tank().concat((L.walls||[]).map(function(w){return [bx(w[0]),by(w[1]),bx(w[2]),by(w[3]),1]}));
+    FIX.fans=L.src.map(function(f){var m=Math.hypot(f[2],f[3])||1;return {x:bx(f[0]),y:by(f[1]),dx:f[2]/m,dy:f[3]/m,c:f[4],fixed:1,ph:0}}).concat(
+      (L.wind||[]).map(function(f){var m=Math.hypot(f[2],f[3])||1;return {x:bx(f[0]),y:by(f[1]),dx:f[2]/m,dy:f[3]/m,c:-1,fixed:1,wind:1,ph:0}}));
+    FIX.drains=(L.drains||[]).map(function(d){return {x:bx(d[0]),y:by(d[1]),fixed:1,ph:0}});
+    FIX.prisms=(L.prisms||[]).map(function(p){return {x:bx(p[0]),y:by(p[1]),c:p[2],fixed:1}});obsDirty=true}
   function pzLoad(i){
-    var L=LEVELS[i];if(!L)return;PZ=i;pzWon=0;rbS=simT;WALLS=[];FANS=[];DRAINS=[];
-    FIX.walls=L.walls.map(function(w){return [sx(w[0]),sy(w[1]),sx(w[2]),sy(w[3]),1]});
-    FIX.fans=L.src.map(function(f){var m=Math.hypot(f[2],f[3])||1;return {x:sx(f[0]),y:sy(f[1]),dx:f[2]/m,dy:f[3]/m,c:f[4],fixed:1,ph:0}});
-    FIX.drains=L.drains.map(function(d){return {x:sx(d[0]),y:sy(d[1]),fixed:1,ph:0}});
-    CUPS=L.cups.map(function(c){return {x:sx(c[0]),y:sy(c[1]),c:c[2],fill:0,match:0,done:false}});
-    obsDirty=true;clearInk=true;
-    /* the band: the low drum and the bass, and one more player for every puzzle already solved */
-    if(!pzSaved)pzSaved=ON.slice();for(var k=0;k<NL;k++){var on=k===0||k===5||joined(i).indexOf(k)>=0;if(!!ON[k]!==on)setPlayer(k,on,true)}}
-  function pzRelayout(){if(PZ<0)return;var L=LEVELS[PZ];
-    FIX.walls=L.walls.map(function(w){return [sx(w[0]),sy(w[1]),sx(w[2]),sy(w[3]),1]});L.src.forEach(function(f,k){FIX.fans[k].x=sx(f[0]);FIX.fans[k].y=sy(f[1])});
-    L.drains.forEach(function(d,k){FIX.drains[k].x=sx(d[0]);FIX.drains[k].y=sy(d[1])});L.cups.forEach(function(c,k){CUPS[k].x=sx(c[0]);CUPS[k].y=sy(c[1])});obsDirty=true}
-  function pzOff(){PZ=-1;CUPS=[];FIX={walls:[],fans:[],drains:[]};WALLS=[];FANS=[];DRAINS=[];obsDirty=true;
+    var L=LEVELS[i];if(!L)return;PZ=i;PATH=false;pzWon=0;winStars=0;rbS=simT;WALLS=[];FANS=[];DRAINS=[];PRISMS=[];TUNNELS=[];boardFit();placeFix();
+    CUPS=L.cups.map(function(c){return {x:bx(c[0]),y:by(c[1]),c:c[2],fill:0,match:0,done:false}});clearInk=true;
+    var g=give(L);TOOL=g.w?'wall':g.f?'fan':g.p.length?'prism':g.d?'drain':g.t?'tunnel':'ink';
+    /* the band: the low drum and the bass, and one more player for every third level before this one */
+    if(!pzSaved)pzSaved=ON.slice();var J=joined(i);for(var k=0;k<NL;k++){var on=k===0||k===5||J.indexOf(k)>=0;if(!!ON[k]!==on)setPlayer(k,on,true)}}
+  /* the screen changed size: the tank is fitted again and everything in it, built or fixed, keeps its place in the tank */
+  function pzRelayout(){if(PZ<0)return;var o={x0:B.x0,y0:B.y0,w:B.w,h:B.h};boardFit();if(o.w===B.w&&o.h===B.h&&o.x0===B.x0&&o.y0===B.y0)return;
+    function X(u){return (B.x0+(u*VW-o.x0)/o.w*B.w)/VW}function Y(v){return (B.y0+(v*VH-o.y0)/o.h*B.h)/VH}
+    WALLS.forEach(function(w){w[0]=X(w[0]);w[1]=Y(w[1]);w[2]=X(w[2]);w[3]=Y(w[3])});[FANS,PRISMS,DRAINS].forEach(function(a){a.forEach(function(p){p.x=X(p.x);p.y=Y(p.y)})});
+    TUNNELS.forEach(function(t){t.ax=X(t.ax);t.ay=Y(t.ay);t.bx=X(t.bx);t.by=Y(t.by)});
+    placeFix();LEVELS[PZ].cups.forEach(function(c,k){CUPS[k].x=bx(c[0]);CUPS[k].y=by(c[1])})}
+  function pzOff(){PZ=-1;CUPS=[];FIX={walls:[],fans:[],drains:[],prisms:[]};WALLS=[];FANS=[];DRAINS=[];PRISMS=[];TUNNELS=[];obsDirty=true;pzWon=0;
+    if(TOOL!=='ink'&&!unlocked(TOOL))TOOL='ink';
     if(pzSaved){for(var k=0;k<NL;k++)if(!!ON[k]!==!!pzSaved[k])setPlayer(k,!!pzSaved[k],true);pzSaved=null}}
   var clearInk=false;
-  function given(){var L=PZ>=0?LEVELS[PZ]:null;return L?{w:L.give[0],f:L.give[1],d:L.give[2]}:{w:MAXW,f:MAXF,d:MAXD}}
   function pzWin(){
-    pzWon=FT;best=Math.max(best,PZ+1);lsSet(best);(JOIN[PZ]||[]).forEach(function(k){if(!ON[k])setPlayer(k,true)});
-    tone('bowl',pent(0,52),.42,0);tone('glass',pent(7,52),.3,-.4,AC()+.12);tone('glass',pent(9,52),.3,.4,AC()+.24);
-    CUPS.forEach(function(c){for(var k=0;k<14;k++){var a=k/14*TAU,col=c.c==='mix'?[.9,.95,1]:INK[c.c];push(WX(c.x)+Math.cos(a)*8,WY(c.y)+Math.sin(a)*8,Math.cos(a)*700,Math.sin(a)*700,col,.4,.0007)}})}
+    var L=LEVELS[PZ];pzWon=FT;winStars=starsFor(used(),L.par);STARS[PZ]=Math.max(STARS[PZ]||0,winStars);lsSet();
+    joinAt(PZ).forEach(function(k){if(!ON[k])setPlayer(k,true)});
+    tone('bowl',pent(0,52),.42,0);for(var k=0;k<winStars;k++)tone('glass',pent(7+k*2,52),.3,(k-1)*.4,AC()+.14+k*.16);
+    CUPS.forEach(function(c){for(var k=0;k<14;k++){var a=k/14*TAU,col=c.c==='mix'?[.9,.95,1]:INK[c.c];push(WX(c.x)+Math.cos(a)*8,WY(c.y)+Math.sin(a)*8,Math.cos(a)*700*KS(),Math.sin(a)*700*KS(),col,.4,.0007*KR())}})}
   function AC(){return AU&&AU.c?AU.c.currentTime:0}
   /* the pieces under a point (pixels) */
   function segD(px,py,w){var ax=WX(w[0]),ay=WY(w[1]),bx=WX(w[2]),by=WY(w[3]),dx=bx-ax,dy=by-ay,L=dx*dx+dy*dy,t=L?clamp(((px-ax)*dx+(py-ay)*dy)/L,0,1):0;return Math.hypot(px-ax-t*dx,py-ay-t*dy)}
   function nearest(list,px,py,lim,d){var bi=-1,bd=lim;for(var i=0;i<list.length;i++){var e=d?d(px,py,list[i]):Math.hypot(px-WX(list[i].x),py-WY(list[i].y));if(e<bd){bd=e;bi=i}}return bi}
+  function tunD(px,py,t){return Math.min(Math.hypot(px-WX(t.ax),py-WY(t.ay)),Math.hypot(px-WX(t.bx),py-WY(t.by)))}
   /* a wall's ends find the ends already there, so walls join */
   function snap(x,y){var b=null,bd=14;WALLS.concat(FIX.walls).forEach(function(w){[[w[0],w[1]],[w[2],w[3]]].forEach(function(e){var d=Math.hypot(WX(e[0])-x,WY(e[1])-y);if(d<bd){bd=d;b=e}})});return b?[WX(b[0]),WY(b[1])]:[x,y]}
   function buildUp(p,b){
@@ -1064,19 +1261,26 @@ var DRIFT=(function(){
     if(b.kind==='fan'){i=nearest(FANS,b.x0,b.y0,20);if(tap&&i>=0){FANS.splice(i,1);hit('tok',.3,pan(p.x));return}
       if(FANS.length>=g.f)return;var dx=p.x-b.x0,dy=p.y-b.y0,m=Math.hypot(dx,dy);if(m<18){dx=0;dy=-1;m=1}
       FANS.push({x:b.x0/VW,y:b.y0/VH,dx:dx/m,dy:dy/m,c:PZ>=0?-1:rowOf(b.y0)%5,ph:Math.random()*TAU});tone('kal',pent(5+rowOf(b.y0),40),.4,pan(b.x0));return}
+    if(b.kind==='prism'){i=nearest(PRISMS,p.x,p.y,cupR()*.9);if(i>=0){PRISMS.splice(i,1);hit('tok',.3,pan(p.x));return}
+      var lf=prismsLeft(),col=lf?lf[0]:rowOf(p.y)%5;if(lf&&!lf.length)return;if(!lf&&PRISMS.length>=MAXP)return;
+      PRISMS.push({x:p.x/VW,y:p.y/VH,c:col,ph:0});tone('glass',pent(5+rowOf(p.y),52),.3,pan(p.x));return}
     if(b.kind==='drain'){i=nearest(DRAINS,p.x,p.y,22);if(i>=0){DRAINS.splice(i,1);hit('tok',.3,pan(p.x));return}
-      if(DRAINS.length>=g.d)return;DRAINS.push({x:p.x/VW,y:p.y/VH,ph:0});tone('bowl',pent(1,40),.3,pan(p.x))}}
+      if(DRAINS.length>=g.d)return;DRAINS.push({x:p.x/VW,y:p.y/VH,ph:0});tone('bowl',pent(1,40),.3,pan(p.x));return}
+    if(b.kind==='tunnel'){if(tap){i=nearest(TUNNELS,p.x,p.y,cupR(),tunD);if(i>=0){TUNNELS.splice(i,1);hit('tok',.3,pan(p.x))}return}
+      if(TUNNELS.length>=g.t)return;if(Math.hypot(p.x-b.x0,p.y-b.y0)<cupR()*2.6)return;
+      TUNNELS.push({ax:b.x0/VW,ay:b.y0/VH,bx:p.x/VW,by:p.y/VH,ph:0});tone('bowl',pent(3,40),.3,pan(b.x0));tone('bowl',pent(5,40),.26,pan(p.x),AC()+.12)}}
   /* the walls into the water's grid: each a band TH pixels wide with round ends */
   function obsBuild(){
     obsDirty=false;if(!obs||!P||!P.wall)return;var gl=GLX.gl,all=WALLS.concat(FIX.walls),v=[],i,k;
     function pt(x,y){v.push(x/VW*2-1,1-y/VH*2)}
-    for(i=0;i<all.length;i++){var w=all[i],ax=WX(w[0]),ay=WY(w[1]),bx=WX(w[2]),by=WY(w[3]),dx=bx-ax,dy=by-ay,m=Math.hypot(dx,dy)||1,nx=-dy/m*TH/2,ny=dx/m*TH/2;
+    /* a level's own walls are thicker in the water than they look: a jet pressing on a thin wall for long seeps through it */
+    for(i=0;i<all.length;i++){var w=all[i],th=w[4]===1?18:w[4]===2?14:TH,ax=WX(w[0]),ay=WY(w[1]),bx=WX(w[2]),by=WY(w[3]),dx=bx-ax,dy=by-ay,m=Math.hypot(dx,dy)||1,nx=-dy/m*th/2,ny=dx/m*th/2;
       pt(ax+nx,ay+ny);pt(bx+nx,by+ny);pt(bx-nx,by-ny);pt(ax+nx,ay+ny);pt(bx-nx,by-ny);pt(ax-nx,ay-ny);
-      [[ax,ay],[bx,by]].forEach(function(c){for(k=0;k<8;k++){var a0=k/8*TAU,a1=(k+1)/8*TAU,r=TH/2;pt(c[0],c[1]);pt(c[0]+Math.cos(a0)*r,c[1]+Math.sin(a0)*r);pt(c[0]+Math.cos(a1)*r,c[1]+Math.sin(a1)*r)}})}
+      [[ax,ay],[bx,by]].forEach(function(c){for(k=0;k<8;k++){var a0=k/8*TAU,a1=(k+1)/8*TAU,r=th/2;pt(c[0],c[1]);pt(c[0]+Math.cos(a0)*r,c[1]+Math.sin(a0)*r);pt(c[0]+Math.cos(a1)*r,c[1]+Math.sin(a1)*r)}})}
     glUse(P.wall,obs);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);WN=v.length/2;
     if(WN){if(!WB)WB=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,WB);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(v),gl.DYNAMIC_DRAW);var a=P.wall.a.a_p;gl.enableVertexAttribArray(a);
       gl.vertexAttribPointer(a,2,gl.FLOAT,false,0,0);gl.drawArrays(gl.TRIANGLES,0,WN);gl.disableVertexAttribArray(a)}}
-  /* the cups, measured: the ink is copied small and read back a few times a second */
+  /* the rings, measured: the ink is copied small and read back a few times a second */
   function readBack(){
     if(!rb||!dye)return;var gl=GLX.gl,u=run(P.mul,rb,[1/rbW,1/rbH]);glBind(0,dye.r.tex,u.uT);gl.uniform1f(u.uK,1);glQuad(P.mul);
     try{gl.readPixels(0,0,rbW,rbH,gl.RGBA,gl.UNSIGNED_BYTE,rbBuf);rbOk=true}catch(e){rbOk=false}}
@@ -1093,45 +1297,79 @@ var DRIFT=(function(){
       mt=ds*smooth((sim-lo)/(hi-lo))}
     return {dens:dn/n,match:mt/n}}
   /* a ring fills while smoke of its colour streams through it, and empties again when it stops: a passing puff is not enough */
-  var FILLK=8,FILL0=.025;
-  function cupsCheck(dt){
+    function cupsCheck(dt){
     if(!CUPS.length||pzWon)return;var all=true,r=cupR();
     CUPS.forEach(function(c){var m=sample(WX(c.x),WY(c.y),r*.9,c.c==='mix'?MIXC:INK[c.c],c.c==='mix');c.match=m.match;
-      if(!c.done){c.fill=clamp(c.fill+dt*FILLK*(m.match-FILL0),0,1);if(c.fill>=1){c.done=true;tone('glass',pent(6+CUPS.indexOf(c)*2,52),.38,pan(WX(c.x)))}}if(!c.done)all=false});
+      if(!c.done){c.fill=clamp(c.fill+dt*LP.fk*(m.match-LP.f0),0,1);if(c.fill>=1){c.done=true;tone('glass',pent(6+CUPS.indexOf(c)*2,52),.38,pan(WX(c.x)))}}if(!c.done)all=false});
     if(TRACE&&TRACE.length<4000)TRACE.push([dt].concat(CUPS.map(function(c){return c.match})));
     if(all&&!NOWIN)pzWin()}
-  /* the tools, along the right-hand edge in this world only */
+  /* the tools, in a row along the bottom in this world only. In a level only the pieces it gives; outside the levels, the pieces
+     reached so far */
   var TOOLS=[['ink','hand','<path d="M6 13.5c-1.6-1.8-.9-3.9.6-5.4L10 4.8c.6-.6 1.5-.5 2 .1.4.5.3 1.2-.1 1.7l-1.3 1.4 2.1-2c.6-.6 1.4-.6 1.9 0 .5.5.4 1.3-.1 1.8l-2.2 2.2 1.4-1.3c.5-.5 1.3-.5 1.8 0s.4 1.3-.1 1.8l-3.4 3.4c-1.8 1.8-4.3 2-6 .2z"/>'],
     ['wall','wall','<path d="M3 15.5L15.5 3"/><circle cx="3" cy="15.5" r="1.4"/><circle cx="15.5" cy="3" r="1.4"/>'],
     ['fan','fan','<circle cx="9.2" cy="9.2" r="1.6"/><path d="M9.2 7.6c0-3 1.4-4.6 3.2-4.2 1.5.4 1.4 2.6-1.5 4.6M10.8 9.2c3 0 4.6 1.4 4.2 3.2-.4 1.5-2.6 1.4-4.6-1.5M9.2 10.8c0 3-1.4 4.6-3.2 4.2-1.5-.4-1.4-2.6 1.5-4.6M7.6 9.2c-3 0-4.6-1.4-4.2-3.2.4-1.5 2.6-1.4 4.6 1.5"/>'],
+    ['prism','prism','<path d="M9.2 2.4l5.9 3.4v6.8l-5.9 3.4-5.9-3.4V5.8z"/><path d="M9.2 2.4v13.6"/>'],
     ['drain','drain','<circle cx="9.2" cy="9.2" r="6.4"/><path d="M9.2 5.4a3.8 3.8 0 1 1-3.6 2.6M9.2 7.8a1.4 1.4 0 1 1-1.3 1.9"/>'],
-    ['puz','puzzles','<circle cx="9.2" cy="9.2" r="6.6"/><circle cx="9.2" cy="9.2" r="3.4"/><circle cx="9.2" cy="9.2" r=".9"/>'],
+    ['tunnel','tunnel','<circle cx="4.2" cy="13.8" r="2.3"/><circle cx="14.2" cy="4.6" r="2.3"/><path d="M5.6 11.9C6.6 7.6 9.4 5.6 11.9 5"/>'],
+    ['puz','levels','<circle cx="3.6" cy="14.6" r="1.7"/><circle cx="9.2" cy="9.2" r="1.7"/><circle cx="14.8" cy="3.8" r="1.7"/><path d="M4.9 13.4l3.1-3M10.5 8l3.1-3"/>'],
     ['undo','again','<path d="M4.6 7.2A5.6 5.6 0 1 1 4 11.6M4.4 3.6v3.8h3.8"/>']];
   function toolsBuild(){
     var r=$('tools');if(!r||r.childNodes.length)return;
     TOOLS.forEach(function(t){var b=document.createElement('button');b.type='button';b.className='tb';b.id='t_'+t[0];
       b.innerHTML='<span></span><svg viewBox="0 0 18.4 18.4" aria-hidden="true">'+t[2]+'</svg>';b.firstChild.textContent=t[1];
       b.addEventListener('click',function(){
-        if(t[0]==='puz'){if(PZ>=0){pzOff()}else{best=lsGet();pzLoad(Math.min(best,LEVELS.length-1))}TOOL=PZ>=0?'wall':'ink';toolsSync();if(AU.auto)musicOn();return}
-        if(t[0]==='undo'){if(PZ>=0)pzLoad(PZ);return}
-        TOOL=t[0];toolsSync()});r.appendChild(b)})}
-  function toolsSync(){var g=given(),r=$('tools'),h0=r?r.offsetHeight:0;TOOLS.forEach(function(t){var b=$('t_'+t[0]);if(!b)return;if(t[0]==='puz'){b.setAttribute('aria-pressed',PZ>=0?'true':'false');return}
-    if(t[0]==='undo'){b.hidden=PZ<0;return}b.setAttribute('aria-pressed',TOOL===t[0]?'true':'false');b.hidden=PZ>=0&&((t[0]==='wall'&&!g.w)||(t[0]==='fan'&&!g.f)||(t[0]==='drain'&&!g.d))});
+        if(t[0]==='puz'){PATH=!PATH;pathT=FT;if(PATH){STARS=lsGet()}toolsSync();if(AU.auto)musicOn();return}
+        if(t[0]==='undo'){if(PZ>=0)pzLoad(PZ);toolsSync();return}
+        PATH=false;TOOL=t[0];toolsSync()});r.appendChild(b)})}
+  function have(k,g){return k==='wall'?g.w:k==='fan'?g.f:k==='prism'?(g.p?g.p.length:MAXP):k==='drain'?g.d:k==='tunnel'?g.t:1}
+  function toolsSync(){var g=given(),r=$('tools'),h0=r?r.offsetHeight:0;TOOLS.forEach(function(t){var b=$('t_'+t[0]);if(!b)return;
+      if(t[0]==='puz'){b.setAttribute('aria-pressed',PATH?'true':'false');return}
+      if(t[0]==='undo'){b.hidden=PZ<0;return}b.setAttribute('aria-pressed',TOOL===t[0]&&!PATH?'true':'false');
+      b.hidden=t[0]!=='ink'&&(PZ>=0?!have(t[0],g):!unlocked(t[0]))});
     if(r&&!r.hidden&&r.offsetHeight!==h0){layout();pzRelayout()}}
-  function enter(){if(GLX.ok&&gen!==GLX.gen)glSetup();size();t0=FT;lastT=0;toolsBuild();var r=$('tools');if(r)r.hidden=false;toolsSync();best=lsGet()}
-  function leave(){last={};rows={};q.length=0;bdrag={};var r=$('tools');if(r)r.hidden=true}
+  function enter(){if(GLX.ok&&gen!==GLX.gen)glSetup();size();t0=FT;lastT=0;STARS=lsGet();toolsBuild();var r=$('tools');if(r)r.hidden=false;toolsSync()}
+  function leave(){last={};rows={};q.length=0;bdrag={};PATH=false;var r=$('tools');if(r)r.hidden=true}
+  /* ---- the map of the levels: six rows, a chapter each, four levels to a row, one line running through them all ---- */
+  function pathNodes(){var n=LEVELS.length,rws=Math.ceil(n/4),top=STG.y0+Math.max(54,STG.h*.15),bot=STG.y1-Math.max(26,STG.h*.06),rh=rws>1?(bot-top)/(rws-1):0,
+      w=Math.min(STG.w*.8,380),x0=STG.cx-w/2,out=[];
+    for(var i=0;i<n;i++){var r=Math.floor(i/4),c=i%4;if(r%2)c=3-c;out.push({i:i,x:x0+w*(c+.5)/4,y:top+r*rh,r:r})}
+    return out}
+  function freeBtn(){return {x:STG.cx,y:STG.y0+Math.max(20,STG.h*.05),w:118,h:28}}
+  function star(c,x,y,R,fill){c.beginPath();for(var k=0;k<10;k++){var a=-Math.PI/2+k*Math.PI/5,rr=k%2?R*.45:R;c.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr)}c.closePath();if(fill)c.fill();else c.stroke()}
+  function pathDraw(t){
+    var c=OV,ns=pathNodes(),i,k=smooth((FT-pathT)/260),hi=firstUnsolved();
+    c.fillStyle='rgba(1,4,10,'+(.72*k).toFixed(3)+')';c.fillRect(0,0,VW,VH);if(k<.05)return;c.globalAlpha=k;
+    c.lineWidth=1.2;c.strokeStyle='rgba(62,240,255,.28)';c.beginPath();ns.forEach(function(n,j){if(j)c.lineTo(n.x,n.y);else c.moveTo(n.x,n.y)});c.stroke();
+    c.textAlign='left';c.textBaseline='alphabetic';c.font='600 9px '+MONO;
+    CH.forEach(function(h,j){var n=ns[h.i];if(!n)return;c.fillStyle='rgba(234,249,255,.55)';c.fillText((j+1)+' · '+h.n.toUpperCase(),Math.min(ns[h.i].x,ns[Math.min(h.i+3,ns.length-1)].x)-16,n.y-26)});
+    c.textAlign='center';c.textBaseline='middle';
+    ns.forEach(function(n){var open=isOpen(n.i),s=STARS[n.i]||0,cur=n.i===PZ,next=open&&!s&&n.i===hi,R=15;
+      c.fillStyle='rgba(1,4,10,.9)';c.beginPath();c.arc(n.x,n.y,R,0,TAU);c.fill();
+      c.lineWidth=cur||next?2:1.3;c.strokeStyle=!open?'rgba(120,140,160,.35)':s?'rgba(62,240,255,.9)':'rgba(234,249,255,'+(next?(.6+.35*Math.sin(t*.006)).toFixed(3):'.8')+')';
+      c.beginPath();c.arc(n.x,n.y,R,0,TAU);c.stroke();if(cur){c.strokeStyle='rgba(62,240,255,.45)';c.beginPath();c.arc(n.x,n.y,R+5,0,TAU);c.stroke()}
+      c.font='600 11px '+MONO;c.fillStyle=open?'rgba(234,249,255,.95)':'rgba(120,140,160,.5)';c.fillText(String(n.i+1),n.x,n.y+.5);
+      if(open)for(var j=0;j<3;j++){c.fillStyle=j<s?'rgba(255,214,120,.95)':'rgba(234,249,255,.22)';c.strokeStyle=c.fillStyle;c.lineWidth=.8;star(c,n.x-9+j*9,n.y+R+8,3.6,j<s)}});
+    var f=freeBtn();c.lineWidth=1.2;c.strokeStyle=PZ<0?'rgba(62,240,255,.7)':'rgba(234,249,255,.4)';c.beginPath();
+    if(c.roundRect)c.roundRect(f.x-f.w/2,f.y-f.h/2,f.w,f.h,14);else c.rect(f.x-f.w/2,f.y-f.h/2,f.w,f.h);c.stroke();
+    c.font='600 9.5px '+MONO;c.fillStyle='rgba(234,249,255,.85)';c.fillText('PLAY FREELY',f.x,f.y+.5);
+    c.globalAlpha=1;c.textAlign='left';c.textBaseline='alphabetic'}
+  function pathTap(x,y){
+    var ns=pathNodes(),i;for(i=0;i<ns.length;i++){if(Math.hypot(ns[i].x-x,ns[i].y-y)<22){if(isOpen(i)){pzLoad(i);toolsSync();hit('tok',.3,pan(x))}else hit('tok',.12,pan(x));return}}
+    var f=freeBtn();if(Math.abs(x-f.x)<f.w/2+6&&Math.abs(y-f.y)<f.h/2+6){if(PZ>=0)pzOff();PATH=false;TOOL='ink';toolsSync();return}
+    PATH=false;toolsSync()}
   /* (the stage is measured again by the world switch once the row is shown or put away) */
   function down(p){
+    if(PATH){bdrag[p.id]={kind:'path'};return}
     if(!p.ghost&&TOOL!=='ink'&&p.n<2){bdrag[p.id]={kind:TOOL,x0:p.x,y0:p.y};return}
     last[p.id]={x:p.x,y:p.y};rows[p.id]=rowOf(p.y);note(p,.5)}
   function up(p){
-    var b=bdrag[p.id];if(b){delete bdrag[p.id];buildUp(p,b);toolsSync();return}
+    var b=bdrag[p.id];if(b){delete bdrag[p.id];if(b.kind==='path'){if(p.moved<14&&!p.ghost)pathTap(p.x,p.y);return}buildUp(p,b);toolsSync();return}
     var l=last[p.id];delete last[p.id];delete rows[p.id];if(!l||PZ>=0)return;
     /* a tap is a drop: the ink bursts outward */
     if(FT-p.t0<260&&p.moved<14){var c=inkOf(p.y);for(var k=0;k<8;k++){var a=k/8*TAU+.3;push(p.x+Math.cos(a)*10,p.y+Math.sin(a)*10,Math.cos(a)*520,Math.sin(a)*520,c,.55,.0007)}}}
   function tick(dt,t){
     var i,ps=PS,r=Math.random;
-    /* in a puzzle a finger moves the water and leaves no ink */
+    /* in a level a finger moves the water and leaves no ink */
     var fk=PZ>=0?0:1;
     for(i=0;i<ps.length;i++){var p=ps[i];if(!p.down||bdrag[p.id])continue;var l=last[p.id];if(!l){l=last[p.id]={x:p.x,y:p.y};rows[p.id]=rowOf(p.y)}
       var dx=p.x-l.x,dy=p.y-l.y,len=Math.hypot(dx,dy);
@@ -1139,15 +1377,22 @@ var DRIFT=(function(){
         push(p.x,p.y,vx,vy,inkOf(p.y),clamp(len/52,.04,.7)*fk);l.x=p.x;l.y=p.y;
         var rw=rowOf(p.y);if(rw!==rows[p.id]){rows[p.id]=rw;note(p,.3+.5*Math.min(1,p.spd/900))}}
       else if(t-p.t0>300){push(p.x+(r()-.5)*6,p.y+(r()-.5)*6,(r()-.5)*90,-60-r()*60,inkOf(p.y),.07*fk,.0016)}}
-    /* the machine runs: fans push and (outside the puzzles) breathe ink; the puzzle's sources breathe their own colours */
-    var fr=Math.min(1,dt*60);
-    FANS.forEach(function(f){f.ph+=dt*9;push(WX(f.x)+f.dx*10,WY(f.y)+f.dy*10,f.dx*820,f.dy*820,INK[f.c]||INK[0],PZ>=0||f.c<0?0:.05*fr,.0009)});
-    FIX.fans.forEach(function(f){f.ph+=dt*7;push(WX(f.x)+f.dx*8,WY(f.y)+f.dy*8,f.dx*760+(r()-.5)*50,f.dy*760+(r()-.5)*50,INK[f.c],.13*fr,.0013)});
-    /* a drain draws the water in and swallows the ink near it (most of a jet that passes over it) */
-    DRAINS.concat(FIX.drains).forEach(function(d){d.ph+=dt*3;VQ.push([WX(d.x),WY(d.y),.55*fr,0,1300],[WX(d.x),WY(d.y),300,1,900])});
-    /* the cups are measured a few times a second, and fill by the water's own time (a slow phone fills them no faster than the smoke moves) */
+    /* the machine runs: fans push and (outside the levels) breathe ink; a level's sources breathe their own colours, its winds only push */
+    var fr=Math.min(1,dt*60),ks=KS(),kr=KR(),kp=KP();
+    FANS.forEach(function(f){f.ph+=dt*9;push(WX(f.x)+f.dx*10,WY(f.y)+f.dy*10,f.dx*820*ks,f.dy*820*ks,INK[f.c]||INK[0],PZ>=0||f.c<0?0:.05*fr,.0009*kr)});
+    FIX.fans.forEach(function(f){f.ph+=dt*7;if(f.c<0){push(WX(f.x)+f.dx*10,WY(f.y)+f.dy*10,f.dx*820*ks,f.dy*820*ks,INK[0],0,.0009*kr);return}
+      push(WX(f.x)+f.dx*8,WY(f.y)+f.dy*8,f.dx*760*ks+(r()-.5)*50*ks,f.dy*760*ks+(r()-.5)*50*ks,INK[f.c],LP.ink*fr,.0013*kr)});
+    /* a drain draws the water in and swallows the ink near it; in a level it swallows a jet that runs into it whole, its push as well
+       as its ink, so the jet stops there (a drain that took only the ink would leave the jet's push to shove the other smoke aside) */
+    DRAINS.concat(FIX.drains).forEach(function(d){d.ph+=dt*3;VQ.push([WX(d.x),WY(d.y),(PZ>=0?.85:.55)*fr,0,1300*kp],[WX(d.x),WY(d.y),300*ks,1,900*kp]);
+      if(PZ>=0)VQ.push([WX(d.x),WY(d.y),.5*fr,3,1300*kp])});
+    /* a tunnel draws the water into one end and blows it out of the other, the way it was dug */
+    var tr=cupR()*.75;TUNNELS.forEach(function(u){u.ph+=dt*2;var ax=WX(u.ax),ay=WY(u.ay),bx2=WX(u.bx),by2=WY(u.by),m=Math.hypot(bx2-ax,by2-ay)||1,ux=(bx2-ax)/m,uy=(by2-ay)/m;
+      VQ.push([ax,ay,240*ks,1,tr*tr*1.3]);push(bx2+ux*tr*.5,by2+uy*tr*.5,ux*700*ks,uy*700*ks,INK[0],0,.0010*kr)});
+    PRISMS.forEach(function(p){p.ph=(p.ph||0)+dt});
+    /* the rings are measured a few times a second, and fill by the water's own time (a slow phone fills them no faster than the smoke moves) */
     if(CUPS.length&&FT-rbT>280){var dtc=simT-rbS;rbS=simT;rbT=FT;want=1;cupsCheck(clamp(dtc,0,.6))}
-    if(pzWon&&FT-pzWon>2600){pzWon=0;if(PZ+1<LEVELS.length)pzLoad(PZ+1);else{pzSaved=[1,1,1,1,1,1,1,1,1];pzOff();TOOL='ink'}toolsSync()}
+    if(pzWon&&FT-pzWon>3200){pzWon=0;if(PZ+1<LEVELS.length)pzLoad(PZ+1);else{pzSaved=[1,1,1,1,1,1,1,1,1];pzOff();TOOL='ink';PATH=true;pathT=FT}toolsSync()}
     /* the band in the water. With a photo in it, the band only moves the water (and more gently): the photo stays the only ink */
     var pk=PHOTO.has?0:1,pv=PHOTO.has?.4:1;
     for(i=0;PZ<0&&i<BD.flow.length;i++){var h=BD.flow[i],s=h.s,x=STG.x0+STG.w*(.06+.88*BD.ph);
@@ -1159,7 +1404,7 @@ var DRIFT=(function(){
       else if(h.i===1)push(VW*r(),STG.y0+STG.h*r(),(r()-.5)*70,(r()-.5)*70,[0,0,0],0,.0009)}
     ink+=((q.length?1:0)-ink)*Math.min(1,dt*2)}
   /* two fingers: turning makes a whirlpool where they are, closing pulls the water in, opening throws it out */
-  function gesture(e){if(e.ghost||bdrag[Object.keys(bdrag)[0]])return;
+  function gesture(e){if(e.ghost||PATH||bdrag[Object.keys(bdrag)[0]])return;
     if(Math.abs(e.rot)>.004)VQ.push([e.cx,e.cy,-e.rot/e.dt*95,2,3600]);
     if(Math.abs(e.scale-1)>.004)VQ.push([e.cx,e.cy,(1-e.scale)/e.dt*700,1,5200])}
   function step(dtr){
@@ -1176,22 +1421,27 @@ var DRIFT=(function(){
       if(!simple)splat(vel,s[0],s[1],s[2]/VW*sw,-s[3]/VH*sh,0,s[6]);
       if(a>0)splat(dye,s[0],s[1],c[0]*a,c[1]*a,c[2]*a,s[6]*(simple?1.6:1),1)}
     q.length=0;
-    /* drains and whirlpools: [x, y, strength, mode, radius in pixels squared] */
+    /* drains and whirlpools: [x, y, strength, mode (0 eat ink, 1 draw in, 2 whirl, 3 stop the water), radius in pixels squared] */
     for(i=0;i<VQ.length&&i<24;i++){var v=VQ[i],tg=v[3]===0?dye:vel;if(!tg)continue;u=run(P.snk,tg.w,[1/tg.w.w,1/tg.w.h]);glBind(0,tg.r.tex,u.uT);gl.uniform2f(u.uPt,v[0]/VW,1-v[1]/VH);
       gl.uniform2f(u.uWH,VW,VH);gl.uniform1f(u.uRad,v[4]);gl.uniform1f(u.uK,v[2]);gl.uniform1f(u.uMode,v[3]);gl.uniform2f(u.uCell,sw/VW,sh/VH);glQuad(P.snk);tg.swap()}
     VQ.length=0;
+    /* prisms colour the smoke in them; tunnels carry it from one end to the other */
+    var pr2=cupR()*.8,all=FIX.prisms.concat(PRISMS);
+    for(i=0;i<all.length;i++){var pm=all[i],col=INK[pm.c]||INK[0];u=run(P.tint,dye.w,dt2);glBind(0,dye.r.tex,u.uT);gl.uniform2f(u.uPt,pm.x,1-pm.y);gl.uniform2f(u.uWH,VW,VH);gl.uniform1f(u.uR,pr2);gl.uniform3f(u.uCol,col[0],col[1],col[2]);glQuad(P.tint);dye.swap()}
+    var tr=cupR()*.75;
+    for(i=0;i<TUNNELS.length;i++){var tn=TUNNELS[i];u=run(P.tun,dye.w,dt2);glBind(0,dye.r.tex,u.uT);gl.uniform2f(u.uA,tn.ax,1-tn.ay);gl.uniform2f(u.uB,tn.bx,1-tn.by);gl.uniform2f(u.uWH,VW,VH);gl.uniform1f(u.uR,tr);gl.uniform1f(u.uK,.55);glQuad(P.tun);dye.swap()}
     if(!simple){
       u=run(P.curl,curl,vt);glBind(0,vel.r.tex,u.uVel);glQuad(P.curl);
       u=run(P.vort,vel.w,vt);glBind(0,vel.r.tex,u.uVel);glBind(1,curl.tex,u.uCurl);gl.uniform1f(u.uK,20);gl.uniform1f(u.uDt,dt);glQuad(P.vort);vel.swap();
-      /* smoke rises */
-      u=run(P.buo,vel.w,vt);glBind(0,vel.r.tex,u.uVel);glBind(1,dye.r.tex,u.uDye);gl.uniform1f(u.uB,(reduce?18:64)*dt);glQuad(P.buo);vel.swap();
+      /* smoke rises (in a level, as fast for the tank's height on any screen) */
+      u=run(P.buo,vel.w,vt);glBind(0,vel.r.tex,u.uVel);glBind(1,dye.r.tex,u.uDye);gl.uniform1f(u.uB,(reduce?18:64)*dt*(PZ>=0?LP.buo*clamp(B.h/VH*sh/197,.5,2):1));glQuad(P.buo);vel.swap();
       u=run(P.div,div,vt);glBind(0,vel.r.tex,u.uVel);glQuad(P.div);
       u=run(P.mul,prs.w,vt);glBind(0,prs.r.tex,u.uT);gl.uniform1f(u.uK,.8);glQuad(P.mul);prs.swap();
       var it=[18,14,10][QL];for(i=0;i<it;i++){u=run(P.prs,prs.w,vt);glBind(0,prs.r.tex,u.uP);glBind(1,div.tex,u.uDiv);glQuad(P.prs);prs.swap()}
       u=run(P.grad,vel.w,vt);glBind(0,prs.r.tex,u.uP);glBind(1,vel.r.tex,u.uVel);glQuad(P.grad);vel.swap();
       if(WN){u=run(P.msk,vel.w,vt);glBind(0,vel.r.tex,u.uT);glBind(1,obs.tex,u.uObs);glQuad(P.msk);vel.swap()}
-      u=run(P.adv,vel.w,vt);glBind(0,vel.r.tex,u.uVel);glBind(1,vel.r.tex,u.uSrc);glBind(2,obs?obs.tex:null,u.uObs);gl.uniform1f(u.uHO,WN&&obs?1:0);gl.uniform2f(u.uVTexel,vt[0],vt[1]);gl.uniform2f(u.uSTexel,vt[0],vt[1]);gl.uniform1f(u.uDt,dt);gl.uniform1f(u.uDiss,Math.exp(-.22*dtr));glQuad(P.adv);vel.swap();
-      u=run(P.adv,dye.w,dt2);glBind(0,vel.r.tex,u.uVel);glBind(1,dye.r.tex,u.uSrc);glBind(2,obs?obs.tex:null,u.uObs);gl.uniform1f(u.uHO,WN&&obs?1:0);gl.uniform2f(u.uVTexel,vt[0],vt[1]);gl.uniform2f(u.uSTexel,dt2[0],dt2[1]);gl.uniform1f(u.uDt,dt);gl.uniform1f(u.uDiss,ph?1:Math.exp(-(PZ>=0?.16:.36)*dtr));glQuad(P.adv);dye.swap()}
+      u=run(P.adv,vel.w,vt);glBind(0,vel.r.tex,u.uVel);glBind(1,vel.r.tex,u.uSrc);glBind(2,obs?obs.tex:null,u.uObs);gl.uniform1f(u.uHO,WN&&obs?1:0);gl.uniform2f(u.uVTexel,vt[0],vt[1]);gl.uniform2f(u.uSTexel,vt[0],vt[1]);gl.uniform1f(u.uDt,dt);gl.uniform1f(u.uDiss,Math.exp(-(PZ>=0?LP.vel*dt:.22*dtr)));glQuad(P.adv);vel.swap();
+      u=run(P.adv,dye.w,dt2);glBind(0,vel.r.tex,u.uVel);glBind(1,dye.r.tex,u.uSrc);glBind(2,obs?obs.tex:null,u.uObs);gl.uniform1f(u.uHO,WN&&obs?1:0);gl.uniform2f(u.uVTexel,vt[0],vt[1]);gl.uniform2f(u.uSTexel,dt2[0],dt2[1]);gl.uniform1f(u.uDt,dt);gl.uniform1f(u.uDiss,ph?1:Math.exp(-(PZ>=0?LP.dye*dt:.36*dtr)));glQuad(P.adv);dye.swap()}
     else{u=run(P.mul,dye.w,dt2);glBind(0,dye.r.tex,u.uT);gl.uniform1f(u.uK,ph?1:Math.exp(-dtr*.5));glQuad(P.mul);dye.swap()}
     if(WN){u=run(P.msk,dye.w,dt2);glBind(0,dye.r.tex,u.uT);glBind(1,obs.tex,u.uObs);glQuad(P.msk);dye.swap()}
     if(ph){u=run(P.heal,dye.w,dt2);glBind(0,dye.r.tex,u.uT);glBind(1,ph.tex,u.uPh);gl.uniform4f(u.uRect,rc[0],rc[1],rc[2],rc[3]);gl.uniform1f(u.uK,1-Math.exp(-dtr/4.5));glQuad(P.heal);dye.swap()}}
@@ -1200,61 +1450,94 @@ var DRIFT=(function(){
     if(!GLX.ok||GLX.lost)return;if(gen!==GLX.gen)glSetup();if(P&&(ql!==QL||!dye))size();
     var gl=GLX.gl;glAttrOff();
     if(!P||!dye){glClear(ABYSS[0],ABYSS[1],ABYSS[2]);return}
-    gl.disable(gl.BLEND);var dt=lastT?Math.min(.1,Math.max(.001,(t-lastT)/1000)):.016;lastT=t;
+    gl.disable(gl.BLEND);var dt=FIXDT||(lastT?Math.min(.1,Math.max(.001,(t-lastT)/1000)):.016);lastT=t;
     step(dt);if(want){want=0;readBack()}
     var u=run(P.show,null,[1/dw,1/dh]);glBind(0,dye.r.tex,u.uT);gl.uniform3f(u.uBg,ABYSS[0],ABYSS[1],ABYSS[2]);gl.uniform1f(u.uZ,.55);glQuad(P.show);
-    pieces(t)}
-  /* the machine drawn over the water: walls as lit tubes, fans turning, drains swirling, the puzzle's cups filling */
+    pieces(t);if(PATH)pathDraw(t)}
+  function cs(col,a){return 'rgba('+Math.round(col[0]*255)+','+Math.round(col[1]*255)+','+Math.round(col[2]*255)+','+a+')'}
+  /* the machine drawn over the water: walls as lit tubes, fans turning, prisms, drains swirling, tunnels, the level's rings filling */
   function pieces(t){
     var c=OV,i,k,cr=cupR();
-    function wall(w,fixed){c.strokeStyle=fixed?'rgba(120,150,170,.55)':'rgba(62,240,255,.28)';c.lineWidth=TH+4;c.beginPath();c.moveTo(WX(w[0]),WY(w[1]));c.lineTo(WX(w[2]),WY(w[3]));c.stroke();
+    function wall(w,fixed){if(fixed===2){c.strokeStyle='rgba(150,180,200,.22)';c.lineWidth=1.2;c.beginPath();c.moveTo(WX(w[0]),WY(w[1]));c.lineTo(WX(w[2]),WY(w[3]));c.stroke();return}
+      c.strokeStyle=fixed?'rgba(120,150,170,.55)':'rgba(62,240,255,.28)';c.lineWidth=TH+4;c.beginPath();c.moveTo(WX(w[0]),WY(w[1]));c.lineTo(WX(w[2]),WY(w[3]));c.stroke();
       c.strokeStyle=fixed?'rgba(200,215,225,.85)':'rgba(234,249,255,.95)';c.lineWidth=fixed?3:2;c.beginPath();c.moveTo(WX(w[0]),WY(w[1]));c.lineTo(WX(w[2]),WY(w[3]));c.stroke()}
-    c.lineCap='round';FIX.walls.forEach(function(w){wall(w,1)});WALLS.forEach(function(w){wall(w,0)});
+    c.lineCap='round';FIX.walls.forEach(function(w){wall(w,w[4])});WALLS.forEach(function(w){wall(w,0)});
     for(var id in bdrag){var b=bdrag[id],p=PT[id];if(!p)continue;
       if(b.kind==='wall'){var a=snap(b.x0,b.y0),e=snap(p.x,p.y);c.setLineDash([5,5]);c.strokeStyle='rgba(234,249,255,.7)';c.lineWidth=2;c.beginPath();c.moveTo(a[0],a[1]);c.lineTo(e[0],e[1]);c.stroke();c.setLineDash([])}
-      else if(b.kind==='fan'){c.strokeStyle='rgba(234,249,255,.7)';c.lineWidth=1.5;c.beginPath();c.moveTo(b.x0,b.y0);c.lineTo(p.x,p.y);c.stroke()}}
-    /* a puzzle's own sources wear their colour; a fan built in a puzzle breathes no ink and is drawn plain */
-    function fan(f,fixed){var x=WX(f.x),y=WY(f.y),col=f.c<0?[.86,.93,1]:INK[f.c],cs='rgba('+Math.round(col[0]*255)+','+Math.round(col[1]*255)+','+Math.round(col[2]*255)+',';
-      c.strokeStyle=cs+'.95)';c.lineWidth=1.4;c.beginPath();c.arc(x,y,fixed?9:11,0,TAU);c.stroke();
-      for(k=0;k<3;k++){var a=f.ph+k*TAU/3;c.beginPath();c.moveTo(x,y);c.lineTo(x+Math.cos(a)*(fixed?7:9),y+Math.sin(a)*(fixed?7:9));c.stroke()}
-      if(fixed){c.fillStyle=cs+'.9)';c.beginPath();c.arc(x,y,3,0,TAU);c.fill()}
+      else if(b.kind==='fan'||b.kind==='tunnel'){c.strokeStyle='rgba(234,249,255,.7)';c.lineWidth=1.5;c.setLineDash(b.kind==='tunnel'?[3,5]:[]);c.beginPath();c.moveTo(b.x0,b.y0);c.lineTo(p.x,p.y);c.stroke();c.setLineDash([]);
+        if(b.kind==='tunnel'){c.beginPath();c.arc(b.x0,b.y0,cr*.75,0,TAU);c.stroke();c.beginPath();c.arc(p.x,p.y,cr*.75,0,TAU);c.stroke()}}}
+    /* a level's own sources wear their colour; a fan built in a level breathes no ink and is drawn plain; a level's winds are fixed fans */
+    function fan(f,fixed){var x=WX(f.x),y=WY(f.y),col=f.c<0?[.86,.93,1]:INK[f.c],s=cs(col,'');
+      c.strokeStyle=s+'.95)';c.lineWidth=1.4;c.beginPath();c.arc(x,y,fixed&&!f.wind?9:11,0,TAU);c.stroke();if(f.wind){c.strokeStyle='rgba(200,215,225,.8)';c.beginPath();c.arc(x,y,15,0,TAU);c.stroke();c.strokeStyle=s+'.95)'}
+      for(k=0;k<3;k++){var a=f.ph+k*TAU/3;c.beginPath();c.moveTo(x,y);c.lineTo(x+Math.cos(a)*(fixed&&!f.wind?7:9),y+Math.sin(a)*(fixed&&!f.wind?7:9));c.stroke()}
+      if(fixed&&!f.wind){c.fillStyle=s+'.9)';c.beginPath();c.arc(x,y,3,0,TAU);c.fill()}
       c.beginPath();c.moveTo(x+f.dx*14,y+f.dy*14);c.lineTo(x+f.dx*24,y+f.dy*24);c.stroke();var ax=x+f.dx*24,ay=y+f.dy*24;c.beginPath();c.moveTo(ax-f.dx*5-f.dy*4,ay-f.dy*5+f.dx*4);c.lineTo(ax,ay);c.lineTo(ax-f.dx*5+f.dy*4,ay-f.dy*5-f.dx*4);c.stroke()}
     FIX.fans.forEach(function(f){fan(f,1)});FANS.forEach(function(f){fan(f,0)});
+    /* prisms: a hexagon of their colour, the smoke in them glowing */
+    FIX.prisms.concat(PRISMS).forEach(function(p){var x=WX(p.x),y=WY(p.y),R=cr*.8,col=INK[p.c]||INK[0];c.beginPath();for(k=0;k<6;k++){var a=k/6*TAU+Math.PI/6;c.lineTo(x+Math.cos(a)*R,y+Math.sin(a)*R)}c.closePath();
+      c.fillStyle=cs(col,.1);c.fill();c.strokeStyle=cs(col,.9);c.lineWidth=p.fixed?2.4:1.5;c.stroke();if(p.fixed){c.strokeStyle='rgba(200,215,225,.6)';c.lineWidth=1;c.beginPath();c.arc(x,y,R+5,0,TAU);c.stroke()}});
     DRAINS.concat(FIX.drains).forEach(function(d){var x=WX(d.x),y=WY(d.y);c.fillStyle='rgba(0,0,0,.55)';c.beginPath();c.arc(x,y,9,0,TAU);c.fill();
       for(k=0;k<3;k++){var u=((d.ph*.25+k/3)%1),rr=14*(1-u)+2;c.strokeStyle='rgba(234,249,255,'+(.6*u).toFixed(3)+')';c.lineWidth=1.2;c.beginPath();c.arc(x,y,rr,0,TAU);c.stroke()}
       if(d.fixed){c.strokeStyle='rgba(200,215,225,.8)';c.lineWidth=2;c.beginPath();c.arc(x,y,15,0,TAU);c.stroke()}});
-    CUPS.forEach(function(cp){var x=WX(cp.x),y=WY(cp.y),col=cp.c==='mix'?[.92,.96,1]:INK[cp.c],cs='rgba('+Math.round(col[0]*255)+','+Math.round(col[1]*255)+','+Math.round(col[2]*255)+',';
-      c.strokeStyle=cs+(cp.done?'1)':'.75)');c.lineWidth=cp.done?2.4:1.5;c.setLineDash(cp.c==='mix'?[3,4]:[]);c.beginPath();c.arc(x,y,cr,0,TAU);c.stroke();c.setLineDash([]);
-      c.lineWidth=3;c.strokeStyle=cs+'.95)';c.beginPath();c.arc(x,y,cr+6,-Math.PI/2,-Math.PI/2+TAU*cp.fill);c.stroke();
-      if(cp.done){c.fillStyle=cs+(.18+.1*Math.sin(t*.006)).toFixed(3)+')';c.beginPath();c.arc(x,y,cr,0,TAU);c.fill()}});
+    /* tunnels: the way in (dark, drawing inward), a faint line, the way out (bright, an arrow the way the smoke leaves) */
+    TUNNELS.forEach(function(u){var ax=WX(u.ax),ay=WY(u.ay),bx2=WX(u.bx),by2=WY(u.by),m=Math.hypot(bx2-ax,by2-ay)||1,ux=(bx2-ax)/m,uy=(by2-ay)/m,R=cr*.75;
+      c.setLineDash([2,6]);c.strokeStyle='rgba(234,249,255,.25)';c.lineWidth=1;c.beginPath();c.moveTo(ax+ux*R,ay+uy*R);c.lineTo(bx2-ux*R,by2-uy*R);c.stroke();c.setLineDash([]);
+      c.fillStyle='rgba(0,0,0,.5)';c.beginPath();c.arc(ax,ay,R,0,TAU);c.fill();for(k=0;k<2;k++){var w2=((u.ph*.4+k/2)%1),rr=R*(1-w2)+2;c.strokeStyle='rgba(180,107,255,'+(.7*w2).toFixed(3)+')';c.lineWidth=1.2;c.beginPath();c.arc(ax,ay,rr,0,TAU);c.stroke()}
+      c.strokeStyle='rgba(180,107,255,.85)';c.lineWidth=1.4;c.beginPath();c.arc(ax,ay,R,0,TAU);c.stroke();c.beginPath();c.arc(bx2,by2,R,0,TAU);c.stroke();
+      var ex=bx2+ux*(R+12),ey=by2+uy*(R+12);c.beginPath();c.moveTo(bx2+ux*(R+2),by2+uy*(R+2));c.lineTo(ex,ey);c.moveTo(ex-ux*5-uy*4,ey-uy*5+ux*4);c.lineTo(ex,ey);c.lineTo(ex-ux*5+uy*4,ey-uy*5-ux*4);c.stroke()});
+    CUPS.forEach(function(cp){var x=WX(cp.x),y=WY(cp.y),col=cp.c==='mix'?[.92,.96,1]:INK[cp.c],s=cs(col,'');
+      c.strokeStyle=s+(cp.done?'1)':'.75)');c.lineWidth=cp.done?2.4:1.5;c.setLineDash(cp.c==='mix'?[3,4]:[]);c.beginPath();c.arc(x,y,cr,0,TAU);c.stroke();c.setLineDash([]);
+      c.lineWidth=3;c.strokeStyle=s+'.95)';c.beginPath();c.arc(x,y,cr+6,-Math.PI/2,-Math.PI/2+TAU*cp.fill);c.stroke();
+      if(cp.done){c.fillStyle=s+(.18+.1*Math.sin(t*.006)).toFixed(3)+')';c.beginPath();c.arc(x,y,cr,0,TAU);c.fill()}});
+    /* a level solved: its stars, one after another, in the middle of the tank */
+    if(pzWon&&PZ>=0){var e=(FT-pzWon)/1000,cx=B.x0+B.w/2,cy=B.y0+B.h*.5;c.fillStyle='rgba(1,4,10,'+(.5*smooth(e/.4)).toFixed(3)+')';c.fillRect(B.x0,B.y0,B.w,B.h);
+      for(k=0;k<3;k++){var g2=smooth((e-.15-k*.18)/.3),R2=26*(k===1?1.25:1)*(.6+.4*g2);if(g2<=0)continue;var on=k<winStars;c.globalAlpha=g2;c.fillStyle=on?'rgba(255,214,120,.98)':'rgba(234,249,255,.25)';c.strokeStyle=c.fillStyle;c.lineWidth=1.4;
+        star(c,cx+(k-1)*66,cy-(k===1?10:0),R2,on)}c.globalAlpha=1}
     c.lineCap='butt'}
   function resize(){if(GLX.ok&&P)size()}
   var CN=['cyan','green','amber','rose','violet'];
   function left(n,one,many){return n+' '+(n===1?one:many)}
+  function starText(n){var s='';for(var k=0;k<3;k++)s+=k<n?'★':'☆';return s}
   function hud(){
-    if(PZ>=0){var g=given(),J=JOIN[PZ];
-      if(pzWon)return 'puzzle '+(PZ+1)+' of '+LEVELS.length+' solved'+(J&&J.length?'\n'+J.map(function(k){return 'the '+BNAMES[k].toLowerCase()}).join(' and ')+(J.length>1?' join':' joins')+' the band':'');
+    if(PATH)return 'levels · '+starTotal()+' of '+LEVELS.length*3+' stars\npick a level: each solved opens the next, and the band grows\nthe fewer pieces you build, the more stars';
+    if(PZ>=0){var L=LEVELS[PZ],g=given(),J=joinAt(PZ),n=used();
+      if(pzWon)return 'level '+(PZ+1)+' solved '+starText(winStars)+' · '+left(n,'piece','pieces')+(winStars<3?' (three stars with '+L.par+')':'')+
+        (J.length?'\n'+J.map(function(k){return 'the '+BNAMES[k].toLowerCase()}).join(' and ')+(J.length>1?' join':' joins')+' the band':'');
       var l2=CUPS.map(function(c){return (c.c==='mix'?'white':CN[c.c])+' ring '+(c.done?'full':Math.round(c.fill*100)+'%')}).join(' · '),
-        b=[],w=g.w-WALLS.length,f=g.f-FANS.length,d=g.d-DRAINS.length;if(w>0)b.push(left(w,'wall','walls'));if(f>0)b.push(left(f,'fan','fans'));if(d>0)b.push(left(d,'drain','drains'));
-      return 'puzzle '+(PZ+1)+' of '+LEVELS.length+' · fill each ring with smoke of its colour'+(LEVELS[PZ].tip?'\n'+LEVELS[PZ].tip:'')+'\n'+l2+'\n'+(b.length?'you can still build '+b.join(', '):'nothing left to build')}
-    var bt=(WALLS.length?WALLS.length+' wall'+(WALLS.length>1?'s':''):'')+(FANS.length?(WALLS.length?' · ':'')+FANS.length+' fan'+(FANS.length>1?'s':''):'')+(DRAINS.length?(WALLS.length||FANS.length?' · ':'')+DRAINS.length+' drain'+(DRAINS.length>1?'s':''):'');
+        b=[],w=g.w-WALLS.length,f=g.f-FANS.length,pl=prismsLeft()||[],d=g.d-DRAINS.length,tt=g.t-TUNNELS.length;
+      if(w>0)b.push(left(w,'wall','walls'));if(f>0)b.push(left(f,'fan','fans'));if(pl.length)b.push(pl.length===1?'1 '+CN[pl[0]]+' prism':pl.length+' prisms ('+pl.map(function(k){return CN[k]}).join(', ')+')');
+      if(d>0)b.push(left(d,'drain','drains'));if(tt>0)b.push(left(tt,'tunnel','tunnels'));
+      return 'level '+(PZ+1)+' of '+LEVELS.length+' · '+CH[chapterOf(PZ)].n+' · fill each ring with smoke of its colour'+(L.tip?'\n'+L.tip:'')+'\n'+l2+'\n'+
+        (b.length?'you can still build '+b.join(', '):'nothing left to build')+' · three stars with '+left(L.par,'piece','pieces')}
+    var bt=[[WALLS.length,'wall','walls'],[FANS.length,'fan','fans'],[PRISMS.length,'prism','prisms'],[DRAINS.length,'drain','drains'],[TUNNELS.length,'tunnel','tunnels']].filter(function(a){return a[0]}).map(function(a){return left(a[0],a[1],a[2])}).join(' · ');
     if(PHOTO.has)return 'your photo is the ink: smear it and it remembers itself'+(bt?'\nbuilt: '+bt:'');
-    return 'real smoke, worked out as it moves: push it with a finger, tap for a drop\nbuild walls, fans and drains with the tools below, or play the puzzles'+(bt?'\nbuilt: '+bt:best?'\npuzzles solved: '+best+' of '+LEVELS.length:'')}
+    var st=starTotal();
+    return 'real smoke, worked out as it moves: push it with a finger, tap for a drop\nbuild with the tools below, or play the '+LEVELS.length+' levels'+(bt?'\nbuilt: '+bt:st?'\nlevels: '+st+' of '+LEVELS.length*3+' stars':'')}
   /* the hint: a tap (a drop of ink bursts), then one finger drawn across. The tap comes first on purpose: this is the world the page
      opens on, and a tap is the one touch an iPhone will start the sound on */
-  function ghost(t){if(PZ>=0||TOOL!=='ink')return [null];var u=(t*.21)%1,k=Math.floor(t*.21)%2;
+  function ghost(t){if(PZ>=0||PATH||TOOL!=='ink')return [null];var u=(t*.21)%1,k=Math.floor(t*.21)%2;
     if(u>.05&&u<.1)return [{x:STG.x0+STG.w*(k?.7:.3),y:STG.cy+STG.h*(k?.16:-.14)}];
     if(u>.2&&u<.84){var e=smooth((u-.2)/.64);return [{x:STG.x0+STG.w*(k?.82-.64*e:.18+.64*e),y:STG.cy+STG.h*(.22*Math.sin(e*5.2+k*2)+(k?-.12:.12))}]}
     return [null]}
+  /* pieces put in by a test, in fractions of the tank in a level (of the stage outside one) */
+  function U(x){return PZ>=0?bx(x):(STG.x0+x*STG.w)/VW}function V(y){return PZ>=0?by(y):(STG.y0+y*STG.h)/VH}
   return {enter:enter,leave:leave,resize:function(){resize();pzRelayout();obsDirty=true},down:down,up:up,gesture:gesture,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
-    dbg:function(){return {ok:!!(P&&dye),simT:simT,simple:simple,sw:sw,sh:sh,dw:dw,dh:dh,lin:GLX.hfLin,tool:TOOL,pz:PZ,won:!!pzWon,walls:WALLS.length,fans:FANS.length,drains:DRAINS.length,wn:WN,best:best,
-      cups:CUPS.map(function(c){return {c:c.c,fill:c.fill,match:c.match,done:c.done,x:WX(c.x),y:WY(c.y)}}),fix:{walls:FIX.walls.length,fans:FIX.fans.length,drains:FIX.drains.length},rb:rbOk}},
-    /* for the tests: how much ink there is around a point (pixels), from the last copy read back; and a puzzle by number */
+    dbg:function(){return {ok:!!(P&&dye),simT:simT,simple:simple,sw:sw,sh:sh,dw:dw,dh:dh,lin:GLX.hfLin,tool:TOOL,pz:PZ,won:!!pzWon,walls:WALLS.length,fans:FANS.length,drains:DRAINS.length,prisms:PRISMS.length,tunnels:TUNNELS.length,wn:WN,
+      stars:STARS.slice(),winStars:winStars,path:PATH,board:{x0:B.x0,y0:B.y0,w:B.w,h:B.h},
+      cups:CUPS.map(function(c){return {c:c.c,fill:c.fill,match:c.match,done:c.done,x:WX(c.x),y:WY(c.y)}}),fix:{walls:FIX.walls.length,fans:FIX.fans.length,drains:FIX.drains.length,prisms:FIX.prisms.length},rb:rbOk}},
+    /* for the tests: how much ink there is around a point (pixels), from the last copy read back; and a level by number */
     sample:function(x,y,r){want=1;return sample(x,y,r,null,false)},
-    mid:function(){want=1;if(!rbOk)return null;var w=0,y=0,i,j;for(j=0;j<rbH;j++)for(i=0;i<rbW;i++){var o=(j*rbW+i)*4,d=Math.max(rbBuf[o],rbBuf[o+1],rbBuf[o+2])/255;w+=d;y+=d*(1-(j+.5)/rbH)}return w?y/w:null},level:function(i){if(i<0)pzOff();else pzLoad(i);toolsSync()},tool:function(k){TOOL=k;toolsSync()},
-    /* for the tests: the puzzles themselves, and pieces put in by hand (in fractions of the stage) */
-    levels:LEVELS,nowin:function(b){NOWIN=!!b},trace:function(on){var t=TRACE;TRACE=on?[]:null;return t},
-    put:function(k,a){if(k==='wall')WALLS.push([sx(a[0]),sy(a[1]),sx(a[2]),sy(a[3]),0]);else if(k==='fan'){var m=Math.hypot(a[2],a[3])||1;FANS.push({x:sx(a[0]),y:sy(a[1]),dx:a[2]/m,dy:a[3]/m,c:PZ>=0?-1:a[4]||0,ph:0})}else if(k==='drain')DRAINS.push({x:sx(a[0]),y:sy(a[1]),ph:0});obsDirty=true},
+    mid:function(){want=1;if(!rbOk)return null;var w=0,y=0,i,j;for(j=0;j<rbH;j++)for(i=0;i<rbW;i++){var o=(j*rbW+i)*4,d=Math.max(rbBuf[o],rbBuf[o+1],rbBuf[o+2])/255;w+=d;y+=d*(1-(j+.5)/rbH)}return w?y/w:null},
+    level:function(i){if(i<0)pzOff();else pzLoad(i);toolsSync()},tool:function(k){TOOL=k;PATH=false;toolsSync()},
+    /* for the tests: the levels themselves (and new ones to try), pieces put in by hand, the map's places, the stars */
+    levels:LEVELS,setLevels:function(a){LEVELS.length=0;a.forEach(function(l){LEVELS.push(l)})},nowin:function(b){NOWIN=!!b},trace:function(on){var t=TRACE;TRACE=on?[]:null;return t},
+    fastdye:function(b){FASTDYE=!!b;szKey=''},
+    /* for the tests: the water stepped as a phone at a given frame rate steps it (1/60, or 1/30 for one saving power), whatever this machine's pace */
+    fixdt:function(v){FIXDT=+v||0},phys:function(o){if(o)for(var k in o)LP[k]=o[k];return JSON.parse(JSON.stringify(LP))},path:function(b){PATH=!!b;pathT=FT-1000;toolsSync()},pathNodes:function(){return {nodes:pathNodes(),free:freeBtn()}},
+    stars:function(a){if(a){STARS=a.slice();lsSet()}return STARS.slice()},
+    put:function(k,a){if(k==='wall')WALLS.push([U(a[0]),V(a[1]),U(a[2]),V(a[3]),0]);else if(k==='fan'){var m=Math.hypot(a[2],a[3])||1;FANS.push({x:U(a[0]),y:V(a[1]),dx:a[2]/m,dy:a[3]/m,c:PZ>=0?-1:a[4]||0,ph:0})}
+      else if(k==='drain')DRAINS.push({x:U(a[0]),y:V(a[1]),ph:0});else if(k==='prism')PRISMS.push({x:U(a[0]),y:V(a[1]),c:a[2],ph:0});
+      else if(k==='tunnel')TUNNELS.push({ax:U(a[0]),ay:V(a[1]),bx:U(a[2]),by:V(a[3]),ph:0});obsDirty=true},
     win:function(){if(!CUPS.length||pzWon)return;CUPS.forEach(function(c){c.fill=1;c.done=true});pzWin()}}
 })();
 
@@ -1277,7 +1560,7 @@ var WIND=(function(){
     sunV=[0,0,0],moonV=[0,0,0],moonI=null,sunI=null,lastT=0,SK=[],byStep=[],flashes=[],STEPS=256,tmp=[0,0,0],probe=null,turned=0,
     FR=[],frV=-1,fireB=null,fireN=0,fireGen=-1,ST=[],stV=-1,
     /* the layers of the weather (the owner: "more layers, rain, sun, clouds. Real time"): each shown while it is on and there is data for it */
-    LY={wind:1,clouds:1,rain:1,sun:1},lyAt=0,lyKey='';
+    LY={wind:1,jet:0,heat:0,pressure:0,waves:0,clouds:1,rain:1,sun:1},lyAt=0,lyKey='',wxT=null,wxV=-1,jetT=null,HL=[],FOC=null;
   var VQ='attribute vec2 a_p;varying vec2 vUv;void main(){vUv=a_p*0.5+0.5;gl_Position=vec4(a_p,0.0,1.0);}';
   var H='precision highp float;varying vec2 vUv;\n';
   /* the fires' smoke: each fire is a point in the picture of the unrolled Earth, lit a little every frame, and the wind does the rest */
@@ -1288,16 +1571,18 @@ var WIND=(function(){
        burning in one place for a few seconds (more of them, and brighter, where the wind is strong), so that every one trails a plume
        down the wind; and a thin haze everywhere the wind is hard, so a storm glows as a whole.
        The picture is the Earth unrolled: across is longitude, up is north */
-    adv:H+'uniform sampler2D uDye;uniform sampler2D uWind;uniform float uDt;uniform float uK;uniform float uDiss;uniform float uTime;uniform float uRate;uniform float uEmit;uniform float uHaze;uniform vec2 uGrid;uniform float uHas;\n'+
+    adv:H+'uniform sampler2D uDye;uniform sampler2D uWind;uniform float uDt;uniform float uK;uniform float uDiss;uniform float uTime;uniform float uRate;uniform float uEmit;uniform float uHaze;uniform vec2 uGrid;uniform float uHas;uniform float uVS;uniform float uCS;uniform float uJet;\n'+
       'float hash(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}\n'+
       'void main(){float lat=(vUv.y-0.5)*3.14159265;float cl=max(cos(lat),0.16);\n'+
-      'vec2 vel=(texture2D(uWind,vec2(vUv.x,1.0-vUv.y)).xy-0.50196)*80.315*uHas;\n'+
+      'vec2 vel=(texture2D(uWind,vec2(vUv.x,1.0-vUv.y)).xy-0.50196)*80.315*uHas*uVS;\n'+
       'vec2 back=vUv-uDt*uK*vec2(vel.x/cl*0.15915494,vel.y*0.31830989);back.y=clamp(back.y,0.003,0.997);\n'+
-      'vec3 d=max(texture2D(uDye,back).rgb*uDiss-0.0012,0.0);float sp=length(vel);\n'+
+      'vec3 d=max(texture2D(uDye,back).rgb*uDiss-0.0012,0.0);float sp=length(vel)*uCS;\n'+
       'vec2 cell=floor(vUv*uGrid);float thr=uRate*(0.22+sp*0.085);float ta=uTime*0.2;float tb=ta+0.5;\n'+
       'float born=step(1.0-thr,hash(cell+floor(ta)*17.0))*(1.0-abs(fract(ta)*2.0-1.0))+step(1.0-thr,hash(cell+floor(tb)*31.0+7.0))*(1.0-abs(fract(tb)*2.0-1.0));\n'+
       'born*=smoothstep(1.5,1.2,abs(lat));\n'+
       'vec3 sc=mix(vec3(0.03,0.30,0.52),vec3(0.22,0.92,1.0),clamp(sp/13.0,0.0,1.0));sc=mix(sc,vec3(1.0,0.78,0.5),clamp((sp-15.0)/11.0,0.0,1.0));\n'+
+      /* the jet streams: violet, white where they run fastest */
+      'sc=mix(sc,mix(vec3(0.30,0.14,0.70),vec3(0.96,0.88,1.0),clamp((sp-6.0)/18.0,0.0,1.0)),uJet);\n'+
       'gl_FragColor=vec4(d+sc*(born*uEmit*(0.55+sp*0.05)+uHaze*sp*sp*0.0016)*uHas,1.0);}'
   };
   function mk(w,h,filt){var gl=GLX.gl,t=glTarget(w,h,type,filt);if(t){gl.bindTexture(gl.TEXTURE_2D,t.tex);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT)}return t}
@@ -1329,35 +1614,74 @@ var WIND=(function(){
       for(i=0;i<L.length;i++){var s={v:AS.llv(L[i].lat,L[i].lon),st:clamp(Math.floor((1-L[i].age/sp)*STEPS),0,STEPS-1),p:[0,0,0]};SK.push(s);(byStep[s.st]=byStep[s.st]||[]).push(s)}}
     if(LIVE.fires&&frV!==LIVE.ver.fires){frV=LIVE.ver.fires;FR=LIVE.fires.list.map(function(f){return {f:f,v:AS.llv(f.lat,f.lon),p:[0,0,0],ph:Math.random()*TAU,s:clamp(Math.sqrt(f.frp/150),1,3.4)}});fireGen=-1}
     if(LIVE.storms&&stV!==LIVE.ver.storms){stV=LIVE.ver.storms;ST=LIVE.storms.list.map(function(s){return {s:s,v:AS.llv(s.lat,s.lon),p:[0,0,0]}})}
+    if(typeof WX!=='undefined'&&WX.ver!==wxV){wxV=WX.ver;wxBuild();HL=WX.hl||[]}wxStep();
     if(P&&P.pts&&fireGen!==GLX.gen&&FR.length){var gl=GLX.gl,fb=new Float32Array(FR.length*3);for(i=0;i<FR.length;i++){fb[i*3]=(FR[i].f.lon+180)/360;fb[i*3+1]=.5+FR[i].f.lat/180;fb[i*3+2]=FR[i].s}
       if(!fireB)fireB=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,fireB);gl.bufferData(gl.ARRAY_BUFFER,fb,gl.STATIC_DRAW);fireN=FR.length;fireGen=GLX.gen}}
-  function geo(){g.R=Math.min(STG.w,STG.h-10)*.47*zoom;g.cx=STG.cx;g.cy=STG.cy}
-  var LYI={wind:'<path d="M2.5 6h8.2a2.2 2.2 0 1 0-2.2-2.2M2.5 9.8h11a2.3 2.3 0 1 1-2.3 2.3"/>',clouds:'<path d="M4.6 12.5h7a2.9 2.9 0 0 0 .2-5.8 4 4 0 0 0-7.6-.6 3.2 3.2 0 0 0 .4 6.4z"/>',
+  /* the model's fields as one picture the chip can read, the Earth unrolled from 180 W: red the temperature (-40 to 45 degrees), green
+     the waves (0 where there is no sea, then up to twelve metres), blue the pressure (940 to 1060 hPa) and alpha where there is pressure.
+     And the jet streams as a grid like the surface wind's, at two and a half times its scale */
+  /* (built a slice of rows a frame, so a phone does not stall the moment the model's fields arrive) */
+  var WXB=null;
+  function wxBuild(){if(!GLX.ok)return;WXB={y:0,px:new Uint8Array(1024*512*4),iso:WX.mslp?isobars(WX.mslp,1024,512):null}}
+  function wxStep(){
+    if(!WXB||!GLX.ok)return;var gl=GLX.gl,W=1024,Hh=512,px=WXB.px,iso=WXB.iso,x,y,T=WX.t2m,Wv=WX.wave,y1=Math.min(Hh,WXB.y+64);
+    for(y=WXB.y;y<y1;y++){var la=90-(y+.5)/Hh*180;for(x=0;x<W;x++){var lo=-180+(x+.5)/W*360,o=(y*W+x)*4,v;
+      if(T){v=GRIB.at(T,la,lo);px[o]=isNaN(v)?0:clamp(Math.round((v-233.15)/85*255),0,255)}
+      if(Wv){v=GRIB.at(Wv,la,lo);px[o+1]=isNaN(v)?0:clamp(Math.round(1+v/12*254),1,255)}
+      if(iso){px[o+2]=iso[o+3];px[o+3]=255}}}
+    WXB.y=y1;if(y1<Hh)return;WXB=null;
+    var t=wxT||gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,W,Hh,0,gl.RGBA,gl.UNSIGNED_BYTE,px);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);wxT=t;
+    if(WX.jet){var g2=new Uint8Array(360*181*2),i,j;for(j=0;j<181;j++)for(i=0;i<360;i++){var o2=(j*360+i)*2,uu=GRIB.at(WX.jet.u,90-j,i),vv=GRIB.at(WX.jet.v,90-j,i);
+      g2[o2]=clamp(Math.round((uu||0)/100*127+128),0,255);g2[o2+1]=clamp(Math.round((vv||0)/100*127+128),0,255)}jetT=gridTex(g2,2,jetT)}lyKey=''}
+  /* the isobars: lines of equal pressure every 4 hPa (every 20th brighter), traced through the model's degree grid (marching squares)
+     and drawn on a flat picture of the Earth */
+  function isobars(Pm,W,Hh){var cv=document.createElement('canvas');cv.width=W;cv.height=Hh;var c=cv.getContext('2d'),G=[],i,j,lv;
+    for(j=0;j<=180;j++){G.push([]);for(i=0;i<=360;i++)G[j].push(GRIB.at(Pm,90-j,-180+i)/100)}
+    var mn=1e9,mx=-1e9;for(j=0;j<=180;j++)for(i=0;i<=360;i++){var q=G[j][i];if(q<mn)mn=q;if(q>mx)mx=q}
+    c.lineCap='round';c.lineJoin='round';
+    for(lv=Math.ceil(mn/4)*4;lv<=mx;lv+=4){var major=lv%20===0;c.strokeStyle='rgba(255,255,255,'+(major?1:.62)+')';c.lineWidth=major?1.5:1.05;c.beginPath();
+      for(j=0;j<180;j++)for(i=0;i<360;i++){var a=G[j][i],b=G[j][i+1],d=G[j+1][i+1],e=G[j+1][i],k=(a>lv?8:0)|(b>lv?4:0)|(d>lv?2:0)|(e>lv?1:0);if(k===0||k===15)continue;
+        var X=W/360,Y=Hh/180,x0=i*X,y0=j*Y,pt=[];
+        function ed(p,q,u0,v0,u1,v1){var f=(lv-p)/(q-p);pt.push([u0+(u1-u0)*f,v0+(v1-v0)*f])}
+        if((a>lv)!==(b>lv))ed(a,b,x0,y0,x0+X,y0);if((b>lv)!==(d>lv))ed(b,d,x0+X,y0,x0+X,y0+Y);if((d>lv)!==(e>lv))ed(d,e,x0+X,y0+Y,x0,y0+Y);if((e>lv)!==(a>lv))ed(e,a,x0,y0+Y,x0,y0);
+        if(pt.length>=2){c.moveTo(pt[0][0],pt[0][1]);c.lineTo(pt[1][0],pt[1][1])}if(pt.length===4){c.moveTo(pt[2][0],pt[2][1]);c.lineTo(pt[3][0],pt[3][1])}}
+      c.stroke()}
+    return c.getImageData(0,0,W,Hh).data}
+  function geo(){var y1=STG.y1,cd=PCD&&PCD.on?$('card'):null;if(cd&&!cd.hidden){var ct=cd.getBoundingClientRect().top;if(ct>STG.y0+80&&ct<y1)y1=ct-6}
+    var h=y1-STG.y0;g.R=Math.min(STG.w,h-10)*.47*zoom;g.cx=STG.cx;g.cy=STG.y0+h/2}
+  var LYK=['wind','jet','heat','pressure','waves','clouds','rain','sun'],LYI={jet:'<path d="M1.6 9.4c2.4-3.6 5.4-3.6 7.6-1.2 2 2.2 3.8 2.1 5.2-.4M3.8 12.6c1.8-1.6 3.6-1.4 5 0"/>',heat:'<path d="M6.6 9.6V3.6a1.6 1.6 0 1 1 3.2 0v6a3.1 3.1 0 1 1-3.2 0z"/><path d="M8.2 7v4.6"/>',
+    pressure:'<path d="M2.2 5.6c2.6-2.4 9-2.4 11.6 0M2.6 9.4c2.4-1.6 8.4-1.6 10.8 0M4.6 12.9c1.6-.7 5.2-.7 6.8 0"/>',waves:'<path d="M1.6 7.4c1.6-1.6 3.1-1.6 4.4 0s2.9 1.6 4.4 0 3.1-1.6 4.1 0M1.6 11.4c1.6-1.6 3.1-1.6 4.4 0s2.9 1.6 4.4 0 3.1-1.6 4.1 0"/>',wind:'<path d="M2.5 6h8.2a2.2 2.2 0 1 0-2.2-2.2M2.5 9.8h11a2.3 2.3 0 1 1-2.3 2.3"/>',clouds:'<path d="M4.6 12.5h7a2.9 2.9 0 0 0 .2-5.8 4 4 0 0 0-7.6-.6 3.2 3.2 0 0 0 .4 6.4z"/>',
     rain:'<path d="M4.6 9.2h7a2.6 2.6 0 0 0 .2-5.2 3.6 3.6 0 0 0-6.9-.5 2.9 2.9 0 0 0-.3 5.7M5.6 11.6l-.9 2.2M8.4 11.6l-.9 2.2M11.2 11.6l-.9 2.2"/>',sun:'<circle cx="8" cy="8" r="2.9"/><path d="M8 1.6v1.6M8 12.8v1.6M1.6 8h1.6M12.8 8h1.6M3.5 3.5l1.1 1.1M11.4 11.4l1.1 1.1M3.5 12.5l1.1-1.1M11.4 4.6l1.1-1.1"/>'};
-  function lyrBuild(){var r=$('lyr');if(!r||r.childNodes.length)return;['wind','clouds','rain','sun'].forEach(function(k){var b=document.createElement('button');b.type='button';b.className='lb';b.id='l_'+k;
+  function lyrBuild(){var r=$('lyr');if(!r||r.childNodes.length)return;LYK.forEach(function(k){var b=document.createElement('button');b.type='button';b.className='lb';b.id='l_'+k;
     b.innerHTML='<svg viewBox="0 0 16 16" aria-hidden="true">'+LYI[k]+'</svg><span></span>';b.lastChild.textContent=k;b.setAttribute('aria-pressed','true');
-    b.addEventListener('click',function(){LY[k]=LY[k]?0:1;lyKey='';lyrSync(true)});r.appendChild(b)})}
+    /* the wind near the ground and the jet streams are one smoke or the other */
+    b.addEventListener('click',function(){LY[k]=LY[k]?0:1;if(LY[k]&&k==='jet')LY.wind=0;if(LY[k]&&k==='wind')LY.jet=0;lyKey='';lyrSync(true)});r.appendChild(b)})}
   /* which layers there are data for: the clouds and the rain only where the page is served from the owner's own host */
-  function lyrSync(force){var has={wind:!!LIVE.wind,clouds:GLOBE.hasCloud(),rain:GLOBE.hasRain(),sun:true},key='',k;for(k in LY)key+=(has[k]?1:0)+''+LY[k];if(key===lyKey&&!force)return;lyKey=key;
+  function lyrSync(force){var X=typeof WX!=='undefined'?WX:{},has={wind:!!LIVE.wind,jet:!!(X.jet&&jetT),heat:!!X.t2m,pressure:!!X.mslp,waves:!!X.wave,clouds:GLOBE.hasCloud(),rain:GLOBE.hasRain(),sun:true},key='',k;for(k in LY)key+=(has[k]?1:0)+''+LY[k];if(key===lyKey&&!force)return;lyKey=key;
     var r=$('lyr');if(!r)return;var vis=false;for(k in LY){var b=$('l_'+k);if(!b)continue;b.hidden=!has[k];b.setAttribute('aria-pressed',LY[k]?'true':'false');if(has[k])vis=true}
-    var was=r.hidden;r.hidden=!vis;if(was!==r.hidden){layout();geo()}}
+    var was=r.hidden,h0=r.offsetHeight;r.hidden=!vis;if(was!==r.hidden||r.offsetHeight!==h0){layout();geo()}}
   function enter(){if(GLX.ok&&gen!==GLX.gen)glSetup();GLOBE.load();liveLoad();size();lyrBuild();var r=$('lyr');if(r)r.hidden=false;lyKey='';lyrSync(true);geo();idle=0;lastT=0}
-  function leave(){flashes.length=0;var r=$('lyr');if(r)r.hidden=true}
+  function leave(){flashes.length=0;var r=$('lyr');if(r)r.hidden=true;cardOff()}
   function resize(){geo();if(GLX.ok&&P)size()}
   function pan(x){return clamp((x-g.cx)/Math.max(1,g.R)*.8,-1,1)}
   /* one finger turns the globe; let go while moving and it coasts */
-  function down(p){idle=0;vlon=vlat=0}
+  function down(p){idle=0;vlon=vlat=0;if(FOC&&FT-FOC.t>1400)FOC=null}
   function move(p){if(p.n>=2)return;var k=57.2958/g.R,c=Math.max(.35,Math.cos(lat0*AS.D));lon0-=(p.x-p.px)*k/c;lat0=clamp(lat0+(p.y-p.py)*k,-80,80);
     if(!p.ghost){turned=1;vlon=-p.vx*k/c;vlat=p.vy*k}idle=0}
-  /* a tap on a place reads it; a tap on the dark puts the reading away */
-  function up(p){idle=0;if(FT-p.t0>320||p.moved>12)return;var w=GLOBE.at(p.x,p.y,g),i,bd,d,tg=null;
-    if(!w){probe=null;return}
+  /* a tap on a place reads it; a tap on the dark puts the reading away. A finger down up to 600 ms and not moved is a tap (a slow
+     phone can be that long in passing the lifting on); the hints' ghost fingers keep to their own 320 */
+  function up(p){idle=0;if(FT-p.t0>(p.ghost?320:600)||p.moved>12)return;var w=GLOBE.at(p.x,p.y,g),i,bd,d,tg=null;
+    if(!w){probe=null;cardOff();return}
     /* a storm's eye or a fire under the finger is what was meant: the reading goes to it */
     for(i=0,bd=26*26;i<ST.length;i++){if(ST[i].p[2]<=.04)continue;d=(ST[i].p[0]-p.x)*(ST[i].p[0]-p.x)+(ST[i].p[1]-p.y)*(ST[i].p[1]-p.y);if(d<bd){bd=d;tg=ST[i].s}}
     if(!tg)for(i=0,bd=15*15;i<FR.length;i++){if(FR[i].p[2]<=.04)continue;d=(FR[i].p[0]-p.x)*(FR[i].p[0]-p.x)+(FR[i].p[1]-p.y)*(FR[i].p[1]-p.y);if(d<bd){bd=d;tg=FR[i].f}}
     if(tg)w={lat:tg.lat,lon:tg.lon};
+    /* a storm tapped: the Earth turns to it and comes close, so its spiral and its way can be seen */
+    if(tg&&!tg.frp&&!p.ghost)FOC={s:tg,t:FT,lat:lat0,lon:lon0,z:zoom,tz:Math.max(zoom,2.9)};else if(!p.ghost)FOC=null;
     probe={lat:w.lat,lon:w.lon,v:AS.llv(w.lat,w.lon),p:[0,0,0],q:[0,0,0],t:FT,ghost:!!p.ghost,fire:tg&&tg.frp?tg:null,storm:tg&&!tg.frp?tg:null};
-    if(!p.ghost)tone('glass',pent(5+clamp(Math.floor((w.lat+72)/144*9),0,8),40),.4,pan(p.x))}
+    if(!p.ghost){tone('glass',pent(5+clamp(Math.floor((w.lat+72)/144*9),0,8),40),.4,pan(p.x));if(!tg)placeCard(w.lat,w.lon);else cardOff()}}
   /* two fingers: sliding turns the globe too, a pinch comes closer */
   function gesture(e){var k=57.2958/g.R;lon0-=e.dx*k/Math.max(.35,Math.cos(lat0*AS.D));lat0=clamp(lat0+e.dy*k,-80,80);
     if(!e.ghost){zoom=clamp(zoom*e.scale,.7,3.2);geo();vlon=-e.dx/e.dt*k/Math.max(.35,Math.cos(lat0*AS.D))*.5;vlat=e.dy/e.dt*k*.5}idle=0}
@@ -1370,18 +1694,76 @@ var WIND=(function(){
     function at(jj,ii,c){return (G[(jj*360+ii)*2+c]-128)/127*40}
     var u=(at(j,i0,0)*(1-tx)+at(j,i1,0)*tx)*(1-ty)+(at(j+1,i0,0)*(1-tx)+at(j+1,i1,0)*tx)*ty,v=(at(j,i0,1)*(1-tx)+at(j,i1,1)*tx)*(1-ty)+(at(j+1,i0,1)*(1-tx)+at(j+1,i1,1)*tx)*ty;
     return {u:u,v:v,kmh:Math.hypot(u,v)*3.6,from:(Math.atan2(-u,-v)/AS.D+360)%360}}
+  /* the place by the nearest town: in it, or how far from it (a place far from any is just its latitude and longitude) */
+  function placeName(la,lo){var c=CITIES.near(la,lo);if(!c||c.km>450)return '';return (c.km<20?c.name:Math.round(c.km/5)*5+' km from '+c.name)+', '+c.country}
   function reading(){
     if(!probe)return null;var w=windAt(probe.lat,probe.lon),A=LIVE.aurora,sun=Math.asin(clamp(GLOBE.dot(probe.v,sunV),-1,1))/AS.D,d=new Date(),
       hr=(((12+AS.n180(probe.lon-(sunI?sunI.sublon:0))/15)%24)+24)%24,near=0,i,c=Math.cos(300/6371);
     for(i=0;i<SK.length;i++)if(GLOBE.dot(SK[i].v,probe.v)>c)near++;
-    return {wind:w,sun:sun,hour:hr,aurora:A?A.grid[clamp(Math.round(90-probe.lat),0,180)*360+((Math.round(probe.lon)%360)+360)%360]:null,near:near,fire:probe.fire,storm:probe.storm}}
+    var X=typeof WX!=='undefined'?WX:{},la=probe.lat,lo=probe.lon,tv=X.t2m?GRIB.at(X.t2m,la,lo):NaN,pv=X.mslp?GRIB.at(X.mslp,la,lo):NaN,wv=X.wave?GRIB.at(X.wave,la,lo):NaN,jv=null;
+    if(X.jet){var ju=GRIB.at(X.jet.u,la,lo),jw=GRIB.at(X.jet.v,la,lo);if(!isNaN(ju)&&!isNaN(jw))jv=Math.hypot(ju,jw)*3.6}
+    return {wind:w,sun:sun,hour:hr,aurora:A?A.grid[clamp(Math.round(90-probe.lat),0,180)*360+((Math.round(probe.lon)%360)+360)%360]:null,near:near,fire:probe.fire,storm:probe.storm,
+      t:isNaN(tv)?null:tv-273.15,hpa:isNaN(pv)?null:pv/100,wave:isNaN(wv)?null:wv,jet:jv}}
+  /* ---- the place card, where the page is served from the owner's own host: the weather at the place tapped, now and for the next three
+     days (Open-Meteo, from the national weather services' models), and the last hour of rain radar there (RainViewer) over a map (CARTO,
+     from OpenStreetMap). The figures are theirs; nothing is made up. A tap on the dark, or on the card's cross, puts it away ---- */
+  var PCD={lat:0,lon:0,seq:0,wx:null,err:'',fr:[],base:[],fi:0,ft:0,on:false},WMO={0:'clear',1:'mostly clear',2:'partly cloudy',3:'overcast',45:'fog',48:'freezing fog',51:'light drizzle',53:'drizzle',55:'heavy drizzle',
+    56:'freezing drizzle',57:'freezing drizzle',61:'light rain',63:'rain',65:'heavy rain',66:'freezing rain',67:'freezing rain',71:'light snow',73:'snow',75:'heavy snow',77:'snow grains',80:'showers',81:'showers',82:'heavy showers',
+    85:'snow showers',86:'heavy snow showers',95:'thunderstorms',96:'thunderstorms, hail',99:'thunderstorms, hail'},DAYS=['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  function cardOff(){var c=$('card');if(c&&PCD.on){c.hidden=true;PCD.on=false;geo()}PCD.on=false;PCD.seq++}
+  function placeCard(lat,lon){
+    if(!HOSTED)return;var my=++PCD.seq,c=$('card');if(!c)return;PCD.lat=lat;PCD.lon=lon;PCD.wx=null;PCD.err='';PCD.fr=[];PCD.base=[];PCD.on=true;cardDraw();c.hidden=false;
+    fetch('/api/wx?lat='+lat.toFixed(3)+'&lon='+lon.toFixed(3)).then(function(r){if(!r.ok)throw new Error(r.status);return r.json()}).then(function(d){if(my!==PCD.seq)return;if(!d||!d.current)throw new Error('empty');PCD.wx=d;cardDraw()})
+      .catch(function(){if(my!==PCD.seq)return;PCD.err='the forecast could not be read just now';cardDraw()});
+    fetch('/api/feed/radar').then(function(r){if(!r.ok)throw new Error(r.status);return r.json()}).then(function(d){if(my!==PCD.seq||!d||!d.radar||!Array.isArray(d.radar.past))return;
+      var host=/^https:\/\/[a-z0-9.\-]+$/.test(d.host||'')?d.host:'https://tilecache.rainviewer.com',z=6,n=64,xt=(lon+180)/360*n,s=Math.sin(lat*AS.D),yt=(.5-Math.log((1+s)/(1-s))/(4*Math.PI))*n,x0=Math.floor(xt-.5),y0=Math.floor(yt-.5);
+      PCD.tile={x0:x0,y0:y0,px:(xt-x0)*256,py:(yt-y0)*256};
+      function im(u){var i=new Image();i.decoding='async';i.onload=function(){if(my===PCD.seq)radarDraw()};i.src=u;return i}
+      for(var a=0;a<2;a++)for(var b=0;b<2;b++)PCD.base.push({x:a,y:b,i:im('https://basemaps.cartocdn.com/dark_all/'+z+'/'+(((x0+a)%n)+n)%n+'/'+clamp(y0+b,0,n-1)+'.png')});
+      d.radar.past.slice(-7).forEach(function(f){if(!/^\/[\w\/\-]+$/.test(f.path||''))return;var t=[];for(var a=0;a<2;a++)for(var b=0;b<2;b++)t.push({x:a,y:b,i:im(host+f.path+'/256/'+z+'/'+(((x0+a)%n)+n)%n+'/'+clamp(y0+b,0,n-1)+'/2/1_1.png')});PCD.fr.push({time:+f.time*1000,t:t})});
+      PCD.fi=PCD.fr.length-1;cardDraw()}).catch(function(){})}
+  function deg(v){return Math.round(v)+'°'}
+  function cardDraw(){
+    var c=$('card');if(!c||!PCD.on)return;while(c.firstChild)c.removeChild(c.firstChild);var d=PCD.wx,la=PCD.lat,lo=PCD.lon,cn=CITIES.near(la,lo),el;
+    function add(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=txt;c.appendChild(e);return e}
+    var x=add('button','cx','×');x.type='button';x.setAttribute('aria-label','Put the card away');x.addEventListener('click',function(){cardOff();probe=null});
+    add('p','cn',cn&&cn.km<450?(cn.km<20?cn.name:Math.round(cn.km/5)*5+' km from '+cn.name):'the open '+(la>66||la<-60?'ice':'sea'));
+    var tz=d&&isFinite(d.utc_offset_seconds)?d.utc_offset_seconds:null,now=new Date(Date.now()+(tz||0)*1000),hh=('0'+now.getUTCHours()).slice(-2)+':'+('0'+now.getUTCMinutes()).slice(-2);
+    add('p','ck',(cn&&cn.km<450?cn.country+' · ':'')+Math.abs(la).toFixed(1)+'°'+(la>=0?'N':'S')+' '+Math.abs(lo).toFixed(1)+'°'+(lo>=0?'E':'W')+(tz!==null?' · '+hh+' there':''));
+    if(!d){add('p','cs',PCD.err||'reading the forecast');geo();return}
+    var C=d.current||{},dl=add('dl'),t=C.temperature_2m,row=function(k,v){var a=document.createElement('dt');a.textContent=k;var b=document.createElement('dd');b.textContent=v;dl.appendChild(a);dl.appendChild(b)};
+    row('now',deg(t)+'C · '+deg(t*9/5+32)+'F'+(isFinite(C.apparent_temperature)&&Math.abs(C.apparent_temperature-t)>=2?' · feels '+deg(C.apparent_temperature)+'C':'')+(WMO[C.weather_code]?' · '+WMO[C.weather_code]:''));
+    row('wind',Math.round(C.wind_speed_10m)+' km/h from '+COMPASS[Math.round((+C.wind_direction_10m||0)/22.5)%16]+(isFinite(C.wind_gusts_10m)?' · gusts '+Math.round(C.wind_gusts_10m):''));
+    row('air',Math.round(C.relative_humidity_2m)+'% humid · '+Math.round(C.pressure_msl)+' hPa · '+Math.round(C.cloud_cover)+'% cloud'+(C.precipitation>0?' · '+C.precipitation+' mm now':''));
+    /* the next 24 hours: the temperature as a line, the rain as bars */
+    var H=d.hourly||{},T=H.time||[],k0=0,curT=Date.parse((C.time||'')+'Z');for(var i=0;i<T.length;i++){if(Date.parse(T[i]+'Z')>=curT-1800000){k0=i;break}}
+    var cv=add('canvas','c24');cv.width=Math.round(340*DPR);cv.height=Math.round(58*DPR);cv.style.height='58px';chart24(cv,H,k0,tz||0);
+    var D=d.daily||{},dd=add('p','cd');(D.time||[]).slice(0,4).forEach(function(day,j){var dt=new Date(day+'T12:00:00Z'),s=document.createElement('span');
+      s.textContent=(j?DAYS[dt.getUTCDay()]:'TODAY')+' '+deg(D.temperature_2m_max[j])+'/'+deg(D.temperature_2m_min[j])+(D.precipitation_sum[j]>=.5?' · '+Math.round(D.precipitation_sum[j])+' mm':'');dd.appendChild(s)});
+    if(PCD.fr.length){var rv=add('canvas','cr');rv.width=Math.round(340*DPR);rv.height=Math.round(128*DPR);rv.style.height='128px';radarDraw()}
+    add('p','cs','Open-Meteo'+(PCD.fr.length?' · radar RainViewer · map © OpenStreetMap, © CARTO':''));geo()}
+  function chart24(cv,H,k0,tz){var g2=cv.getContext('2d'),W=cv.width,Hh=cv.height,s=DPR,T=(H.temperature_2m||[]).slice(k0,k0+25),R=(H.precipitation||[]).slice(k0,k0+25),n=T.length;if(n<2)return;
+    var lo=Math.min.apply(null,T),hi=Math.max.apply(null,T),rm=Math.max(1,Math.max.apply(null,R.concat([0]))),x=function(i){return (6+i/(n-1)*(W/s-12))*s},y=function(v){return (8+(1-(v-lo)/Math.max(1,hi-lo))*(Hh/s-24))*s};
+    g2.fillStyle='rgba(62,240,255,.55)';R.forEach(function(v,i){if(v>0){var bh=v/rm*(Hh/s-20)*s;g2.fillRect(x(i)-2*s,Hh-12*s-bh,4*s,bh)}});
+    g2.strokeStyle='rgba(255,179,71,.95)';g2.lineWidth=1.5*s;g2.beginPath();T.forEach(function(v,i){if(i)g2.lineTo(x(i),y(v));else g2.moveTo(x(i),y(v))});g2.stroke();
+    g2.font=(8*s)+'px '+MONO;g2.fillStyle='rgba(234,249,255,.6)';g2.textBaseline='alphabetic';
+    var t0=Date.parse((H.time||[])[k0]+'Z');for(var i=0;i<n;i+=6){var hr=new Date(t0+i*3600000).getUTCHours();g2.fillText(('0'+hr).slice(-2),x(i)-5*s,Hh-2*s)}
+    g2.fillStyle='rgba(255,179,71,.9)';g2.fillText(deg(hi)+'C',(W/s-34)*s,9*s);g2.fillText(deg(lo)+'C',(W/s-34)*s,Hh-14*s)}
+  function radarDraw(){var c=$('card'),cv=c&&c.querySelector('canvas.cr');if(!cv||!PCD.tile)return;var g2=cv.getContext('2d'),W=cv.width,Hh=cv.height,s=DPR,T=PCD.tile,ox=W/2-T.px*s,oy=Hh/2-T.py*s;
+    g2.fillStyle='#01040a';g2.fillRect(0,0,W,Hh);PCD.base.forEach(function(b){if(b.i.complete&&b.i.naturalWidth)g2.drawImage(b.i,ox+b.x*256*s,oy+b.y*256*s,256*s,256*s)});
+    var f=PCD.fr[PCD.fi];if(f){g2.globalAlpha=.9;f.t.forEach(function(b){if(b.i.complete&&b.i.naturalWidth)g2.drawImage(b.i,ox+b.x*256*s,oy+b.y*256*s,256*s,256*s)});g2.globalAlpha=1;
+      var tz=PCD.wx&&isFinite(PCD.wx.utc_offset_seconds)?PCD.wx.utc_offset_seconds:0,dt=new Date(f.time+tz*1000);g2.font=(8.5*s)+'px '+MONO;g2.fillStyle='rgba(234,249,255,.85)';
+      g2.fillText('RADAR '+('0'+dt.getUTCHours()).slice(-2)+':'+('0'+dt.getUTCMinutes()).slice(-2),6*s,Hh-6*s)}
+    g2.strokeStyle='rgba(255,179,71,.95)';g2.lineWidth=1.4*s;g2.beginPath();g2.arc(W/2,Hh/2,6*s,0,TAU);g2.stroke()}
   /* the lightning's score: on the sound's clock a little ahead for the ticks, on the picture's clock for the flashes */
   function seq(s,when){var a=byStep[((s%STEPS)+STEPS)%STEPS];if(!a)return;var n=0;
     for(var i=0;i<a.length&&n<2;i++){var k=a[i];if(k.p[2]<=.08)continue;hit('tick',.3+.3*Math.random(),pan(k.p[0]),.8+.5*Math.random(),when+n*.03);n++}}
   function step(st,ab){var a=byStep[((ab%STEPS)+STEPS)%STEPS];if(!a)return;for(var i=0;i<a.length;i++)if(flashes.length<220)flashes.push({k:a[i],t:0})}
   function tick(dt,t){
     var i,now=Date.now();feeds();if(FT-lyAt>800){lyAt=FT;lyrSync(false)}
+    if(PCD.on&&PCD.fr.length>1&&FT-PCD.ft>(PCD.fi===PCD.fr.length-1?1500:420)){PCD.ft=FT;PCD.fi=(PCD.fi+1)%PCD.fr.length;radarDraw()}
     if(!PTN){lon0+=vlon*dt;lat0=clamp(lat0+vlat*dt,-80,80);var kk=Math.exp(-dt*2.4);vlon*=kk;vlat*=kk;idle+=dt;if(idle>5&&!reduce)lon0+=dt*1.3*smooth((idle-5)/4)}else idle=0;
+    if(FOC){var fk=smooth((FT-FOC.t)/1400);if(fk<1){lat0=lerp(FOC.lat,clamp(FOC.s.lat,-80,80),fk);lon0=FOC.lon+AS.n180(FOC.s.lon-FOC.lon)*fk;zoom=lerp(FOC.z,FOC.tz,fk);geo();idle=0}}
     lon0=AS.n180(lon0);GLOBE.basis(lat0,lon0,g);
     sunI=AS.sun(now);moonI=AS.moon(now);AS.llv(sunI.sublat,sunI.sublon,sunV);AS.llv(moonI.sublat,moonI.sublon,moonV);
     for(i=flashes.length-1;i>=0;i--){flashes[i].t+=dt/.55;if(flashes[i].t>=1)flashes.splice(i,1)}
@@ -1392,7 +1774,9 @@ var WIND=(function(){
     if(probe){GLOBE.pr(probe.v,g,probe.p);var w=windAt(probe.lat,probe.lon);if(w&&w.kmh>.5){var s=1.2/Math.max(1,Math.hypot(w.u,w.v));GLOBE.pr(AS.llv(clamp(probe.lat+w.v*s,-89,89),probe.lon+w.u*s/Math.max(.2,Math.cos(probe.lat*AS.D)),tmp),g,probe.q);probe.w=w}else probe.w=null}}
   function sim(dt){
     var gl=GLX.gl,u,i;
-    u=glUse(P.adv,dye.w);glBind(0,dye.r.tex,u.uDye);glBind(1,windT||dye.r.tex,u.uWind);gl.uniform1f(u.uHas,windT?1:0);gl.uniform1f(u.uDt,dt);gl.uniform1f(u.uK,reduce?.0016:.006);
+    var jet=LY.jet&&jetT,src=jet?jetT:windT;
+    u=glUse(P.adv,dye.w);glBind(0,dye.r.tex,u.uDye);glBind(1,src||dye.r.tex,u.uWind);gl.uniform1f(u.uHas,src?1:0);gl.uniform1f(u.uDt,dt);gl.uniform1f(u.uK,reduce?.0016:.006);
+    gl.uniform1f(u.uVS,jet?2.5:1);gl.uniform1f(u.uCS,jet?.38:1);gl.uniform1f(u.uJet,jet?1:0);
     gl.uniform1f(u.uDiss,Math.exp(-dt/(byte8?3.6:6.4)));gl.uniform1f(u.uTime,reduce?0:(FT*.001)%4000);gl.uniform2f(u.uGrid,dw/2,dh/2);gl.uniform1f(u.uRate,dw>600?.013:.03);
     /* the bass and the drums make the fires burn up */
     gl.uniform1f(u.uEmit,dt*2.3*(1+1.1*HIT[5]*G[5]+.7*HIT[0]*G[0]));gl.uniform1f(u.uHaze,dt*.1);glQuad(P.adv);dye.swap();
@@ -1403,11 +1787,12 @@ var WIND=(function(){
     var c=OV,i,k;
     if(!GLX.ok||GLX.lost)blank();else{if(gen!==GLX.gen)glSetup();if(P&&(ql!==QL||!dye))size();
       var gl=GLX.gl,bg=[ABYSS[0]*.6,ABYSS[1]*.6,ABYSS[2]*.7],dt=lastT?Math.min(.1,Math.max(.001,(t-lastT)/1000)):.016;lastT=t;
-      glAttrOff();gl.disable(gl.BLEND);if(P&&dye&&LY.wind)sim(dt);
+      var fl=LY.wind||(LY.jet&&jetT);glAttrOff();gl.disable(gl.BLEND);if(P&&dye&&fl)sim(dt);
       glClear(bg[0],bg[1],bg[2]);
       /* with the real clouds on, the Earth is shown nearer to how it looks from orbit and the wind's smoke is laid over it more lightly */
-      var cl=GLOBE.hasCloud()&&LY.clouds,rn=GLOBE.hasRain()&&LY.rain,dim=LY.wind?(cl?.64:.38):.82;
-      if(!GLOBE.draw(g,{sun:sunV,moon:moonV,moonK:moonI?moonI.phase:0,bg:bg,dim:dim,flow:P&&dye&&LY.wind?dye.r.tex:null,flowK:cl?.62:1.15,aur:aurT,aurK:1,cld:cl,cldK:.95,rain:rn,rainK:1,sunK:LY.sun?1:0,time:t*.001}))blank()}
+      var cl=GLOBE.hasCloud()&&LY.clouds,rn=GLOBE.hasRain()&&LY.rain,hk=LY.heat&&WX.t2m,dim=fl?(cl||hk?.64:.38):.82;
+      if(!GLOBE.draw(g,{sun:sunV,moon:moonV,moonK:moonI?moonI.phase:0,bg:bg,dim:dim,flow:P&&dye&&fl?dye.r.tex:null,flowK:cl||hk?.62:1.15,aur:aurT,aurK:1,cld:cl,cldK:hk?.7:.95,rain:rn,rainK:1,sunK:LY.sun?1:0,time:t*.001,
+        wx:wxT,windF:windT,heatK:hk?1:0,waveK:LY.waves&&WX.wave?1:0,isoK:LY.pressure&&WX.mslp?1:0}))blank()}
     /* the lightning: where the storms are (a faint violet dust), and each flash as its bar comes round */
     c.globalCompositeOperation='lighter';c.fillStyle='rgba(150,120,255,.28)';
     for(i=0;i<SK.length;i++){k=SK[i];if(k.p[2]>.04)c.fillRect(k.p[0]-.7,k.p[1]-.7,1.4,1.4)}
@@ -1419,12 +1804,28 @@ var WIND=(function(){
       c.fillStyle='rgba(255,96,36,'+(fa*.34).toFixed(3)+')';c.beginPath();c.arc(k.p[0],k.p[1],fr*2.4,0,TAU);c.fill();
       c.fillStyle='rgba(255,196,120,'+(fa*.95).toFixed(3)+')';c.beginPath();c.arc(k.p[0],k.p[1],fr*.62,0,TAU);c.fill()}
     c.globalCompositeOperation='source-over';
+    /* close to a storm: its arms of cloud turning (the way it turns), as wide as its winds are strong, and its way: where its present
+       motion would carry it in one and two days (NOAA's movement; a line of motion, not a forecast) */
+    var kmPx=g.R/6371;
+    for(i=0;i<ST.length;i++){k=ST[i];if(k.p[2]<=.1)continue;var S=k.s,rk=(110+clamp(S.kmh||60,30,300)*1.6)*kmPx;if(rk<26)continue;
+      var sgn=S.lat>=0?-1:1,spin=reduce?0:t*.0006*sgn*clamp((S.kmh||60)/80,.6,2.2),al=clamp((rk-26)/40,0,1)*clamp(k.p[2]*2,0,1),arms=4,j2,q2;
+      c.lineCap='round';for(j2=0;j2<arms;j2++){c.beginPath();for(q2=0;q2<=40;q2++){var u=q2/40,rr=rk*(.12+.88*u),an=spin+j2*TAU/arms-sgn*u*3.4;c.lineTo(k.p[0]+Math.cos(an)*rr,k.p[1]+Math.sin(an)*rr)}
+        c.strokeStyle='rgba(234,249,255,'+(.22*al).toFixed(3)+')';c.lineWidth=Math.max(2,rk*.09);c.stroke();c.strokeStyle='rgba(234,249,255,'+(.5*al).toFixed(3)+')';c.lineWidth=1.1;c.stroke()}
+      c.fillStyle='rgba(1,4,10,'+(.6*al).toFixed(3)+')';c.beginPath();c.arc(k.p[0],k.p[1],Math.max(3,rk*.08),0,TAU);c.fill();c.lineCap='butt';
+      if(S.mov&&S.mov[1]>0){var pts=[1,2].map(function(dd){var dist=S.mov[1]*24*dd/6371,b=S.mov[0]*AS.D,la1=S.lat*AS.D,lo1=S.lon*AS.D,la2=Math.asin(Math.sin(la1)*Math.cos(dist)+Math.cos(la1)*Math.sin(dist)*Math.cos(b)),
+          lo2=lo1+Math.atan2(Math.sin(b)*Math.sin(dist)*Math.cos(la1),Math.cos(dist)-Math.sin(la1)*Math.sin(la2));return GLOBE.pr(AS.llv(la2/AS.D,lo2/AS.D),g,[0,0,0])});
+        c.setLineDash([4,5]);c.strokeStyle='rgba(255,179,71,'+(.85*al).toFixed(3)+')';c.lineWidth=1.3;c.beginPath();c.moveTo(k.p[0],k.p[1]);pts.forEach(function(q3){c.lineTo(q3[0],q3[1])});c.stroke();c.setLineDash([]);
+        c.font='500 8px '+MONO;c.fillStyle='rgba(255,179,71,'+(.95*al).toFixed(3)+')';pts.forEach(function(q3,dd){if(q3[2]>.1){c.beginPath();c.arc(q3[0],q3[1],2.4,0,TAU);c.fill();c.fillText(dd?'+2 DAYS':'+1 DAY',q3[0]+6,q3[1]-6)}})}}
     /* the storms: a small wheel turning the way the storm turns (against the clock north of the equator), and its name */
     c.font='500 9px "JetBrains Mono",ui-monospace,Menlo,monospace';c.textBaseline='middle';c.textAlign='left';c.lineJoin='round';
     for(i=0;i<ST.length;i++){k=ST[i];if(k.p[2]<=.06)continue;var sx=k.p[0],sy=k.p[1],rot=(reduce?0:t*.0016)*(k.s.lat>=0?-1:1),j,nm=k.s.name.toUpperCase();
       for(j=0;j<2;j++){c.strokeStyle=j?'rgba(234,249,255,.95)':'rgba(1,4,10,.6)';c.lineWidth=j?1.3:3.2;c.beginPath();c.arc(sx,sy,7.5,rot,rot+2.1);c.stroke();c.beginPath();c.arc(sx,sy,7.5,rot+Math.PI,rot+Math.PI+2.1);c.stroke()}
       c.fillStyle='rgba(234,249,255,.95)';c.beginPath();c.arc(sx,sy,1.5,0,TAU);c.fill();
       var tw=c.measureText(nm).width,lx=sx+13+tw>VW-8?sx-13-tw:sx+13;c.lineWidth=3;c.strokeStyle='rgba(1,4,10,.7)';c.strokeText(nm,lx,sy);c.fillText(nm,lx,sy)}
+    /* the highs and lows of the pressure */
+    if(LY.pressure&&HL.length){c.font='700 12px '+MONO;c.textAlign='center';c.textBaseline='middle';for(i=0;i<HL.length;i++){var h=HL[i],q=GLOBE.pr(h.v,g,tmp);if(q[2]<=.15)continue;
+      c.lineWidth=3;c.strokeStyle='rgba(1,4,10,.75)';c.fillStyle=h.h?'rgba(255,179,71,.95)':'rgba(62,240,255,.95)';c.strokeText(h.h?'H':'L',q[0],q[1]);c.fillText(h.h?'H':'L',q[0],q[1]);
+      c.font='500 8px '+MONO;c.fillStyle='rgba(234,249,255,.8)';c.strokeText(String(h.hpa),q[0],q[1]+11);c.fillText(String(h.hpa),q[0],q[1]+11);c.font='700 12px '+MONO}c.textAlign='left'}
     /* the place being read: a ring, and an arrow down the wind, longer the harder it blows */
     if(probe&&probe.p[2]>.02){var px=probe.p[0],py=probe.p[1],al=clamp((t-probe.t)/250,0,1);c.strokeStyle='rgba(1,4,10,.55)';c.lineWidth=3.4;c.beginPath();c.arc(px,py,8,0,TAU);c.stroke();
       c.strokeStyle='rgba(234,249,255,'+(.92*al).toFixed(3)+')';c.lineWidth=1.2;c.beginPath();c.arc(px,py,8,0,TAU);c.stroke();
@@ -1433,9 +1834,11 @@ var WIND=(function(){
   function hud(){
     var w=LIVE.wind,a=LIVE.aurora,s=LIVE.strikes;if(!w)return LIVE.asked?'reading the wind':'';
     var r=reading();
-    if(r&&r.wind){var la=probe.lat,lo=probe.lon,h=Math.floor(r.hour),m=Math.floor((r.hour-h)*60),F=r.fire,S=r.storm,l3,
-        l1=Math.abs(la).toFixed(1)+'°'+(la>=0?'N':'S')+' '+Math.abs(lo).toFixed(1)+'°'+(lo>=0?'E':'W')+' · '+(h<10?'0':'')+h+':'+(m<10?'0':'')+m+' by the Sun · '+(r.sun>-.83?'Sun '+Math.round(Math.max(0,r.sun))+'° up':r.sun>-18?'dusk':'night'),
-        l2='wind '+Math.round(r.wind.kmh)+' km/h from '+COMPASS[Math.round(r.wind.from/22.5)%16]+(r.aurora>=3?' · aurora '+r.aurora+'%':'');
+    if(r&&r.wind){var la=probe.lat,lo=probe.lon,h=Math.floor(r.hour),m=Math.floor((r.hour-h)*60),F=r.fire,S=r.storm,l3,nm=placeName(la,lo),
+        l1=(nm?nm+'\n':'')+Math.abs(la).toFixed(1)+'°'+(la>=0?'N':'S')+' '+Math.abs(lo).toFixed(1)+'°'+(lo>=0?'E':'W')+' · '+(h<10?'0':'')+h+':'+(m<10?'0':'')+m+' by the Sun · '+(r.sun>-.83?'Sun '+Math.round(Math.max(0,r.sun))+'° up':r.sun>-18?'dusk':'night'),
+        l2='wind '+Math.round(r.wind.kmh)+' km/h from '+COMPASS[Math.round(r.wind.from/22.5)%16]+(r.aurora>=3?' · aurora '+r.aurora+'%':''),
+        l2b=[r.t!==null?Math.round(r.t)+'°C':'',r.hpa!==null?Math.round(r.hpa)+' hPa':'',r.wave!==null?'waves '+r.wave.toFixed(1)+' m':'',r.jet!==null&&LY.jet?'jet '+Math.round(r.jet)+' km/h':''].filter(Boolean).join(' · ');
+      if(l2b)l2+='\n'+l2b;
       /* a fire: how much heat it was giving off, which satellite saw it and how long ago. A storm: what its forecasters last said of it
          (the hurricane centre gives the wind it has now; GDACS, for the rest of the world, the highest it has reached) */
       if(F)l3='fire · '+F.frp.toLocaleString('en-US')+' MW · seen by '+(F.sat||'satellite')+' '+agoWords((Date.now()-LIVE.fires.asOf)+F.age*60000);
@@ -1449,6 +1852,8 @@ var WIND=(function(){
     if(FR.length)l4.push(FR.length+' fires seen from orbit');if(ST.length)l4.push(ST.length===1?'tropical storm '+ST[0].s.name:ST.length+' tropical storms');
     if(CLOUD.img&&GLOBE.hasCloud()&&LY.clouds)l4.push('clouds of '+stampUTC(CLOUD.at).replace(/^\d+ \w+ /,''));
     if(RAIN.img&&GLOBE.hasRain()&&LY.rain)l4.push(RAIN.at?'rain of '+stampUTC(RAIN.at).replace(/^\d+ \w+ /,''):'rain, the latest');
+    var X=typeof WX!=='undefined'?WX:{},on=[LY.jet&&X.jet?'jet streams':'',LY.heat&&X.t2m?'temperature':'',LY.pressure&&X.mslp?'pressure':'',LY.waves&&X.wave?'waves':''].filter(Boolean);
+    if(on.length)l4.push(on.join(', ')+': NOAA GFS of '+stampUTC(X.at).replace(/^\d+ \w+ /,''));
     return l1+(l3.length?'\n'+l3.join(' · '):'')+(l4.length?'\n'+l4.join(' · '):'')}
   /* the hint: one finger turns the globe a little, one way and then the other; then it taps a place */
   function ghost(t){var u=(t*.1)%1,R=g.R,dir=Math.floor(t*.1)%2?1:-1;
@@ -1457,10 +1862,10 @@ var WIND=(function(){
     return [null]}
   return {enter:enter,leave:leave,resize:resize,down:down,move:move,up:up,gesture:gesture,wheel:wheel,key:key,seq:seq,step:step,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
     dbg:function(){return {ok:!!(P&&dye),byte8:byte8,dw:dw,dh:dh,wind:!!windT,aurora:!!aurT,strikes:SK.length,flashes:flashes.length,ready:GLOBE.ready(),lat0:lat0,lon0:lon0,R:g.R,cx:g.cx,cy:g.cy,zoom:zoom,turned:turned,
-      LY:LY,lyr:!$('lyr').hidden,probe:probe?{lat:probe.lat,lon:probe.lon,ghost:probe.ghost,r:reading()}:null,vis:SK.filter(function(k){return k.p[2]>.3}).length,fires:FR.length,fireGL:fireN,storms:ST.map(function(k){return {name:k.s.name,x:k.p[0],y:k.p[1],z:k.p[2]}}),
+      LY:LY,lyr:!$('lyr').hidden,probe:probe?{lat:probe.lat,lon:probe.lon,ghost:probe.ghost,r:reading()}:null,vis:SK.filter(function(k){return k.p[2]>.3}).length,fires:FR.length,fireGL:fireN,storms:ST.map(function(k){return {name:k.s.name,lat:k.s.lat,lon:k.s.lon,x:k.p[0],y:k.p[1],z:k.p[2]}}),foc:!!FOC,
       fireAt:FR.filter(function(k){return k.p[2]>.3}).slice(0,3).map(function(k){return {x:k.p[0],y:k.p[1],frp:k.f.frp}})}},
     windAt:windAt,
-    look:function(la,lo,zm){lat0=la;lon0=lo;if(zm){zoom=zm;geo()}idle=-1e6;vlon=vlat=0}}
+    look:function(la,lo,zm){FOC=null;lat0=la;lon0=lo;if(zm){zoom=zm;geo()}idle=-1e6;vlon=vlat=0}}
 })();
 
 /* ---------- ORBIT: everything that is working in orbit round the Earth, where it is. Each point is a real satellite (about fifteen
@@ -1614,7 +2019,7 @@ var ORBIT=(function(){
   function key(e,dn){if(e.key==='ArrowRight')keyRate=dn?1:0;else if(e.key==='ArrowLeft')keyRate=dn?-1:0;else if(dn&&(e.key==='n'||e.key==='N'))toNow();else return false;return true}
   function pan(x){return clamp((x-g.cx)/Math.max(60,VW*.4),-1,1)}
   function up(p){
-    if(p.ghost||FT-p.t0>320||p.moved>12||!EL)return;var i,best=-1,bd=24*24,d;
+    if(p.ghost||FT-p.t0>600||p.moved>12||!EL)return;var i,best=-1,bd=24*24,d;
     for(i=0;i<satN;i++){view(place(i,simMs,tmp),tq);if(!shown(tq))continue;var x=g.cx+tq[0]*g.R-p.x,y=g.cy-tq[1]*g.R-p.y;d=x*x+y*y;if(GRP[i]===7||(FLG[i]&1))d*=.45;if(d<bd){bd=d;best=i}}
     sel=best;path=null;selI=null;if(best>=0){satInfoLoad();tone('glass',pent(clamp(Math.round(14-Math.log(EL[best*11])*9),2,14),52),.45,pan(p.x))}cardBuild()}
   /* is a body in sunlight? (in the frame of the stars; the Earth's shadow taken as a cylinder) */
@@ -1714,60 +2119,84 @@ var ORBIT=(function(){
     pick:function(name){var S=LIVE.sats;for(var i=0;i<satN;i++)if((S.names[i]||'')===name){sel=i;path=null;selI=null;satInfoLoad();cardBuild();return i}return -1}}
 })();
 
-/* ---------- Live: windows onto interesting places, from cameras that stream around the clock. Only where the page is served from the
-   owner's own host (HOSTED): a Claude artifact may not show any outside video. Asked for on 10 Nov: "def give me live video feeds from
-   interesting places".
-   The window sits over the Earth; the Earth turns to where the camera is, and the readout says what is true of that place now: its hour
-   by the Sun and the Sun's height, the wind (NOAA's GFS), how many satellites are above its horizon (worked out from every published
-   orbit), how far the space station is. A swipe goes to the next camera east or west; a tap on a mark on the globe goes to that camera;
-   two fingers bring the window closer. The cameras' own sound is never played: the band is the sound.
-   The list of cameras is the Worker's (/api/cams), and the Worker says which video a camera is showing now (/api/yt/<camera>): streams
-   restart and change their address. A camera that is not on the air, or will not play here, is passed over. ---------- */
+/* ---------- Live: cameras that stream around the clock from interesting places, the video filling the screen. Only where the page is
+   served from the owner's own host (HOSTED): a Claude artifact may not show any outside video. Asked for on 10 Nov ("def give me live
+   video feeds from interesting places"), and on 12 Nov he chose all four of: every camera plays, full-screen video, better places, many
+   more cameras browsable by theme.
+   The video fills the screen (held upright, a wide view is cropped to the screen and slowly looked across, side to side; two fingers
+   bring it closer or show all of it). A small Earth in the corner turns to where the camera is; a tap on it opens the map, where the
+   whole Earth shows every camera of the theme, and a tap on one goes there. A swipe goes to the next camera east or west. The row of
+   themes along the bottom: all, animals, volcanoes, space, cities, the sea, night skies, mountains, things that move.
+   The readout says what is true of the place now: its hour by the Sun and the Sun's height, the wind (NOAA's GFS), how many satellites
+   are above its horizon (worked out from every published orbit), how far the space station is. The cameras' own sound is never
+   played: the band is the sound.
+   The list of cameras is the Worker's (/api/cams); the Worker finds which video each is streaming now (/api/live, several at a time:
+   streams restart and change their address), and the page shows only those on the air, passing over any that will not play here. ---------- */
 var LIVEW=(function(){
-  var CAMS=[],cur=-1,asked=false,player=null,ytReady=false,ytAsked=false,ytFail=false,ytWant=null,ytId='',
+  var CAMS=[],THEMES=[],TH='all',cur=-1,asked=false,player=null,ytReady=false,ytAsked=false,ytFail=false,ytWant=null,ytId='',
     el=null,box=null,img=null,imgUrl='',imgAt=0,imgT=0,
     g={cx:0,cy:0,R:100,E:[0,0,0],N:[0,0,0],C:[0,0,0]},lat0=20,lon0=-40,
-    vb={x:0,y:0,w:0,h:0,port:true},zoom=1,panx=0,pany=0,drag=0,
-    sunV=[0,0,0],moonV=[0,0,0],sunI=null,moonI=null,stat='',statT=0,liveT=0,bad={},res={},over=null,overT=0,issNow=null,issT=0,
+    MAP=false,mapK=0,mapT=0,turned=0,gs={x:0,y:0,r:0},
+    vr={x:0,y:0,w:0,h:0,disk:false},zoom=1,panx=0,pany=0,sweep=0,touchT=-1e9,drag=0,
+    sunV=[0,0,0],moonV=[0,0,0],sunI=null,moonI=null,stat='',statT=0,liveT=0,bad={},ST={},waitQ=[],asking=0,over=null,overT=0,issNow=null,issT=0,
     on=false,lastT=0,camP=[],tmp=[0,0,0],seq=0;
   function $e(id){return document.getElementById(id)}
-  function valid(c){return c&&typeof c.id==='string'&&/^[a-z0-9\-]{1,24}$/.test(c.id)&&typeof c.name==='string'&&isFinite(+c.lat)&&isFinite(+c.lon)&&(c.kind==='yt'||c.kind==='img')}
-  function word(v,n){return String(v===undefined||v===null?'':v).replace(/[^0-9A-Za-z .,:;'()\/&°\-]/g,'').slice(0,n||60)}
+  function valid(c){return c&&typeof c.id==='string'&&/^[a-z0-9\-]{1,24}$/i.test(c.id)&&typeof c.name==='string'&&isFinite(+c.lat)&&isFinite(+c.lon)&&(c.kind==='yt'||c.kind==='img')}
+  function word(v,n){return String(v===undefined||v===null?'':v).replace(/[^0-9A-Za-zÀ-ÿ .,:;'()\/&°\-]/g,'').slice(0,n||60)}
   function camsLoad(){
     if(asked)return;asked=true;
     try{fetch('/api/cams').then(function(r){return r.ok?r.json():null}).then(function(d){
       if(!d||!Array.isArray(d.cams))return;
-      CAMS=d.cams.filter(valid).slice(0,40).map(function(c){return {id:c.id,name:word(c.name,40),place:word(c.place,60),lat:clamp(+c.lat,-90,90),lon:AS.n180(+c.lon),kind:c.kind,
+      CAMS=d.cams.filter(valid).slice(0,140).map(function(c){return {id:c.id,t:/^[a-z]{2,8}$/.test(c.t||'')?c.t:'',name:word(c.name,44),place:word(c.place,60),lat:clamp(+c.lat,-90,90),lon:AS.n180(+c.lon),kind:c.kind,
         v:Array.isArray(c.v)?c.v.filter(function(x){return /^[\w\-]{11}$/.test(x)}):[],img:/^[a-z0-9\-]{1,24}$/.test(c.img||'')?c.img:'',moving:c.moving==='iss',best:c.best==='day'||c.best==='night'?c.best:'any',
-        by:word(c.by,48),every:clamp(+c.every||600,60,3600)}});
-      CAMS.sort(function(a,b){return a.lon-b.lon});if(on&&cur<0)start()}).catch(function(){asked=false})}catch(e){asked=false}}
+        by:word(c.by,60),every:clamp(+c.every||600,60,3600)}});
+      CAMS.sort(function(a,b){return a.lon-b.lon});
+      THEMES=(Array.isArray(d.themes)?d.themes:[]).filter(function(x){return Array.isArray(x)&&/^[a-z]{2,8}$/.test(x[0])}).map(function(x){return [x[0],word(x[1],24)]});
+      themesBuild();if(on&&cur<0)start()}).catch(function(){asked=false})}catch(e){asked=false}}
   /* the Sun's height (degrees) at a place now */
   function sunAt(la,lo){if(!sunI)return 0;var v=AS.llv(la,lo,tmp);return Math.asin(clamp(v[0]*sunV[0]+v[1]*sunV[1]+v[2]*sunV[2],-1,1))/AS.D}
   function camLL(c){if(c.moving&&issNow)return [issNow.lat,issNow.lon];return [c.lat,c.lon]}
-  /* where to begin: a camera whose light suits it now (a city by day, the aurora by night), video before stills */
-  /* a camera can be shown unless it was found off the air in the last ten minutes, or it is a stream and YouTube's player cannot load here */
-  function usable(c){return !(bad[c.id]&&FT-bad[c.id]<600000)&&!(c.kind==='yt'&&ytFail)}
-  function start(){var bi=-1,bs=-1e9;CAMS.forEach(function(c,i){if(!usable(c))return;var e=sunAt(c.lat,c.lon),s=(c.kind==='yt'?1.5:0)+Math.random()*.6+
-      (c.best==='day'?(e>4?2:-1):c.best==='night'?(e<-8?2.5:-1):1);if(s>bs){bs=s;bi=i}});if(bi>=0)show(bi)}
-  function step(dir){if(!CAMS.length)return;var n=CAMS.length,i=cur<0?0:cur;for(var k=0;k<n;k++){i=(i+dir+n)%n;if(usable(CAMS[i])){show(i);return}}}
+  function inTheme(c){return TH==='all'||c.t===TH}
+  /* a camera can be shown unless it was found off the air or not playing here in the last ten minutes, or it is a stream and
+     YouTube's player cannot load here */
+  function usable(c){var s=ST[c.id];return !(bad[c.id]&&FT-bad[c.id]<600000)&&!(s&&s.live===false&&FT-s.t<600000)&&!(c.kind==='yt'&&ytFail)}
+  function onAir(c){var s=ST[c.id];return c.kind==='img'||!!(s&&s.id&&FT-s.t<900000&&!(bad[c.id]&&FT-bad[c.id]<600000))}
+  /* which cameras are on the air: asked of the Worker eight at a time, the theme's first, the ones beside the camera shown before them */
+  function ask(ids,front){ids.forEach(function(id){var k=waitQ.indexOf(id);if(k>=0)waitQ.splice(k,1);var s=ST[id];if(s&&FT-s.t<(s.id?600000:300000))return;if(front)waitQ.unshift(id);else waitQ.push(id)});pump()}
+  function pump(){
+    if(asking||!waitQ.length)return;var ids=waitQ.splice(0,8);asking=FT;
+    var done=function(){asking=0;if(on)pump()};
+    try{fetch('/api/live?ids='+ids.join(',')).then(function(r){return r.ok?r.json():null}).then(function(d){
+      ids.forEach(function(id){var x=d&&d[id];if(!x)return;ST[id]={id:typeof x.id==='string'&&/^[\w\-]{11}$/.test(x.id)?x.id:'',live:x.live===true?true:x.live===false?false:null,t:FT,title:word(x.title,90),ch:word(x.ch,48)}});
+      done();if(on&&cur>=0){var c=CAMS[cur];if(c&&stat==='finding'&&ST[c.id])show(cur)}}).catch(done)}catch(e){done()}
+    setTimeout(function(){if(asking&&FT-asking>14000){asking=0;pump()}},15000)}
+  function primeTheme(){var L=[],i;if(cur>=0){var n=CAMS.length;for(i=1;i<4;i++){L.push(CAMS[(cur+i)%n].id,CAMS[(cur-i+n)%n].id)}}
+    CAMS.forEach(function(c){if(inTheme(c)&&c.kind==='yt')L.push(c.id)});ask(L.filter(function(id){var c=find(id);return c&&inTheme(c)&&c.kind==='yt'}),false)}
+  function find(id){for(var i=0;i<CAMS.length;i++)if(CAMS[i].id===id)return CAMS[i];return null}
+  /* where to begin: a camera of the theme known to be on the air, whose light suits it now (a city by day, the aurora by night) */
+  function start(){var bi=-1,bs=-1e9;CAMS.forEach(function(c,i){if(!inTheme(c)||!usable(c))return;var e=sunAt(c.lat,c.lon),s=(onAir(c)?3:0)+(c.kind==='yt'?1.5:0)+Math.random()*.6+
+      (c.best==='day'?(e>4?2:-1):c.best==='night'?(e<-8?2.5:-1):1);if(s>bs){bs=s;bi=i}});primeTheme();if(bi>=0)show(bi)}
+  /* the next camera east or west in the theme: one known to be on the air if there is one, else the next not known to be off */
+  function step(dir){if(!CAMS.length)return;var n=CAMS.length,i=cur<0?0:cur,k,fb=-1;
+    for(k=0;k<n;k++){i=(i+dir+n)%n;var c=CAMS[i];if(!inTheme(c)||!usable(c))continue;if(onAir(c)){show(i);return}if(fb<0)fb=i}
+    if(fb>=0)show(fb)}
   function fade(v){if(box)box.classList.toggle('on',!!v)}
   function show(i){
-    var c=CAMS[i];if(!c)return;cur=i;seq++;stat='finding';statT=FT;liveT=0;zoom=1;panx=pany=0;fade(false);ytId='';
-    if(box){box.classList.toggle('disk',c.kind==='img')}geo();
+    var c=CAMS[i];if(!c)return;var same=i===cur;cur=i;seq++;stat='finding';statT=FT;liveT=0;if(!same){zoom=1;panx=pany=0;sweep=0}fade(false);ytId='';
+    if(box)box.classList.toggle('disk',c.kind==='img');geo();
+    var n=CAMS.length;ask([CAMS[(i+1)%n].id,CAMS[(i-1+n)%n].id].filter(function(id){var x=find(id);return x&&x.kind==='yt'}),true);
     if(c.kind==='img'){if(player)try{player.pauseVideo()}catch(e){}imgLoad(c,true);return}
-    if(img){img.hidden=true}
-    var my=seq;resolve(c,function(id){if(my!==seq)return;if(!id){bad[c.id]=FT;stat='off';statT=FT;return}play(id)})}
-  /* which video the camera shows now: asked of the Worker, remembered ten minutes; the address on the list if the Worker cannot tell */
-  function resolve(c,cb){var r=res[c.id];if(r&&FT-r.t<600000){cb(r.id);return}
-    var done=false,fall=function(){if(done)return;done=true;var id=c.v[0]||'';res[c.id]={id:id,t:FT};cb(id)};
-    try{fetch('/api/yt/'+c.id).then(function(x){return x.ok?x.json():null}).then(function(d){if(done)return;
-      if(d&&typeof d.id==='string'&&/^[\w\-]{11}$/.test(d.id)){done=true;res[c.id]={id:d.id,t:FT};cb(d.id)}else if(d&&d.live===false){done=true;res[c.id]={id:'',t:FT};cb('')}else fall()}).catch(fall)}catch(e){fall()}
-    setTimeout(fall,9000)}
+    if(img)img.hidden=true;
+    var s=ST[c.id];
+    if(s&&s.id&&FT-s.t<900000){play(s.id);return}
+    if(s&&s.live===false&&FT-s.t<600000){stat='off';statT=FT;return}
+    /* not asked yet: ask for it first; if the Worker cannot tell, the address on the list is tried */
+    ask([c.id],true);var my=seq;setTimeout(function(){if(my!==seq||stat!=='finding')return;var s2=ST[c.id];if(s2&&s2.id)play(s2.id);else if(s2&&s2.live===false){stat='off';statT=FT}else if(c.v[0])play(c.v[0]);else{stat='off';statT=FT}},9000)}
   function imgLoad(c,first){
     var my=seq;imgT=FT;try{fetch('/api/feed/'+c.img).then(function(r){if(!r.ok)throw new Error(r.status);imgAt=Date.parse(r.headers.get('last-modified')||'')||Date.now();return r.blob()}).then(function(b){
       if(my!==seq)return;if(imgUrl)URL.revokeObjectURL(imgUrl);imgUrl=URL.createObjectURL(b);img.onload=function(){if(my!==seq)return;img.hidden=false;if(stat!=='live')arrive();stat='live';liveT=FT;fade(true)};img.src=imgUrl})
       .catch(function(){if(my!==seq)return;if(first){bad[c.id]=FT;stat='off';statT=FT}})}catch(e){}}
-  /* the YouTube player: muted, no controls, never full screen; the band plays over it */
+  /* the YouTube player: muted, no controls, never full screen of its own; the band plays over it */
   function ytLoad(){
     if(window.YT&&window.YT.Player){ytReady=true;return}if(ytAsked)return;ytAsked=true;
     var prev=window.onYouTubeIframeAPIReady;window.onYouTubeIframeAPIReady=function(){ytReady=true;try{if(prev)prev()}catch(e){}if(ytWant)play(ytWant)};
@@ -1781,81 +2210,114 @@ var LIVEW=(function(){
         playerVars:{autoplay:1,mute:1,playsinline:1,controls:0,disablekb:1,fs:0,iv_load_policy:3,rel:0,modestbranding:1,cc_load_policy:0,origin:location.origin},
         events:{onReady:function(e){try{e.target.mute();if(on)e.target.playVideo();else e.target.pauseVideo()}catch(x){}},
           onStateChange:function(e){if(e.data===1){if(stat!=='live')arrive();stat='live';liveT=FT;fade(true);el&&el.classList.remove('tap')}
-            else if(e.data===0&&on)step(1)},
-          onError:function(){var c=CAMS[cur];if(c){bad[c.id]=FT;res[c.id]=null}stat='off';statT=FT}}})}catch(e){ytFail=true}}
+            else if(e.data===0&&on){var c=CAMS[cur];if(c)bad[c.id]=FT;step(1)}},
+          onError:function(){var c=CAMS[cur];if(c){bad[c.id]=FT;if(ST[c.id])ST[c.id].id=''}stat='off';statT=FT}}})}catch(e){ytFail=true}}
   function arrive(){if(!reduce)tone('bowl',pent(2,52),.3,0)}
-  /* the window over the Earth: above it on a phone held upright, beside it on a wide screen */
+  /* ---- the picture: the video fills the screen; a still of the whole Earth stands in the stage, round ---- */
   function geo(){
-    var port=STG.h>STG.w*1.08,c=CAMS[cur],disk=c&&c.kind==='img',R;vb.port=port;
-    if(port){vb.w=disk?Math.min(STG.w*.92,STG.h*.5):STG.w*1.3;vb.h=disk?vb.w:vb.w*9/16;vb.x=STG.cx-vb.w/2;vb.y=STG.y0+4;
-      var top=vb.y+(disk?vb.w:STG.w*1.3*9/16)+14;R=Math.max(40,Math.min(STG.w*.36,(STG.y1-top)/2-6));g.R=R;g.cx=STG.cx;g.cy=Math.max(top+R,STG.y1-R-6)}
-    else{var aw=STG.w*.66;vb.h=disk?Math.min(STG.h*.96,aw*.9):Math.min(STG.h*.96,aw*9/16*1.12);vb.w=disk?vb.h:vb.h*16/9;vb.x=STG.x0+aw/2-vb.w/2;vb.y=STG.cy-vb.h/2;
-      R=Math.max(40,Math.min((STG.w-aw)/2-14,STG.h*.42));g.R=R;g.cx=STG.x0+aw+(STG.w-aw)/2;g.cy=STG.cy}
+    var c=CAMS[cur],disk=c&&c.kind==='img';vr.disk=disk;
+    if(disk){var d=Math.min(STG.w*.94,STG.h*.94);vr.w=vr.h=d;vr.x=STG.cx-d/2;vr.y=STG.cy-d/2}
+    else{var k=Math.max(VW/16,VH/9);vr.w=16*k;vr.h=9*k;vr.x=(VW-vr.w)/2;vr.y=(VH-vr.h)/2}
     place()}
-  function place(){if(!box)return;var w=vb.w*zoom,h=vb.h*zoom,x=vb.x+vb.w/2-w/2+panx+drag,y=vb.y+vb.h/2-h/2+pany;
-    box.style.width=Math.round(w)+'px';box.style.height=Math.round(h)+'px';box.style.transform='translate('+Math.round(x)+'px,'+Math.round(y)+'px)';
-    box.classList.toggle('port',vb.port);box.classList.toggle('land',!vb.port)}
+  /* how far the cropped picture may be looked across, side to side and up and down, at this closeness */
+  function reachX(){return Math.max(0,(vr.w*zoom-VW)/2)}function reachY(){return Math.max(0,(vr.h*zoom-VH)/2)}
+  function place(){if(!box)return;var w=vr.w*zoom,h=vr.h*zoom,x=vr.x+vr.w/2-w/2+panx+drag,y=vr.y+vr.h/2-h/2+pany;
+    if(!vr.disk&&!MAP){var sx=reachX();x+=sx*sweep}
+    /* (the size only when it changes: resizing the player every frame would make it lay itself out every frame) */
+    var W2=Math.round(w),H2=Math.round(h);if(W2!==box._w||H2!==box._h){box._w=W2;box._h=H2;box.style.width=W2+'px';box.style.height=H2+'px'}box.style.transform='translate('+Math.round(x)+'px,'+Math.round(y)+'px)'}
+  /* the Earth: small in the corner above the music, or (the map) filling the stage */
+  function globeGeo(){var fb=$('foot').getBoundingClientRect(),r0=clamp(Math.min(VW,VH)*.12,40,66),x0=VW-r0-14,y0=(fb.top>0?fb.top:VH-120)-r0-12,
+      R1=Math.min(STG.w,STG.h)*.42,k=smooth(mapK);
+    g.R=lerp(r0,R1,k);g.cx=lerp(x0,STG.cx,k);g.cy=lerp(y0,STG.cy,k);
+    if(Math.abs(gs.x-g.cx)>.5||Math.abs(gs.y-g.cy)>.5||Math.abs(gs.r-g.R)>.5){gs.x=g.cx;gs.y=g.cy;gs.r=g.R;var st=document.body.style;
+      st.setProperty('--gx',Math.round(g.cx)+'px');st.setProperty('--gy',Math.round(g.cy)+'px');st.setProperty('--gr',Math.round(g.R+(MAP||mapK>.01?VW+VH:1))+'px')}}
+  function mapOpen(v){MAP=!!v;mapT=FT;turned=0;document.body.classList.toggle('lmap',MAP);if(MAP)primeTheme()}
+  /* ---- the row of themes ---- */
+  function themesBuild(){var r=$('themes');if(!r||r.childNodes.length||!THEMES.length)return;
+    [['all','all']].concat(THEMES).forEach(function(t){var b=document.createElement('button');b.type='button';b.className='lb';b.id='th_'+t[0];
+      b.textContent=t[0]==='all'?'all':t[0];b.title=t[1];b.addEventListener('click',function(){themeSet(t[0])});r.appendChild(b)});themesSync()}
+  function themesSync(){var r=$('themes');if(!r)return;r.querySelectorAll('.lb').forEach(function(b){b.setAttribute('aria-pressed',b.id==='th_'+TH?'true':'false')})}
+  function themeSet(k){TH=k;themesSync();primeTheme();var c=CAMS[cur];if(!c||!inTheme(c))start();if(AU.auto)musicOn()}
   function enter(){
-    on=true;el=$e('vid');box=$e('vidbox');img=$e('vidi');if(el)el.hidden=false;GLOBE.load();liveLoad();camsLoad();lastT=0;
-    if(cur<0&&CAMS.length)start();else if(player&&stat!=='off')try{player.playVideo()}catch(e){}geo()}
-  function leave(){on=false;if(el){el.hidden=true;el.classList.remove('tap')}try{if(player)player.pauseVideo()}catch(e){}drag=0}
-  function resize(){geo()}
+    on=true;el=$e('vid');box=$e('vidbox');img=$e('vidi');if(el)el.hidden=false;document.body.classList.add('livev');var r=$e('themes');if(r)r.hidden=false;
+    GLOBE.load();liveLoad();camsLoad();themesBuild();lastT=0;
+    if(cur<0&&CAMS.length)start();else if(player&&stat!=='off')try{player.playVideo()}catch(e){}geo();globeGeo()}
+  function leave(){on=false;if(el){el.hidden=true;el.classList.remove('tap')}try{if(player)player.pauseVideo()}catch(e){}drag=0;mapOpen(false);mapK=0;
+    document.body.classList.remove('livev');var r=$e('themes');if(r)r.hidden=true}
+  function resize(){geo();globeGeo()}
   document.addEventListener('visibilitychange',function(){try{if(!player)return;if(document.hidden)player.pauseVideo();else if(on)player.playVideo()}catch(e){}});
-  /* a finger that was ever one of two is a pinch, not a swipe or a tap */
-  function down(p){if(p.n>=2)eachPT(function(q){q.multi=true})}
-  function move(p){if(p.n>=2){p.multi=true;if(drag){drag=0;place()}return}var dx=p.x-p.x0;drag=dx*(p.ghost?.25:.35);place()}
+  /* ---- fingers. A finger that was ever one of two is a pinch, not a swipe or a tap ---- */
+  function onGlobe(x,y,pad){return Math.hypot(x-g.cx,y-g.cy)<g.R+(pad||0)}
+  function down(p){touchT=FT;if(p.n>=2)eachPT(function(q){q.multi=true});p.map=MAP&&onGlobe(p.x,p.y,8)}
+  function move(p){if(p.n>=2){p.multi=true;if(drag){drag=0;place()}return}
+    if(MAP){if(p.map){var k=1/Math.max(40,g.R),dx=p.x-(p.lx===undefined?p.x0:p.lx),dy=p.y-(p.ly===undefined?p.y0:p.ly);p.lx=p.x;p.ly=p.y;lon0=AS.n180(lon0-dx*k*57.3);lat0=clamp(lat0+dy*k*57.3,-80,80);turned=FT}return}
+    var dx2=p.x-p.x0;drag=dx2*(p.ghost?.25:.35);place()}
+  function nearestMark(x,y,lim){var bi=-1,bd=lim*lim;for(var i=0;i<camP.length;i++){var q=camP[i];if(!q||q[2]<=.05||!inTheme(CAMS[i]))continue;var d=(q[0]-x)*(q[0]-x)+(q[1]-y)*(q[1]-y);if(d<bd){bd=d;bi=i}}return bi}
   function up(p){
-    var dx=p.x-p.x0,dy=p.y-p.y0,dtm=FT-p.t0;drag=0;place();if(p.ghost||p.multi)return;
-    if((Math.abs(dx)>70&&Math.abs(dx)>Math.abs(dy)*1.3)||(Math.abs(p.vx)>650&&Math.abs(dx)>28&&Math.abs(dx)>Math.abs(dy))){step(dx<0?1:-1);return}
-    if(dtm<600&&p.moved<14){var bi=-1,bd=24*24;for(var i=0;i<camP.length;i++){var q=camP[i];if(!q||q[2]<=.05)continue;var d=(q[0]-p.x)*(q[0]-p.x)+(q[1]-p.y)*(q[1]-p.y);if(d<bd){bd=d;bi=i}}
-      if(bi>=0&&bi!==cur)show(bi)}}
-  /* two fingers: the window comes closer and can be moved about while it is close */
-  function gesture(e){if(e.ghost)return;zoom=clamp(zoom*e.scale,1,3);if(zoom<=1.001){panx=pany=0}else{panx=clamp(panx+e.dx,-vb.w*(zoom-1)/2,vb.w*(zoom-1)/2);pany=clamp(pany+e.dy,-vb.h*(zoom-1)/2,vb.h*(zoom-1)/2)}place()}
-  function key(e,dn){if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft')return false;if(dn&&!e.repeat)step(e.key==='ArrowRight'?1:-1);return true}
+    var dx=p.x-p.x0,dy=p.y-p.y0,dtm=FT-p.t0;drag=0;place();if(p.ghost||p.multi)return;var tap=dtm<600&&p.moved<14;
+    if(MAP){if(!tap)return;var i=nearestMark(p.x,p.y,24);if(i>=0){mapOpen(false);if(i!==cur)show(i);return}if(!onGlobe(p.x,p.y,8))mapOpen(false);return}
+    if(tap&&onGlobe(p.x,p.y,10)){mapOpen(true);hit('tok',.25,0);return}
+    var ax=Math.abs(dx),ay=Math.abs(dy);
+    if((ax>70&&ax>ay*1.3)||(Math.abs(p.vx)>650&&ax>28&&ax>ay)){step(dx<0?1:-1);return}
+    if((ay>90&&ay>ax*1.5)||(Math.abs(p.vy||0)>700&&ay>36&&ay>ax)){step(dy<0?1:-1);return}}
+  /* two fingers: the picture comes closer, or steps back to show all of it, and can be moved about */
+  function gesture(e){if(e.ghost||MAP)return;var lo=vr.disk?1:Math.min(VW/vr.w,VH/vr.h)*.999;zoom=clamp(zoom*e.scale,lo,3);
+    panx=clamp(panx+e.dx,-reachX(),reachX());pany=clamp(pany+e.dy,-reachY(),reachY());sweep=0;place()}
+  function key(e,dn){if(e.key==='Escape'&&dn&&MAP){mapOpen(false);return true}if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft')return false;if(dn&&!e.repeat)step(e.key==='ArrowRight'?1:-1);return true}
   function tick(dt,t){
     var now=Date.now(),c=CAMS[cur];
     sunI=AS.sun(now);moonI=AS.moon(now);AS.llv(sunI.sublat,sunI.sublon,sunV);AS.llv(moonI.sublat,moonI.sublon,moonV);
     if(FT-issT>1000){issT=FT;try{issNow=ORBIT.iss(now)}catch(e){issNow=null}}
-    var ll=c?camLL(c):[20,lon0],k=Math.min(1,dt*1.6),dl=AS.n180(ll[1]-lon0);lon0=AS.n180(lon0+dl*k);lat0+=(clamp(ll[0],-70,70)-lat0)*k;
+    mapK=clamp(mapK+(MAP?dt:-dt)*3.2,0,1);globeGeo();
+    /* the Earth turns to the camera, unless a finger has just turned it on the map */
+    if(!(MAP&&FT-turned<6000)){var ll=c?camLL(c):[20,lon0],k=Math.min(1,dt*1.6),dl=AS.n180(ll[1]-lon0);lon0=AS.n180(lon0+dl*k);lat0+=(clamp(ll[0],-60,60)-lat0)*k}
     if(!c&&!reduce)lon0=AS.n180(lon0+dt*3);GLOBE.basis(lat0,lon0,g);
     camP.length=CAMS.length;for(var i=0;i<CAMS.length;i++){var q=camP[i]||(camP[i]=[0,0,0]),l2=camLL(CAMS[i]);GLOBE.pr(AS.llv(l2[0],l2[1],tmp),g,q)}
     if(c&&FT-overT>3000){overT=FT;var l3=camLL(c);try{over=ORBIT.above(l3[0],l3[1],now)}catch(e){over=null}}
+    /* held upright, the cropped picture is looked across, slowly, side to side (a minute there and back); a touch holds it a while */
+    if(!reduce&&!MAP&&zoom<=1.001&&FT-touchT>12000&&stat==='live'){sweep=Math.sin((FT-liveT)/60000*TAU)*.92;place()}
     /* a still is fetched again when the satellite has taken a new picture */
     if(c&&c.kind==='img'&&FT-imgT>c.every*1000)imgLoad(c,false);
-    /* a stream that will not start is passed over after half a minute; one that played and stopped is given a while to come back */
-    if(c&&on&&(stat==='connecting'||stat==='finding')&&FT-statT>30000){bad[c.id]=FT;step(1)}
-    if(c&&on&&stat==='connecting'&&FT-statT>7000&&el)el.classList.add('tap');
-    if(c&&on&&stat==='off'&&FT-statT>1600){statT=FT;step(1)}
+    /* a stream that will not start is passed over after twelve seconds (one that waits for a tap, after twenty-five) */
+    if(c&&on&&!MAP&&stat==='connecting'&&FT-statT>(el&&el.classList.contains('tap')?25000:12000)){bad[c.id]=FT;step(1)}
+    if(c&&on&&stat==='finding'&&FT-statT>20000){bad[c.id]=FT;step(1)}
+    if(c&&on&&stat==='connecting'&&FT-statT>6000&&el)el.classList.add('tap');
+    if(c&&on&&!MAP&&stat==='off'&&FT-statT>1400){statT=FT;step(1)}
     if(on&&!CAMS.length&&!asked)camsLoad()}
   function draw(t){
     var c=OV,i,q;
     if(GLX.ok&&!GLX.lost){var gl=GLX.gl,bg=[ABYSS[0]*.6,ABYSS[1]*.6,ABYSS[2]*.7];glAttrOff();gl.disable(gl.BLEND);glClear(bg[0],bg[1],bg[2]);
-      GLOBE.draw(g,{sun:sunV,moon:moonV,moonK:moonI?moonI.phase:0,bg:bg,dim:.66,cld:GLOBE.hasCloud(),cldK:.9,time:t*.001})}
-    /* the cameras on the Earth: a small ring each; the one shown, a brighter ring and a line up to its window */
-    for(i=0;i<camP.length;i++){q=camP[i];if(!q||q[2]<=.05)continue;var me=i===cur,a=me?.95:.5*clamp(q[2]*2,0,1),r=me?5.5+Math.sin(t*.005)*1.2:3;
-      c.strokeStyle='rgba(62,240,255,'+a.toFixed(3)+')';c.lineWidth=me?1.4:1;c.beginPath();c.arc(q[0],q[1],r,0,TAU);c.stroke();
-      if(me){c.fillStyle='rgba(234,249,255,.95)';c.beginPath();c.arc(q[0],q[1],1.6,0,TAU);c.fill();
-        var bb=vb.y+vb.h/2+vb.h*zoom/2+4,br=vb.x+vb.w/2+vb.w*zoom/2+drag+4;c.strokeStyle='rgba(62,240,255,.2)';c.lineWidth=1;c.beginPath();
-        if(vb.port&&bb<q[1]-r-2){c.moveTo(q[0],q[1]-r-2);c.lineTo(q[0],bb)}else if(!vb.port&&br<q[0]-r-2){c.moveTo(q[0]-r-2,q[1]);c.lineTo(br,q[1])}c.stroke()}}
-    /* while a stream is being found: a slow ring where the window will be */
-    if(CAMS[cur]&&stat!=='live'){var cx=vb.x+vb.w/2,cy=vb.y+vb.h/2,u=(t*.0006)%1;c.strokeStyle='rgba(234,249,255,'+(.35*(1-u)).toFixed(3)+')';c.lineWidth=1;c.beginPath();c.arc(cx,cy,8+u*30,0,TAU);c.stroke()}}
+      GLOBE.draw(g,{sun:sunV,moon:moonV,moonK:moonI?moonI.phase:0,bg:bg,dim:.75,cld:GLOBE.hasCloud(),cldK:.9,time:t*.001})}
+    /* the cameras on the Earth: on the map, a ring for each in the theme (bright when known to be on the air); the one shown, brighter */
+    var k=smooth(mapK);
+    for(i=0;i<camP.length;i++){q=camP[i];if(!q||q[2]<=.05)continue;var me=i===cur,cm=CAMS[i];if(!me&&(k<.05||!inTheme(cm)))continue;
+      var air=onAir(cm),a=me?.95:(air?.85:.32)*clamp(q[2]*2,0,1)*k,r=me?(4+k*2)+Math.sin(t*.005)*1.2:air?3.4:2.4;
+      c.strokeStyle=(air||me?'rgba(62,240,255,':'rgba(234,249,255,')+a.toFixed(3)+')';c.lineWidth=me?1.4:1;c.beginPath();c.arc(q[0],q[1],r,0,TAU);c.stroke();
+      if(me){c.fillStyle='rgba(234,249,255,.95)';c.beginPath();c.arc(q[0],q[1],1.6,0,TAU);c.fill()}}
+    /* the small Earth's rim, and while a stream is found a slow ring in the middle of the screen */
+    if(k<.99){c.strokeStyle='rgba(62,240,255,'+(.35*(1-k)).toFixed(3)+')';c.lineWidth=1;c.beginPath();c.arc(g.cx,g.cy,g.R+3,0,TAU);c.stroke()}
+    if(CAMS[cur]&&stat!=='live'&&!MAP){var u=(t*.0006)%1,cx=VW/2,cy=STG.cy;c.strokeStyle='rgba(234,249,255,'+(.35*(1-u)).toFixed(3)+')';c.lineWidth=1;c.beginPath();c.arc(cx,cy,8+u*30,0,TAU);c.stroke()}}
   function hour(la,lo){if(!sunI)return '';var hr=(((12+AS.n180(lo-sunI.sublon)/15)%24)+24)%24,h=Math.floor(hr),m=Math.floor((hr-h)*60),e=sunAt(la,lo);
     return (h<10?'0':'')+h+':'+(m<10?'0':'')+m+' by the Sun · '+(e>-.83?'Sun '+Math.round(e)+'° up':e>-18?(hr<12?'dawn':'dusk'):'night')}
+  function themeName(){if(TH==='all')return 'all the cameras';for(var i=0;i<THEMES.length;i++)if(THEMES[i][0]===TH)return THEMES[i][1];return TH}
+  function airCount(){var n=0,m=0;CAMS.forEach(function(c){if(!inTheme(c))return;m++;if(onAir(c))n++});return [n,m]}
   function hud(){
     var c=CAMS[cur];if(!c)return asked?(CAMS.length?'':'finding the cameras'):'';
-    var ll=camLL(c),la=ll[0],lo=ll[1],l1=c.name+(c.place?' · '+c.place:''),l2='',l3='',w=null;
+    var ac=airCount(),l0=themeName()+' · '+(ac[0]?ac[0]+' of '+ac[1]+' on the air now':ac[1]+' cameras');
+    if(MAP)return 'live cameras, around the world: '+themeName()+'\n'+(ac[0]?ac[0]+' of '+ac[1]+' on the air now':'finding which are on the air')+' · tap one to go there\ndrag to turn the Earth · tap off the Earth to go back';
+    var ll=camLL(c),la=ll[0],lo=ll[1],l1=c.name+(c.place?' · '+c.place:''),l2='',l3='',w=null,s=ST[c.id];
     if(c.moving&&issNow){l1=c.name;l2='over '+Math.abs(la).toFixed(1)+'°'+(la>=0?'N':'S')+' '+Math.abs(lo).toFixed(1)+'°'+(lo>=0?'E':'W')+' · '+Math.round(issNow.alt)+' km up · '+Math.round(issNow.kmh).toLocaleString('en-US')+' km/h'}
     else if(c.kind==='img')l2=imgAt?'picture of '+stampUTC(imgAt):'';
     else{l2=hour(la,lo);try{w=WIND.windAt(la,lo)}catch(e){w=null}if(w&&w.kmh>=1)l2+=' · wind '+Math.round(w.kmh)+' km/h'}
-    var st=stat==='live'?(c.kind==='img'?c.by:'live'+(c.by?' · '+c.by:'')):stat==='off'?'not on the air now':'finding the stream';
+    var by=s&&s.ch?s.ch:c.by,st=stat==='live'?(c.kind==='img'?c.by:'live'+(by?' · '+by:'')):stat==='off'?'not on the air now':'finding the stream';
     if(over&&c.kind!=='img')l3=over.n.toLocaleString('en-US')+' satellites above'+(over.iss>0&&over.iss<2600&&!c.moving?' · the space station '+Math.round(over.iss).toLocaleString('en-US')+' km away':'')+' · '+st;
     else l3=st;
-    return l1+'\n'+l2+'\n'+l3}
-  function ghost(t){var u=(t*.15)%1;if(u<.4){var e=smooth(u/.4);return [{x:vb.x+vb.w/2+Math.min(STG.w,vb.w)*(.3-.6*e),y:vb.y+vb.h*.6}]}return [null]}
+    return l1+'\n'+l2+'\n'+l3+'\n'+l0+' · swipe for the next · the Earth for the map'}
+  function ghost(t){if(MAP)return [null];var u=(t*.15)%1;if(u<.4){var e=smooth(u/.4);return [{x:VW/2+Math.min(STG.w,300)*(.3-.6*e),y:STG.cy}]}return [null]}
   return {enter:enter,leave:leave,resize:resize,down:down,move:move,up:up,gesture:gesture,key:key,tick:tick,draw:draw,hud:hud,ghost:ghost,
-    dbg:function(){var c=CAMS[cur];return {cams:CAMS.length,cur:cur,id:c?c.id:'',kind:c?c.kind:'',stat:stat,yt:ytId,ready:ytReady,fail:ytFail,bad:Object.keys(bad),zoom:zoom,
-      box:{x:vb.x,y:vb.y,w:vb.w,h:vb.h},g:{cx:g.cx,cy:g.cy,R:g.R},marks:camP.map(function(q){return q?[q[0],q[1],q[2]]:null}),over:over,iss:issNow,img:img&&!img.hidden}},
-    go:function(id){for(var i=0;i<CAMS.length;i++)if(CAMS[i].id===id){show(i);return i}return -1}}
+    dbg:function(){var c=CAMS[cur];return {cams:CAMS.length,themes:THEMES.map(function(x){return x[0]}),th:TH,cur:cur,id:c?c.id:'',kind:c?c.kind:'',stat:stat,yt:ytId,ready:ytReady,fail:ytFail,bad:Object.keys(bad),zoom:zoom,
+      map:MAP,mapK:mapK,air:airCount(),st:Object.keys(ST).length,box:{x:vr.x,y:vr.y,w:vr.w,h:vr.h},g:{cx:g.cx,cy:g.cy,R:g.R},marks:camP.map(function(q){return q?[q[0],q[1],q[2]]:null}),ids:CAMS.map(function(c){return c.id}),onair:CAMS.filter(function(c){return onAir(c)}).map(function(c){return c.id}),over:over,iss:issNow,img:img&&!img.hidden}},
+    go:function(id){for(var i=0;i<CAMS.length;i++)if(CAMS[i].id===id){show(i);return i}return -1},theme:themeSet,map:mapOpen}
 })();
 
 /* ---------- the shell: the worlds, the fingers on the glass, the few controls, the photo ---------- */

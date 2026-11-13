@@ -2,7 +2,7 @@
 var $=function(id){return document.getElementById(id)};
 var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 var COARSE=matchMedia('(pointer:coarse)').matches;
-var TAU=Math.PI*2;
+var TAU=Math.PI*2,MONO='"JetBrains Mono",ui-monospace,Menlo,monospace';
 function clamp(v,a,b){return v<a?a:v>b?b:v}
 function lerp(a,b,k){return a+(b-a)*k}
 function smooth(k){k=clamp(k,0,1);return k*k*(3-2*k)}

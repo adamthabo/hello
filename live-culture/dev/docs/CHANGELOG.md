@@ -1,6 +1,55 @@
 # Changelog
 
 ## For the owner
+12 Nov 2026, evening, after "Make this so much better!! The smoke game needs to be better the videos need to be better, the
+weather needs to be better" and your choices (lots of levels; every camera playing, full screen, better places, many more; live
+clouds and rain, any place up close, dramatic storms, more layers; artifact and site both):
+
+- **Smoke is a game of 24 levels.** Six chapters, each bringing a new piece: walls, fans, prisms (smoke that passes through takes
+  their colour), drains, tunnels (smoke goes in one end and out the other), then all of them together. Up to three stars a level for
+  using the fewest pieces. The levels button opens a map of all 24; each opens when the one before is solved, and every third one
+  brings a player into the band, the guitar with the last. Every level is now checked as a phone really runs it: the old first
+  puzzle would have filled its ring by itself on an iPhone (the smoke lasts longer there than in the test browser), now none does.
+- **The videos fill the screen** (on your site), 86 cameras in eight themes: animals, volcanoes, space, cities, the sea, night skies,
+  mountains, things that move. Swipe for the next; the small Earth in the corner opens a map of every camera in the theme. Only
+  cameras on the air are shown, and when a camera's stream has moved, the site finds the new one by searching YouTube.
+- **The weather** (on your site): new layers from NOAA's weather model: the jet streams ten kilometres up, the temperature, the
+  pressure with its highs and lows, the height of the waves. The clouds and the rain drift with the real wind. Tap any place for its
+  card: the weather there now, the next 24 hours, three days, and the last hour of rain radar. Tap a storm and the Earth flies to it:
+  its spiral turning the way it turns, as wide as it is strong, and where its motion is carrying it. In the artifact a tapped place
+  now gets its name (the nearest town) and storms can be seen up close too; the layers, forecast, radar and cameras need the site,
+  since an artifact cannot reach weather services or video.
+
+Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
+sample of the same format).
+
+## 12 Nov 2026: Smoke's levels, Live full screen, the weather model
+- `11-drift.js`: `LEVELS` 24 in `CH` chapters; the tank `B` (aspect 0.64) with `bx`/`by`, `KS`/`KR`/`KP` scaling speeds and sizes;
+  level water `LP` (buoyancy 0.3, fading 0.6 and 0.8 a second by the water's own time); prisms (`tint` pass), tunnels (`tun` pass, a
+  pull and a push); `STARS` in `localStorage` `lc.smoke.stars`; the map (`pathNodes`, `pathDraw`, `pathTap`, "play freely");
+  `JOIN` every third level; test hooks `setLevels`, `fixdt`, `phys`, `fastdye`, `path`, `pathNodes`, `stars`, `put` for every piece.
+  A drain in a level also stops the water (`snk` mode 3, the velocity damped where the drain eats ink). Fixed walls drawn 18 px
+  thick into the obstacle grid, the tank's 14 (built walls stay 10): a jet pressing on a thin one seeped through it.
+- Wind and Orbit: a finger down up to 600 ms (was 320) and not moved is a tap, so a slow frame passing the lifting on late does not
+  turn a tap into nothing (the hints' ghost fingers keep 320). `t_play.js`: the reading may start with the nearest town; the pinch
+  starts from the whole Earth (a storm tapped just before brings it close). `t_hosted.js`: the map is opened where stand-in cameras
+  are on the air and tapped once it is at rest. `sh tools/check.sh all` passes but for one check, and that one is the data: the
+  snapshot in `data/` is still 10 Nov's (this update did not refresh it), so the space station's orbit is days old, not hours.
+- `tools/t_design.js` plays levels from a file as a 60-frame phone; `t_smoke.js` rewritten for the map, stars and new pieces.
+- `08-grib.js` GRIB2 reader, checked against ecCodes by `tools/t_grib.js` (`g2ref.py`, `g2ref2.py` make the reference; pygrib's
+  sample files). `09-cities.js` from Natural Earth by `tools/gen_cities.py`.
+- `06-live.js`: `WX`, `wxGet` (`/api/gfs/<field>`), `highsLows`. `07-globe.js`: `uWx` (temperature, waves, isobars), `uWindF` (the
+  clouds and rain drift by a two-phase flow along the wind). `12-wind.js`: eight layers (`LYK`), `wxBuild` (`isobars`: marching
+  squares on a canvas), the place card (`placeCard`, `cardDraw`, `chart24`, `radarDraw`), storms up close (`FOC`, spirals, the
+  motion line), place names.
+- `14-live.js` rewritten: the video fills the screen (cover, a slow look across held upright), the Earth in a clipped corner window
+  (`body.livev #gl` `clip-path`), the map (`mapOpen`), themes (`#themes`), `/api/live` eight at a time, a stream that will not play
+  passed over after twelve seconds.
+- `worker.js`: 86 `CAMS` with themes `t` and searches `s`; `ytNow` checks embedding, searches what is live (`ytSearch`, `NOT`), shares
+  a fetch budget; `/api/live`, `/api/gfs/<field>` (`gfsField`: index, byte range, S3 then NOMADS), `/api/wx`, feed `radar`.
+- `hostmock.mjs` fakes YouTube search, GFS (`mkgfs.py`), Open-Meteo and RainViewer; `t_hosted.js` checks all of it.
+
+## For the owner (10 Nov, 13:30)
 10 Nov 2026, 13:30, after "More more more!!!! ... I want the satellites animated in orbit. I want many many more videos" and your
 choice of "Real time, flowing trails":
 
