@@ -128,7 +128,8 @@ function audioUnlock(){
     var pr=AU.unl.play();if(pr&&pr.catch)pr.catch(function(){})}catch(e){}}
 
 function stemsStart(){
-  if(AU.run||!AU.want||!AU.ready||!AU.c)return;var c=AU.c;
+  /* (in the mixer the decks play the band instead: 16-mix.js) */
+  if(AU.run||!AU.want||!AU.ready||!AU.c||MIXON)return;var c=AU.c;
   /* the very first time, the band comes in on the one */
   var lt=AU.first?-.06:loopT();AU.first=false;
   var when=c.currentTime+.06,off=((lt+.06)%STEML+STEML)%STEML;

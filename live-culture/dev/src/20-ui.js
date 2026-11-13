@@ -6,11 +6,12 @@ var OVC=$('ov'),OV=OVC.getContext('2d'),STAGE=$('stage');
    agogo, bass, balafon, kora, guitar) */
 var WORLDS=[
   {id:'smoke',name:'Smoke',o:DRIFT,sc:[1,1,1,1,1,1,1,1,1],photo:true,ic:'<path d="M8 21c-3-3 3-5 0-8s3-5 0-8M15.5 21c-3-3 3-5 0-8s2.2-4 .6-6.6"/>'},
-  {id:'wind',name:'Wind',o:WIND,sc:[1,1,1,1,1,1,1,1,1],ic:'<circle cx="12" cy="12" r="8.5"/><path d="M5.2 9.6c3.2-1.9 5.4 1.6 8.6-.2 1.9-1.1 3-1.2 4.9-.6M5 14.6c2.6-1.6 4.6 1.2 7.4.1 2.2-.9 3.6-1.5 6.4-.5"/>'},
-  {id:'orbit',name:'Orbit',o:ORBIT,sc:[1,1,1,1,1,1,1,1,1],ic:'<circle cx="12" cy="12" r="3.4"/><ellipse cx="12" cy="12" rx="9.5" ry="4.2" transform="rotate(-24 12 12)"/><circle cx="19.7" cy="7.7" r="1.1"/><circle cx="5" cy="15.4" r=".8"/>'},
+  /* the Earth: the weather, the satellites and (on the site) the live cameras, each a layer of one globe (13 Nov: "Put them all on the
+     same globe as satellites and make that just a layer"); Wind, Orbit and Live were three worlds before */
+  {id:'earth',name:'Earth',o:WIND,sc:[1,1,1,1,1,1,1,1,1],ic:'<circle cx="12" cy="12" r="6.6"/><path d="M6.2 10.4c2.4-1.3 4.1 1 6.5-.1 1.5-.7 2.4-.8 3.8-.4"/><ellipse cx="12" cy="12" rx="10.6" ry="3.9" transform="rotate(-22 12 12)"/>'},
+  /* the mixer: the band on one deck, a machine of sounds on the other (13 Nov) */
+  {id:'mix',name:'Mix',o:MIX,sc:[1,1,1,1,1,1,1,1,1],ic:'<circle cx="7" cy="10" r="4.4"/><circle cx="17" cy="10" r="4.4"/><circle cx="7" cy="10" r=".9"/><circle cx="17" cy="10" r=".9"/><path d="M3.5 19.5h17M12 17v5"/>'},
 ];
-/* the live cameras: only where the page is served from the owner's own host (a Claude artifact may not show outside video) */
-if(HOSTED&&typeof LIVEW!=='undefined')WORLDS.push({id:'live',name:'Live',o:LIVEW,sc:[1,1,1,1,1,1,1,1,1],ic:'<rect x="3" y="5.5" width="18" height="11.5" rx="2.4"/><circle cx="12" cy="11.25" r="2.7"/><path d="M8.5 20h7"/>'});
 var CUR=null,CURI=-1,PT={},PTN=0,GP={},PS=[],HV=null,touched={},lastTouch=-1e9,SAYT=0,SAYX='',SAYC='',swT=0,GOT=0,FDT=.016;
 function safe(f){try{f()}catch(e){if(window.__lc){window.__lc.errs=(window.__lc.errs||[]);window.__lc.errs.push(String(e&&e.stack||e))}}}
 function PTR(id){return PT[id]||GP[id]||null}
@@ -27,12 +28,12 @@ function railBuild(){var r=$('rail');r.innerHTML='';WORLDS.forEach(function(w,i)
 function dotsBuild(){var d=$('dots');d.innerHTML='';for(var i=0;i<NL;i++)(function(i){var b=document.createElement('button');b.type='button';b.className='dot';b.id='d_'+i;b.style.setProperty('--c',BCOL[i]);
   b.setAttribute('aria-label',BNAMES[i]);b.setAttribute('aria-pressed',ON[i]?'true':'false');b.appendChild(document.createElement('i'));
   /* a circle brings its player in or out. With the music off, it turns the music on with that player in it */
-  b.addEventListener('click',function(){BD.auto=false;BD.manual=true;if(!soundLive()){musicOn();if(!ON[i])setPlayer(i,true)}else setPlayer(i,!ON[i])});d.appendChild(b)})(i)}
+  b.addEventListener('click',function(){if(CUR&&CUR.dot){CUR.dot(i);return}BD.auto=false;BD.manual=true;if(!soundLive()){musicOn();if(!ON[i])setPlayer(i,true)}else setPlayer(i,!ON[i])});d.appendChild(b)})(i)}
 function dotSync(i){var b=$('d_'+i);if(b)b.setAttribute('aria-pressed',ON[i]?'true':'false')}
 function chrome(){
   var w=WORLDS[CURI];if(!w)return;$('wname').textContent=w.name;
   WORLDS.forEach(function(x,i){var b=$('w_'+x.id);if(b)b.setAttribute('aria-current',i===CURI?'true':'false')});
-  $('bPhoto').hidden=!w.photo;$('bClear').hidden=!(w.photo&&PHOTO.has);$('bSave').hidden=!DL||w.id==='live';if(w.id!=='orbit')$('bNow').hidden=true;
+  $('bPhoto').hidden=!w.photo;$('bClear').hidden=!(w.photo&&PHOTO.has);$('bSave').hidden=!DL;$('bNow').hidden=true;
   $('bPhoto').setAttribute('aria-pressed',PHOTO.has?'true':'false');
   try{if(location.hash!=='#'+w.id)history.replaceState(null,'','#'+w.id)}catch(e){}
   layout();if(CUR&&CUR.resize)safe(function(){CUR.resize(VW,VH)});DATAX='';dataPaint(true)}
@@ -46,7 +47,7 @@ function go(i,instant){
   document.body.classList.add('sw');doorDip();GOT=setTimeout(swap,200)}
 function worldsGL(){WORLDS.forEach(function(w){if(w.o.gl)w.o.gl()});PHOTO.tex=null}
 /* links to worlds that have been renamed or have gone still land somewhere sensible */
-var OLDHASH={drift:'smoke',earth:'wind',loom:'smoke',bloom:'smoke',band:'smoke'};
+var OLDHASH={drift:'smoke',loom:'smoke',bloom:'smoke',band:'smoke',wind:'earth',orbit:'earth',live:'earth'};
 function worldOf(h){h=OLDHASH[h]||h;for(var i=0;i<WORLDS.length;i++)if(WORLDS[i].id===h)return i;return -1}
 addEventListener('hashchange',function(){var i=worldOf(location.hash.slice(1));if(i>=0)go(i)});
 

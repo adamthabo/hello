@@ -12,7 +12,7 @@ var ORBIT=(function(){
   var P=null,gen=-1,satB=null,satH=null,HB=null,satN=0,satV=-1,starB=null,starN=0,EL=null,GRP=null,FLG=null,VB=null,baseT=0,
     g={cx:0,cy:0,R:100,E:[0,0,0],N:[0,0,0],C:[0,0,0]},lat0=22,lon0=clamp(-(new Date().getTimezoneOffset())/4,-180,180),zoom=.86,vlon=0,vlat=0,idle=0,
     off=0,spd=1,want=1,ret=false,drag=0,keyRate=0,simMs=Date.now(),th=0,RE3=[0,0,0],RN3=[0,0,0],RC3=[0,0,0],
-    sunV=[0,0,0],moonV=[0,0,0],sunE=[0,0,0],moonI=null,issI=-1,sel=-1,selQ=[0,0,0],selI=null,path=null,pathAt=0,notable=[],lit=[],tmp=[0,0,0],tq=[0,0,0],
+    sunV=[0,0,0],moonV=[0,0,0],sunE=[0,0,0],moonI=null,issI=-1,sel=-1,selQ=[0,0,0],selI=null,path=null,pathAt=0,notable=[],NOTE=null,lit=[],tmp=[0,0,0],tq=[0,0,0],
     MU=398600.4418,RE=6378.137,J2=1.08262668e-3,WE=0.0043752691;
   /* the kinds, their colours and how big a point each is drawn */
   var KIND=['satellite','Starlink','OneWeb','new constellation','navigation','geostationary','Earth-watching','space station','communications','wreckage','military'],
@@ -39,7 +39,7 @@ var ORBIT=(function(){
      same body at two moments (k runs 0 at the body to 1 at the far end). The body stays where it really is this second; light runs
      along the trail towards it, so that in real time, when a lap takes an hour and a half, the eye still sees which way everything
      is going. (Kepler's equation is solved a step less finely here: the trail is a few pixels wide) */
-  var TN=4,TRAILS=true;
+  var TN=4,TRAILS=true,LAY=false;
   var TVS=VS.replace('attribute vec4 a_c;','attribute vec4 a_c;varying float v_ph;')
     .replace('E=E-(E-e*sin(E)-M)/(1.0-e*cos(E));E=E-(E-e*sin(E)-M)/(1.0-e*cos(E));E=E-(E-e*sin(E)-M)/(1.0-e*cos(E));','E=E-(E-e*sin(E)-M)/(1.0-e*cos(E));E=E-(E-e*sin(E)-M)/(1.0-e*cos(E));')
     .replace('v_c=vec4(a_c.rgb*hid*(q.z<0.0?0.5:1.0)*(a_e1.x<1.7?uGain:1.0),1.0-k);}','v_c=vec4(a_c.rgb*hid*(q.z<0.0?0.4:1.0)*(a_e1.x<1.7?uGain:1.0),k);v_ph=fract(a_e3.x*0.1591549+a_e2.x*0.2347);}');
@@ -75,10 +75,10 @@ var ORBIT=(function(){
       for(v=0;v<TN*2;v++){var o2=(i*TN*2+v)*16,q2=i*11;VB[o2]=EL[q2];VB[o2+1]=EL[q2+1];VB[o2+2]=EL[q2+2];VB[o2+3]=EL[q2+3];VB[o2+5]=EL[q2+5];VB[o2+7]=EL[q2+7];VB[o2+9]=EL[q2+9];VB[o2+10]=GRP[i];VB[o2+11]=((v>>1)+(v&1))/TN;
         VB[o2+12]=c[0]*br;VB[o2+13]=c[1]*br;VB[o2+14]=c[2]*br;VB[o2+15]=sz}}
     /* the ones that ring: the two space stations, and a dozen of the satellites that watch the Earth (the weather and the land) */
-    notable=[];lit=[];var watch=[];
+    notable=[];lit=[];NOTE=new Uint8Array(satN);var watch=[];
     for(i=0;i<satN;i++){var nm=S.names[i]||'';if(nm==='ISS (ZARYA)'||nm==='CSS (TIANHE)'){notable.push(i);lit.push(0)}else if(GRP[i]===6&&EL[i*11]<1.3)watch.push(i)}
     for(i=0;i<12&&watch.length;i++){notable.push(watch[Math.floor(i*watch.length/12)]);lit.push(0)}
-    issI=-1;for(i=0;i<notable.length;i++)if(S.names[notable[i]]==='ISS (ZARYA)')issI=notable[i];
+    issI=-1;for(i=0;i<notable.length;i++){NOTE[notable[i]]=1;if(S.names[notable[i]]==='ISS (ZARYA)')issI=notable[i]}
     sel=-1;path=null;cardBuild();rebase(simMs)}
   /* the chip counts time from a moment not far off, so its numbers stay small and exact: every ten hours of shown time the angles are
      brought forward to a new moment */
@@ -162,6 +162,12 @@ var ORBIT=(function(){
     if(LIVE.sats&&satV!==LIVE.ver.sats)unpack();
     if(!PTN){lon0+=vlon*dt;lat0=clamp(lat0+vlat*dt,-85,85);var k=Math.exp(-dt*2.4);vlon*=k;vlat*=k;idle+=dt;if(idle>4&&!reduce)lon0+=dt*.9*smooth((idle-4)/4)}else idle=0;
     lon0=AS.n180(lon0);GLOBE.basis(lat0,lon0,g);
+    clock(dt,t);
+    /* the Earth makes room for the card: up, when the card lies along the bottom; to the left, when it stands at the side */
+    var cd=$('card'),ch=sel>=0&&cd&&!cd.hidden?cd.offsetHeight:0,cw=ch?cd.offsetWidth:0,side=cw>0&&cw<STG.w*.62,cyT=STG.cy-(side?0:Math.min(ch*.5,STG.h*.22)),cxT=STG.cx-(side?Math.min((cw+16)*.5,STG.w*.24):0),ke=Math.min(1,dt*5);
+    g.cy+=(cyT-g.cy)*ke;if(!g.cxs)g.cxs=STG.cx;g.cxs+=(cxT-g.cxs)*ke;if(Math.abs(g.cxs-cxT)<.3)g.cxs=cxT;g.cx=g.cxs;
+    nowSync()}
+  function clock(dt,t){
     /* time */
     if(keyRate){off+=keyRate*dt*5400000*.35;ret=false}
     if(ret){if(ret===true)ret={t0:FT,from:off};var rk=clamp((FT-ret.t0)/1500,0,1);off=ret.from*(1-smooth(rk));if(rk>=1){off=0;ret=false}}
@@ -180,15 +186,14 @@ var ORBIT=(function(){
         for(var j=0;j<=96;j++){var E=j/96*TAU,xp=a*(Math.cos(E)-e),yp=a*Math.sqrt(1-e*e)*Math.sin(E);path[j*3]=(cw*cO-sw*sO*cI)*xp+(-sw*cO-cw*sO*cI)*yp;path[j*3+1]=(cw*sO+sw*cO*cI)*xp+(-sw*sO+cw*cO*cI)*yp;path[j*3+2]=sw*sI2*xp+cw*sI2*yp}}}
     /* the card: built when a satellite is chosen, again when the catalogue arrives, and its two living lines four times a second;
        while it is up, the Earth moves up the screen to stay clear of it */
-    if(sel>=0&&(cardFor!==sel||(!cardHad&&SATINFO)))cardBuild();cardLive(t);
-    /* the Earth makes room for the card: up, when the card lies along the bottom; to the left, when it stands at the side */
-    var cd=$('card'),ch=sel>=0&&cd&&!cd.hidden?cd.offsetHeight:0,cw=ch?cd.offsetWidth:0,side=cw>0&&cw<STG.w*.62,cyT=STG.cy-(side?0:Math.min(ch*.5,STG.h*.22)),cxT=STG.cx-(side?Math.min((cw+16)*.5,STG.w*.24):0),ke=Math.min(1,dt*5);
-    g.cy+=(cyT-g.cy)*ke;if(!g.cxs)g.cxs=STG.cx;g.cxs+=(cxT-g.cxs)*ke;if(Math.abs(g.cxs-cxT)<.3)g.cxs=cxT;g.cx=g.cxs;
-    nowSync()}
+    if(sel>=0&&(cardFor!==sel||(!cardHad&&SATINFO)))cardBuild();cardLive(t)}
   function draw(t){
     if(!GLX.ok||GLX.lost){blank();return}if(gen!==GLX.gen)glSetup();if(!P){blank();return}
     var gl=GLX.gl,bg=[ABYSS[0]*.6,ABYSS[1]*.6,ABYSS[2]*.7],u,a,i;
     glClear(bg[0],bg[1],bg[2]);GLOBE.draw(g,{sun:sunV,moon:moonV,moonK:moonI?moonI.phase:0,bg:bg,dim:.8,flow:null,aur:null,time:t*.001});
+    sky(t)}
+  function sky(t){
+    var gl=GLX.gl,u,a,i;
     glAttrOff();gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.viewport(0,0,GLX.w,GLX.h);gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE);
     /* the stars; the shekere makes them shiver */
     u=P.star.u;a=P.star.a;gl.useProgram(P.star.p);gl.uniform3f(u.uE,RE3[0],RE3[1],RE3[2]);gl.uniform3f(u.uN,RN3[0],RN3[1],RN3[2]);gl.uniform3f(u.uV,RC3[0],RC3[1],RC3[2]);
@@ -200,14 +205,14 @@ var ORBIT=(function(){
       glAttrOff();u=P.sat.u;a=P.sat.a;gl.useProgram(P.sat.p);gl.uniform3f(u.uE,RE3[0],RE3[1],RE3[2]);gl.uniform3f(u.uN,RN3[0],RN3[1],RN3[2]);gl.uniform3f(u.uV,RC3[0],RC3[1],RC3[2]);
       gl.uniform2f(u.uC,g.cx,g.cy);gl.uniform2f(u.uRes,VW,VH);gl.uniform1f(u.uR,g.R);gl.uniform1f(u.uT,(simMs-baseT)/60000);gl.uniform1f(u.uTail,lerp(1.2,3.2,fast));
       /* seen from far off the low swarm is thousands of points in a small disc: it is dimmed there, so the Earth still shows through it */
-      gl.uniform1f(u.uPt,DPR*clamp(.5+.5*zoom,.62,1.5)*(1+.1*HIT[4]*G[4]));gl.uniform1f(u.uGain,clamp(.1+zoom*1.05,.2,1));
+      gl.uniform1f(u.uPt,DPR*clamp(.5+.5*zoom,.62,1.5)*(LAY?.8:1)*(1+.1*HIT[4]*G[4]));gl.uniform1f(u.uGain,clamp(.1+zoom*1.05,.2,1)*(LAY?.42:1));
       gl.bindBuffer(gl.ARRAY_BUFFER,satB);
       var ptr=function(stride){gl.enableVertexAttribArray(a.a_e1);gl.vertexAttribPointer(a.a_e1,4,gl.FLOAT,false,stride,0);gl.enableVertexAttribArray(a.a_e2);gl.vertexAttribPointer(a.a_e2,4,gl.FLOAT,false,stride,16);
         gl.enableVertexAttribArray(a.a_e3);gl.vertexAttribPointer(a.a_e3,4,gl.FLOAT,false,stride,32);gl.enableVertexAttribArray(a.a_c);gl.vertexAttribPointer(a.a_c,4,gl.FLOAT,false,stride,48)};
       /* the trails, then the bodies (the first entry of each body's run in the same list) */
       if(P.trail&&TRAILS){var tu=P.trail.u,ta=P.trail.a;glAttrOff();gl.useProgram(P.trail.p);
         gl.uniform3f(tu.uE,RE3[0],RE3[1],RE3[2]);gl.uniform3f(tu.uN,RN3[0],RN3[1],RN3[2]);gl.uniform3f(tu.uV,RC3[0],RC3[1],RC3[2]);gl.uniform2f(tu.uC,g.cx,g.cy);gl.uniform2f(tu.uRes,VW,VH);
-        gl.uniform1f(tu.uR,g.R);gl.uniform1f(tu.uT,(simMs-baseT)/60000);gl.uniform1f(tu.uTail,lerp(9,14,fast));gl.uniform1f(tu.uGain,clamp(.1+zoom*1.05,.2,1));gl.uniform1f(tu.uPt,1);
+        gl.uniform1f(tu.uR,g.R);gl.uniform1f(tu.uT,(simMs-baseT)/60000);gl.uniform1f(tu.uTail,lerp(9,14,fast));gl.uniform1f(tu.uGain,clamp(.1+zoom*1.05,.2,1)*(LAY?.32:1));gl.uniform1f(tu.uPt,1);
         gl.uniform1f(tu.uLine,clamp(.1+zoom*.12,.12,.3)*(1+.5*fast));gl.uniform1f(tu.uPh,reduce?0:(t*.00055)%1);
         [['a_e1',0],['a_e2',16],['a_e3',32],['a_c',48]].forEach(function(x){var l=ta[x[0]];if(l>=0){gl.enableVertexAttribArray(l);gl.vertexAttribPointer(l,4,gl.FLOAT,false,64,x[1])}});
         gl.drawArrays(gl.LINES,0,n*TN*2);glAttrOff();gl.useProgram(P.sat.p)}
@@ -231,7 +236,7 @@ var ORBIT=(function(){
   function ghost(t){var u=(t*.12)%1;if(u>.5)return [null];var e=smooth(u/.5),k=Math.floor(t*.12)%2?1:-1;return [{x:g.cx+k*g.R*(.55-1.1*e),y:g.cy+g.R*.2}]}
   return {enter:enter,leave:leave,resize:resize,down:down,move:move,up:up,gesture:gesture,ghostEnd:ghostEnd,wheel:wheel,key:key,seq:seq,tick:tick,draw:draw,hud:hud,ghost:ghost,toNow:toNow,gl:function(){gen=-1},
     dbg:function(){var o={n:satN,off:off,spd:spd,want:want,live:live(),sel:sel,name:sel>=0?nameOf(sel):null,info:selI,card:$('card')&&!$('card').hidden?$('card').innerText:null,cat:!!SATINFO,zoom:zoom,R:g.R,lat0:lat0,lon0:lon0,stars:starN,notable:notable.length,base:baseT,sim:simMs,vis:[]};
-      if(EL)for(var i=0;i<satN&&o.vis.length<8;i+=Math.max(1,Math.floor(satN/400))){view(place(i,simMs,tmp),tq);if(shown(tq)&&tq[2]>0&&Math.hypot(tq[0],tq[1])<(STG.w/2-20)/g.R)o.vis.push([Math.round(g.cx+tq[0]*g.R),Math.round(g.cy-tq[1]*g.R),i])}return o},
+      if(EL)for(var i=0;i<satN&&o.vis.length<8;i+=Math.max(1,Math.floor(satN/1600))){view(place(i,simMs,tmp),tq);var hr=Math.hypot(tq[0],tq[1]);if(shown(tq)&&tq[2]>0&&hr<(STG.w/2-20)/g.R&&(hr>1.08||GRP[i]===7||(NOTE&&NOTE[i])))o.vis.push([Math.round(g.cx+tq[0]*g.R),Math.round(g.cy-tq[1]*g.R),i])}return o},
     place:function(i,ms){var p=place(i,ms,[0,0,0]);return [p[0]*RE,p[1]*RE,p[2]*RE]},nameOf:nameOf,
     look:function(la,lo,zm){lat0=la;lon0=lo;if(zm){zoom=zm;geo()}idle=-1e6;vlon=vlat=0},
     time:function(o,w){off=o;if(w!==undefined){want=w;spd=w}ret=false},
@@ -246,5 +251,20 @@ var ORBIT=(function(){
     iss:function(ms){if(LIVE.sats&&satV!==LIVE.ver.sats)unpack();if(!EL||issI<0)return null;var th=AS.gmst(ms)*AS.D,p=place(issI,ms,[0,0,0]),q=place(issI,ms+1000,[0,0,0]),
       X=p[0]*Math.cos(th)+p[1]*Math.sin(th),Y=-p[0]*Math.sin(th)+p[1]*Math.cos(th),r=Math.sqrt(p[0]*p[0]+p[1]*p[1]+p[2]*p[2]);
       return {lat:Math.asin(p[2]/r)/AS.D,lon:Math.atan2(Y,X)/AS.D,alt:(r-1)*RE,kmh:Math.sqrt((q[0]-p[0])*(q[0]-p[0])+(q[1]-p[1])*(q[1]-p[1])+(q[2]-p[2])*(q[2]-p[2]))*RE*3600}},
-    pick:function(name){var S=LIVE.sats;for(var i=0;i<satN;i++)if((S.names[i]||'')===name){sel=i;path=null;selI=null;satInfoLoad();cardBuild();return i}return -1}}
+    pick:function(name){var S=LIVE.sats;for(var i=0;i<satN;i++)if((S.names[i]||'')===name){sel=i;path=null;selI=null;satInfoLoad();cardBuild();return i}return -1},
+    /* the satellites as a layer of the Earth world: its globe is theirs (the same Earth, the same turn of it), time is the present */
+    layer:{
+      on:function(){LAY=true;if(GLX.ok&&gen!==GLX.gen)glSetup();liveLoad()},
+      off:function(){if(sel<0)return;sel=-1;path=null;selI=null;cardBuild()},
+      tick:function(dt,t,gx){if(LIVE.sats&&satV!==LIVE.ver.sats)unpack();g.cx=gx.cx;g.cy=gx.cy;g.R=gx.R;for(var k=0;k<3;k++){g.E[k]=gx.E[k];g.N[k]=gx.N[k];g.C[k]=gx.C[k]}
+        zoom=gx.R/Math.max(1,Math.min(STG.w,STG.h)*.3);off=0;want=1;spd=1;ret=false;clock(dt,t)},
+      draw:function(t){if(!GLX.ok||GLX.lost)return;if(gen!==GLX.gen)glSetup();if(!P)return;sky(t)},
+      /* a tap near a satellite: the nearest within reach is chosen (true), or none is (false). Over the Earth's face a tap is for the
+         place under it (the swarm is so thick there that a satellite is within reach of every point), so only the space stations and the
+         few satellites the sound follows are taken there; in the dark round the Earth, any satellite */
+      pick:function(p){if(!EL)return false;var i,best=-1,on=Math.hypot(p.x-g.cx,p.y-g.cy)<g.R,bd=on?14*14:18*18,d;
+        for(i=0;i<satN;i++){if(on&&GRP[i]!==7&&!(NOTE&&NOTE[i]))continue;view(place(i,simMs,tmp),tq);if(!shown(tq))continue;var x=g.cx+tq[0]*g.R-p.x,y=g.cy-tq[1]*g.R-p.y;d=x*x+y*y;if(GRP[i]===7||(FLG[i]&1))d*=.45;if(d<bd){bd=d;best=i}}
+        if(best<0)return false;sel=best;path=null;selI=null;satInfoLoad();tone('glass',pent(clamp(Math.round(14-Math.log(EL[best*11])*9),2,14),52),.45,pan(p.x));cardBuild();return true},
+      sel:function(){return sel},
+      hud:function(){var S=LIVE.sats;if(!S||!EL)return LIVE.asked?'reading the orbits':'';return satN.toLocaleString('en-US')+' satellites, where they are now · orbits of '+stampUTC(S.fresh||S.asOf)}}}
 })();

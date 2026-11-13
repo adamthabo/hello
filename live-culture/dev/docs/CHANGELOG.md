@@ -1,6 +1,30 @@
 # Changelog
 
 ## For the owner
+13 Nov 2026, after "Some is good, I like the videos and I like the weather, but is it real? Put them all on the same globe as
+satélites and make that just a layer. Make a music dj mixer page ... And then make the smoke game clearer and work better. The game
+should also be harder and more fun" and your choices (a clip grid like Ableton, two decks and a crossfader, drum pads, effects; too
+much smoke made the rings too easy; tougher puzzles, moving parts, limited smoke; the cameras in a window over the globe):
+
+- **One Earth.** Wind and Orbit are one world now, Earth: the weather, the satellites and (on your site) the cameras are layers of
+  the same globe, switched along the bottom. Tap a camera's ring and its stream opens in a window over the globe (tap the window to
+  make it bigger, swipe it for the next camera, its cross closes it); tap a satellite for its card; tap a place for its weather.
+- **Mix, a new world.** The band and 300 more sounds (16 drum kits, 16 tuned instruments, all struck, all made on the phone) as two
+  decks of loops in a grid like Ableton's clips: tap a loop and it comes in on the next bar. Each deck has its pitch, nudges and
+  sync; a crossfader between them; 16 pads to play, and to record into a loop that keeps playing; effects to sweep with a finger
+  (filter and echo), a stutter to hold, a brake. Nothing on it can play louder than the band (measured).
+- **Smoke, harder and clearer.** In a level the smoke now waits for you to build, then you let it go, and the tank runs dry after a
+  few seconds: if the rings are not full by then, change something and let it go again. Each jet carries about half the smoke it did
+  and a ring fills only with a jet streaming through it. Walls now turn the smoke along them instead of swallowing it. One source sweeps
+  to and fro, and some rings drift. All 24 levels are new, each ring placed where the smoke really goes with the solution and not
+  without it. Three stars now also want a third of the tank left.
+- **Is it real?** On your site, yes: the cameras are live YouTube streams; the wind, jet streams, temperature, pressure, waves,
+  lightning and aurora come from NOAA as each is published (the wind every 6 hours, the lightning every few minutes); the clouds
+  from EUMETSAT every 3 hours; the rain from NASA about four hours behind; the fires from NASA's satellites; the radar from
+  RainViewer; the satellites from their latest published orbits. The artifact is a snapshot of 10 Nov.
+
+Tested by machine. Not seen from here: the real cameras, and how the mixer sounds through a phone's speaker.
+
 12 Nov 2026, evening, after "Make this so much better!! The smoke game needs to be better the videos need to be better, the
 weather needs to be better" and your choices (lots of levels; every camera playing, full screen, better places, many more; live
 clouds and rain, any place up close, dramatic storms, more layers; artifact and site both):
@@ -22,6 +46,30 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 13 Nov 2026: one Earth, Mix, Smoke's tank and new walls
+- Worlds: `smoke`, `earth`, `mix` (`WORLDS` in `20-ui.js`; `OLDHASH` sends `#wind`, `#orbit`, `#live` to the Earth and `#drift`,
+  `#loom`, `#bloom`, `#band` to Smoke). The "Now" chip is gone with Orbit's world. A world may take the circles' taps (`CUR.dot`).
+- `12-wind.js` is the Earth: its layers `LYK` are `sats cams wind jet heat pressure waves clouds rain sun` (`LYN`, `LYI`; the row
+  scrolls when it is wider than the phone); it runs `ORBIT.layer` and, in the hosted build, `LIVEW.layer`; a tap goes to a camera's
+  ring, then a satellite (20 px), then a storm or a fire, then the place; `flyTo` turns the Earth to a camera; zoom 0.16 to 3.2 (out to
+  the geostationary ring); the footer's height is measured every frame (`footH`) so the stage never runs under a row that has grown.
+- `13-orbit.js` `layer`: `LAY` dims the satellites over the weather (brightness 0.42, size 0.8, trails 0.32); `clock` keeps them in
+  the present. `14-live.js` is a layer with a window (`winGeo`: bottom right, 58% of the stage's width; a tap: across the stage; a
+  swipe across: east or west; its cross: closed); `body.camw` hides the full-screen video's shading.
+- `15-mixsnd.js` (`MIXS`) and `16-mix.js` (`MIX`, `MIXON`): see README, Architecture. `03-audio.js`: `stemsStart` stands aside while
+  the mixer has the band. `t_levels.js` measures the mixer (`MIX.offline`). The decks' sync is a nudge whose end is set on the
+  players' own speed (`ne`, `settle`), so the beat it lands on is exact however late the page's timers run.
+- `11-drift.js`: in a level the smoke waits for the release button (`go`, `release`, `stopRun`; `RUN`, `TANK`, `TANK0` from the level's
+  `tank`, `RT`, `EMPTYT`, `OUTT`): sources breathe only while it runs and the tank holds smoke; 2.5 s after it runs dry the run ends,
+  the rings empty and the readout says so. Built fans, drains and tunnels stand still until the release. `LP`: `ink` 0.07 (was 0.14),
+  `fk` 4, `f0` 0.04. Moving parts: a source's sweep (`src[5]` degrees, `src[6]` seconds), a ring's drift (`cups[3..5]`), a fixed fan
+  by turns (`wind[4]` on, `wind[5]` off; no level uses it: a fan blowing by turns let the jet straighten and fill the ring between gusts), all on the run's own clock (`moveParts`, `windOn`). Stars: `starsFor(n, par, left)`. Walls:
+  the pressure sees them (`div`, `prs`, `grad` read `uObs`), and advection across one keeps what the place had instead of nothing.
+  Test hooks: `release`, `stop`, `scan`, `rec`, `recGet`, `nodraw`. The hand is hidden in a level (it moved the water, never the ink).
+- `tools/t_place.js`, `tools/place_rings.py`, `tools/set_levels.py`: placing rings by measurement (README, Architecture).
+- Tests: `t_play.js` (Earth and Mix with real touches), `t_hosted.js` (the cameras' layer and window), `t_published.js`, `t_misc.js`,
+  `t_gov.js` (the paced world is Mix now), `t_smoke.js` (release, the tank, running dry).
 
 ## 12 Nov 2026: Smoke's levels, Live full screen, the weather model
 - `11-drift.js`: `LEVELS` 24 in `CH` chapters; the tank `B` (aspect 0.64) with `bx`/`by`, `KS`/`KR`/`KP` scaling speeds and sizes;

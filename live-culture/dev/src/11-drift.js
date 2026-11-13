@@ -20,30 +20,41 @@ var DRIFT=(function(){
        walls, winds, prisms and drains, and its rings. obs is the walls drawn into the water's own grid: 1 where there is wall */
     obs=null,obsDirty=true,WB=null,WN=0,TOOL='ink',WALLS=[],FANS=[],DRAINS=[],PRISMS=[],TUNNELS=[],CUPS=[],FIX={walls:[],fans:[],drains:[],prisms:[]},
     PZ=-1,pzWon=0,pzSaved=null,winStars=0,PATH=false,pathT=0,FIXDT=0,
-    rb=null,rbBuf=null,rbW=0,rbH=0,rbT=0,rbS=0,rbOk=false,simT=0,NOWIN=false,TRACE=null,want=0,bdrag={},VQ=[],STARS=[],FASTDYE=false;
+    /* a level is built first, then its smoke is let go: RUN while it flows, TANK the seconds of smoke left (TANK0 when full), RT the
+       water's time since it was let go (the moving parts keep it), EMPTYT when the tank ran dry, OUTT when a run ended without a win */
+    RUN=0,TANK=0,TANK0=6,RT=0,EMPTYT=-1,OUTT=0,
+    rb=null,rbBuf=null,rbW=0,rbH=0,rbT=0,rbS=0,rbOk=false,simT=0,NOWIN=false,TRACE=null,REC=null,NODRAW=false,want=0,bdrag={},VQ=[],STARS=[],FASTDYE=false;
   /* the five notes of the scale as five inks: E cyan, G green, A amber, B rose, D violet */
   var INK=[[.12,.86,1],[.30,1,.62],[1,.62,.20],[1,.14,.50],[.56,.36,1]];
   var VSB='attribute vec2 a_p;varying vec2 vUv;varying vec2 vL;varying vec2 vR;varying vec2 vT;varying vec2 vB;uniform vec2 uTexel;\n'+
     'void main(){vUv=a_p*0.5+0.5;vL=vUv-vec2(uTexel.x,0.0);vR=vUv+vec2(uTexel.x,0.0);vT=vUv+vec2(0.0,uTexel.y);vB=vUv-vec2(0.0,uTexel.y);gl_Position=vec4(a_p,0.0,1.0);}';
   var H='precision highp float;varying vec2 vUv;varying vec2 vL;varying vec2 vR;varying vec2 vT;varying vec2 vB;\n';
   var F={
-    /* carried along by the water. Nothing is carried through a wall: when the way back crosses one, nothing comes (a fast jet
-       would otherwise jump a thin wall in one step) */
+    /* carried along by the water. Nothing is carried through a wall: when the way back crosses one, the place keeps what it had (a fast
+       jet would otherwise jump a thin wall in one step; and taking nothing there, as it did until 13 Nov, ate the smoke of every jet that
+       met a wall, so a jet turned by a wall came away with less than half its smoke) */
     adv:H+'uniform sampler2D uVel;uniform sampler2D uSrc;uniform sampler2D uObs;uniform vec2 uVTexel;uniform vec2 uSTexel;uniform float uDt;uniform float uDiss;uniform float uHO;\n'+
       'vec4 bil(sampler2D s,vec2 uv,vec2 ts){vec2 st=uv/ts-0.5;vec2 i=floor(st);vec2 f=fract(st);vec4 a=texture2D(s,(i+vec2(0.5,0.5))*ts);vec4 b=texture2D(s,(i+vec2(1.5,0.5))*ts);vec4 c=texture2D(s,(i+vec2(0.5,1.5))*ts);vec4 d=texture2D(s,(i+vec2(1.5,1.5))*ts);return mix(mix(a,b,f.x),mix(c,d,f.x),f.y);}\n'+
       'void main(){\n#ifdef MANUAL\nvec2 c=vUv-uDt*bil(uVel,vUv,uVTexel).xy*uVTexel;gl_FragColor=uDiss*bil(uSrc,c,uSTexel);\n#else\nvec2 c=vUv-uDt*texture2D(uVel,vUv).xy*uVTexel;gl_FragColor=uDiss*texture2D(uSrc,c);\n#endif\n'+
-      'if(uHO>0.5){float o=max(max(texture2D(uObs,mix(vUv,c,0.34)).x,texture2D(uObs,mix(vUv,c,0.67)).x),texture2D(uObs,c).x);gl_FragColor*=1.0-smoothstep(0.3,0.6,o);}\n}',
+      'if(uHO>0.5){float o=max(max(texture2D(uObs,mix(vUv,c,0.34)).x,texture2D(uObs,mix(vUv,c,0.67)).x),texture2D(uObs,c).x);gl_FragColor=mix(gl_FragColor,uDiss*texture2D(uSrc,vUv),smoothstep(0.3,0.6,o));}\n}',
     /* add to a field around a point. Ink is added less where there is already plenty, so colours stay colours and never burn out to white */
     spl:H+'uniform sampler2D uT;uniform float uAR;uniform vec3 uCol;uniform vec2 uPt;uniform float uRad;uniform float uSat;\n'+
       'void main(){vec2 p=vUv-uPt;p.x*=uAR;vec3 s=exp(-dot(p,p)/uRad)*uCol;vec3 o=texture2D(uT,vUv).xyz;float full=clamp(max(o.r,max(o.g,o.b))/0.95,0.0,1.0);gl_FragColor=vec4(o+s*(1.0-uSat*full),1.0);}',
-    div:H+'uniform sampler2D uVel;\nvoid main(){float L=texture2D(uVel,vL).x;float R=texture2D(uVel,vR).x;float T=texture2D(uVel,vT).y;float B=texture2D(uVel,vB).y;vec2 C=texture2D(uVel,vUv).xy;'+
-      'if(vL.x<0.0){L=-C.x;}if(vR.x>1.0){R=-C.x;}if(vT.y>1.0){T=-C.y;}if(vB.y<0.0){B=-C.y;}gl_FragColor=vec4(0.5*(R-L+T-B),0.0,0.0,1.0);}',
+    /* how much the water gathers or spreads at each point; a wall next to it counts as the tank's edge does (the water does not go in) */
+    div:H+'uniform sampler2D uVel;uniform sampler2D uObs;uniform float uHO;\nvoid main(){float L=texture2D(uVel,vL).x;float R=texture2D(uVel,vR).x;float T=texture2D(uVel,vT).y;float B=texture2D(uVel,vB).y;vec2 C=texture2D(uVel,vUv).xy;'+
+      'if(vL.x<0.0){L=-C.x;}if(vR.x>1.0){R=-C.x;}if(vT.y>1.0){T=-C.y;}if(vB.y<0.0){B=-C.y;}'+
+      'if(uHO>0.5){if(texture2D(uObs,vL).x>0.5)L=-C.x;if(texture2D(uObs,vR).x>0.5)R=-C.x;if(texture2D(uObs,vT).x>0.5)T=-C.y;if(texture2D(uObs,vB).x>0.5)B=-C.y;}gl_FragColor=vec4(0.5*(R-L+T-B),0.0,0.0,1.0);}',
     curl:H+'uniform sampler2D uVel;\nvoid main(){float L=texture2D(uVel,vL).y;float R=texture2D(uVel,vR).y;float T=texture2D(uVel,vT).x;float B=texture2D(uVel,vB).x;gl_FragColor=vec4(0.5*(R-L-T+B),0.0,0.0,1.0);}',
     vort:H+'uniform sampler2D uVel;uniform sampler2D uCurl;uniform float uK;uniform float uDt;\n'+
       'void main(){float L=texture2D(uCurl,vL).x;float R=texture2D(uCurl,vR).x;float T=texture2D(uCurl,vT).x;float B=texture2D(uCurl,vB).x;float C=texture2D(uCurl,vUv).x;'+
       'vec2 f=0.5*vec2(abs(T)-abs(B),abs(R)-abs(L));f/=length(f)+0.0001;f*=uK*C;f.y*=-1.0;vec2 v=texture2D(uVel,vUv).xy+f*uDt;gl_FragColor=vec4(clamp(v,-1000.0,1000.0),0.0,1.0);}',
-    prs:H+'uniform sampler2D uP;uniform sampler2D uDiv;\nvoid main(){float L=texture2D(uP,vL).x;float R=texture2D(uP,vR).x;float T=texture2D(uP,vT).x;float B=texture2D(uP,vB).x;float d=texture2D(uDiv,vUv).x;gl_FragColor=vec4((L+R+B+T-d)*0.25,0.0,0.0,1.0);}',
-    grad:H+'uniform sampler2D uP;uniform sampler2D uVel;\nvoid main(){float L=texture2D(uP,vL).x;float R=texture2D(uP,vR).x;float T=texture2D(uP,vT).x;float B=texture2D(uP,vB).x;vec2 v=texture2D(uVel,vUv).xy-vec2(R-L,T-B);gl_FragColor=vec4(v,0.0,1.0);}',
+    /* the pressure: a wall's cell takes the pressure of the water against it, so the water is pushed back along it */
+    prs:H+'uniform sampler2D uP;uniform sampler2D uDiv;uniform sampler2D uObs;uniform float uHO;\nvoid main(){float C=texture2D(uP,vUv).x;float L=texture2D(uP,vL).x;float R=texture2D(uP,vR).x;float T=texture2D(uP,vT).x;float B=texture2D(uP,vB).x;'+
+      'if(uHO>0.5){if(texture2D(uObs,vL).x>0.5)L=C;if(texture2D(uObs,vR).x>0.5)R=C;if(texture2D(uObs,vT).x>0.5)T=C;if(texture2D(uObs,vB).x>0.5)B=C;}float d=texture2D(uDiv,vUv).x;gl_FragColor=vec4((L+R+B+T-d)*0.25,0.0,0.0,1.0);}',
+    /* and the water made to neither gather nor spread; beside a wall it keeps its speed along the wall and loses only what went into it */
+    grad:H+'uniform sampler2D uP;uniform sampler2D uVel;uniform sampler2D uObs;uniform float uHO;\nvoid main(){float C=texture2D(uP,vUv).x;float L=texture2D(uP,vL).x;float R=texture2D(uP,vR).x;float T=texture2D(uP,vT).x;float B=texture2D(uP,vB).x;vec2 v=texture2D(uVel,vUv).xy;'+
+      'if(uHO>0.5){float oL=texture2D(uObs,vL).x;float oR=texture2D(uObs,vR).x;float oT=texture2D(uObs,vT).x;float oB=texture2D(uObs,vB).x;if(oL>0.5)L=C;if(oR>0.5)R=C;if(oT>0.5)T=C;if(oB>0.5)B=C;v-=vec2(R-L,T-B);'+
+      'if(oL>0.5)v.x=max(v.x,0.0);if(oR>0.5)v.x=min(v.x,0.0);if(oT>0.5)v.y=min(v.y,0.0);if(oB>0.5)v.y=max(v.y,0.0);}else{v-=vec2(R-L,T-B);}gl_FragColor=vec4(v,0.0,1.0);}',
     mul:H+'uniform sampler2D uT;uniform float uK;\nvoid main(){gl_FragColor=uK*texture2D(uT,vUv);}',
     /* the photo's own memory: the ink is drawn back toward the picture, a little each frame (most of the way in about five seconds) */
     heal:H+'uniform sampler2D uT;uniform sampler2D uPh;uniform vec4 uRect;uniform float uK;\n'+
@@ -98,8 +109,13 @@ var DRIFT=(function(){
   /* ---- the machine ---- */
   var MAXW=24,MAXF=6,MAXP=5,MAXD=4,MAXT=3,TH=10;
   /* a level's water: smoke rises less and fades sooner, and the water settles sooner, so what fills a ring is a jet aimed at it, not
-     the haze of everything that went before (at a phone's sixty frames a second, smoke left to linger would fill a ring above any jet) */
-  var LP={buo:.3,dye:.6,vel:.8,ink:.13,fk:8,f0:.025};
+     the haze of everything that went before (at a phone's sixty frames a second, smoke left to linger would fill a ring above any jet).
+     Since 13 Nov a jet carries about half the ink it did ("too much smoke makes filling the holes too easy") and a ring fills only
+     where the smoke is thicker than the haze (f0): measured over all 24 levels with tools/t_place.js, a straight jet gives a ring in
+     it about .17 to .25 (density times colour), a jet turned by a wall .08 to .13, the haze of a level with nothing built .00 to .05,
+     the edge of a jet .05 to .07. So a ring fills in a second or two of a straight jet, three or four of a turned one, and never from
+     the haze or the edge of a jet in the few seconds a tank lasts */
+  var LP={buo:.3,dye:.6,vel:.8,ink:.07,fk:8,f0:.05};
   /* (in a level the water fades by its own time, not the clock's: a phone that steps it thirty times a second plays the level as one that
      steps it sixty times does, only slower, so a level tested once is the same level everywhere) */
   function WX(u){return u*VW}function WY(v){return v*VH}
@@ -119,35 +135,37 @@ var DRIFT=(function(){
      src: a source breathing ink: x, y, direction, colour (0 cyan, 1 green, 2 amber, 3 rose, 4 violet); wind: a fixed fan that only
      pushes the water; cups: the rings, and the colour each wants ('mix': cyan and amber together); walls, prisms, drains: fixed ones;
      give: how many of each piece may be built (w walls, f fans, p the prisms' colours, d drains, t tunnels); par: the fewest pieces
-     known to solve it (three stars); tip: the clue; sol: one way to solve it, which tools/t_puzzles.js builds and checks (every ring
-     fills; and with nothing built, none does). Every level is carried by its sources' jets: smoke that only drifts is too faint to
-     carry far, and barely rises */
+     known to solve it (three stars, with a third of the tank left); tip: the clue; sol: one way to solve it, which tools/t_design.js
+     builds and checks (every ring fills before the smoke is gone; and with nothing built, none does). tank: seconds of smoke (6).
+     The moving parts: a source may sweep (src[5] degrees each way, src[6] seconds a sweep), a ring may drift (cups[3], cups[4]: how
+     far, cups[5] seconds there and back), a fixed fan may blow by turns (wind[4] seconds on, wind[5] off). Every level is carried by
+     its sources' jets: smoke that only drifts is too faint to carry far, and barely rises */
   var LEVELS=[
     /*LEVELS-BEGIN*/
-    {name:'ramp',src:[[0.1,0.75,1,0,0]],cups:[[0.72,0.42,0]],give:{w:2},par:1,tip:'new: the wall. drag to build one, tap it to take it away. a wall in its way turns the smoke',sol:[['wall',[0.3,0.8,0.55,0.6]]]},
-    {name:'up and left',src:[[0.75,0.9,0,-1,1]],cups:[[0.22,0.37,1]],give:{w:2},par:1,tip:'a wall that leans turns a rising jet',sol:[['wall',[0.88,0.62,0.48,0.45]]]},
-    {name:'shield',src:[[0.1,0.45,1,0,3],[0.5,0.9,0,-1,0]],cups:[[0.84,0.45,3]],give:{w:2},par:1,tip:'one jet pushes another aside',sol:[['wall',[0.42,0.8,0.58,0.8]]]},
-    {name:'two shields',src:[[0.1,0.45,1,0,3],[0.36,0.78,0,-1,0],[0.66,0.78,0,-1,2]],cups:[[0.86,0.45,3]],give:{w:3},par:2,tip:'two jets from below push the rose aside: hold both down',sol:[['wall',[0.27,0.66,0.45,0.66]],['wall',[0.57,0.66,0.75,0.66]]],bad:[['one shield',[['wall',[0.27,0.66,0.45,0.66]]]],['other shield',[['wall',[0.57,0.66,0.75,0.66]]]]]},
-    {name:'push',src:[[0.5,0.88,0,-1,2]],cups:[[0.18,0.5,2]],give:{f:1,w:1},par:1,tip:'new: the fan. drag the way it should blow. a fan pushes the water, and the smoke with it',sol:[['fan',[0.56,0.66,-1,0]]]},
-    {name:'the other way',src:[[0.5,0.88,0,-1,4]],cups:[[0.82,0.5,4]],give:{f:1,w:1},par:1,tip:'a fan can blow any way you drag it',sol:[['fan',[0.44,0.66,1,0]]]},
-    {name:'down',src:[[0.1,0.4,1,0,3]],walls:[[0.86,0.56,1,0.56]],cups:[[0.84,0.82,3]],give:{f:1,w:1},par:1,tip:'smoke never sinks by itself',sol:[['fan',[0.45,0.32,0,1]]]},
-    {name:'white',src:[[0.15,0.88,0,-1,0],[0.85,0.88,0,-1,2]],cups:[[0.5,0.35,'mix']],give:{f:2,w:1},par:2,tip:'white is cyan and amber together',sol:[['fan',[0.1,0.66,1,0]],['fan',[0.9,0.66,-1,0]]]},
-    {name:'new colour',src:[[0.1,0.55,1,0,0]],cups:[[0.8,0.55,2]],give:{p:[2]},par:1,tip:'new: the prism. tap to place one. smoke that passes through it takes its colour',sol:[['prism',[0.4,0.55,2]]]},
-    {name:'two in a row',src:[[0.1,0.5,1,0,0]],cups:[[0.45,0.5,2],[0.82,0.5,3]],give:{p:[2,3]},par:2,tip:'a prism after a ring changes the smoke again',sol:[['prism',[0.27,0.5,2]],['prism',[0.64,0.5,3]]]},
-    {name:'swap',src:[[0.1,0.3,1,0,0],[0.1,0.72,1,0,2]],cups:[[0.82,0.3,2],[0.82,0.72,0]],give:{p:[2,0]},par:2,tip:'each ring wants the other jet\'s colour',sol:[['prism',[0.45,0.3,2]],['prism',[0.45,0.72,0]]]},
-    {name:'white from cyan',src:[[0.15,0.88,0,-1,0],[0.85,0.88,0,-1,0]],wind:[[0.08,0.66,1,0],[0.92,0.66,-1,0]],cups:[[0.5,0.35,'mix']],give:{p:[2],f:1},par:1,tip:'two cyan jets meet in the white ring: white needs amber too',sol:[['prism',[0.85,0.8,2]]]},
-    {name:'swallow',src:[[0.1,0.5,1,0,3],[0.5,0.1,0,1,1]],cups:[[0.8,0.5,3]],give:{d:1},par:1,tip:'new: the drain. tap to place one. a jet that runs into it is swallowed',sol:[['drain',[0.5,0.3]]]},
-    {name:'two intruders',src:[[0.1,0.5,1,0,0],[0.35,0.08,0,1,2],[0.65,0.08,0,1,3]],cups:[[0.88,0.5,0]],give:{d:2},par:2,tip:'two jets fall across the cyan: swallow them both',sol:[['drain',[0.35,0.28]],['drain',[0.65,0.28]]],bad:[['one drain',[['drain',[0.35,0.28]]]]]},
-    {name:'prism and drain',src:[[0.1,0.5,1,0,0],[0.6,0.08,0,1,1]],cups:[[0.86,0.5,3]],give:{d:1,p:[3]},par:2,tip:'the ring wants rose, and the green falls into its way',sol:[['drain',[0.6,0.28]],['prism',[0.33,0.5,3]]],bad:[['prism only',[['prism',[0.33,0.5,3]]]],['drain only',[['drain',[0.6,0.28]]]]]},
-    {name:'fan and drain',src:[[0.1,0.4,1,0,1],[0.84,0.97,0,-1,3]],walls:[[0.86,0.56,1,0.56]],cups:[[0.84,0.82,1]],give:{d:1,f:1},par:2,tip:'push the green down into the ring, and swallow the rose rising into it',sol:[['fan',[0.45,0.32,0,1]],['drain',[0.84,0.93]]],bad:[['fan only',[['fan',[0.45,0.32,0,1]]]],['drain only',[['drain',[0.84,0.93]]]]]},
-    {name:'out of the box',src:[[0.2,0.82,1,0,0]],walls:[[0.0,0.65,0.45,0.65],[0.45,0.65,0.45,1.0]],cups:[[0.75,0.4,0]],give:{t:1},par:1,tip:'new: the tunnel. drag from where the smoke goes in to where it comes out',sol:[['tunnel',[0.35,0.82,0.6,0.55]]]},
-    {name:'box and prism',src:[[0.2,0.82,1,0,2]],walls:[[0.0,0.65,0.45,0.65],[0.45,0.65,0.45,1.0]],cups:[[0.75,0.4,4]],give:{t:1,p:[4]},par:2,tip:'out of the box, and another colour',sol:[['tunnel',[0.35,0.82,0.6,0.55]],['prism',[0.68,0.47,4]]]},
-    {name:'through the wall',src:[[0.1,0.75,1,0,3]],walls:[[0.5,0.25,0.5,1.0]],cups:[[0.8,0.75,3]],give:{t:1,w:1},par:1,tip:'the wall is too high to go over',sol:[['tunnel',[0.38,0.75,0.64,0.75]]]},
-    {name:'two boxes',src:[[0.15,0.85,1,0,0],[0.85,0.85,-1,0,2]],walls:[[0.0,0.68,0.34,0.68],[0.34,0.68,0.34,1.0],[0.66,0.68,1.0,0.68],[0.66,0.68,0.66,1.0]],cups:[[0.5,0.4,'mix']],give:{t:2},par:2,tip:'white is cyan and amber together',sol:[['tunnel',[0.26,0.84,0.42,0.55]],['tunnel',[0.74,0.84,0.58,0.55]]]},
-    {name:'three colours',src:[[0.08,0.55,1,0,0]],cups:[[0.33,0.55,2],[0.58,0.55,3],[0.83,0.55,4]],give:{p:[2,3,4]},par:3,tip:'all together: each ring wants its own colour from the one jet',sol:[['prism',[0.2,0.55,2]],['prism',[0.455,0.55,3]],['prism',[0.705,0.55,4]]]},
-    {name:'shield and prism',src:[[0.1,0.4,1,0,3],[0.5,0.92,0,-1,2]],cups:[[0.85,0.4,4]],give:{w:1,p:[4],d:1},par:2,tip:'the amber pushes the rose aside, and the ring wants violet',sol:[['wall',[0.4,0.78,0.6,0.78]],['prism',[0.3,0.4,4]]]},
-    {name:'boxes and colours',src:[[0.15,0.85,1,0,0],[0.85,0.85,-1,0,0]],walls:[[0.0,0.7,0.3,0.7],[0.3,0.7,0.3,1.0],[0.7,0.7,1.0,0.7],[0.7,0.7,0.7,1.0]],cups:[[0.5,0.4,'mix']],give:{t:2,p:[2]},par:3,tip:'two cyan jets in boxes, and a white ring: white is cyan and amber',sol:[['tunnel',[0.24,0.85,0.4,0.55]],['tunnel',[0.76,0.85,0.6,0.55]],['prism',[0.62,0.52,2]]]},
-    {name:'the long way',src:[[0.1,0.85,1,0,1]],walls:[[0.0,0.62,0.78,0.62]],cups:[[0.27,0.33,3]],give:{w:1,p:[3],t:1},par:2,tip:'under a long shelf: get the green out, and make it rose',sol:[['tunnel',[0.62,0.85,0.4,0.5]],['prism',[0.34,0.42,3]]]}
+    {name:'ramp',src:[[0.1,0.75,1,0,0]],cups:[[0.781,0.34,0]],give:{w:2},par:1,tank:7.5,tip:'new: the wall. drag to build one, tap it to take it away. a wall in its way turns the smoke',sol:[['wall',[0.3,0.8,0.55,0.6]]]},
+    {name:'lid',src:[[0.1,0.42,1,0,1],[0.6,0.7,0,-1,2]],cups:[[0.844,0.38,1]],give:{w:2},par:1,tank:4.5,tip:'a wall over a jet holds it down',sol:[['wall',[0.5,0.6,0.7,0.6]]]},
+    {name:'two lids',src:[[0.1,0.45,1,0,3],[0.38,0.74,0,-1,0],[0.7,0.74,0,-1,2]],cups:[[0.844,0.46,3]],give:{w:3},par:2,tank:6.0,tip:'two jets from below push the rose aside: hold both down',sol:[['wall',[0.29,0.64,0.47,0.64]],['wall',[0.61,0.64,0.79,0.64]]]},
+    {name:'sweeper',src:[[0.1,0.45,1,0,0],[0.5,0.72,0,-1,2,30,3]],cups:[[0.844,0.5,0]],give:{w:2},par:1,tank:4.5,tip:'a jet that sweeps: a wall long enough holds it wherever it points',sol:[['wall',[0.22,0.62,0.78,0.62]]]},
+    {name:'push',src:[[0.5,0.88,0,-1,2]],cups:[[0.219,0.42,2]],give:{f:1,w:1},par:1,tank:5.0,tip:'new: the fan. drag the way it should blow. a fan pushes the water, and the smoke with it',sol:[['fan',[0.56,0.66,-1,0]]]},
+    {name:'down',src:[[0.1,0.4,1,0,3]],walls:[[0.86,0.56,1,0.56]],cups:[[0.844,0.78,3]],give:{f:1,w:1},par:1,tank:5.0,tip:'smoke never sinks by itself',sol:[['fan',[0.45,0.32,0,1]]]},
+    {name:'the other way',src:[[0.5,0.88,0,-1,4]],cups:[[0.781,0.5,4,0.0,-0.1,4.0]],give:{f:1,w:1},par:1,tank:5.0,tip:'a fan can blow any way you drag it, and this ring drifts',sol:[['fan',[0.44,0.66,1,0]]]},
+    {name:'drifting down',src:[[0.1,0.4,1,0,3]],walls:[[0.86,0.56,1,0.56]],cups:[[0.844,0.66,3,-0.2,0.0,4.0]],give:{f:1,w:1},par:1,tank:5.5,tip:'the ring drifts to and fro: push the smoke down where it goes',sol:[['fan',[0.45,0.32,0,1]]]},
+    {name:'new colour',src:[[0.1,0.55,1,0,0]],cups:[[0.844,0.58,2]],give:{p:[2]},par:1,tank:4.5,tip:'new: the prism. tap to place one. smoke that passes through it takes its colour',sol:[['prism',[0.4,0.55,2]]]},
+    {name:'two in a row',src:[[0.1,0.5,1,0,0]],cups:[[0.469,0.46,2],[0.844,0.5,3]],give:{p:[2,3]},par:2,tank:5.0,tip:'a prism after a ring changes the smoke again',sol:[['prism',[0.27,0.5,2]],['prism',[0.64,0.5,3]]]},
+    {name:'swap',src:[[0.1,0.3,1,0,0],[0.1,0.72,1,0,2]],cups:[[0.844,0.3,2],[0.781,0.7,0]],give:{p:[2,0]},par:2,tank:4.5,tip:'each ring wants the other jet\'s colour',sol:[['prism',[0.45,0.3,2]],['prism',[0.45,0.72,0]]]},
+    {name:'white from cyan',src:[[0.36,0.9,0.4,-1,0],[0.64,0.9,-0.4,-1,0]],cups:[[0.531,0.66,'mix']],give:{p:[2]},par:1,tank:4.5,tip:'two cyan jets meet: the white ring needs amber in it too',sol:[['prism',[0.57,0.78,2]]]},
+    {name:'swallow',src:[[0.1,0.5,1,0,3],[0.5,0.1,0,1,1]],cups:[[0.844,0.58,3]],give:{d:1},par:1,tank:6.0,tip:'new: the drain. tap to place one. a jet that runs into it is swallowed',sol:[['drain',[0.5,0.3]]]},
+    {name:'two intruders',src:[[0.1,0.5,1,0,0],[0.35,0.08,0,1,2],[0.65,0.08,0,1,3]],cups:[[0.844,0.5,0,-0.2,0.0,4.0]],give:{d:2},par:2,tank:5.0,tip:'two jets fall across the cyan: swallow them both',sol:[['drain',[0.35,0.28]],['drain',[0.65,0.28]]]},
+    {name:'moving target',src:[[0.1,0.5,1,0,3],[0.5,0.1,0,1,1]],cups:[[0.844,0.62,3,0.0,-0.16,4.0]],give:{d:1},par:1,tank:5.0,tip:'swallow the green, and keep the rose on the ring as it drifts',sol:[['drain',[0.5,0.3]]]},
+    {name:'fan and drain',src:[[0.1,0.4,1,0,1],[0.84,0.97,0,-1,3]],walls:[[0.86,0.56,1,0.56]],cups:[[0.719,0.66,1]],give:{d:1,f:1},par:2,tank:5.5,tip:'push the green down into the ring, and swallow the rose rising into it',sol:[['fan',[0.45,0.32,0,1]],['drain',[0.84,0.93]]]},
+    {name:'out of the box',src:[[0.2,0.82,1,0,0]],walls:[[0.0,0.65,0.45,0.65],[0.45,0.65,0.45,1.0]],cups:[[0.844,0.26,0]],give:{t:1},par:1,tank:4.5,tip:'new: the tunnel. drag from where the smoke goes in to where it comes out',sol:[['tunnel',[0.35,0.82,0.6,0.55]]]},
+    {name:'box and prism',src:[[0.2,0.82,1,0,2]],walls:[[0.0,0.65,0.45,0.65],[0.45,0.65,0.45,1.0]],cups:[[0.844,0.34,4,-0.2,0.0,4.0]],give:{t:1,p:[4]},par:2,tank:7.5,tip:'out of the box, another colour, and a ring that drifts',sol:[['tunnel',[0.35,0.82,0.6,0.55]],['prism',[0.68,0.47,4]]]},
+    {name:'through the wall',src:[[0.1,0.75,1,0,3]],walls:[[0.5,0.25,0.5,1.0]],cups:[[0.844,0.74,3]],give:{t:1,w:1},par:1,tank:7.5,tip:'the wall is too high to go over',sol:[['tunnel',[0.38,0.75,0.64,0.75]]]},
+    {name:'two boxes',src:[[0.15,0.85,1,0,0],[0.85,0.85,-1,0,2]],walls:[[0.0,0.68,0.34,0.68],[0.34,0.68,0.34,1.0],[0.66,0.68,1.0,0.68],[0.66,0.68,0.66,1.0]],cups:[[0.469,0.34,'mix']],give:{t:2},par:2,tank:4.5,tip:'white is cyan and amber together',sol:[['tunnel',[0.26,0.84,0.42,0.55]],['tunnel',[0.74,0.84,0.58,0.55]]]},
+    {name:'prism and drain',src:[[0.1,0.5,1,0,0],[0.6,0.08,0,1,1]],cups:[[0.844,0.5,3]],give:{d:1,p:[3]},par:2,tank:4.5,tip:'the ring wants rose, and the green falls into its way',sol:[['drain',[0.6,0.28]],['prism',[0.33,0.5,3]]]},
+    {name:'shield and prism',src:[[0.1,0.4,1,0,3],[0.5,0.92,0,-1,2]],cups:[[0.719,0.38,4]],give:{w:1,p:[4],d:1},par:2,tank:4.5,tip:'the amber pushes the rose aside, and the ring wants violet',sol:[['wall',[0.4,0.78,0.6,0.78]],['prism',[0.3,0.4,4]]]},
+    {name:'boxes and colours',src:[[0.15,0.85,1,0,0],[0.85,0.85,-1,0,0]],walls:[[0.0,0.7,0.3,0.7],[0.3,0.7,0.3,1.0],[0.7,0.7,1.0,0.7],[0.7,0.7,0.7,1.0]],cups:[[0.531,0.3,'mix']],give:{t:2,p:[2]},par:3,tank:5.5,tip:'two cyan jets in boxes, and a white ring: white is cyan and amber',sol:[['tunnel',[0.24,0.85,0.4,0.55]],['tunnel',[0.76,0.85,0.6,0.55]],['prism',[0.62,0.52,2]]]},
+    {name:'the long way',src:[[0.1,0.85,1,0,1]],walls:[[0.0,0.62,0.78,0.62]],cups:[[0.281,0.3,3]],give:{w:1,p:[3],t:1},par:2,tank:6.0,tip:'under a long shelf: get the green out, and make it rose',sol:[['tunnel',[0.62,0.85,0.4,0.5]],['prism',[0.34,0.42,3]]]}
     /*LEVELS-END*/
   ];
   /* who joins the band when a level is solved: every third level one more player (the shekere, the djembe, the talking drum, the
@@ -168,18 +186,21 @@ var DRIFT=(function(){
   function give(L){var g=L.give||{};return {w:g.w||0,f:g.f||0,p:(g.p||[]).slice(),d:g.d||0,t:g.t||0}}
   function given(){if(PZ<0)return {w:MAXW,f:MAXF,p:null,d:MAXD,t:MAXT};return give(LEVELS[PZ])}
   function used(){return WALLS.length+FANS.length+PRISMS.length+DRAINS.length+TUNNELS.length}
-  function starsFor(n,par){return n<=par?3:n<=par+1?2:1}
+  /* three stars: no more pieces than the fewest known, and a third of the tank still to spare; two: one piece more, or less smoke left */
+  function starsFor(n,par,left){return n<=par&&!(left<1/3)?3:n<=par+1?2:1}
   /* the prism colours still to place in a level (in the order given), or, outside the levels, the colour of the row it is put on */
   function prismsLeft(){var g=given();if(!g.p)return null;var a=g.p.slice();PRISMS.forEach(function(p){var k=a.indexOf(p.c);if(k>=0)a.splice(k,1)});return a}
   function placeFix(){var L=LEVELS[PZ];
     FIX.walls=tank().concat((L.walls||[]).map(function(w){return [bx(w[0]),by(w[1]),bx(w[2]),by(w[3]),1]}));
-    FIX.fans=L.src.map(function(f){var m=Math.hypot(f[2],f[3])||1;return {x:bx(f[0]),y:by(f[1]),dx:f[2]/m,dy:f[3]/m,c:f[4],fixed:1,ph:0}}).concat(
-      (L.wind||[]).map(function(f){var m=Math.hypot(f[2],f[3])||1;return {x:bx(f[0]),y:by(f[1]),dx:f[2]/m,dy:f[3]/m,c:-1,fixed:1,wind:1,ph:0}}));
+    FIX.fans=L.src.map(function(f){var m=Math.hypot(f[2],f[3])||1;return {x:bx(f[0]),y:by(f[1]),dx:f[2]/m,dy:f[3]/m,c:f[4],fixed:1,ph:0,
+        a0:Math.atan2(f[3],f[2]),sa:(f[5]||0)*Math.PI/180,sp:f[6]||4}}).concat(
+      (L.wind||[]).map(function(f){var m=Math.hypot(f[2],f[3])||1;return {x:bx(f[0]),y:by(f[1]),dx:f[2]/m,dy:f[3]/m,c:-1,fixed:1,wind:1,ph:0,on:f[4]||0,off:f[5]||0}}));
     FIX.drains=(L.drains||[]).map(function(d){return {x:bx(d[0]),y:by(d[1]),fixed:1,ph:0}});
     FIX.prisms=(L.prisms||[]).map(function(p){return {x:bx(p[0]),y:by(p[1]),c:p[2],fixed:1}});obsDirty=true}
   function pzLoad(i){
     var L=LEVELS[i];if(!L)return;PZ=i;PATH=false;pzWon=0;winStars=0;rbS=simT;WALLS=[];FANS=[];DRAINS=[];PRISMS=[];TUNNELS=[];boardFit();placeFix();
-    CUPS=L.cups.map(function(c){return {x:bx(c[0]),y:by(c[1]),c:c[2],fill:0,match:0,done:false}});clearInk=true;
+    CUPS=L.cups.map(function(c){return {x:bx(c[0]),y:by(c[1]),x0:c[0],y0:c[1],mx:c[3]||0,my:c[4]||0,mp:c[5]||5,c:c[2],fill:0,match:0,done:false}});clearInk=true;
+    RUN=0;TANK0=L.tank||6;TANK=TANK0;RT=0;EMPTYT=-1;OUTT=0;moveParts();
     var g=give(L);TOOL=g.w?'wall':g.f?'fan':g.p.length?'prism':g.d?'drain':g.t?'tunnel':'ink';
     /* the band: the low drum and the bass, and one more player for every third level before this one */
     if(!pzSaved)pzSaved=ON.slice();var J=joined(i);for(var k=0;k<NL;k++){var on=k===0||k===5||J.indexOf(k)>=0;if(!!ON[k]!==on)setPlayer(k,on,true)}}
@@ -188,13 +209,25 @@ var DRIFT=(function(){
     function X(u){return (B.x0+(u*VW-o.x0)/o.w*B.w)/VW}function Y(v){return (B.y0+(v*VH-o.y0)/o.h*B.h)/VH}
     WALLS.forEach(function(w){w[0]=X(w[0]);w[1]=Y(w[1]);w[2]=X(w[2]);w[3]=Y(w[3])});[FANS,PRISMS,DRAINS].forEach(function(a){a.forEach(function(p){p.x=X(p.x);p.y=Y(p.y)})});
     TUNNELS.forEach(function(t){t.ax=X(t.ax);t.ay=Y(t.ay);t.bx=X(t.bx);t.by=Y(t.by)});
-    placeFix();LEVELS[PZ].cups.forEach(function(c,k){CUPS[k].x=bx(c[0]);CUPS[k].y=by(c[1])})}
+    placeFix();moveParts()}
   function pzOff(){PZ=-1;CUPS=[];FIX={walls:[],fans:[],drains:[],prisms:[]};WALLS=[];FANS=[];DRAINS=[];PRISMS=[];TUNNELS=[];obsDirty=true;pzWon=0;
     if(TOOL!=='ink'&&!unlocked(TOOL))TOOL='ink';
     if(pzSaved){for(var k=0;k<NL;k++)if(!!ON[k]!==!!pzSaved[k])setPlayer(k,!!pzSaved[k],true);pzSaved=null}}
   var clearInk=false;
+  /* the moving parts, where they are at the water's time RT: a sweeping jet's direction, a drifting ring's place */
+  function moveParts(){if(PZ<0)return;
+    FIX.fans.forEach(function(f){if(f.c<0||!f.sa)return;var a=f.a0+f.sa*Math.sin(TAU*RT/f.sp);f.dx=Math.cos(a);f.dy=Math.sin(a)});
+    CUPS.forEach(function(c){var k=.5-.5*Math.cos(TAU*RT/c.mp);c.x=bx(c.x0+c.mx*k);c.y=by(c.y0+c.my*k)})}
+  /* a fixed fan that blows by turns: on for its first seconds of each turn (always, when it has no turns), and only while the smoke flows */
+  function windOn(f){if(!RUN)return false;if(!f.on||!f.off)return true;return (RT%(f.on+f.off))<f.on}
+  /* let the smoke go: the tank full, the rings empty, the moving parts from where they start */
+  function release(){if(PZ<0||pzWon)return;RUN=1;TANK=TANK0;RT=0;EMPTYT=-1;OUTT=0;clearInk=true;CUPS.forEach(function(c){c.fill=0;c.done=false;c.match=0});moveParts();rbS=simT;
+    tone('bowl',pent(2,40),.3,0);toolsSync()}
+  /* back to building: the smoke stopped and cleared, the pieces kept. out: the tank ran dry before every ring was full */
+  function stopRun(out){if(PZ<0)return;RUN=0;RT=0;EMPTYT=-1;TANK=TANK0;OUTT=out?FT:0;CUPS.forEach(function(c){c.fill=0;c.done=false;c.match=0});moveParts();
+    if(out)hit('tok',.32,0);else clearInk=true;toolsSync()}
   function pzWin(){
-    var L=LEVELS[PZ];pzWon=FT;winStars=starsFor(used(),L.par);STARS[PZ]=Math.max(STARS[PZ]||0,winStars);lsSet();
+    var L=LEVELS[PZ];pzWon=FT;winStars=starsFor(used(),L.par,TANK/TANK0);STARS[PZ]=Math.max(STARS[PZ]||0,winStars);lsSet();
     joinAt(PZ).forEach(function(k){if(!ON[k])setPlayer(k,true)});
     tone('bowl',pent(0,52),.42,0);for(var k=0;k<winStars;k++)tone('glass',pent(7+k*2,52),.3,(k-1)*.4,AC()+.14+k*.16);
     CUPS.forEach(function(c){for(var k=0;k<14;k++){var a=k/14*TAU,col=c.c==='mix'?[.9,.95,1]:INK[c.c];push(WX(c.x)+Math.cos(a)*8,WY(c.y)+Math.sin(a)*8,Math.cos(a)*700*KS(),Math.sin(a)*700*KS(),col,.4,.0007*KR())}})}
@@ -250,19 +283,22 @@ var DRIFT=(function(){
     return {dens:dn/n,match:mt/n}}
   /* a ring fills while smoke of its colour streams through it, and empties again when it stops: a passing puff is not enough */
     function cupsCheck(dt){
-    if(!CUPS.length||pzWon)return;var all=true,r=cupR();
+    if(!CUPS.length||pzWon||(PZ>=0&&!RUN))return;var all=true,r=cupR();
     CUPS.forEach(function(c){var m=sample(WX(c.x),WY(c.y),r*.9,c.c==='mix'?MIXC:INK[c.c],c.c==='mix');c.match=m.match;
       if(!c.done){c.fill=clamp(c.fill+dt*LP.fk*(m.match-LP.f0),0,1);if(c.fill>=1){c.done=true;tone('glass',pent(6+CUPS.indexOf(c)*2,52),.38,pan(WX(c.x)))}}if(!c.done)all=false});
     if(TRACE&&TRACE.length<4000)TRACE.push([dt].concat(CUPS.map(function(c){return c.match})));
     if(all&&!NOWIN)pzWin()}
   /* the tools, in a row along the bottom in this world only. In a level only the pieces it gives; outside the levels, the pieces
      reached so far */
+  /* the release button's two faces: a jet let go (a nozzle and its stream), and a stop */
+  var GOI=['<path d="M2.6 7.2h4.6v4H2.6z"/><path d="M8.6 9.2h7.2M12.6 6.4l3.2 2.8-3.2 2.8"/>','<path d="M5 5h8.4v8.4H5z"/>'];
   var TOOLS=[['ink','hand','<path d="M6 13.5c-1.6-1.8-.9-3.9.6-5.4L10 4.8c.6-.6 1.5-.5 2 .1.4.5.3 1.2-.1 1.7l-1.3 1.4 2.1-2c.6-.6 1.4-.6 1.9 0 .5.5.4 1.3-.1 1.8l-2.2 2.2 1.4-1.3c.5-.5 1.3-.5 1.8 0s.4 1.3-.1 1.8l-3.4 3.4c-1.8 1.8-4.3 2-6 .2z"/>'],
     ['wall','wall','<path d="M3 15.5L15.5 3"/><circle cx="3" cy="15.5" r="1.4"/><circle cx="15.5" cy="3" r="1.4"/>'],
     ['fan','fan','<circle cx="9.2" cy="9.2" r="1.6"/><path d="M9.2 7.6c0-3 1.4-4.6 3.2-4.2 1.5.4 1.4 2.6-1.5 4.6M10.8 9.2c3 0 4.6 1.4 4.2 3.2-.4 1.5-2.6 1.4-4.6-1.5M9.2 10.8c0 3-1.4 4.6-3.2 4.2-1.5-.4-1.4-2.6 1.5-4.6M7.6 9.2c-3 0-4.6-1.4-4.2-3.2.4-1.5 2.6-1.4 4.6 1.5"/>'],
     ['prism','prism','<path d="M9.2 2.4l5.9 3.4v6.8l-5.9 3.4-5.9-3.4V5.8z"/><path d="M9.2 2.4v13.6"/>'],
     ['drain','drain','<circle cx="9.2" cy="9.2" r="6.4"/><path d="M9.2 5.4a3.8 3.8 0 1 1-3.6 2.6M9.2 7.8a1.4 1.4 0 1 1-1.3 1.9"/>'],
     ['tunnel','tunnel','<circle cx="4.2" cy="13.8" r="2.3"/><circle cx="14.2" cy="4.6" r="2.3"/><path d="M5.6 11.9C6.6 7.6 9.4 5.6 11.9 5"/>'],
+    ['go','release',GOI[0]],
     ['puz','levels','<circle cx="3.6" cy="14.6" r="1.7"/><circle cx="9.2" cy="9.2" r="1.7"/><circle cx="14.8" cy="3.8" r="1.7"/><path d="M4.9 13.4l3.1-3M10.5 8l3.1-3"/>'],
     ['undo','again','<path d="M4.6 7.2A5.6 5.6 0 1 1 4 11.6M4.4 3.6v3.8h3.8"/>']];
   function toolsBuild(){
@@ -272,12 +308,16 @@ var DRIFT=(function(){
       b.addEventListener('click',function(){
         if(t[0]==='puz'){PATH=!PATH;pathT=FT;if(PATH){STARS=lsGet()}toolsSync();if(AU.auto)musicOn();return}
         if(t[0]==='undo'){if(PZ>=0)pzLoad(PZ);toolsSync();return}
+        if(t[0]==='go'){if(PZ<0)return;if(RUN)stopRun(false);else release();return}
         PATH=false;TOOL=t[0];toolsSync()});r.appendChild(b)})}
   function have(k,g){return k==='wall'?g.w:k==='fan'?g.f:k==='prism'?(g.p?g.p.length:MAXP):k==='drain'?g.d:k==='tunnel'?g.t:1}
   function toolsSync(){var g=given(),r=$('tools'),h0=r?r.offsetHeight:0;TOOLS.forEach(function(t){var b=$('t_'+t[0]);if(!b)return;
       if(t[0]==='puz'){b.setAttribute('aria-pressed',PATH?'true':'false');return}
-      if(t[0]==='undo'){b.hidden=PZ<0;return}b.setAttribute('aria-pressed',TOOL===t[0]&&!PATH?'true':'false');
-      b.hidden=t[0]!=='ink'&&(PZ>=0?!have(t[0],g):!unlocked(t[0]))});
+      if(t[0]==='undo'){b.hidden=PZ<0;return}
+      if(t[0]==='go'){b.hidden=PZ<0;var lb=RUN?'stop':'release';if(b.firstChild.textContent!==lb){b.firstChild.textContent=lb;b.lastChild.innerHTML=GOI[RUN?1:0]}
+        b.setAttribute('aria-pressed',RUN?'true':'false');return}
+      b.setAttribute('aria-pressed',TOOL===t[0]&&!PATH?'true':'false');
+      b.hidden=t[0]==='ink'?PZ>=0:(PZ>=0?!have(t[0],g):!unlocked(t[0]))});
     if(r&&!r.hidden&&r.offsetHeight!==h0){layout();pzRelayout()}}
   function enter(){if(GLX.ok&&gen!==GLX.gen)glSetup();size();t0=FT;lastT=0;STARS=lsGet();toolsBuild();var r=$('tools');if(r)r.hidden=false;toolsSync()}
   function leave(){last={};rows={};q.length=0;bdrag={};PATH=false;var r=$('tools');if(r)r.hidden=true}
@@ -323,23 +363,27 @@ var DRIFT=(function(){
     var i,ps=PS,r=Math.random;
     /* in a level a finger moves the water and leaves no ink */
     var fk=PZ>=0?0:1;
-    for(i=0;i<ps.length;i++){var p=ps[i];if(!p.down||bdrag[p.id])continue;var l=last[p.id];if(!l){l=last[p.id]={x:p.x,y:p.y};rows[p.id]=rowOf(p.y)}
+    if(PZ<0)for(i=0;i<ps.length;i++){var p=ps[i];if(!p.down||bdrag[p.id])continue;var l=last[p.id];if(!l){l=last[p.id]={x:p.x,y:p.y};rows[p.id]=rowOf(p.y)}
       var dx=p.x-l.x,dy=p.y-l.y,len=Math.hypot(dx,dy);
       if(len>.5){var k=1/Math.max(dt,.008),vx=dx*k,vy=dy*k,m=Math.hypot(vx,vy),cap=VW*5;if(m>cap){vx*=cap/m;vy*=cap/m}
         push(p.x,p.y,vx,vy,inkOf(p.y),clamp(len/52,.04,.7)*fk);l.x=p.x;l.y=p.y;
         var rw=rowOf(p.y);if(rw!==rows[p.id]){rows[p.id]=rw;note(p,.3+.5*Math.min(1,p.spd/900))}}
       else if(t-p.t0>300){push(p.x+(r()-.5)*6,p.y+(r()-.5)*6,(r()-.5)*90,-60-r()*60,inkOf(p.y),.07*fk,.0016)}}
     /* the machine runs: fans push and (outside the levels) breathe ink; a level's sources breathe their own colours, its winds only push */
-    var fr=Math.min(1,dt*60),ks=KS(),kr=KR(),kp=KP();
-    FANS.forEach(function(f){f.ph+=dt*9;push(WX(f.x)+f.dx*10,WY(f.y)+f.dy*10,f.dx*820*ks,f.dy*820*ks,INK[f.c]||INK[0],PZ>=0||f.c<0?0:.05*fr,.0009*kr)});
-    FIX.fans.forEach(function(f){f.ph+=dt*7;if(f.c<0){push(WX(f.x)+f.dx*10,WY(f.y)+f.dy*10,f.dx*820*ks,f.dy*820*ks,INK[0],0,.0009*kr);return}
-      push(WX(f.x)+f.dx*8,WY(f.y)+f.dy*8,f.dx*760*ks+(r()-.5)*50*ks,f.dy*760*ks+(r()-.5)*50*ks,INK[f.c],LP.ink*fr,.0013*kr)});
+    var fr=Math.min(1,dt*60),ks=KS(),kr=KR(),kp=KP(),lv=PZ>=0,idle=lv&&!RUN,
+      /* in a level the ink a source gives goes by the water's time, so a phone at thirty frames a second gives what one at sixty does */
+      frl=lv?Math.min(FIXDT||dt,1/45)*60:fr;
+    if(lv)moveParts();
+    FANS.forEach(function(f){if(idle)return;f.ph+=dt*9;push(WX(f.x)+f.dx*10,WY(f.y)+f.dy*10,f.dx*820*ks,f.dy*820*ks,INK[f.c]||INK[0],PZ>=0||f.c<0?0:.05*fr,.0009*kr)});
+    FIX.fans.forEach(function(f){if(f.c<0){if(lv&&!windOn(f))return;f.ph+=dt*7;push(WX(f.x)+f.dx*10,WY(f.y)+f.dy*10,f.dx*820*ks,f.dy*820*ks,INK[0],0,.0009*kr);return}
+      if(lv&&!(RUN&&TANK>0))return;f.ph+=dt*7;
+      push(WX(f.x)+f.dx*8,WY(f.y)+f.dy*8,f.dx*760*ks+(r()-.5)*50*ks,f.dy*760*ks+(r()-.5)*50*ks,INK[f.c],LP.ink*frl,.0013*kr)});
     /* a drain draws the water in and swallows the ink near it; in a level it swallows a jet that runs into it whole, its push as well
        as its ink, so the jet stops there (a drain that took only the ink would leave the jet's push to shove the other smoke aside) */
-    DRAINS.concat(FIX.drains).forEach(function(d){d.ph+=dt*3;VQ.push([WX(d.x),WY(d.y),(PZ>=0?.85:.55)*fr,0,1300*kp],[WX(d.x),WY(d.y),300*ks,1,900*kp]);
+    DRAINS.concat(FIX.drains).forEach(function(d){d.ph+=dt*3;if(idle)return;VQ.push([WX(d.x),WY(d.y),(PZ>=0?.85:.55)*fr,0,1300*kp],[WX(d.x),WY(d.y),300*ks,1,900*kp]);
       if(PZ>=0)VQ.push([WX(d.x),WY(d.y),.5*fr,3,1300*kp])});
     /* a tunnel draws the water into one end and blows it out of the other, the way it was dug */
-    var tr=cupR()*.75;TUNNELS.forEach(function(u){u.ph+=dt*2;var ax=WX(u.ax),ay=WY(u.ay),bx2=WX(u.bx),by2=WY(u.by),m=Math.hypot(bx2-ax,by2-ay)||1,ux=(bx2-ax)/m,uy=(by2-ay)/m;
+    var tr=cupR()*.75;TUNNELS.forEach(function(u){u.ph+=dt*2;if(idle)return;var ax=WX(u.ax),ay=WY(u.ay),bx2=WX(u.bx),by2=WY(u.by),m=Math.hypot(bx2-ax,by2-ay)||1,ux=(bx2-ax)/m,uy=(by2-ay)/m;
       VQ.push([ax,ay,240*ks,1,tr*tr*1.3]);push(bx2+ux*tr*.5,by2+uy*tr*.5,ux*700*ks,uy*700*ks,INK[0],0,.0010*kr)});
     PRISMS.forEach(function(p){p.ph=(p.ph||0)+dt});
     /* the rings are measured a few times a second, and fill by the water's own time (a slow phone fills them no faster than the smoke moves) */
@@ -362,13 +406,15 @@ var DRIFT=(function(){
   function step(dtr){
     /* the water is moved in small steps so it stays steady; what fades, fades by the real clock */
     var gl=GLX.gl,u,i,vt=[1/sw,1/sh],dt2=[1/dw,1/dh],dt=Math.min(dtr,1/45);simT+=dt;
+    if(PZ>=0&&RUN&&!pzWon){RT+=dt;TANK=Math.max(0,TANK-dt);if(TANK<=0){if(EMPTYT<0)EMPTYT=RT;else if(RT-EMPTYT>2.5)stopRun(true)}}
     /* the photo, when it arrives or changes, floods the water */
     var ph=PHOTO.has?photoTex():null,rc=null;
     if(ph){var pr=photoRect();rc=[pr.x/VW,1-(pr.y+pr.h)/VH,pr.w/VW,pr.h/VH]}
     if(ph&&photoVer!==PHOTO.ver){photoVer=PHOTO.ver;u=run(P.heal,dye.w,dt2);glBind(0,dye.r.tex,u.uT);glBind(1,ph.tex,u.uPh);gl.uniform4f(u.uRect,rc[0],rc[1],rc[2],rc[3]);gl.uniform1f(u.uK,1);glQuad(P.heal);dye.swap()}
     if(!ph&&photoVer!==-1&&!PHOTO.has)photoVer=-1;
     if(obsDirty)obsBuild();
-    if(clearInk){clearInk=false;u=run(P.mul,dye.w,dt2);glBind(0,dye.r.tex,u.uT);gl.uniform1f(u.uK,.0);glQuad(P.mul);dye.swap()}
+    if(clearInk){clearInk=false;u=run(P.mul,dye.w,dt2);glBind(0,dye.r.tex,u.uT);gl.uniform1f(u.uK,.0);glQuad(P.mul);dye.swap();
+      if(PZ>=0&&vel){u=run(P.mul,vel.w,vt);glBind(0,vel.r.tex,u.uT);gl.uniform1f(u.uK,.0);glQuad(P.mul);vel.swap()}}
     for(i=0;i<q.length;i++){var s=q[i],c=s[4],a=s[5];
       if(!simple)splat(vel,s[0],s[1],s[2]/VW*sw,-s[3]/VH*sh,0,s[6]);
       if(a>0)splat(dye,s[0],s[1],c[0]*a,c[1]*a,c[2]*a,s[6]*(simple?1.6:1),1)}
@@ -387,10 +433,10 @@ var DRIFT=(function(){
       u=run(P.vort,vel.w,vt);glBind(0,vel.r.tex,u.uVel);glBind(1,curl.tex,u.uCurl);gl.uniform1f(u.uK,20);gl.uniform1f(u.uDt,dt);glQuad(P.vort);vel.swap();
       /* smoke rises (in a level, as fast for the tank's height on any screen) */
       u=run(P.buo,vel.w,vt);glBind(0,vel.r.tex,u.uVel);glBind(1,dye.r.tex,u.uDye);gl.uniform1f(u.uB,(reduce?18:64)*dt*(PZ>=0?LP.buo*clamp(B.h/VH*sh/197,.5,2):1));glQuad(P.buo);vel.swap();
-      u=run(P.div,div,vt);glBind(0,vel.r.tex,u.uVel);glQuad(P.div);
+      var ho=WN&&obs?1:0;u=run(P.div,div,vt);glBind(0,vel.r.tex,u.uVel);glBind(1,obs?obs.tex:null,u.uObs);gl.uniform1f(u.uHO,ho);glQuad(P.div);
       u=run(P.mul,prs.w,vt);glBind(0,prs.r.tex,u.uT);gl.uniform1f(u.uK,.8);glQuad(P.mul);prs.swap();
-      var it=[18,14,10][QL];for(i=0;i<it;i++){u=run(P.prs,prs.w,vt);glBind(0,prs.r.tex,u.uP);glBind(1,div.tex,u.uDiv);glQuad(P.prs);prs.swap()}
-      u=run(P.grad,vel.w,vt);glBind(0,prs.r.tex,u.uP);glBind(1,vel.r.tex,u.uVel);glQuad(P.grad);vel.swap();
+      var it=[18,14,10][QL];for(i=0;i<it;i++){u=run(P.prs,prs.w,vt);glBind(0,prs.r.tex,u.uP);glBind(1,div.tex,u.uDiv);glBind(2,obs?obs.tex:null,u.uObs);gl.uniform1f(u.uHO,ho);glQuad(P.prs);prs.swap()}
+      u=run(P.grad,vel.w,vt);glBind(0,prs.r.tex,u.uP);glBind(1,vel.r.tex,u.uVel);glBind(2,obs?obs.tex:null,u.uObs);gl.uniform1f(u.uHO,ho);glQuad(P.grad);vel.swap();
       if(WN){u=run(P.msk,vel.w,vt);glBind(0,vel.r.tex,u.uT);glBind(1,obs.tex,u.uObs);glQuad(P.msk);vel.swap()}
       u=run(P.adv,vel.w,vt);glBind(0,vel.r.tex,u.uVel);glBind(1,vel.r.tex,u.uSrc);glBind(2,obs?obs.tex:null,u.uObs);gl.uniform1f(u.uHO,WN&&obs?1:0);gl.uniform2f(u.uVTexel,vt[0],vt[1]);gl.uniform2f(u.uSTexel,vt[0],vt[1]);gl.uniform1f(u.uDt,dt);gl.uniform1f(u.uDiss,Math.exp(-(PZ>=0?LP.vel*dt:.22*dtr)));glQuad(P.adv);vel.swap();
       u=run(P.adv,dye.w,dt2);glBind(0,vel.r.tex,u.uVel);glBind(1,dye.r.tex,u.uSrc);glBind(2,obs?obs.tex:null,u.uObs);gl.uniform1f(u.uHO,WN&&obs?1:0);gl.uniform2f(u.uVTexel,vt[0],vt[1]);gl.uniform2f(u.uSTexel,dt2[0],dt2[1]);gl.uniform1f(u.uDt,dt);gl.uniform1f(u.uDiss,ph?1:Math.exp(-(PZ>=0?LP.dye*dt:.36*dtr)));glQuad(P.adv);dye.swap()}
@@ -404,6 +450,8 @@ var DRIFT=(function(){
     if(!P||!dye){glClear(ABYSS[0],ABYSS[1],ABYSS[2]);return}
     gl.disable(gl.BLEND);var dt=FIXDT||(lastT?Math.min(.1,Math.max(.001,(t-lastT)/1000)):.016);lastT=t;
     step(dt);if(want){want=0;readBack()}
+    if(REC&&!REC.done)recStep();
+    if(NODRAW)return;
     var u=run(P.show,null,[1/dw,1/dh]);glBind(0,dye.r.tex,u.uT);gl.uniform3f(u.uBg,ABYSS[0],ABYSS[1],ABYSS[2]);gl.uniform1f(u.uZ,.55);glQuad(P.show);
     pieces(t);if(PATH)pathDraw(t)}
   function cs(col,a){return 'rgba('+Math.round(col[0]*255)+','+Math.round(col[1]*255)+','+Math.round(col[2]*255)+','+a+')'}
@@ -422,9 +470,16 @@ var DRIFT=(function(){
     function fan(f,fixed){var x=WX(f.x),y=WY(f.y),col=f.c<0?[.86,.93,1]:INK[f.c],s=cs(col,'');
       c.strokeStyle=s+'.95)';c.lineWidth=1.4;c.beginPath();c.arc(x,y,fixed&&!f.wind?9:11,0,TAU);c.stroke();if(f.wind){c.strokeStyle='rgba(200,215,225,.8)';c.beginPath();c.arc(x,y,15,0,TAU);c.stroke();c.strokeStyle=s+'.95)'}
       for(k=0;k<3;k++){var a=f.ph+k*TAU/3;c.beginPath();c.moveTo(x,y);c.lineTo(x+Math.cos(a)*(fixed&&!f.wind?7:9),y+Math.sin(a)*(fixed&&!f.wind?7:9));c.stroke()}
-      if(fixed&&!f.wind){c.fillStyle=s+'.9)';c.beginPath();c.arc(x,y,3,0,TAU);c.fill()}
+      if(fixed&&!f.wind){c.fillStyle=s+'.9)';c.beginPath();c.arc(x,y,3,0,TAU);c.fill();
+        /* while a level is being built, a source shows where it will blow (both ends of its sweep, if it sweeps) */
+        if(PZ>=0&&!RUN){var Lh=B.h*.2;c.save();c.setLineDash([2,5]);c.strokeStyle=s+'.55)';c.lineWidth=1.2;
+          var as=f.sa?[f.a0-f.sa,f.a0+f.sa]:[f.a0];as.forEach(function(a){c.beginPath();c.moveTo(x+Math.cos(a)*14,y+Math.sin(a)*14);c.lineTo(x+Math.cos(a)*Lh,y+Math.sin(a)*Lh);c.stroke()});
+          if(f.sa){c.beginPath();c.arc(x,y,Lh*.85,f.a0-f.sa,f.a0+f.sa);c.stroke()}c.restore()}}
       c.beginPath();c.moveTo(x+f.dx*14,y+f.dy*14);c.lineTo(x+f.dx*24,y+f.dy*24);c.stroke();var ax=x+f.dx*24,ay=y+f.dy*24;c.beginPath();c.moveTo(ax-f.dx*5-f.dy*4,ay-f.dy*5+f.dx*4);c.lineTo(ax,ay);c.lineTo(ax-f.dx*5+f.dy*4,ay-f.dy*5-f.dx*4);c.stroke()}
-    FIX.fans.forEach(function(f){fan(f,1)});FANS.forEach(function(f){fan(f,0)});
+    FIX.fans.forEach(function(f){var dim=f.wind&&PZ>=0&&RUN&&!windOn(f);if(dim)c.globalAlpha=.3;fan(f,1);c.globalAlpha=1;
+      /* a wind that blows by turns: a broken ring round it */
+      if(f.wind&&f.on&&f.off){c.save();c.setLineDash([3,4]);c.strokeStyle='rgba(200,215,225,.7)';c.lineWidth=1.2;c.beginPath();c.arc(WX(f.x),WY(f.y),20,0,TAU);c.stroke();c.restore()}});
+    FANS.forEach(function(f){fan(f,0)});
     /* prisms: a hexagon of their colour, the smoke in them glowing */
     FIX.prisms.concat(PRISMS).forEach(function(p){var x=WX(p.x),y=WY(p.y),R=cr*.8,col=INK[p.c]||INK[0];c.beginPath();for(k=0;k<6;k++){var a=k/6*TAU+Math.PI/6;c.lineTo(x+Math.cos(a)*R,y+Math.sin(a)*R)}c.closePath();
       c.fillStyle=cs(col,.1);c.fill();c.strokeStyle=cs(col,.9);c.lineWidth=p.fixed?2.4:1.5;c.stroke();if(p.fixed){c.strokeStyle='rgba(200,215,225,.6)';c.lineWidth=1;c.beginPath();c.arc(x,y,R+5,0,TAU);c.stroke()}});
@@ -437,10 +492,19 @@ var DRIFT=(function(){
       c.fillStyle='rgba(0,0,0,.5)';c.beginPath();c.arc(ax,ay,R,0,TAU);c.fill();for(k=0;k<2;k++){var w2=((u.ph*.4+k/2)%1),rr=R*(1-w2)+2;c.strokeStyle='rgba(180,107,255,'+(.7*w2).toFixed(3)+')';c.lineWidth=1.2;c.beginPath();c.arc(ax,ay,rr,0,TAU);c.stroke()}
       c.strokeStyle='rgba(180,107,255,.85)';c.lineWidth=1.4;c.beginPath();c.arc(ax,ay,R,0,TAU);c.stroke();c.beginPath();c.arc(bx2,by2,R,0,TAU);c.stroke();
       var ex=bx2+ux*(R+12),ey=by2+uy*(R+12);c.beginPath();c.moveTo(bx2+ux*(R+2),by2+uy*(R+2));c.lineTo(ex,ey);c.moveTo(ex-ux*5-uy*4,ey-uy*5+ux*4);c.lineTo(ex,ey);c.lineTo(ex-ux*5+uy*4,ey-uy*5-ux*4);c.stroke()});
+    /* a ring that drifts: the way it goes, faintly */
+    CUPS.forEach(function(cp){if(!cp.mx&&!cp.my)return;var col=cp.c==='mix'?[.92,.96,1]:INK[cp.c];c.save();c.setLineDash([2,6]);c.strokeStyle=cs(col,.35);c.lineWidth=1.2;
+      c.beginPath();c.moveTo(B.x0+cp.x0*B.w,B.y0+cp.y0*B.h);c.lineTo(B.x0+(cp.x0+cp.mx)*B.w,B.y0+(cp.y0+cp.my)*B.h);c.stroke();c.restore()});
     CUPS.forEach(function(cp){var x=WX(cp.x),y=WY(cp.y),col=cp.c==='mix'?[.92,.96,1]:INK[cp.c],s=cs(col,'');
       c.strokeStyle=s+(cp.done?'1)':'.75)');c.lineWidth=cp.done?2.4:1.5;c.setLineDash(cp.c==='mix'?[3,4]:[]);c.beginPath();c.arc(x,y,cr,0,TAU);c.stroke();c.setLineDash([]);
       c.lineWidth=3;c.strokeStyle=s+'.95)';c.beginPath();c.arc(x,y,cr+6,-Math.PI/2,-Math.PI/2+TAU*cp.fill);c.stroke();
       if(cp.done){c.fillStyle=s+(.18+.1*Math.sin(t*.006)).toFixed(3)+')';c.beginPath();c.arc(x,y,cr,0,TAU);c.fill()}});
+    /* the tank's smoke: a line along the foot of the tank that shortens as the smoke is spent (along the foot, clear of the words at the
+       top); the mark a third along is where three stars end */
+    if(PZ>=0&&!PATH){var fr2=clamp(TANK/TANK0,0,1),col0=(FIX.fans[0]&&FIX.fans[0].c>=0)?INK[FIX.fans[0].c]:[.9,.95,1],gy=B.y0+B.h-4;
+      c.strokeStyle='rgba(234,249,255,.14)';c.lineWidth=3;c.beginPath();c.moveTo(B.x0+4,gy);c.lineTo(B.x0+B.w-4,gy);c.stroke();
+      c.strokeStyle=cs(col0,RUN&&fr2<1/3?(.55+.4*Math.sin(t*.012)).toFixed(3):.9);c.beginPath();c.moveTo(B.x0+4,gy);c.lineTo(B.x0+4+(B.w-8)*fr2,gy);c.stroke();
+      c.fillStyle='rgba(255,214,120,.9)';star(c,B.x0+4+(B.w-8)/3,gy-8,4,true)}
     /* a level solved: its stars, one after another, in the middle of the tank */
     if(pzWon&&PZ>=0){var e=(FT-pzWon)/1000,cx=B.x0+B.w/2,cy=B.y0+B.h*.5;c.fillStyle='rgba(1,4,10,'+(.5*smooth(e/.4)).toFixed(3)+')';c.fillRect(B.x0,B.y0,B.w,B.h);
       for(k=0;k<3;k++){var g2=smooth((e-.15-k*.18)/.3),R2=26*(k===1?1.25:1)*(.6+.4*g2);if(g2<=0)continue;var on=k<winStars;c.globalAlpha=g2;c.fillStyle=on?'rgba(255,214,120,.98)':'rgba(234,249,255,.25)';c.strokeStyle=c.fillStyle;c.lineWidth=1.4;
@@ -453,14 +517,17 @@ var DRIFT=(function(){
   function hud(){
     if(PATH)return 'levels · '+starTotal()+' of '+LEVELS.length*3+' stars\npick a level: each solved opens the next, and the band grows\nthe fewer pieces you build, the more stars';
     if(PZ>=0){var L=LEVELS[PZ],g=given(),J=joinAt(PZ),n=used();
-      if(pzWon)return 'level '+(PZ+1)+' solved '+starText(winStars)+' · '+left(n,'piece','pieces')+(winStars<3?' (three stars with '+L.par+')':'')+
+      if(pzWon)return 'level '+(PZ+1)+' solved '+starText(winStars)+' · '+left(n,'piece','pieces')+', '+Math.round(TANK/TANK0*100)+'% of the smoke left'+
+        (winStars<3?'\nthree stars: '+left(L.par,'piece','pieces')+' and a third of the smoke left':'')+
         (J.length?'\n'+J.map(function(k){return 'the '+BNAMES[k].toLowerCase()}).join(' and ')+(J.length>1?' join':' joins')+' the band':'');
       var l2=CUPS.map(function(c){return (c.c==='mix'?'white':CN[c.c])+' ring '+(c.done?'full':Math.round(c.fill*100)+'%')}).join(' · '),
         b=[],w=g.w-WALLS.length,f=g.f-FANS.length,pl=prismsLeft()||[],d=g.d-DRAINS.length,tt=g.t-TUNNELS.length;
       if(w>0)b.push(left(w,'wall','walls'));if(f>0)b.push(left(f,'fan','fans'));if(pl.length)b.push(pl.length===1?'1 '+CN[pl[0]]+' prism':pl.length+' prisms ('+pl.map(function(k){return CN[k]}).join(', ')+')');
       if(d>0)b.push(left(d,'drain','drains'));if(tt>0)b.push(left(tt,'tunnel','tunnels'));
-      return 'level '+(PZ+1)+' of '+LEVELS.length+' · '+CH[chapterOf(PZ)].n+' · fill each ring with smoke of its colour'+(L.tip?'\n'+L.tip:'')+'\n'+l2+'\n'+
-        (b.length?'you can still build '+b.join(', '):'nothing left to build')+' · three stars with '+left(L.par,'piece','pieces')}
+      var st=OUTT&&FT-OUTT<6000?'out of smoke: change something, then release it again':RUN?(TANK>0?'smoke left: '+TANK.toFixed(1)+' s':'the tank is dry'):'build, then release the smoke';
+      if(!RUN)l2='fill every ring with smoke of its colour before the tank runs dry';
+      return 'level '+(PZ+1)+' of '+LEVELS.length+' · '+CH[chapterOf(PZ)].n+' · '+st+(L.tip?'\n'+L.tip:'')+'\n'+l2+'\n'+
+        (b.length?'to build: '+b.join(', '):'all built')+' · ★★★: '+left(L.par,'piece','pieces')+', a third of the smoke left'}
     var bt=[[WALLS.length,'wall','walls'],[FANS.length,'fan','fans'],[PRISMS.length,'prism','prisms'],[DRAINS.length,'drain','drains'],[TUNNELS.length,'tunnel','tunnels']].filter(function(a){return a[0]}).map(function(a){return left(a[0],a[1],a[2])}).join(' · ');
     if(PHOTO.has)return 'your photo is the ink: smear it and it remembers itself'+(bt?'\nbuilt: '+bt:'');
     var st=starTotal();
@@ -472,15 +539,26 @@ var DRIFT=(function(){
     if(u>.2&&u<.84){var e=smooth((u-.2)/.64);return [{x:STG.x0+STG.w*(k?.82-.64*e:.18+.64*e),y:STG.cy+STG.h*(.22*Math.sin(e*5.2+k*2)+(k?-.12:.12))}]}
     return [null]}
   /* pieces put in by a test, in fractions of the tank in a level (of the stage outside one) */
+  function scanAt(c,nx,ny){if(!rbOk||PZ<0)return null;var r=cupR()*.9,tc=c==='mix'?MIXC:INK[c],out=[],i,j;
+    for(j=0;j<ny;j++)for(i=0;i<nx;i++)out.push(+sample(WX(bx((i+.5)/nx)),WY(by((j+.5)/ny)),r,tc,c==='mix').match.toFixed(4));return out}
+  function recStep(){var R=REC,t=simT-R.t0;if(t<R.next)return;readBack();if(!rbOk)return;R.T.push(+t.toFixed(3));R.cols.forEach(function(c,k){R.S[k].push(scanAt(c,R.nx,R.ny))});
+    R.next=t+R.ev;if(t>=R.until||!RUN)R.done=true}
   function U(x){return PZ>=0?bx(x):(STG.x0+x*STG.w)/VW}function V(y){return PZ>=0?by(y):(STG.y0+y*STG.h)/VH}
   return {enter:enter,leave:leave,resize:function(){resize();pzRelayout();obsDirty=true},down:down,up:up,gesture:gesture,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
     dbg:function(){return {ok:!!(P&&dye),simT:simT,simple:simple,sw:sw,sh:sh,dw:dw,dh:dh,lin:GLX.hfLin,tool:TOOL,pz:PZ,won:!!pzWon,walls:WALLS.length,fans:FANS.length,drains:DRAINS.length,prisms:PRISMS.length,tunnels:TUNNELS.length,wn:WN,
-      stars:STARS.slice(),winStars:winStars,path:PATH,board:{x0:B.x0,y0:B.y0,w:B.w,h:B.h},
+      stars:STARS.slice(),winStars:winStars,path:PATH,board:{x0:B.x0,y0:B.y0,w:B.w,h:B.h},run:RUN,tank:TANK,tank0:TANK0,rt:RT,out:OUTT>0,
       cups:CUPS.map(function(c){return {c:c.c,fill:c.fill,match:c.match,done:c.done,x:WX(c.x),y:WY(c.y)}}),fix:{walls:FIX.walls.length,fans:FIX.fans.length,drains:FIX.drains.length,prisms:FIX.prisms.length},rb:rbOk}},
     /* for the tests: how much ink there is around a point (pixels), from the last copy read back; and a level by number */
     sample:function(x,y,r){want=1;return sample(x,y,r,null,false)},
+    /* for designing levels: what a ring of a colour would get, at each point of an nx by ny grid over the tank (from the last copy read back) */
+    scan:function(c,nx,ny){want=1;return scanAt(c,nx,ny)},
+    /* the same, taken by the page itself every so often of the water's time while a level runs (no waiting on a test between frames) */
+    rec:function(cols,nx,ny,every,until){REC={cols:cols,nx:nx,ny:ny,ev:every,until:until,t0:simT,next:0,T:[],S:cols.map(function(){return []}),done:false}},
+    /* for the tests that only measure: the water is worked out but not shown (a machine without a GPU works it out several times quicker) */
+    nodraw:function(b){NODRAW=!!b},
+    recGet:function(){return REC?{done:REC.done,n:REC.T.length,T:REC.done?REC.T:null,S:REC.done?REC.S:null}:null},
     mid:function(){want=1;if(!rbOk)return null;var w=0,y=0,i,j;for(j=0;j<rbH;j++)for(i=0;i<rbW;i++){var o=(j*rbW+i)*4,d=Math.max(rbBuf[o],rbBuf[o+1],rbBuf[o+2])/255;w+=d;y+=d*(1-(j+.5)/rbH)}return w?y/w:null},
-    level:function(i){if(i<0)pzOff();else pzLoad(i);toolsSync()},tool:function(k){TOOL=k;PATH=false;toolsSync()},
+    level:function(i){if(i<0)pzOff();else pzLoad(i);toolsSync()},release:function(){release()},stop:function(){stopRun(false)},tool:function(k){TOOL=k;PATH=false;toolsSync()},
     /* for the tests: the levels themselves (and new ones to try), pieces put in by hand, the map's places, the stars */
     levels:LEVELS,setLevels:function(a){LEVELS.length=0;a.forEach(function(l){LEVELS.push(l)})},nowin:function(b){NOWIN=!!b},trace:function(on){var t=TRACE;TRACE=on?[]:null;return t},
     fastdye:function(b){FASTDYE=!!b;szKey=''},

@@ -47,6 +47,8 @@ body.sw #gl,body.sw #ov,body.sw .vid{opacity:0}
 .vid::after{bottom:0;height:calc(var(--foot,112px) + 60px);background:linear-gradient(to top,rgba(1,4,10,.8) 0,rgba(1,4,10,.55) 55%,rgba(1,4,10,0))}
 /* Live: the Earth is drawn over the video, cut to a small round window in the corner (the whole screen when the map is open) */
 body.livev .vid{z-index:1}
+/* a camera in a window over the Earth: no shading over the stage, the window's own frame is drawn by the page */
+body.camw .vid::before,body.camw .vid::after{display:none}
 body.livev #gl{z-index:2;-webkit-clip-path:circle(var(--gr,0px) at var(--gx,0px) var(--gy,0px));clip-path:circle(var(--gr,0px) at var(--gx,0px) var(--gy,0px))}
 .vid.tap{z-index:4}
 .vid.tap .vb{pointer-events:auto}
@@ -153,6 +155,63 @@ body.dropping::after{content:"";position:fixed;inset:10px;z-index:30;border:1px 
 @media (prefers-reduced-motion:reduce){
   #gl,#ov,.ic,.wb,.dot i,.mst,.dots9,.vid,.vid .vb{transition:none}
 }
+
+/* ---- the mixer (16-mix.js): tabs, the two grids of loops, the pads, the effects pad, and the decks along the bottom ---- */
+#mix{position:fixed;left:0;right:0;z-index:5;display:flex;flex-direction:column;gap:8px;padding:0 max(10px,env(safe-area-inset-right,0px)) 0 max(10px,env(safe-area-inset-left,0px));
+  font-family:var(--mono);color:var(--ink);touch-action:none}
+#mix[hidden]{display:none}
+.mxtabs{display:flex;gap:6px;justify-content:center;flex:none}
+.mxt{height:26px;padding:0 12px;border-radius:13px;border:1px solid rgba(234,249,255,.14);color:var(--dim);background:rgba(1,4,10,.45);font:500 9px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase}
+.mxt[aria-pressed=true]{color:var(--ink);border-color:rgba(62,240,255,.5);background:rgba(62,240,255,.1)}
+.mxv{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;touch-action:pan-y;scrollbar-width:none}
+.mxv::-webkit-scrollbar{display:none}
+.mxg{display:grid;gap:3px;min-height:100%;grid-template-rows:auto repeat(6,minmax(34px,1fr)) auto}
+.mxg[hidden],.mxp[hidden],.mxf[hidden]{display:none}
+.mxh{font:500 7px/1.1 var(--mono);letter-spacing:.04em;text-transform:uppercase;color:var(--c,var(--dim));text-align:center;overflow:hidden;white-space:nowrap;padding:2px 0 3px}
+.mxr{min-height:34px;border-radius:6px;border:1px solid rgba(234,249,255,.16);color:var(--dim);font:500 10px var(--mono)}
+.mxx{height:24px;min-height:24px;font-size:7px;letter-spacing:.04em;text-transform:uppercase}
+.mxc{min-height:34px;min-width:0;border-radius:6px;border:1px solid rgba(234,249,255,.16);border-color:color-mix(in srgb,var(--c) 34%,transparent);color:var(--dim);
+  font:500 7px/1.1 var(--mono);text-transform:uppercase;letter-spacing:.02em;overflow:hidden;padding:0 1px;word-break:break-word}
+.mxc.on{color:#01040a;background:var(--c);border-color:var(--c);box-shadow:0 0 12px var(--c)}
+.mxc.wait{border-color:var(--c);color:var(--c);animation:mxblink .5s steps(2) infinite}
+.mxc.stopping{background:var(--c);color:#01040a;opacity:.5}
+.mxc.empty{opacity:.4}
+.mxsc{height:24px;min-height:24px;font-size:8px}
+@keyframes mxblink{50%{opacity:.25}}
+.mxp,.mxf{display:flex;flex-direction:column;gap:8px}
+.mxkr{display:flex;align-items:center;justify-content:center;gap:10px}
+.mxkn{font:500 9px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink);min-width:180px;text-align:center}
+.mxa{width:36px;height:28px;border-radius:14px;border:1px solid rgba(234,249,255,.18);color:var(--dim);font-size:10px}
+.mxpg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.mxpad{height:clamp(44px,8.6vh,72px);border-radius:8px;border:1px solid rgba(180,107,255,.35);background:rgba(180,107,255,.06);color:var(--dim);
+  font:500 7.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;transition:background .14s,box-shadow .14s,color .14s;touch-action:none}
+.mxpad.hit{background:rgba(180,107,255,.55);box-shadow:0 0 16px rgba(180,107,255,.8);color:#01040a;transition:none}
+.mxrr{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;align-items:center}
+.mxb{height:28px;padding:0 10px;border-radius:14px;border:1px solid rgba(234,249,255,.16);color:var(--dim);font:500 8px var(--mono);letter-spacing:.08em;text-transform:uppercase;
+  background:rgba(1,4,10,.45);touch-action:none}
+.mxb.held,.mxb[aria-pressed=true]{color:var(--ink);border-color:rgba(62,240,255,.5);background:rgba(62,240,255,.12)}
+.mxrec[aria-pressed=true]{color:#fff;border-color:var(--pink);background:rgba(255,45,138,.25)}
+.mxlab{font:500 8px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.mxxy{position:relative;height:min(36vh,250px);flex:none;border-radius:10px;border:1px solid rgba(234,249,255,.2);touch-action:none;
+  background:repeating-linear-gradient(0deg,transparent 0 23px,rgba(234,249,255,.05) 23px 24px),repeating-linear-gradient(90deg,transparent 0 23px,rgba(234,249,255,.05) 23px 24px)}
+.mxxy.held{border-color:rgba(62,240,255,.6)}
+.mxxl{position:absolute;left:10px;bottom:8px;font:500 8px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.mxxy i{position:absolute;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;border:1.5px solid var(--lume);left:50%;top:50%;box-shadow:0 0 14px var(--lume);pointer-events:none}
+.mxd{flex:none;display:flex;flex-direction:column;gap:6px;padding-bottom:2px}
+.mxdr{display:flex;gap:8px}
+.mxdk{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;border:1px solid rgba(234,249,255,.12);border-radius:10px;padding:6px 8px;background:rgba(1,4,10,.4)}
+.mxdt{display:flex;align-items:baseline;gap:6px;font:500 8px var(--mono);letter-spacing:.06em;color:var(--dim)}
+.mxdn{font:800 15px/1 var(--display);color:var(--ink)}
+.mxbt{margin-left:auto;letter-spacing:.1em;color:var(--lume)}
+.mxbr{display:flex;gap:4px}
+.mxbr .mxb{flex:1;padding:0 3px;min-width:0}
+.mxs{display:grid;grid-template-columns:auto 1fr;grid-template-areas:"l v" "t t";gap:1px 6px;align-items:center}
+.mxsl{grid-area:l;font:500 7px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.mxsv{grid-area:v;justify-self:end;font:500 7px var(--mono);color:var(--ink)}
+.mxst{grid-area:t;position:relative;height:22px;touch-action:none;cursor:pointer}
+.mxst::before{content:"";position:absolute;left:0;right:0;top:10px;height:2px;border-radius:1px;background:rgba(234,249,255,.18)}
+.mxst::after{content:"";position:absolute;left:50%;top:6px;height:10px;width:1px;background:rgba(234,249,255,.3)}
+.mxst i{position:absolute;top:4px;width:14px;height:14px;margin-left:-7px;border-radius:50%;background:var(--abyss);border:1.5px solid var(--lume);box-shadow:0 0 8px rgba(62,240,255,.5)}
 </style>
 
 <canvas id="gl" aria-hidden="true"></canvas>
@@ -175,7 +234,7 @@ body.dropping::after{content:"";position:fixed;inset:10px;z-index:30;border:1px 
 
 <footer class="foot" id="foot">
   <div class="lyr scr" id="themes" hidden role="group" aria-label="Kinds of camera"></div>
-  <div class="lyr" id="lyr" hidden role="group" aria-label="Layers of the weather"></div>
+  <div class="lyr scr" id="lyr" hidden role="group" aria-label="Layers of the Earth"></div>
   <div class="tools" id="tools" hidden role="toolbar" aria-label="Build in the water"></div>
   <div class="dots" id="dotrow" role="group" aria-label="The music: the whole band, then each of its nine players">
     <button class="dot mst" id="bSound" type="button" aria-pressed="false" aria-label="Music starts with your first touch. Turn it on now"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6.2 11.6V3.4l6-1.2v8.2"/><circle cx="4.6" cy="11.7" r="1.7"/><circle cx="10.6" cy="10.5" r="1.7"/></svg></button>
@@ -529,7 +588,8 @@ function audioUnlock(){
     var pr=AU.unl.play();if(pr&&pr.catch)pr.catch(function(){})}catch(e){}}
 
 function stemsStart(){
-  if(AU.run||!AU.want||!AU.ready||!AU.c)return;var c=AU.c;
+  /* (in the mixer the decks play the band instead: 16-mix.js) */
+  if(AU.run||!AU.want||!AU.ready||!AU.c||MIXON)return;var c=AU.c;
   /* the very first time, the band comes in on the one */
   var lt=AU.first?-.06:loopT();AU.first=false;
   var when=c.currentTime+.06,off=((lt+.06)%STEML+STEML)%STEML;
@@ -1068,30 +1128,41 @@ var DRIFT=(function(){
        walls, winds, prisms and drains, and its rings. obs is the walls drawn into the water's own grid: 1 where there is wall */
     obs=null,obsDirty=true,WB=null,WN=0,TOOL='ink',WALLS=[],FANS=[],DRAINS=[],PRISMS=[],TUNNELS=[],CUPS=[],FIX={walls:[],fans:[],drains:[],prisms:[]},
     PZ=-1,pzWon=0,pzSaved=null,winStars=0,PATH=false,pathT=0,FIXDT=0,
-    rb=null,rbBuf=null,rbW=0,rbH=0,rbT=0,rbS=0,rbOk=false,simT=0,NOWIN=false,TRACE=null,want=0,bdrag={},VQ=[],STARS=[],FASTDYE=false;
+    /* a level is built first, then its smoke is let go: RUN while it flows, TANK the seconds of smoke left (TANK0 when full), RT the
+       water's time since it was let go (the moving parts keep it), EMPTYT when the tank ran dry, OUTT when a run ended without a win */
+    RUN=0,TANK=0,TANK0=6,RT=0,EMPTYT=-1,OUTT=0,
+    rb=null,rbBuf=null,rbW=0,rbH=0,rbT=0,rbS=0,rbOk=false,simT=0,NOWIN=false,TRACE=null,REC=null,NODRAW=false,want=0,bdrag={},VQ=[],STARS=[],FASTDYE=false;
   /* the five notes of the scale as five inks: E cyan, G green, A amber, B rose, D violet */
   var INK=[[.12,.86,1],[.30,1,.62],[1,.62,.20],[1,.14,.50],[.56,.36,1]];
   var VSB='attribute vec2 a_p;varying vec2 vUv;varying vec2 vL;varying vec2 vR;varying vec2 vT;varying vec2 vB;uniform vec2 uTexel;\n'+
     'void main(){vUv=a_p*0.5+0.5;vL=vUv-vec2(uTexel.x,0.0);vR=vUv+vec2(uTexel.x,0.0);vT=vUv+vec2(0.0,uTexel.y);vB=vUv-vec2(0.0,uTexel.y);gl_Position=vec4(a_p,0.0,1.0);}';
   var H='precision highp float;varying vec2 vUv;varying vec2 vL;varying vec2 vR;varying vec2 vT;varying vec2 vB;\n';
   var F={
-    /* carried along by the water. Nothing is carried through a wall: when the way back crosses one, nothing comes (a fast jet
-       would otherwise jump a thin wall in one step) */
+    /* carried along by the water. Nothing is carried through a wall: when the way back crosses one, the place keeps what it had (a fast
+       jet would otherwise jump a thin wall in one step; and taking nothing there, as it did until 13 Nov, ate the smoke of every jet that
+       met a wall, so a jet turned by a wall came away with less than half its smoke) */
     adv:H+'uniform sampler2D uVel;uniform sampler2D uSrc;uniform sampler2D uObs;uniform vec2 uVTexel;uniform vec2 uSTexel;uniform float uDt;uniform float uDiss;uniform float uHO;\n'+
       'vec4 bil(sampler2D s,vec2 uv,vec2 ts){vec2 st=uv/ts-0.5;vec2 i=floor(st);vec2 f=fract(st);vec4 a=texture2D(s,(i+vec2(0.5,0.5))*ts);vec4 b=texture2D(s,(i+vec2(1.5,0.5))*ts);vec4 c=texture2D(s,(i+vec2(0.5,1.5))*ts);vec4 d=texture2D(s,(i+vec2(1.5,1.5))*ts);return mix(mix(a,b,f.x),mix(c,d,f.x),f.y);}\n'+
       'void main(){\n#ifdef MANUAL\nvec2 c=vUv-uDt*bil(uVel,vUv,uVTexel).xy*uVTexel;gl_FragColor=uDiss*bil(uSrc,c,uSTexel);\n#else\nvec2 c=vUv-uDt*texture2D(uVel,vUv).xy*uVTexel;gl_FragColor=uDiss*texture2D(uSrc,c);\n#endif\n'+
-      'if(uHO>0.5){float o=max(max(texture2D(uObs,mix(vUv,c,0.34)).x,texture2D(uObs,mix(vUv,c,0.67)).x),texture2D(uObs,c).x);gl_FragColor*=1.0-smoothstep(0.3,0.6,o);}\n}',
+      'if(uHO>0.5){float o=max(max(texture2D(uObs,mix(vUv,c,0.34)).x,texture2D(uObs,mix(vUv,c,0.67)).x),texture2D(uObs,c).x);gl_FragColor=mix(gl_FragColor,uDiss*texture2D(uSrc,vUv),smoothstep(0.3,0.6,o));}\n}',
     /* add to a field around a point. Ink is added less where there is already plenty, so colours stay colours and never burn out to white */
     spl:H+'uniform sampler2D uT;uniform float uAR;uniform vec3 uCol;uniform vec2 uPt;uniform float uRad;uniform float uSat;\n'+
       'void main(){vec2 p=vUv-uPt;p.x*=uAR;vec3 s=exp(-dot(p,p)/uRad)*uCol;vec3 o=texture2D(uT,vUv).xyz;float full=clamp(max(o.r,max(o.g,o.b))/0.95,0.0,1.0);gl_FragColor=vec4(o+s*(1.0-uSat*full),1.0);}',
-    div:H+'uniform sampler2D uVel;\nvoid main(){float L=texture2D(uVel,vL).x;float R=texture2D(uVel,vR).x;float T=texture2D(uVel,vT).y;float B=texture2D(uVel,vB).y;vec2 C=texture2D(uVel,vUv).xy;'+
-      'if(vL.x<0.0){L=-C.x;}if(vR.x>1.0){R=-C.x;}if(vT.y>1.0){T=-C.y;}if(vB.y<0.0){B=-C.y;}gl_FragColor=vec4(0.5*(R-L+T-B),0.0,0.0,1.0);}',
+    /* how much the water gathers or spreads at each point; a wall next to it counts as the tank's edge does (the water does not go in) */
+    div:H+'uniform sampler2D uVel;uniform sampler2D uObs;uniform float uHO;\nvoid main(){float L=texture2D(uVel,vL).x;float R=texture2D(uVel,vR).x;float T=texture2D(uVel,vT).y;float B=texture2D(uVel,vB).y;vec2 C=texture2D(uVel,vUv).xy;'+
+      'if(vL.x<0.0){L=-C.x;}if(vR.x>1.0){R=-C.x;}if(vT.y>1.0){T=-C.y;}if(vB.y<0.0){B=-C.y;}'+
+      'if(uHO>0.5){if(texture2D(uObs,vL).x>0.5)L=-C.x;if(texture2D(uObs,vR).x>0.5)R=-C.x;if(texture2D(uObs,vT).x>0.5)T=-C.y;if(texture2D(uObs,vB).x>0.5)B=-C.y;}gl_FragColor=vec4(0.5*(R-L+T-B),0.0,0.0,1.0);}',
     curl:H+'uniform sampler2D uVel;\nvoid main(){float L=texture2D(uVel,vL).y;float R=texture2D(uVel,vR).y;float T=texture2D(uVel,vT).x;float B=texture2D(uVel,vB).x;gl_FragColor=vec4(0.5*(R-L-T+B),0.0,0.0,1.0);}',
     vort:H+'uniform sampler2D uVel;uniform sampler2D uCurl;uniform float uK;uniform float uDt;\n'+
       'void main(){float L=texture2D(uCurl,vL).x;float R=texture2D(uCurl,vR).x;float T=texture2D(uCurl,vT).x;float B=texture2D(uCurl,vB).x;float C=texture2D(uCurl,vUv).x;'+
       'vec2 f=0.5*vec2(abs(T)-abs(B),abs(R)-abs(L));f/=length(f)+0.0001;f*=uK*C;f.y*=-1.0;vec2 v=texture2D(uVel,vUv).xy+f*uDt;gl_FragColor=vec4(clamp(v,-1000.0,1000.0),0.0,1.0);}',
-    prs:H+'uniform sampler2D uP;uniform sampler2D uDiv;\nvoid main(){float L=texture2D(uP,vL).x;float R=texture2D(uP,vR).x;float T=texture2D(uP,vT).x;float B=texture2D(uP,vB).x;float d=texture2D(uDiv,vUv).x;gl_FragColor=vec4((L+R+B+T-d)*0.25,0.0,0.0,1.0);}',
-    grad:H+'uniform sampler2D uP;uniform sampler2D uVel;\nvoid main(){float L=texture2D(uP,vL).x;float R=texture2D(uP,vR).x;float T=texture2D(uP,vT).x;float B=texture2D(uP,vB).x;vec2 v=texture2D(uVel,vUv).xy-vec2(R-L,T-B);gl_FragColor=vec4(v,0.0,1.0);}',
+    /* the pressure: a wall's cell takes the pressure of the water against it, so the water is pushed back along it */
+    prs:H+'uniform sampler2D uP;uniform sampler2D uDiv;uniform sampler2D uObs;uniform float uHO;\nvoid main(){float C=texture2D(uP,vUv).x;float L=texture2D(uP,vL).x;float R=texture2D(uP,vR).x;float T=texture2D(uP,vT).x;float B=texture2D(uP,vB).x;'+
+      'if(uHO>0.5){if(texture2D(uObs,vL).x>0.5)L=C;if(texture2D(uObs,vR).x>0.5)R=C;if(texture2D(uObs,vT).x>0.5)T=C;if(texture2D(uObs,vB).x>0.5)B=C;}float d=texture2D(uDiv,vUv).x;gl_FragColor=vec4((L+R+B+T-d)*0.25,0.0,0.0,1.0);}',
+    /* and the water made to neither gather nor spread; beside a wall it keeps its speed along the wall and loses only what went into it */
+    grad:H+'uniform sampler2D uP;uniform sampler2D uVel;uniform sampler2D uObs;uniform float uHO;\nvoid main(){float C=texture2D(uP,vUv).x;float L=texture2D(uP,vL).x;float R=texture2D(uP,vR).x;float T=texture2D(uP,vT).x;float B=texture2D(uP,vB).x;vec2 v=texture2D(uVel,vUv).xy;'+
+      'if(uHO>0.5){float oL=texture2D(uObs,vL).x;float oR=texture2D(uObs,vR).x;float oT=texture2D(uObs,vT).x;float oB=texture2D(uObs,vB).x;if(oL>0.5)L=C;if(oR>0.5)R=C;if(oT>0.5)T=C;if(oB>0.5)B=C;v-=vec2(R-L,T-B);'+
+      'if(oL>0.5)v.x=max(v.x,0.0);if(oR>0.5)v.x=min(v.x,0.0);if(oT>0.5)v.y=min(v.y,0.0);if(oB>0.5)v.y=max(v.y,0.0);}else{v-=vec2(R-L,T-B);}gl_FragColor=vec4(v,0.0,1.0);}',
     mul:H+'uniform sampler2D uT;uniform float uK;\nvoid main(){gl_FragColor=uK*texture2D(uT,vUv);}',
     /* the photo's own memory: the ink is drawn back toward the picture, a little each frame (most of the way in about five seconds) */
     heal:H+'uniform sampler2D uT;uniform sampler2D uPh;uniform vec4 uRect;uniform float uK;\n'+
@@ -1146,8 +1217,13 @@ var DRIFT=(function(){
   /* ---- the machine ---- */
   var MAXW=24,MAXF=6,MAXP=5,MAXD=4,MAXT=3,TH=10;
   /* a level's water: smoke rises less and fades sooner, and the water settles sooner, so what fills a ring is a jet aimed at it, not
-     the haze of everything that went before (at a phone's sixty frames a second, smoke left to linger would fill a ring above any jet) */
-  var LP={buo:.3,dye:.6,vel:.8,ink:.13,fk:8,f0:.025};
+     the haze of everything that went before (at a phone's sixty frames a second, smoke left to linger would fill a ring above any jet).
+     Since 13 Nov a jet carries about half the ink it did ("too much smoke makes filling the holes too easy") and a ring fills only
+     where the smoke is thicker than the haze (f0): measured over all 24 levels with tools/t_place.js, a straight jet gives a ring in
+     it about .17 to .25 (density times colour), a jet turned by a wall .08 to .13, the haze of a level with nothing built .00 to .05,
+     the edge of a jet .05 to .07. So a ring fills in a second or two of a straight jet, three or four of a turned one, and never from
+     the haze or the edge of a jet in the few seconds a tank lasts */
+  var LP={buo:.3,dye:.6,vel:.8,ink:.07,fk:8,f0:.05};
   /* (in a level the water fades by its own time, not the clock's: a phone that steps it thirty times a second plays the level as one that
      steps it sixty times does, only slower, so a level tested once is the same level everywhere) */
   function WX(u){return u*VW}function WY(v){return v*VH}
@@ -1167,35 +1243,37 @@ var DRIFT=(function(){
      src: a source breathing ink: x, y, direction, colour (0 cyan, 1 green, 2 amber, 3 rose, 4 violet); wind: a fixed fan that only
      pushes the water; cups: the rings, and the colour each wants ('mix': cyan and amber together); walls, prisms, drains: fixed ones;
      give: how many of each piece may be built (w walls, f fans, p the prisms' colours, d drains, t tunnels); par: the fewest pieces
-     known to solve it (three stars); tip: the clue; sol: one way to solve it, which tools/t_puzzles.js builds and checks (every ring
-     fills; and with nothing built, none does). Every level is carried by its sources' jets: smoke that only drifts is too faint to
-     carry far, and barely rises */
+     known to solve it (three stars, with a third of the tank left); tip: the clue; sol: one way to solve it, which tools/t_design.js
+     builds and checks (every ring fills before the smoke is gone; and with nothing built, none does). tank: seconds of smoke (6).
+     The moving parts: a source may sweep (src[5] degrees each way, src[6] seconds a sweep), a ring may drift (cups[3], cups[4]: how
+     far, cups[5] seconds there and back), a fixed fan may blow by turns (wind[4] seconds on, wind[5] off). Every level is carried by
+     its sources' jets: smoke that only drifts is too faint to carry far, and barely rises */
   var LEVELS=[
     /*LEVELS-BEGIN*/
-    {name:'ramp',src:[[0.1,0.75,1,0,0]],cups:[[0.72,0.42,0]],give:{w:2},par:1,tip:'new: the wall. drag to build one, tap it to take it away. a wall in its way turns the smoke',sol:[['wall',[0.3,0.8,0.55,0.6]]]},
-    {name:'up and left',src:[[0.75,0.9,0,-1,1]],cups:[[0.22,0.37,1]],give:{w:2},par:1,tip:'a wall that leans turns a rising jet',sol:[['wall',[0.88,0.62,0.48,0.45]]]},
-    {name:'shield',src:[[0.1,0.45,1,0,3],[0.5,0.9,0,-1,0]],cups:[[0.84,0.45,3]],give:{w:2},par:1,tip:'one jet pushes another aside',sol:[['wall',[0.42,0.8,0.58,0.8]]]},
-    {name:'two shields',src:[[0.1,0.45,1,0,3],[0.36,0.78,0,-1,0],[0.66,0.78,0,-1,2]],cups:[[0.86,0.45,3]],give:{w:3},par:2,tip:'two jets from below push the rose aside: hold both down',sol:[['wall',[0.27,0.66,0.45,0.66]],['wall',[0.57,0.66,0.75,0.66]]],bad:[['one shield',[['wall',[0.27,0.66,0.45,0.66]]]],['other shield',[['wall',[0.57,0.66,0.75,0.66]]]]]},
-    {name:'push',src:[[0.5,0.88,0,-1,2]],cups:[[0.18,0.5,2]],give:{f:1,w:1},par:1,tip:'new: the fan. drag the way it should blow. a fan pushes the water, and the smoke with it',sol:[['fan',[0.56,0.66,-1,0]]]},
-    {name:'the other way',src:[[0.5,0.88,0,-1,4]],cups:[[0.82,0.5,4]],give:{f:1,w:1},par:1,tip:'a fan can blow any way you drag it',sol:[['fan',[0.44,0.66,1,0]]]},
-    {name:'down',src:[[0.1,0.4,1,0,3]],walls:[[0.86,0.56,1,0.56]],cups:[[0.84,0.82,3]],give:{f:1,w:1},par:1,tip:'smoke never sinks by itself',sol:[['fan',[0.45,0.32,0,1]]]},
-    {name:'white',src:[[0.15,0.88,0,-1,0],[0.85,0.88,0,-1,2]],cups:[[0.5,0.35,'mix']],give:{f:2,w:1},par:2,tip:'white is cyan and amber together',sol:[['fan',[0.1,0.66,1,0]],['fan',[0.9,0.66,-1,0]]]},
-    {name:'new colour',src:[[0.1,0.55,1,0,0]],cups:[[0.8,0.55,2]],give:{p:[2]},par:1,tip:'new: the prism. tap to place one. smoke that passes through it takes its colour',sol:[['prism',[0.4,0.55,2]]]},
-    {name:'two in a row',src:[[0.1,0.5,1,0,0]],cups:[[0.45,0.5,2],[0.82,0.5,3]],give:{p:[2,3]},par:2,tip:'a prism after a ring changes the smoke again',sol:[['prism',[0.27,0.5,2]],['prism',[0.64,0.5,3]]]},
-    {name:'swap',src:[[0.1,0.3,1,0,0],[0.1,0.72,1,0,2]],cups:[[0.82,0.3,2],[0.82,0.72,0]],give:{p:[2,0]},par:2,tip:'each ring wants the other jet\'s colour',sol:[['prism',[0.45,0.3,2]],['prism',[0.45,0.72,0]]]},
-    {name:'white from cyan',src:[[0.15,0.88,0,-1,0],[0.85,0.88,0,-1,0]],wind:[[0.08,0.66,1,0],[0.92,0.66,-1,0]],cups:[[0.5,0.35,'mix']],give:{p:[2],f:1},par:1,tip:'two cyan jets meet in the white ring: white needs amber too',sol:[['prism',[0.85,0.8,2]]]},
-    {name:'swallow',src:[[0.1,0.5,1,0,3],[0.5,0.1,0,1,1]],cups:[[0.8,0.5,3]],give:{d:1},par:1,tip:'new: the drain. tap to place one. a jet that runs into it is swallowed',sol:[['drain',[0.5,0.3]]]},
-    {name:'two intruders',src:[[0.1,0.5,1,0,0],[0.35,0.08,0,1,2],[0.65,0.08,0,1,3]],cups:[[0.88,0.5,0]],give:{d:2},par:2,tip:'two jets fall across the cyan: swallow them both',sol:[['drain',[0.35,0.28]],['drain',[0.65,0.28]]],bad:[['one drain',[['drain',[0.35,0.28]]]]]},
-    {name:'prism and drain',src:[[0.1,0.5,1,0,0],[0.6,0.08,0,1,1]],cups:[[0.86,0.5,3]],give:{d:1,p:[3]},par:2,tip:'the ring wants rose, and the green falls into its way',sol:[['drain',[0.6,0.28]],['prism',[0.33,0.5,3]]],bad:[['prism only',[['prism',[0.33,0.5,3]]]],['drain only',[['drain',[0.6,0.28]]]]]},
-    {name:'fan and drain',src:[[0.1,0.4,1,0,1],[0.84,0.97,0,-1,3]],walls:[[0.86,0.56,1,0.56]],cups:[[0.84,0.82,1]],give:{d:1,f:1},par:2,tip:'push the green down into the ring, and swallow the rose rising into it',sol:[['fan',[0.45,0.32,0,1]],['drain',[0.84,0.93]]],bad:[['fan only',[['fan',[0.45,0.32,0,1]]]],['drain only',[['drain',[0.84,0.93]]]]]},
-    {name:'out of the box',src:[[0.2,0.82,1,0,0]],walls:[[0.0,0.65,0.45,0.65],[0.45,0.65,0.45,1.0]],cups:[[0.75,0.4,0]],give:{t:1},par:1,tip:'new: the tunnel. drag from where the smoke goes in to where it comes out',sol:[['tunnel',[0.35,0.82,0.6,0.55]]]},
-    {name:'box and prism',src:[[0.2,0.82,1,0,2]],walls:[[0.0,0.65,0.45,0.65],[0.45,0.65,0.45,1.0]],cups:[[0.75,0.4,4]],give:{t:1,p:[4]},par:2,tip:'out of the box, and another colour',sol:[['tunnel',[0.35,0.82,0.6,0.55]],['prism',[0.68,0.47,4]]]},
-    {name:'through the wall',src:[[0.1,0.75,1,0,3]],walls:[[0.5,0.25,0.5,1.0]],cups:[[0.8,0.75,3]],give:{t:1,w:1},par:1,tip:'the wall is too high to go over',sol:[['tunnel',[0.38,0.75,0.64,0.75]]]},
-    {name:'two boxes',src:[[0.15,0.85,1,0,0],[0.85,0.85,-1,0,2]],walls:[[0.0,0.68,0.34,0.68],[0.34,0.68,0.34,1.0],[0.66,0.68,1.0,0.68],[0.66,0.68,0.66,1.0]],cups:[[0.5,0.4,'mix']],give:{t:2},par:2,tip:'white is cyan and amber together',sol:[['tunnel',[0.26,0.84,0.42,0.55]],['tunnel',[0.74,0.84,0.58,0.55]]]},
-    {name:'three colours',src:[[0.08,0.55,1,0,0]],cups:[[0.33,0.55,2],[0.58,0.55,3],[0.83,0.55,4]],give:{p:[2,3,4]},par:3,tip:'all together: each ring wants its own colour from the one jet',sol:[['prism',[0.2,0.55,2]],['prism',[0.455,0.55,3]],['prism',[0.705,0.55,4]]]},
-    {name:'shield and prism',src:[[0.1,0.4,1,0,3],[0.5,0.92,0,-1,2]],cups:[[0.85,0.4,4]],give:{w:1,p:[4],d:1},par:2,tip:'the amber pushes the rose aside, and the ring wants violet',sol:[['wall',[0.4,0.78,0.6,0.78]],['prism',[0.3,0.4,4]]]},
-    {name:'boxes and colours',src:[[0.15,0.85,1,0,0],[0.85,0.85,-1,0,0]],walls:[[0.0,0.7,0.3,0.7],[0.3,0.7,0.3,1.0],[0.7,0.7,1.0,0.7],[0.7,0.7,0.7,1.0]],cups:[[0.5,0.4,'mix']],give:{t:2,p:[2]},par:3,tip:'two cyan jets in boxes, and a white ring: white is cyan and amber',sol:[['tunnel',[0.24,0.85,0.4,0.55]],['tunnel',[0.76,0.85,0.6,0.55]],['prism',[0.62,0.52,2]]]},
-    {name:'the long way',src:[[0.1,0.85,1,0,1]],walls:[[0.0,0.62,0.78,0.62]],cups:[[0.27,0.33,3]],give:{w:1,p:[3],t:1},par:2,tip:'under a long shelf: get the green out, and make it rose',sol:[['tunnel',[0.62,0.85,0.4,0.5]],['prism',[0.34,0.42,3]]]}
+    {name:'ramp',src:[[0.1,0.75,1,0,0]],cups:[[0.781,0.34,0]],give:{w:2},par:1,tank:7.5,tip:'new: the wall. drag to build one, tap it to take it away. a wall in its way turns the smoke',sol:[['wall',[0.3,0.8,0.55,0.6]]]},
+    {name:'lid',src:[[0.1,0.42,1,0,1],[0.6,0.7,0,-1,2]],cups:[[0.844,0.38,1]],give:{w:2},par:1,tank:4.5,tip:'a wall over a jet holds it down',sol:[['wall',[0.5,0.6,0.7,0.6]]]},
+    {name:'two lids',src:[[0.1,0.45,1,0,3],[0.38,0.74,0,-1,0],[0.7,0.74,0,-1,2]],cups:[[0.844,0.46,3]],give:{w:3},par:2,tank:6.0,tip:'two jets from below push the rose aside: hold both down',sol:[['wall',[0.29,0.64,0.47,0.64]],['wall',[0.61,0.64,0.79,0.64]]]},
+    {name:'sweeper',src:[[0.1,0.45,1,0,0],[0.5,0.72,0,-1,2,30,3]],cups:[[0.844,0.5,0]],give:{w:2},par:1,tank:4.5,tip:'a jet that sweeps: a wall long enough holds it wherever it points',sol:[['wall',[0.22,0.62,0.78,0.62]]]},
+    {name:'push',src:[[0.5,0.88,0,-1,2]],cups:[[0.219,0.42,2]],give:{f:1,w:1},par:1,tank:5.0,tip:'new: the fan. drag the way it should blow. a fan pushes the water, and the smoke with it',sol:[['fan',[0.56,0.66,-1,0]]]},
+    {name:'down',src:[[0.1,0.4,1,0,3]],walls:[[0.86,0.56,1,0.56]],cups:[[0.844,0.78,3]],give:{f:1,w:1},par:1,tank:5.0,tip:'smoke never sinks by itself',sol:[['fan',[0.45,0.32,0,1]]]},
+    {name:'the other way',src:[[0.5,0.88,0,-1,4]],cups:[[0.781,0.5,4,0.0,-0.1,4.0]],give:{f:1,w:1},par:1,tank:5.0,tip:'a fan can blow any way you drag it, and this ring drifts',sol:[['fan',[0.44,0.66,1,0]]]},
+    {name:'drifting down',src:[[0.1,0.4,1,0,3]],walls:[[0.86,0.56,1,0.56]],cups:[[0.844,0.66,3,-0.2,0.0,4.0]],give:{f:1,w:1},par:1,tank:5.5,tip:'the ring drifts to and fro: push the smoke down where it goes',sol:[['fan',[0.45,0.32,0,1]]]},
+    {name:'new colour',src:[[0.1,0.55,1,0,0]],cups:[[0.844,0.58,2]],give:{p:[2]},par:1,tank:4.5,tip:'new: the prism. tap to place one. smoke that passes through it takes its colour',sol:[['prism',[0.4,0.55,2]]]},
+    {name:'two in a row',src:[[0.1,0.5,1,0,0]],cups:[[0.469,0.46,2],[0.844,0.5,3]],give:{p:[2,3]},par:2,tank:5.0,tip:'a prism after a ring changes the smoke again',sol:[['prism',[0.27,0.5,2]],['prism',[0.64,0.5,3]]]},
+    {name:'swap',src:[[0.1,0.3,1,0,0],[0.1,0.72,1,0,2]],cups:[[0.844,0.3,2],[0.781,0.7,0]],give:{p:[2,0]},par:2,tank:4.5,tip:'each ring wants the other jet\'s colour',sol:[['prism',[0.45,0.3,2]],['prism',[0.45,0.72,0]]]},
+    {name:'white from cyan',src:[[0.36,0.9,0.4,-1,0],[0.64,0.9,-0.4,-1,0]],cups:[[0.531,0.66,'mix']],give:{p:[2]},par:1,tank:4.5,tip:'two cyan jets meet: the white ring needs amber in it too',sol:[['prism',[0.57,0.78,2]]]},
+    {name:'swallow',src:[[0.1,0.5,1,0,3],[0.5,0.1,0,1,1]],cups:[[0.844,0.58,3]],give:{d:1},par:1,tank:6.0,tip:'new: the drain. tap to place one. a jet that runs into it is swallowed',sol:[['drain',[0.5,0.3]]]},
+    {name:'two intruders',src:[[0.1,0.5,1,0,0],[0.35,0.08,0,1,2],[0.65,0.08,0,1,3]],cups:[[0.844,0.5,0,-0.2,0.0,4.0]],give:{d:2},par:2,tank:5.0,tip:'two jets fall across the cyan: swallow them both',sol:[['drain',[0.35,0.28]],['drain',[0.65,0.28]]]},
+    {name:'moving target',src:[[0.1,0.5,1,0,3],[0.5,0.1,0,1,1]],cups:[[0.844,0.62,3,0.0,-0.16,4.0]],give:{d:1},par:1,tank:5.0,tip:'swallow the green, and keep the rose on the ring as it drifts',sol:[['drain',[0.5,0.3]]]},
+    {name:'fan and drain',src:[[0.1,0.4,1,0,1],[0.84,0.97,0,-1,3]],walls:[[0.86,0.56,1,0.56]],cups:[[0.719,0.66,1]],give:{d:1,f:1},par:2,tank:5.5,tip:'push the green down into the ring, and swallow the rose rising into it',sol:[['fan',[0.45,0.32,0,1]],['drain',[0.84,0.93]]]},
+    {name:'out of the box',src:[[0.2,0.82,1,0,0]],walls:[[0.0,0.65,0.45,0.65],[0.45,0.65,0.45,1.0]],cups:[[0.844,0.26,0]],give:{t:1},par:1,tank:4.5,tip:'new: the tunnel. drag from where the smoke goes in to where it comes out',sol:[['tunnel',[0.35,0.82,0.6,0.55]]]},
+    {name:'box and prism',src:[[0.2,0.82,1,0,2]],walls:[[0.0,0.65,0.45,0.65],[0.45,0.65,0.45,1.0]],cups:[[0.844,0.34,4,-0.2,0.0,4.0]],give:{t:1,p:[4]},par:2,tank:7.5,tip:'out of the box, another colour, and a ring that drifts',sol:[['tunnel',[0.35,0.82,0.6,0.55]],['prism',[0.68,0.47,4]]]},
+    {name:'through the wall',src:[[0.1,0.75,1,0,3]],walls:[[0.5,0.25,0.5,1.0]],cups:[[0.844,0.74,3]],give:{t:1,w:1},par:1,tank:7.5,tip:'the wall is too high to go over',sol:[['tunnel',[0.38,0.75,0.64,0.75]]]},
+    {name:'two boxes',src:[[0.15,0.85,1,0,0],[0.85,0.85,-1,0,2]],walls:[[0.0,0.68,0.34,0.68],[0.34,0.68,0.34,1.0],[0.66,0.68,1.0,0.68],[0.66,0.68,0.66,1.0]],cups:[[0.469,0.34,'mix']],give:{t:2},par:2,tank:4.5,tip:'white is cyan and amber together',sol:[['tunnel',[0.26,0.84,0.42,0.55]],['tunnel',[0.74,0.84,0.58,0.55]]]},
+    {name:'prism and drain',src:[[0.1,0.5,1,0,0],[0.6,0.08,0,1,1]],cups:[[0.844,0.5,3]],give:{d:1,p:[3]},par:2,tank:4.5,tip:'the ring wants rose, and the green falls into its way',sol:[['drain',[0.6,0.28]],['prism',[0.33,0.5,3]]]},
+    {name:'shield and prism',src:[[0.1,0.4,1,0,3],[0.5,0.92,0,-1,2]],cups:[[0.719,0.38,4]],give:{w:1,p:[4],d:1},par:2,tank:4.5,tip:'the amber pushes the rose aside, and the ring wants violet',sol:[['wall',[0.4,0.78,0.6,0.78]],['prism',[0.3,0.4,4]]]},
+    {name:'boxes and colours',src:[[0.15,0.85,1,0,0],[0.85,0.85,-1,0,0]],walls:[[0.0,0.7,0.3,0.7],[0.3,0.7,0.3,1.0],[0.7,0.7,1.0,0.7],[0.7,0.7,0.7,1.0]],cups:[[0.531,0.3,'mix']],give:{t:2,p:[2]},par:3,tank:5.5,tip:'two cyan jets in boxes, and a white ring: white is cyan and amber',sol:[['tunnel',[0.24,0.85,0.4,0.55]],['tunnel',[0.76,0.85,0.6,0.55]],['prism',[0.62,0.52,2]]]},
+    {name:'the long way',src:[[0.1,0.85,1,0,1]],walls:[[0.0,0.62,0.78,0.62]],cups:[[0.281,0.3,3]],give:{w:1,p:[3],t:1},par:2,tank:6.0,tip:'under a long shelf: get the green out, and make it rose',sol:[['tunnel',[0.62,0.85,0.4,0.5]],['prism',[0.34,0.42,3]]]}
     /*LEVELS-END*/
   ];
   /* who joins the band when a level is solved: every third level one more player (the shekere, the djembe, the talking drum, the
@@ -1216,18 +1294,21 @@ var DRIFT=(function(){
   function give(L){var g=L.give||{};return {w:g.w||0,f:g.f||0,p:(g.p||[]).slice(),d:g.d||0,t:g.t||0}}
   function given(){if(PZ<0)return {w:MAXW,f:MAXF,p:null,d:MAXD,t:MAXT};return give(LEVELS[PZ])}
   function used(){return WALLS.length+FANS.length+PRISMS.length+DRAINS.length+TUNNELS.length}
-  function starsFor(n,par){return n<=par?3:n<=par+1?2:1}
+  /* three stars: no more pieces than the fewest known, and a third of the tank still to spare; two: one piece more, or less smoke left */
+  function starsFor(n,par,left){return n<=par&&!(left<1/3)?3:n<=par+1?2:1}
   /* the prism colours still to place in a level (in the order given), or, outside the levels, the colour of the row it is put on */
   function prismsLeft(){var g=given();if(!g.p)return null;var a=g.p.slice();PRISMS.forEach(function(p){var k=a.indexOf(p.c);if(k>=0)a.splice(k,1)});return a}
   function placeFix(){var L=LEVELS[PZ];
     FIX.walls=tank().concat((L.walls||[]).map(function(w){return [bx(w[0]),by(w[1]),bx(w[2]),by(w[3]),1]}));
-    FIX.fans=L.src.map(function(f){var m=Math.hypot(f[2],f[3])||1;return {x:bx(f[0]),y:by(f[1]),dx:f[2]/m,dy:f[3]/m,c:f[4],fixed:1,ph:0}}).concat(
-      (L.wind||[]).map(function(f){var m=Math.hypot(f[2],f[3])||1;return {x:bx(f[0]),y:by(f[1]),dx:f[2]/m,dy:f[3]/m,c:-1,fixed:1,wind:1,ph:0}}));
+    FIX.fans=L.src.map(function(f){var m=Math.hypot(f[2],f[3])||1;return {x:bx(f[0]),y:by(f[1]),dx:f[2]/m,dy:f[3]/m,c:f[4],fixed:1,ph:0,
+        a0:Math.atan2(f[3],f[2]),sa:(f[5]||0)*Math.PI/180,sp:f[6]||4}}).concat(
+      (L.wind||[]).map(function(f){var m=Math.hypot(f[2],f[3])||1;return {x:bx(f[0]),y:by(f[1]),dx:f[2]/m,dy:f[3]/m,c:-1,fixed:1,wind:1,ph:0,on:f[4]||0,off:f[5]||0}}));
     FIX.drains=(L.drains||[]).map(function(d){return {x:bx(d[0]),y:by(d[1]),fixed:1,ph:0}});
     FIX.prisms=(L.prisms||[]).map(function(p){return {x:bx(p[0]),y:by(p[1]),c:p[2],fixed:1}});obsDirty=true}
   function pzLoad(i){
     var L=LEVELS[i];if(!L)return;PZ=i;PATH=false;pzWon=0;winStars=0;rbS=simT;WALLS=[];FANS=[];DRAINS=[];PRISMS=[];TUNNELS=[];boardFit();placeFix();
-    CUPS=L.cups.map(function(c){return {x:bx(c[0]),y:by(c[1]),c:c[2],fill:0,match:0,done:false}});clearInk=true;
+    CUPS=L.cups.map(function(c){return {x:bx(c[0]),y:by(c[1]),x0:c[0],y0:c[1],mx:c[3]||0,my:c[4]||0,mp:c[5]||5,c:c[2],fill:0,match:0,done:false}});clearInk=true;
+    RUN=0;TANK0=L.tank||6;TANK=TANK0;RT=0;EMPTYT=-1;OUTT=0;moveParts();
     var g=give(L);TOOL=g.w?'wall':g.f?'fan':g.p.length?'prism':g.d?'drain':g.t?'tunnel':'ink';
     /* the band: the low drum and the bass, and one more player for every third level before this one */
     if(!pzSaved)pzSaved=ON.slice();var J=joined(i);for(var k=0;k<NL;k++){var on=k===0||k===5||J.indexOf(k)>=0;if(!!ON[k]!==on)setPlayer(k,on,true)}}
@@ -1236,13 +1317,25 @@ var DRIFT=(function(){
     function X(u){return (B.x0+(u*VW-o.x0)/o.w*B.w)/VW}function Y(v){return (B.y0+(v*VH-o.y0)/o.h*B.h)/VH}
     WALLS.forEach(function(w){w[0]=X(w[0]);w[1]=Y(w[1]);w[2]=X(w[2]);w[3]=Y(w[3])});[FANS,PRISMS,DRAINS].forEach(function(a){a.forEach(function(p){p.x=X(p.x);p.y=Y(p.y)})});
     TUNNELS.forEach(function(t){t.ax=X(t.ax);t.ay=Y(t.ay);t.bx=X(t.bx);t.by=Y(t.by)});
-    placeFix();LEVELS[PZ].cups.forEach(function(c,k){CUPS[k].x=bx(c[0]);CUPS[k].y=by(c[1])})}
+    placeFix();moveParts()}
   function pzOff(){PZ=-1;CUPS=[];FIX={walls:[],fans:[],drains:[],prisms:[]};WALLS=[];FANS=[];DRAINS=[];PRISMS=[];TUNNELS=[];obsDirty=true;pzWon=0;
     if(TOOL!=='ink'&&!unlocked(TOOL))TOOL='ink';
     if(pzSaved){for(var k=0;k<NL;k++)if(!!ON[k]!==!!pzSaved[k])setPlayer(k,!!pzSaved[k],true);pzSaved=null}}
   var clearInk=false;
+  /* the moving parts, where they are at the water's time RT: a sweeping jet's direction, a drifting ring's place */
+  function moveParts(){if(PZ<0)return;
+    FIX.fans.forEach(function(f){if(f.c<0||!f.sa)return;var a=f.a0+f.sa*Math.sin(TAU*RT/f.sp);f.dx=Math.cos(a);f.dy=Math.sin(a)});
+    CUPS.forEach(function(c){var k=.5-.5*Math.cos(TAU*RT/c.mp);c.x=bx(c.x0+c.mx*k);c.y=by(c.y0+c.my*k)})}
+  /* a fixed fan that blows by turns: on for its first seconds of each turn (always, when it has no turns), and only while the smoke flows */
+  function windOn(f){if(!RUN)return false;if(!f.on||!f.off)return true;return (RT%(f.on+f.off))<f.on}
+  /* let the smoke go: the tank full, the rings empty, the moving parts from where they start */
+  function release(){if(PZ<0||pzWon)return;RUN=1;TANK=TANK0;RT=0;EMPTYT=-1;OUTT=0;clearInk=true;CUPS.forEach(function(c){c.fill=0;c.done=false;c.match=0});moveParts();rbS=simT;
+    tone('bowl',pent(2,40),.3,0);toolsSync()}
+  /* back to building: the smoke stopped and cleared, the pieces kept. out: the tank ran dry before every ring was full */
+  function stopRun(out){if(PZ<0)return;RUN=0;RT=0;EMPTYT=-1;TANK=TANK0;OUTT=out?FT:0;CUPS.forEach(function(c){c.fill=0;c.done=false;c.match=0});moveParts();
+    if(out)hit('tok',.32,0);else clearInk=true;toolsSync()}
   function pzWin(){
-    var L=LEVELS[PZ];pzWon=FT;winStars=starsFor(used(),L.par);STARS[PZ]=Math.max(STARS[PZ]||0,winStars);lsSet();
+    var L=LEVELS[PZ];pzWon=FT;winStars=starsFor(used(),L.par,TANK/TANK0);STARS[PZ]=Math.max(STARS[PZ]||0,winStars);lsSet();
     joinAt(PZ).forEach(function(k){if(!ON[k])setPlayer(k,true)});
     tone('bowl',pent(0,52),.42,0);for(var k=0;k<winStars;k++)tone('glass',pent(7+k*2,52),.3,(k-1)*.4,AC()+.14+k*.16);
     CUPS.forEach(function(c){for(var k=0;k<14;k++){var a=k/14*TAU,col=c.c==='mix'?[.9,.95,1]:INK[c.c];push(WX(c.x)+Math.cos(a)*8,WY(c.y)+Math.sin(a)*8,Math.cos(a)*700*KS(),Math.sin(a)*700*KS(),col,.4,.0007*KR())}})}
@@ -1298,19 +1391,22 @@ var DRIFT=(function(){
     return {dens:dn/n,match:mt/n}}
   /* a ring fills while smoke of its colour streams through it, and empties again when it stops: a passing puff is not enough */
     function cupsCheck(dt){
-    if(!CUPS.length||pzWon)return;var all=true,r=cupR();
+    if(!CUPS.length||pzWon||(PZ>=0&&!RUN))return;var all=true,r=cupR();
     CUPS.forEach(function(c){var m=sample(WX(c.x),WY(c.y),r*.9,c.c==='mix'?MIXC:INK[c.c],c.c==='mix');c.match=m.match;
       if(!c.done){c.fill=clamp(c.fill+dt*LP.fk*(m.match-LP.f0),0,1);if(c.fill>=1){c.done=true;tone('glass',pent(6+CUPS.indexOf(c)*2,52),.38,pan(WX(c.x)))}}if(!c.done)all=false});
     if(TRACE&&TRACE.length<4000)TRACE.push([dt].concat(CUPS.map(function(c){return c.match})));
     if(all&&!NOWIN)pzWin()}
   /* the tools, in a row along the bottom in this world only. In a level only the pieces it gives; outside the levels, the pieces
      reached so far */
+  /* the release button's two faces: a jet let go (a nozzle and its stream), and a stop */
+  var GOI=['<path d="M2.6 7.2h4.6v4H2.6z"/><path d="M8.6 9.2h7.2M12.6 6.4l3.2 2.8-3.2 2.8"/>','<path d="M5 5h8.4v8.4H5z"/>'];
   var TOOLS=[['ink','hand','<path d="M6 13.5c-1.6-1.8-.9-3.9.6-5.4L10 4.8c.6-.6 1.5-.5 2 .1.4.5.3 1.2-.1 1.7l-1.3 1.4 2.1-2c.6-.6 1.4-.6 1.9 0 .5.5.4 1.3-.1 1.8l-2.2 2.2 1.4-1.3c.5-.5 1.3-.5 1.8 0s.4 1.3-.1 1.8l-3.4 3.4c-1.8 1.8-4.3 2-6 .2z"/>'],
     ['wall','wall','<path d="M3 15.5L15.5 3"/><circle cx="3" cy="15.5" r="1.4"/><circle cx="15.5" cy="3" r="1.4"/>'],
     ['fan','fan','<circle cx="9.2" cy="9.2" r="1.6"/><path d="M9.2 7.6c0-3 1.4-4.6 3.2-4.2 1.5.4 1.4 2.6-1.5 4.6M10.8 9.2c3 0 4.6 1.4 4.2 3.2-.4 1.5-2.6 1.4-4.6-1.5M9.2 10.8c0 3-1.4 4.6-3.2 4.2-1.5-.4-1.4-2.6 1.5-4.6M7.6 9.2c-3 0-4.6-1.4-4.2-3.2.4-1.5 2.6-1.4 4.6 1.5"/>'],
     ['prism','prism','<path d="M9.2 2.4l5.9 3.4v6.8l-5.9 3.4-5.9-3.4V5.8z"/><path d="M9.2 2.4v13.6"/>'],
     ['drain','drain','<circle cx="9.2" cy="9.2" r="6.4"/><path d="M9.2 5.4a3.8 3.8 0 1 1-3.6 2.6M9.2 7.8a1.4 1.4 0 1 1-1.3 1.9"/>'],
     ['tunnel','tunnel','<circle cx="4.2" cy="13.8" r="2.3"/><circle cx="14.2" cy="4.6" r="2.3"/><path d="M5.6 11.9C6.6 7.6 9.4 5.6 11.9 5"/>'],
+    ['go','release',GOI[0]],
     ['puz','levels','<circle cx="3.6" cy="14.6" r="1.7"/><circle cx="9.2" cy="9.2" r="1.7"/><circle cx="14.8" cy="3.8" r="1.7"/><path d="M4.9 13.4l3.1-3M10.5 8l3.1-3"/>'],
     ['undo','again','<path d="M4.6 7.2A5.6 5.6 0 1 1 4 11.6M4.4 3.6v3.8h3.8"/>']];
   function toolsBuild(){
@@ -1320,12 +1416,16 @@ var DRIFT=(function(){
       b.addEventListener('click',function(){
         if(t[0]==='puz'){PATH=!PATH;pathT=FT;if(PATH){STARS=lsGet()}toolsSync();if(AU.auto)musicOn();return}
         if(t[0]==='undo'){if(PZ>=0)pzLoad(PZ);toolsSync();return}
+        if(t[0]==='go'){if(PZ<0)return;if(RUN)stopRun(false);else release();return}
         PATH=false;TOOL=t[0];toolsSync()});r.appendChild(b)})}
   function have(k,g){return k==='wall'?g.w:k==='fan'?g.f:k==='prism'?(g.p?g.p.length:MAXP):k==='drain'?g.d:k==='tunnel'?g.t:1}
   function toolsSync(){var g=given(),r=$('tools'),h0=r?r.offsetHeight:0;TOOLS.forEach(function(t){var b=$('t_'+t[0]);if(!b)return;
       if(t[0]==='puz'){b.setAttribute('aria-pressed',PATH?'true':'false');return}
-      if(t[0]==='undo'){b.hidden=PZ<0;return}b.setAttribute('aria-pressed',TOOL===t[0]&&!PATH?'true':'false');
-      b.hidden=t[0]!=='ink'&&(PZ>=0?!have(t[0],g):!unlocked(t[0]))});
+      if(t[0]==='undo'){b.hidden=PZ<0;return}
+      if(t[0]==='go'){b.hidden=PZ<0;var lb=RUN?'stop':'release';if(b.firstChild.textContent!==lb){b.firstChild.textContent=lb;b.lastChild.innerHTML=GOI[RUN?1:0]}
+        b.setAttribute('aria-pressed',RUN?'true':'false');return}
+      b.setAttribute('aria-pressed',TOOL===t[0]&&!PATH?'true':'false');
+      b.hidden=t[0]==='ink'?PZ>=0:(PZ>=0?!have(t[0],g):!unlocked(t[0]))});
     if(r&&!r.hidden&&r.offsetHeight!==h0){layout();pzRelayout()}}
   function enter(){if(GLX.ok&&gen!==GLX.gen)glSetup();size();t0=FT;lastT=0;STARS=lsGet();toolsBuild();var r=$('tools');if(r)r.hidden=false;toolsSync()}
   function leave(){last={};rows={};q.length=0;bdrag={};PATH=false;var r=$('tools');if(r)r.hidden=true}
@@ -1371,23 +1471,27 @@ var DRIFT=(function(){
     var i,ps=PS,r=Math.random;
     /* in a level a finger moves the water and leaves no ink */
     var fk=PZ>=0?0:1;
-    for(i=0;i<ps.length;i++){var p=ps[i];if(!p.down||bdrag[p.id])continue;var l=last[p.id];if(!l){l=last[p.id]={x:p.x,y:p.y};rows[p.id]=rowOf(p.y)}
+    if(PZ<0)for(i=0;i<ps.length;i++){var p=ps[i];if(!p.down||bdrag[p.id])continue;var l=last[p.id];if(!l){l=last[p.id]={x:p.x,y:p.y};rows[p.id]=rowOf(p.y)}
       var dx=p.x-l.x,dy=p.y-l.y,len=Math.hypot(dx,dy);
       if(len>.5){var k=1/Math.max(dt,.008),vx=dx*k,vy=dy*k,m=Math.hypot(vx,vy),cap=VW*5;if(m>cap){vx*=cap/m;vy*=cap/m}
         push(p.x,p.y,vx,vy,inkOf(p.y),clamp(len/52,.04,.7)*fk);l.x=p.x;l.y=p.y;
         var rw=rowOf(p.y);if(rw!==rows[p.id]){rows[p.id]=rw;note(p,.3+.5*Math.min(1,p.spd/900))}}
       else if(t-p.t0>300){push(p.x+(r()-.5)*6,p.y+(r()-.5)*6,(r()-.5)*90,-60-r()*60,inkOf(p.y),.07*fk,.0016)}}
     /* the machine runs: fans push and (outside the levels) breathe ink; a level's sources breathe their own colours, its winds only push */
-    var fr=Math.min(1,dt*60),ks=KS(),kr=KR(),kp=KP();
-    FANS.forEach(function(f){f.ph+=dt*9;push(WX(f.x)+f.dx*10,WY(f.y)+f.dy*10,f.dx*820*ks,f.dy*820*ks,INK[f.c]||INK[0],PZ>=0||f.c<0?0:.05*fr,.0009*kr)});
-    FIX.fans.forEach(function(f){f.ph+=dt*7;if(f.c<0){push(WX(f.x)+f.dx*10,WY(f.y)+f.dy*10,f.dx*820*ks,f.dy*820*ks,INK[0],0,.0009*kr);return}
-      push(WX(f.x)+f.dx*8,WY(f.y)+f.dy*8,f.dx*760*ks+(r()-.5)*50*ks,f.dy*760*ks+(r()-.5)*50*ks,INK[f.c],LP.ink*fr,.0013*kr)});
+    var fr=Math.min(1,dt*60),ks=KS(),kr=KR(),kp=KP(),lv=PZ>=0,idle=lv&&!RUN,
+      /* in a level the ink a source gives goes by the water's time, so a phone at thirty frames a second gives what one at sixty does */
+      frl=lv?Math.min(FIXDT||dt,1/45)*60:fr;
+    if(lv)moveParts();
+    FANS.forEach(function(f){if(idle)return;f.ph+=dt*9;push(WX(f.x)+f.dx*10,WY(f.y)+f.dy*10,f.dx*820*ks,f.dy*820*ks,INK[f.c]||INK[0],PZ>=0||f.c<0?0:.05*fr,.0009*kr)});
+    FIX.fans.forEach(function(f){if(f.c<0){if(lv&&!windOn(f))return;f.ph+=dt*7;push(WX(f.x)+f.dx*10,WY(f.y)+f.dy*10,f.dx*820*ks,f.dy*820*ks,INK[0],0,.0009*kr);return}
+      if(lv&&!(RUN&&TANK>0))return;f.ph+=dt*7;
+      push(WX(f.x)+f.dx*8,WY(f.y)+f.dy*8,f.dx*760*ks+(r()-.5)*50*ks,f.dy*760*ks+(r()-.5)*50*ks,INK[f.c],LP.ink*frl,.0013*kr)});
     /* a drain draws the water in and swallows the ink near it; in a level it swallows a jet that runs into it whole, its push as well
        as its ink, so the jet stops there (a drain that took only the ink would leave the jet's push to shove the other smoke aside) */
-    DRAINS.concat(FIX.drains).forEach(function(d){d.ph+=dt*3;VQ.push([WX(d.x),WY(d.y),(PZ>=0?.85:.55)*fr,0,1300*kp],[WX(d.x),WY(d.y),300*ks,1,900*kp]);
+    DRAINS.concat(FIX.drains).forEach(function(d){d.ph+=dt*3;if(idle)return;VQ.push([WX(d.x),WY(d.y),(PZ>=0?.85:.55)*fr,0,1300*kp],[WX(d.x),WY(d.y),300*ks,1,900*kp]);
       if(PZ>=0)VQ.push([WX(d.x),WY(d.y),.5*fr,3,1300*kp])});
     /* a tunnel draws the water into one end and blows it out of the other, the way it was dug */
-    var tr=cupR()*.75;TUNNELS.forEach(function(u){u.ph+=dt*2;var ax=WX(u.ax),ay=WY(u.ay),bx2=WX(u.bx),by2=WY(u.by),m=Math.hypot(bx2-ax,by2-ay)||1,ux=(bx2-ax)/m,uy=(by2-ay)/m;
+    var tr=cupR()*.75;TUNNELS.forEach(function(u){u.ph+=dt*2;if(idle)return;var ax=WX(u.ax),ay=WY(u.ay),bx2=WX(u.bx),by2=WY(u.by),m=Math.hypot(bx2-ax,by2-ay)||1,ux=(bx2-ax)/m,uy=(by2-ay)/m;
       VQ.push([ax,ay,240*ks,1,tr*tr*1.3]);push(bx2+ux*tr*.5,by2+uy*tr*.5,ux*700*ks,uy*700*ks,INK[0],0,.0010*kr)});
     PRISMS.forEach(function(p){p.ph=(p.ph||0)+dt});
     /* the rings are measured a few times a second, and fill by the water's own time (a slow phone fills them no faster than the smoke moves) */
@@ -1410,13 +1514,15 @@ var DRIFT=(function(){
   function step(dtr){
     /* the water is moved in small steps so it stays steady; what fades, fades by the real clock */
     var gl=GLX.gl,u,i,vt=[1/sw,1/sh],dt2=[1/dw,1/dh],dt=Math.min(dtr,1/45);simT+=dt;
+    if(PZ>=0&&RUN&&!pzWon){RT+=dt;TANK=Math.max(0,TANK-dt);if(TANK<=0){if(EMPTYT<0)EMPTYT=RT;else if(RT-EMPTYT>2.5)stopRun(true)}}
     /* the photo, when it arrives or changes, floods the water */
     var ph=PHOTO.has?photoTex():null,rc=null;
     if(ph){var pr=photoRect();rc=[pr.x/VW,1-(pr.y+pr.h)/VH,pr.w/VW,pr.h/VH]}
     if(ph&&photoVer!==PHOTO.ver){photoVer=PHOTO.ver;u=run(P.heal,dye.w,dt2);glBind(0,dye.r.tex,u.uT);glBind(1,ph.tex,u.uPh);gl.uniform4f(u.uRect,rc[0],rc[1],rc[2],rc[3]);gl.uniform1f(u.uK,1);glQuad(P.heal);dye.swap()}
     if(!ph&&photoVer!==-1&&!PHOTO.has)photoVer=-1;
     if(obsDirty)obsBuild();
-    if(clearInk){clearInk=false;u=run(P.mul,dye.w,dt2);glBind(0,dye.r.tex,u.uT);gl.uniform1f(u.uK,.0);glQuad(P.mul);dye.swap()}
+    if(clearInk){clearInk=false;u=run(P.mul,dye.w,dt2);glBind(0,dye.r.tex,u.uT);gl.uniform1f(u.uK,.0);glQuad(P.mul);dye.swap();
+      if(PZ>=0&&vel){u=run(P.mul,vel.w,vt);glBind(0,vel.r.tex,u.uT);gl.uniform1f(u.uK,.0);glQuad(P.mul);vel.swap()}}
     for(i=0;i<q.length;i++){var s=q[i],c=s[4],a=s[5];
       if(!simple)splat(vel,s[0],s[1],s[2]/VW*sw,-s[3]/VH*sh,0,s[6]);
       if(a>0)splat(dye,s[0],s[1],c[0]*a,c[1]*a,c[2]*a,s[6]*(simple?1.6:1),1)}
@@ -1435,10 +1541,10 @@ var DRIFT=(function(){
       u=run(P.vort,vel.w,vt);glBind(0,vel.r.tex,u.uVel);glBind(1,curl.tex,u.uCurl);gl.uniform1f(u.uK,20);gl.uniform1f(u.uDt,dt);glQuad(P.vort);vel.swap();
       /* smoke rises (in a level, as fast for the tank's height on any screen) */
       u=run(P.buo,vel.w,vt);glBind(0,vel.r.tex,u.uVel);glBind(1,dye.r.tex,u.uDye);gl.uniform1f(u.uB,(reduce?18:64)*dt*(PZ>=0?LP.buo*clamp(B.h/VH*sh/197,.5,2):1));glQuad(P.buo);vel.swap();
-      u=run(P.div,div,vt);glBind(0,vel.r.tex,u.uVel);glQuad(P.div);
+      var ho=WN&&obs?1:0;u=run(P.div,div,vt);glBind(0,vel.r.tex,u.uVel);glBind(1,obs?obs.tex:null,u.uObs);gl.uniform1f(u.uHO,ho);glQuad(P.div);
       u=run(P.mul,prs.w,vt);glBind(0,prs.r.tex,u.uT);gl.uniform1f(u.uK,.8);glQuad(P.mul);prs.swap();
-      var it=[18,14,10][QL];for(i=0;i<it;i++){u=run(P.prs,prs.w,vt);glBind(0,prs.r.tex,u.uP);glBind(1,div.tex,u.uDiv);glQuad(P.prs);prs.swap()}
-      u=run(P.grad,vel.w,vt);glBind(0,prs.r.tex,u.uP);glBind(1,vel.r.tex,u.uVel);glQuad(P.grad);vel.swap();
+      var it=[18,14,10][QL];for(i=0;i<it;i++){u=run(P.prs,prs.w,vt);glBind(0,prs.r.tex,u.uP);glBind(1,div.tex,u.uDiv);glBind(2,obs?obs.tex:null,u.uObs);gl.uniform1f(u.uHO,ho);glQuad(P.prs);prs.swap()}
+      u=run(P.grad,vel.w,vt);glBind(0,prs.r.tex,u.uP);glBind(1,vel.r.tex,u.uVel);glBind(2,obs?obs.tex:null,u.uObs);gl.uniform1f(u.uHO,ho);glQuad(P.grad);vel.swap();
       if(WN){u=run(P.msk,vel.w,vt);glBind(0,vel.r.tex,u.uT);glBind(1,obs.tex,u.uObs);glQuad(P.msk);vel.swap()}
       u=run(P.adv,vel.w,vt);glBind(0,vel.r.tex,u.uVel);glBind(1,vel.r.tex,u.uSrc);glBind(2,obs?obs.tex:null,u.uObs);gl.uniform1f(u.uHO,WN&&obs?1:0);gl.uniform2f(u.uVTexel,vt[0],vt[1]);gl.uniform2f(u.uSTexel,vt[0],vt[1]);gl.uniform1f(u.uDt,dt);gl.uniform1f(u.uDiss,Math.exp(-(PZ>=0?LP.vel*dt:.22*dtr)));glQuad(P.adv);vel.swap();
       u=run(P.adv,dye.w,dt2);glBind(0,vel.r.tex,u.uVel);glBind(1,dye.r.tex,u.uSrc);glBind(2,obs?obs.tex:null,u.uObs);gl.uniform1f(u.uHO,WN&&obs?1:0);gl.uniform2f(u.uVTexel,vt[0],vt[1]);gl.uniform2f(u.uSTexel,dt2[0],dt2[1]);gl.uniform1f(u.uDt,dt);gl.uniform1f(u.uDiss,ph?1:Math.exp(-(PZ>=0?LP.dye*dt:.36*dtr)));glQuad(P.adv);dye.swap()}
@@ -1452,6 +1558,8 @@ var DRIFT=(function(){
     if(!P||!dye){glClear(ABYSS[0],ABYSS[1],ABYSS[2]);return}
     gl.disable(gl.BLEND);var dt=FIXDT||(lastT?Math.min(.1,Math.max(.001,(t-lastT)/1000)):.016);lastT=t;
     step(dt);if(want){want=0;readBack()}
+    if(REC&&!REC.done)recStep();
+    if(NODRAW)return;
     var u=run(P.show,null,[1/dw,1/dh]);glBind(0,dye.r.tex,u.uT);gl.uniform3f(u.uBg,ABYSS[0],ABYSS[1],ABYSS[2]);gl.uniform1f(u.uZ,.55);glQuad(P.show);
     pieces(t);if(PATH)pathDraw(t)}
   function cs(col,a){return 'rgba('+Math.round(col[0]*255)+','+Math.round(col[1]*255)+','+Math.round(col[2]*255)+','+a+')'}
@@ -1470,9 +1578,16 @@ var DRIFT=(function(){
     function fan(f,fixed){var x=WX(f.x),y=WY(f.y),col=f.c<0?[.86,.93,1]:INK[f.c],s=cs(col,'');
       c.strokeStyle=s+'.95)';c.lineWidth=1.4;c.beginPath();c.arc(x,y,fixed&&!f.wind?9:11,0,TAU);c.stroke();if(f.wind){c.strokeStyle='rgba(200,215,225,.8)';c.beginPath();c.arc(x,y,15,0,TAU);c.stroke();c.strokeStyle=s+'.95)'}
       for(k=0;k<3;k++){var a=f.ph+k*TAU/3;c.beginPath();c.moveTo(x,y);c.lineTo(x+Math.cos(a)*(fixed&&!f.wind?7:9),y+Math.sin(a)*(fixed&&!f.wind?7:9));c.stroke()}
-      if(fixed&&!f.wind){c.fillStyle=s+'.9)';c.beginPath();c.arc(x,y,3,0,TAU);c.fill()}
+      if(fixed&&!f.wind){c.fillStyle=s+'.9)';c.beginPath();c.arc(x,y,3,0,TAU);c.fill();
+        /* while a level is being built, a source shows where it will blow (both ends of its sweep, if it sweeps) */
+        if(PZ>=0&&!RUN){var Lh=B.h*.2;c.save();c.setLineDash([2,5]);c.strokeStyle=s+'.55)';c.lineWidth=1.2;
+          var as=f.sa?[f.a0-f.sa,f.a0+f.sa]:[f.a0];as.forEach(function(a){c.beginPath();c.moveTo(x+Math.cos(a)*14,y+Math.sin(a)*14);c.lineTo(x+Math.cos(a)*Lh,y+Math.sin(a)*Lh);c.stroke()});
+          if(f.sa){c.beginPath();c.arc(x,y,Lh*.85,f.a0-f.sa,f.a0+f.sa);c.stroke()}c.restore()}}
       c.beginPath();c.moveTo(x+f.dx*14,y+f.dy*14);c.lineTo(x+f.dx*24,y+f.dy*24);c.stroke();var ax=x+f.dx*24,ay=y+f.dy*24;c.beginPath();c.moveTo(ax-f.dx*5-f.dy*4,ay-f.dy*5+f.dx*4);c.lineTo(ax,ay);c.lineTo(ax-f.dx*5+f.dy*4,ay-f.dy*5-f.dx*4);c.stroke()}
-    FIX.fans.forEach(function(f){fan(f,1)});FANS.forEach(function(f){fan(f,0)});
+    FIX.fans.forEach(function(f){var dim=f.wind&&PZ>=0&&RUN&&!windOn(f);if(dim)c.globalAlpha=.3;fan(f,1);c.globalAlpha=1;
+      /* a wind that blows by turns: a broken ring round it */
+      if(f.wind&&f.on&&f.off){c.save();c.setLineDash([3,4]);c.strokeStyle='rgba(200,215,225,.7)';c.lineWidth=1.2;c.beginPath();c.arc(WX(f.x),WY(f.y),20,0,TAU);c.stroke();c.restore()}});
+    FANS.forEach(function(f){fan(f,0)});
     /* prisms: a hexagon of their colour, the smoke in them glowing */
     FIX.prisms.concat(PRISMS).forEach(function(p){var x=WX(p.x),y=WY(p.y),R=cr*.8,col=INK[p.c]||INK[0];c.beginPath();for(k=0;k<6;k++){var a=k/6*TAU+Math.PI/6;c.lineTo(x+Math.cos(a)*R,y+Math.sin(a)*R)}c.closePath();
       c.fillStyle=cs(col,.1);c.fill();c.strokeStyle=cs(col,.9);c.lineWidth=p.fixed?2.4:1.5;c.stroke();if(p.fixed){c.strokeStyle='rgba(200,215,225,.6)';c.lineWidth=1;c.beginPath();c.arc(x,y,R+5,0,TAU);c.stroke()}});
@@ -1485,10 +1600,19 @@ var DRIFT=(function(){
       c.fillStyle='rgba(0,0,0,.5)';c.beginPath();c.arc(ax,ay,R,0,TAU);c.fill();for(k=0;k<2;k++){var w2=((u.ph*.4+k/2)%1),rr=R*(1-w2)+2;c.strokeStyle='rgba(180,107,255,'+(.7*w2).toFixed(3)+')';c.lineWidth=1.2;c.beginPath();c.arc(ax,ay,rr,0,TAU);c.stroke()}
       c.strokeStyle='rgba(180,107,255,.85)';c.lineWidth=1.4;c.beginPath();c.arc(ax,ay,R,0,TAU);c.stroke();c.beginPath();c.arc(bx2,by2,R,0,TAU);c.stroke();
       var ex=bx2+ux*(R+12),ey=by2+uy*(R+12);c.beginPath();c.moveTo(bx2+ux*(R+2),by2+uy*(R+2));c.lineTo(ex,ey);c.moveTo(ex-ux*5-uy*4,ey-uy*5+ux*4);c.lineTo(ex,ey);c.lineTo(ex-ux*5+uy*4,ey-uy*5-ux*4);c.stroke()});
+    /* a ring that drifts: the way it goes, faintly */
+    CUPS.forEach(function(cp){if(!cp.mx&&!cp.my)return;var col=cp.c==='mix'?[.92,.96,1]:INK[cp.c];c.save();c.setLineDash([2,6]);c.strokeStyle=cs(col,.35);c.lineWidth=1.2;
+      c.beginPath();c.moveTo(B.x0+cp.x0*B.w,B.y0+cp.y0*B.h);c.lineTo(B.x0+(cp.x0+cp.mx)*B.w,B.y0+(cp.y0+cp.my)*B.h);c.stroke();c.restore()});
     CUPS.forEach(function(cp){var x=WX(cp.x),y=WY(cp.y),col=cp.c==='mix'?[.92,.96,1]:INK[cp.c],s=cs(col,'');
       c.strokeStyle=s+(cp.done?'1)':'.75)');c.lineWidth=cp.done?2.4:1.5;c.setLineDash(cp.c==='mix'?[3,4]:[]);c.beginPath();c.arc(x,y,cr,0,TAU);c.stroke();c.setLineDash([]);
       c.lineWidth=3;c.strokeStyle=s+'.95)';c.beginPath();c.arc(x,y,cr+6,-Math.PI/2,-Math.PI/2+TAU*cp.fill);c.stroke();
       if(cp.done){c.fillStyle=s+(.18+.1*Math.sin(t*.006)).toFixed(3)+')';c.beginPath();c.arc(x,y,cr,0,TAU);c.fill()}});
+    /* the tank's smoke: a line along the foot of the tank that shortens as the smoke is spent (along the foot, clear of the words at the
+       top); the mark a third along is where three stars end */
+    if(PZ>=0&&!PATH){var fr2=clamp(TANK/TANK0,0,1),col0=(FIX.fans[0]&&FIX.fans[0].c>=0)?INK[FIX.fans[0].c]:[.9,.95,1],gy=B.y0+B.h-4;
+      c.strokeStyle='rgba(234,249,255,.14)';c.lineWidth=3;c.beginPath();c.moveTo(B.x0+4,gy);c.lineTo(B.x0+B.w-4,gy);c.stroke();
+      c.strokeStyle=cs(col0,RUN&&fr2<1/3?(.55+.4*Math.sin(t*.012)).toFixed(3):.9);c.beginPath();c.moveTo(B.x0+4,gy);c.lineTo(B.x0+4+(B.w-8)*fr2,gy);c.stroke();
+      c.fillStyle='rgba(255,214,120,.9)';star(c,B.x0+4+(B.w-8)/3,gy-8,4,true)}
     /* a level solved: its stars, one after another, in the middle of the tank */
     if(pzWon&&PZ>=0){var e=(FT-pzWon)/1000,cx=B.x0+B.w/2,cy=B.y0+B.h*.5;c.fillStyle='rgba(1,4,10,'+(.5*smooth(e/.4)).toFixed(3)+')';c.fillRect(B.x0,B.y0,B.w,B.h);
       for(k=0;k<3;k++){var g2=smooth((e-.15-k*.18)/.3),R2=26*(k===1?1.25:1)*(.6+.4*g2);if(g2<=0)continue;var on=k<winStars;c.globalAlpha=g2;c.fillStyle=on?'rgba(255,214,120,.98)':'rgba(234,249,255,.25)';c.strokeStyle=c.fillStyle;c.lineWidth=1.4;
@@ -1501,14 +1625,17 @@ var DRIFT=(function(){
   function hud(){
     if(PATH)return 'levels · '+starTotal()+' of '+LEVELS.length*3+' stars\npick a level: each solved opens the next, and the band grows\nthe fewer pieces you build, the more stars';
     if(PZ>=0){var L=LEVELS[PZ],g=given(),J=joinAt(PZ),n=used();
-      if(pzWon)return 'level '+(PZ+1)+' solved '+starText(winStars)+' · '+left(n,'piece','pieces')+(winStars<3?' (three stars with '+L.par+')':'')+
+      if(pzWon)return 'level '+(PZ+1)+' solved '+starText(winStars)+' · '+left(n,'piece','pieces')+', '+Math.round(TANK/TANK0*100)+'% of the smoke left'+
+        (winStars<3?'\nthree stars: '+left(L.par,'piece','pieces')+' and a third of the smoke left':'')+
         (J.length?'\n'+J.map(function(k){return 'the '+BNAMES[k].toLowerCase()}).join(' and ')+(J.length>1?' join':' joins')+' the band':'');
       var l2=CUPS.map(function(c){return (c.c==='mix'?'white':CN[c.c])+' ring '+(c.done?'full':Math.round(c.fill*100)+'%')}).join(' · '),
         b=[],w=g.w-WALLS.length,f=g.f-FANS.length,pl=prismsLeft()||[],d=g.d-DRAINS.length,tt=g.t-TUNNELS.length;
       if(w>0)b.push(left(w,'wall','walls'));if(f>0)b.push(left(f,'fan','fans'));if(pl.length)b.push(pl.length===1?'1 '+CN[pl[0]]+' prism':pl.length+' prisms ('+pl.map(function(k){return CN[k]}).join(', ')+')');
       if(d>0)b.push(left(d,'drain','drains'));if(tt>0)b.push(left(tt,'tunnel','tunnels'));
-      return 'level '+(PZ+1)+' of '+LEVELS.length+' · '+CH[chapterOf(PZ)].n+' · fill each ring with smoke of its colour'+(L.tip?'\n'+L.tip:'')+'\n'+l2+'\n'+
-        (b.length?'you can still build '+b.join(', '):'nothing left to build')+' · three stars with '+left(L.par,'piece','pieces')}
+      var st=OUTT&&FT-OUTT<6000?'out of smoke: change something, then release it again':RUN?(TANK>0?'smoke left: '+TANK.toFixed(1)+' s':'the tank is dry'):'build, then release the smoke';
+      if(!RUN)l2='fill every ring with smoke of its colour before the tank runs dry';
+      return 'level '+(PZ+1)+' of '+LEVELS.length+' · '+CH[chapterOf(PZ)].n+' · '+st+(L.tip?'\n'+L.tip:'')+'\n'+l2+'\n'+
+        (b.length?'to build: '+b.join(', '):'all built')+' · ★★★: '+left(L.par,'piece','pieces')+', a third of the smoke left'}
     var bt=[[WALLS.length,'wall','walls'],[FANS.length,'fan','fans'],[PRISMS.length,'prism','prisms'],[DRAINS.length,'drain','drains'],[TUNNELS.length,'tunnel','tunnels']].filter(function(a){return a[0]}).map(function(a){return left(a[0],a[1],a[2])}).join(' · ');
     if(PHOTO.has)return 'your photo is the ink: smear it and it remembers itself'+(bt?'\nbuilt: '+bt:'');
     var st=starTotal();
@@ -1520,15 +1647,26 @@ var DRIFT=(function(){
     if(u>.2&&u<.84){var e=smooth((u-.2)/.64);return [{x:STG.x0+STG.w*(k?.82-.64*e:.18+.64*e),y:STG.cy+STG.h*(.22*Math.sin(e*5.2+k*2)+(k?-.12:.12))}]}
     return [null]}
   /* pieces put in by a test, in fractions of the tank in a level (of the stage outside one) */
+  function scanAt(c,nx,ny){if(!rbOk||PZ<0)return null;var r=cupR()*.9,tc=c==='mix'?MIXC:INK[c],out=[],i,j;
+    for(j=0;j<ny;j++)for(i=0;i<nx;i++)out.push(+sample(WX(bx((i+.5)/nx)),WY(by((j+.5)/ny)),r,tc,c==='mix').match.toFixed(4));return out}
+  function recStep(){var R=REC,t=simT-R.t0;if(t<R.next)return;readBack();if(!rbOk)return;R.T.push(+t.toFixed(3));R.cols.forEach(function(c,k){R.S[k].push(scanAt(c,R.nx,R.ny))});
+    R.next=t+R.ev;if(t>=R.until||!RUN)R.done=true}
   function U(x){return PZ>=0?bx(x):(STG.x0+x*STG.w)/VW}function V(y){return PZ>=0?by(y):(STG.y0+y*STG.h)/VH}
   return {enter:enter,leave:leave,resize:function(){resize();pzRelayout();obsDirty=true},down:down,up:up,gesture:gesture,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
     dbg:function(){return {ok:!!(P&&dye),simT:simT,simple:simple,sw:sw,sh:sh,dw:dw,dh:dh,lin:GLX.hfLin,tool:TOOL,pz:PZ,won:!!pzWon,walls:WALLS.length,fans:FANS.length,drains:DRAINS.length,prisms:PRISMS.length,tunnels:TUNNELS.length,wn:WN,
-      stars:STARS.slice(),winStars:winStars,path:PATH,board:{x0:B.x0,y0:B.y0,w:B.w,h:B.h},
+      stars:STARS.slice(),winStars:winStars,path:PATH,board:{x0:B.x0,y0:B.y0,w:B.w,h:B.h},run:RUN,tank:TANK,tank0:TANK0,rt:RT,out:OUTT>0,
       cups:CUPS.map(function(c){return {c:c.c,fill:c.fill,match:c.match,done:c.done,x:WX(c.x),y:WY(c.y)}}),fix:{walls:FIX.walls.length,fans:FIX.fans.length,drains:FIX.drains.length,prisms:FIX.prisms.length},rb:rbOk}},
     /* for the tests: how much ink there is around a point (pixels), from the last copy read back; and a level by number */
     sample:function(x,y,r){want=1;return sample(x,y,r,null,false)},
+    /* for designing levels: what a ring of a colour would get, at each point of an nx by ny grid over the tank (from the last copy read back) */
+    scan:function(c,nx,ny){want=1;return scanAt(c,nx,ny)},
+    /* the same, taken by the page itself every so often of the water's time while a level runs (no waiting on a test between frames) */
+    rec:function(cols,nx,ny,every,until){REC={cols:cols,nx:nx,ny:ny,ev:every,until:until,t0:simT,next:0,T:[],S:cols.map(function(){return []}),done:false}},
+    /* for the tests that only measure: the water is worked out but not shown (a machine without a GPU works it out several times quicker) */
+    nodraw:function(b){NODRAW=!!b},
+    recGet:function(){return REC?{done:REC.done,n:REC.T.length,T:REC.done?REC.T:null,S:REC.done?REC.S:null}:null},
     mid:function(){want=1;if(!rbOk)return null;var w=0,y=0,i,j;for(j=0;j<rbH;j++)for(i=0;i<rbW;i++){var o=(j*rbW+i)*4,d=Math.max(rbBuf[o],rbBuf[o+1],rbBuf[o+2])/255;w+=d;y+=d*(1-(j+.5)/rbH)}return w?y/w:null},
-    level:function(i){if(i<0)pzOff();else pzLoad(i);toolsSync()},tool:function(k){TOOL=k;PATH=false;toolsSync()},
+    level:function(i){if(i<0)pzOff();else pzLoad(i);toolsSync()},release:function(){release()},stop:function(){stopRun(false)},tool:function(k){TOOL=k;PATH=false;toolsSync()},
     /* for the tests: the levels themselves (and new ones to try), pieces put in by hand, the map's places, the stars */
     levels:LEVELS,setLevels:function(a){LEVELS.length=0;a.forEach(function(l){LEVELS.push(l)})},nowin:function(b){NOWIN=!!b},trace:function(on){var t=TRACE;TRACE=on?[]:null;return t},
     fastdye:function(b){FASTDYE=!!b;szKey=''},
@@ -1553,14 +1691,17 @@ var DRIFT=(function(){
    finger turns the globe, a pinch comes closer, and a tap on any place reads the real figures for it: how hard the wind is
    blowing there and from where, how high the Sun stands, the chance of aurora, the lightning nearby; a tap on a fire or a storm
    reads what is known of it.
-   Left alone, it turns slowly. ---------- */
+   Left alone, it turns slowly.
+   Since 13 Nov this is the Earth world: the owner asked "Put them all on the same globe as satellites and make that just a layer", so
+   the satellites (13-orbit.js) and the live cameras (14-live.js, on the site only) are layers of this one globe, switched in the same
+   row as the weather. A tap goes to a camera's ring first, then a satellite, then a storm or a fire, then the place. ---------- */
 var WIND=(function(){
   var P=null,gen=-1,dye=null,type=0,dw=0,dh=0,ql=-1,byte8=false,windT=null,windV=-1,aurT=null,aurV=-1,skV=-1,
     g={cx:0,cy:0,R:100,E:[0,0,0],N:[0,0,0],C:[0,0,0]},lat0=16,lon0=clamp(-(new Date().getTimezoneOffset())/4,-180,180),zoom=1,idle=0,vlon=0,vlat=0,
     sunV=[0,0,0],moonV=[0,0,0],moonI=null,sunI=null,lastT=0,SK=[],byStep=[],flashes=[],STEPS=256,tmp=[0,0,0],probe=null,turned=0,
     FR=[],frV=-1,fireB=null,fireN=0,fireGen=-1,ST=[],stV=-1,
     /* the layers of the weather (the owner: "more layers, rain, sun, clouds. Real time"): each shown while it is on and there is data for it */
-    LY={wind:1,jet:0,heat:0,pressure:0,waves:0,clouds:1,rain:1,sun:1},lyAt=0,lyKey='',wxT=null,wxV=-1,jetT=null,HL=[],FOC=null;
+    LY={wind:1,jet:0,heat:0,pressure:0,waves:0,clouds:1,rain:1,sun:1,sats:1,cams:1},lyAt=0,lyKey='',wxT=null,wxV=-1,jetT=null,HL=[],FOC=null,FLY=null,camOn=false,footH=0;
   var VQ='attribute vec2 a_p;varying vec2 vUv;void main(){vUv=a_p*0.5+0.5;gl_Position=vec4(a_p,0.0,1.0);}';
   var H='precision highp float;varying vec2 vUv;\n';
   /* the fires' smoke: each fire is a point in the picture of the unrolled Earth, lit a little every frame, and the wind does the rest */
@@ -1651,28 +1792,39 @@ var WIND=(function(){
     return c.getImageData(0,0,W,Hh).data}
   function geo(){var y1=STG.y1,cd=PCD&&PCD.on?$('card'):null;if(cd&&!cd.hidden){var ct=cd.getBoundingClientRect().top;if(ct>STG.y0+80&&ct<y1)y1=ct-6}
     var h=y1-STG.y0;g.R=Math.min(STG.w,h-10)*.47*zoom;g.cx=STG.cx;g.cy=STG.y0+h/2}
-  var LYK=['wind','jet','heat','pressure','waves','clouds','rain','sun'],LYI={jet:'<path d="M1.6 9.4c2.4-3.6 5.4-3.6 7.6-1.2 2 2.2 3.8 2.1 5.2-.4M3.8 12.6c1.8-1.6 3.6-1.4 5 0"/>',heat:'<path d="M6.6 9.6V3.6a1.6 1.6 0 1 1 3.2 0v6a3.1 3.1 0 1 1-3.2 0z"/><path d="M8.2 7v4.6"/>',
+  var LYK=['sats','cams','wind','jet','heat','pressure','waves','clouds','rain','sun'],LYN={sats:'satellites',cams:'cameras'},LYI={
+    sats:'<circle cx="8" cy="8" r="2.6"/><ellipse cx="8" cy="8" rx="6.6" ry="2.7" transform="rotate(-24 8 8)"/><circle cx="13.4" cy="4.9" r=".9"/>',
+    cams:'<rect x="1.8" y="4.2" width="9.6" height="7.6" rx="1.4"/><path d="M11.4 7.2l3-1.8v5.2l-3-1.8"/>',jet:'<path d="M1.6 9.4c2.4-3.6 5.4-3.6 7.6-1.2 2 2.2 3.8 2.1 5.2-.4M3.8 12.6c1.8-1.6 3.6-1.4 5 0"/>',heat:'<path d="M6.6 9.6V3.6a1.6 1.6 0 1 1 3.2 0v6a3.1 3.1 0 1 1-3.2 0z"/><path d="M8.2 7v4.6"/>',
     pressure:'<path d="M2.2 5.6c2.6-2.4 9-2.4 11.6 0M2.6 9.4c2.4-1.6 8.4-1.6 10.8 0M4.6 12.9c1.6-.7 5.2-.7 6.8 0"/>',waves:'<path d="M1.6 7.4c1.6-1.6 3.1-1.6 4.4 0s2.9 1.6 4.4 0 3.1-1.6 4.1 0M1.6 11.4c1.6-1.6 3.1-1.6 4.4 0s2.9 1.6 4.4 0 3.1-1.6 4.1 0"/>',wind:'<path d="M2.5 6h8.2a2.2 2.2 0 1 0-2.2-2.2M2.5 9.8h11a2.3 2.3 0 1 1-2.3 2.3"/>',clouds:'<path d="M4.6 12.5h7a2.9 2.9 0 0 0 .2-5.8 4 4 0 0 0-7.6-.6 3.2 3.2 0 0 0 .4 6.4z"/>',
     rain:'<path d="M4.6 9.2h7a2.6 2.6 0 0 0 .2-5.2 3.6 3.6 0 0 0-6.9-.5 2.9 2.9 0 0 0-.3 5.7M5.6 11.6l-.9 2.2M8.4 11.6l-.9 2.2M11.2 11.6l-.9 2.2"/>',sun:'<circle cx="8" cy="8" r="2.9"/><path d="M8 1.6v1.6M8 12.8v1.6M1.6 8h1.6M12.8 8h1.6M3.5 3.5l1.1 1.1M11.4 11.4l1.1 1.1M3.5 12.5l1.1-1.1M11.4 4.6l1.1-1.1"/>'};
   function lyrBuild(){var r=$('lyr');if(!r||r.childNodes.length)return;LYK.forEach(function(k){var b=document.createElement('button');b.type='button';b.className='lb';b.id='l_'+k;
-    b.innerHTML='<svg viewBox="0 0 16 16" aria-hidden="true">'+LYI[k]+'</svg><span></span>';b.lastChild.textContent=k;b.setAttribute('aria-pressed','true');
+    b.innerHTML='<svg viewBox="0 0 16 16" aria-hidden="true">'+LYI[k]+'</svg><span></span>';b.lastChild.textContent=LYN[k]||k;b.setAttribute('aria-pressed','true');
     /* the wind near the ground and the jet streams are one smoke or the other */
     b.addEventListener('click',function(){LY[k]=LY[k]?0:1;if(LY[k]&&k==='jet')LY.wind=0;if(LY[k]&&k==='wind')LY.jet=0;lyKey='';lyrSync(true)});r.appendChild(b)})}
   /* which layers there are data for: the clouds and the rain only where the page is served from the owner's own host */
-  function lyrSync(force){var X=typeof WX!=='undefined'?WX:{},has={wind:!!LIVE.wind,jet:!!(X.jet&&jetT),heat:!!X.t2m,pressure:!!X.mslp,waves:!!X.wave,clouds:GLOBE.hasCloud(),rain:GLOBE.hasRain(),sun:true},key='',k;for(k in LY)key+=(has[k]?1:0)+''+LY[k];if(key===lyKey&&!force)return;lyKey=key;
+  function lyrSync(force){var X=typeof WX!=='undefined'?WX:{},has={sats:!!LIVE.sats,cams:!!HOSTED&&typeof LIVEW!=='undefined',wind:!!LIVE.wind,jet:!!(X.jet&&jetT),heat:!!X.t2m,pressure:!!X.mslp,waves:!!X.wave,clouds:GLOBE.hasCloud(),rain:GLOBE.hasRain(),sun:true},key='',k;
+    camSync(has.cams&&LY.cams);for(k in LY)key+=(has[k]?1:0)+''+LY[k];if(key===lyKey&&!force)return;lyKey=key;
     var r=$('lyr');if(!r)return;var vis=false;for(k in LY){var b=$('l_'+k);if(!b)continue;b.hidden=!has[k];b.setAttribute('aria-pressed',LY[k]?'true':'false');if(has[k])vis=true}
     var was=r.hidden,h0=r.offsetHeight;r.hidden=!vis;if(was!==r.hidden||r.offsetHeight!==h0){layout();geo()}}
-  function enter(){if(GLX.ok&&gen!==GLX.gen)glSetup();GLOBE.load();liveLoad();size();lyrBuild();var r=$('lyr');if(r)r.hidden=false;lyKey='';lyrSync(true);geo();idle=0;lastT=0}
-  function leave(){flashes.length=0;var r=$('lyr');if(r)r.hidden=true;cardOff()}
+  function camSync(v){v=!!v;if(v===camOn)return;camOn=v;try{LIVEW.layer.on(v)}catch(e){}layout();geo()}
+  function enter(){if(GLX.ok&&gen!==GLX.gen)glSetup();GLOBE.load();liveLoad();size();lyrBuild();var r=$('lyr');if(r)r.hidden=false;lyKey='';lyrSync(true);geo();idle=0;lastT=0;
+    try{ORBIT.layer.on()}catch(e){}try{LIVEW.layer.flyTo(flyTo)}catch(e){}}
+  function leave(){flashes.length=0;var r=$('lyr');if(r)r.hidden=true;cardOff();try{ORBIT.layer.off()}catch(e){}camSync(false)}
+  /* the Earth turns to a place over a second (a camera opened, say); a finger on it stops the turning */
+  function flyTo(la,lo){FOC=null;FLY={t:FT,a:lat0,b:lon0,la:clamp(la,-70,70),lo:lo};idle=-30}
   function resize(){geo();if(GLX.ok&&P)size()}
   function pan(x){return clamp((x-g.cx)/Math.max(1,g.R)*.8,-1,1)}
   /* one finger turns the globe; let go while moving and it coasts */
-  function down(p){idle=0;vlon=vlat=0;if(FOC&&FT-FOC.t>1400)FOC=null}
-  function move(p){if(p.n>=2)return;var k=57.2958/g.R,c=Math.max(.35,Math.cos(lat0*AS.D));lon0-=(p.x-p.px)*k/c;lat0=clamp(lat0+(p.y-p.py)*k,-80,80);
+  function down(p){if(camOn&&!p.ghost&&LIVEW.layer.hit(p.x,p.y)){p.win=1;return}idle=0;vlon=vlat=0;FLY=null;if(FOC&&FT-FOC.t>1400)FOC=null}
+  function move(p){if(p.n>=2||p.win)return;var k=57.2958/g.R,c=Math.max(.35,Math.cos(lat0*AS.D));lon0-=(p.x-p.px)*k/c;lat0=clamp(lat0+(p.y-p.py)*k,-80,80);
     if(!p.ghost){turned=1;vlon=-p.vx*k/c;vlat=p.vy*k}idle=0}
   /* a tap on a place reads it; a tap on the dark puts the reading away. A finger down up to 600 ms and not moved is a tap (a slow
      phone can be that long in passing the lifting on); the hints' ghost fingers keep to their own 320 */
-  function up(p){idle=0;if(FT-p.t0>(p.ghost?320:600)||p.moved>12)return;var w=GLOBE.at(p.x,p.y,g),i,bd,d,tg=null;
+  function up(p){if(p.win){LIVEW.layer.up(p);return}idle=0;if(FT-p.t0>(p.ghost?320:600)||p.moved>12)return;var w=GLOBE.at(p.x,p.y,g),i,bd,d,tg=null;
+    /* a camera's ring, then a satellite, are what a tap meant before the place under it */
+    if(!p.ghost&&camOn&&LIVEW.layer.pick(p.x,p.y)){probe=null;cardOff();try{ORBIT.layer.off()}catch(e){}return}
+    if(!p.ghost&&LY.sats&&ORBIT.layer.pick(p)){probe=null;cardOff();return}
+    try{if(!p.ghost)ORBIT.layer.off()}catch(e){}
     if(!w){probe=null;cardOff();return}
     /* a storm's eye or a fire under the finger is what was meant: the reading goes to it */
     for(i=0,bd=26*26;i<ST.length;i++){if(ST[i].p[2]<=.04)continue;d=(ST[i].p[0]-p.x)*(ST[i].p[0]-p.x)+(ST[i].p[1]-p.y)*(ST[i].p[1]-p.y);if(d<bd){bd=d;tg=ST[i].s}}
@@ -1684,8 +1836,8 @@ var WIND=(function(){
     if(!p.ghost){tone('glass',pent(5+clamp(Math.floor((w.lat+72)/144*9),0,8),40),.4,pan(p.x));if(!tg)placeCard(w.lat,w.lon);else cardOff()}}
   /* two fingers: sliding turns the globe too, a pinch comes closer */
   function gesture(e){var k=57.2958/g.R;lon0-=e.dx*k/Math.max(.35,Math.cos(lat0*AS.D));lat0=clamp(lat0+e.dy*k,-80,80);
-    if(!e.ghost){zoom=clamp(zoom*e.scale,.7,3.2);geo();vlon=-e.dx/e.dt*k/Math.max(.35,Math.cos(lat0*AS.D))*.5;vlat=e.dy/e.dt*k*.5}idle=0}
-  function wheel(e){if(e.shiftKey){lon0+=e.deltaY*.05}else{zoom=clamp(zoom*Math.exp(-e.deltaY*.0012),.7,3.2);geo()}idle=0}
+    if(!e.ghost){zoom=clamp(zoom*e.scale,.16,3.2);geo();vlon=-e.dx/e.dt*k/Math.max(.35,Math.cos(lat0*AS.D))*.5;vlat=e.dy/e.dt*k*.5}idle=0}
+  function wheel(e){if(e.shiftKey){lon0+=e.deltaY*.05}else{zoom=clamp(zoom*Math.exp(-e.deltaY*.0012),.16,3.2);geo()}idle=0}
   function key(e,dn){if(!dn)return false;if(e.key==='ArrowLeft')lon0-=6;else if(e.key==='ArrowRight')lon0+=6;else if(e.key==='ArrowUp')lat0=clamp(lat0+5,-80,80);else if(e.key==='ArrowDown')lat0=clamp(lat0-5,-80,80);else return false;idle=0;return true}
   /* the real figures for a place: the wind there (read off the model's grid between its four nearest points), the Sun's height and the
      hour by the Sun, the chance of aurora overhead, the lightning within 300 km in the last half hour */
@@ -1760,11 +1912,17 @@ var WIND=(function(){
     for(var i=0;i<a.length&&n<2;i++){var k=a[i];if(k.p[2]<=.08)continue;hit('tick',.3+.3*Math.random(),pan(k.p[0]),.8+.5*Math.random(),when+n*.03);n++}}
   function step(st,ab){var a=byStep[((ab%STEPS)+STEPS)%STEPS];if(!a)return;for(var i=0;i<a.length;i++)if(flashes.length<220)flashes.push({k:a[i],t:0})}
   function tick(dt,t){
-    var i,now=Date.now();feeds();if(FT-lyAt>800){lyAt=FT;lyrSync(false)}
+    var i,now=Date.now();feeds();if(FT-lyAt>800){lyAt=FT;lyrSync(false);
+      /* the rows along the bottom can grow (the kinds of camera arrive, a layer's data comes): the stage is measured again */
+      var fh=$('foot').offsetHeight;if(fh!==footH){footH=fh;layout();geo();try{LIVEW.layer.resize()}catch(e){}}}
     if(PCD.on&&PCD.fr.length>1&&FT-PCD.ft>(PCD.fi===PCD.fr.length-1?1500:420)){PCD.ft=FT;PCD.fi=(PCD.fi+1)%PCD.fr.length;radarDraw()}
     if(!PTN){lon0+=vlon*dt;lat0=clamp(lat0+vlat*dt,-80,80);var kk=Math.exp(-dt*2.4);vlon*=kk;vlat*=kk;idle+=dt;if(idle>5&&!reduce)lon0+=dt*1.3*smooth((idle-5)/4)}else idle=0;
-    if(FOC){var fk=smooth((FT-FOC.t)/1400);if(fk<1){lat0=lerp(FOC.lat,clamp(FOC.s.lat,-80,80),fk);lon0=FOC.lon+AS.n180(FOC.s.lon-FOC.lon)*fk;zoom=lerp(FOC.z,FOC.tz,fk);geo();idle=0}}
+    /* (the last step lands exactly on the storm, however long the frames: a slow phone's last frame of the flight could otherwise end it short) */
+    if(FOC&&!FOC.done){var fk=smooth(Math.min(1,(FT-FOC.t)/1400));lat0=lerp(FOC.lat,clamp(FOC.s.lat,-80,80),fk);lon0=FOC.lon+AS.n180(FOC.s.lon-FOC.lon)*fk;zoom=lerp(FOC.z,FOC.tz,fk);geo();idle=0;if(fk>=1)FOC.done=true}
+    if(FLY){var yk=smooth((FT-FLY.t)/1100);lat0=lerp(FLY.a,FLY.la,yk);lon0=FLY.b+AS.n180(FLY.lo-FLY.b)*yk;vlon=vlat=0;if(yk>=1)FLY=null}
     lon0=AS.n180(lon0);GLOBE.basis(lat0,lon0,g);
+    if(LY.sats)try{ORBIT.layer.tick(dt,t,g)}catch(e){}
+    if(camOn)try{LIVEW.layer.tick(dt,g)}catch(e){}
     sunI=AS.sun(now);moonI=AS.moon(now);AS.llv(sunI.sublat,sunI.sublon,sunV);AS.llv(moonI.sublat,moonI.sublon,moonV);
     for(i=flashes.length-1;i>=0;i--){flashes[i].t+=dt/.55;if(flashes[i].t>=1)flashes.splice(i,1)}
     for(i=0;i<SK.length;i++)GLOBE.pr(SK[i].v,g,SK[i].p);
@@ -1792,7 +1950,9 @@ var WIND=(function(){
       /* with the real clouds on, the Earth is shown nearer to how it looks from orbit and the wind's smoke is laid over it more lightly */
       var cl=GLOBE.hasCloud()&&LY.clouds,rn=GLOBE.hasRain()&&LY.rain,hk=LY.heat&&WX.t2m,dim=fl?(cl||hk?.64:.38):.82;
       if(!GLOBE.draw(g,{sun:sunV,moon:moonV,moonK:moonI?moonI.phase:0,bg:bg,dim:dim,flow:P&&dye&&fl?dye.r.tex:null,flowK:cl||hk?.62:1.15,aur:aurT,aurK:1,cld:cl,cldK:hk?.7:.95,rain:rn,rainK:1,sunK:LY.sun?1:0,time:t*.001,
-        wx:wxT,windF:windT,heatK:hk?1:0,waveK:LY.waves&&WX.wave?1:0,isoK:LY.pressure&&WX.mslp?1:0}))blank()}
+        wx:wxT,windF:windT,heatK:hk?1:0,waveK:LY.waves&&WX.wave?1:0,isoK:LY.pressure&&WX.mslp?1:0}))blank();
+      /* the satellites over the same Earth: the stars behind, every satellite where it is this second, the one tapped with its orbit */
+      if(LY.sats)try{ORBIT.layer.draw(t)}catch(e){}}
     /* the lightning: where the storms are (a faint violet dust), and each flash as its bar comes round */
     c.globalCompositeOperation='lighter';c.fillStyle='rgba(150,120,255,.28)';
     for(i=0;i<SK.length;i++){k=SK[i];if(k.p[2]>.04)c.fillRect(k.p[0]-.7,k.p[1]-.7,1.4,1.4)}
@@ -1830,8 +1990,16 @@ var WIND=(function(){
     if(probe&&probe.p[2]>.02){var px=probe.p[0],py=probe.p[1],al=clamp((t-probe.t)/250,0,1);c.strokeStyle='rgba(1,4,10,.55)';c.lineWidth=3.4;c.beginPath();c.arc(px,py,8,0,TAU);c.stroke();
       c.strokeStyle='rgba(234,249,255,'+(.92*al).toFixed(3)+')';c.lineWidth=1.2;c.beginPath();c.arc(px,py,8,0,TAU);c.stroke();
       if(probe.w){var dx=probe.q[0]-px,dy=probe.q[1]-py,dl=Math.hypot(dx,dy)||1,len=clamp(10+probe.w.kmh*.5,14,64);dx/=dl;dy/=dl;var x1=px+dx*10,y1=py+dy*10,x2=px+dx*(10+len),y2=py+dy*(10+len);
-        c.strokeStyle='rgba(255,179,71,'+(.95*al).toFixed(3)+')';c.lineWidth=1.4;c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.moveTo(x2-dx*7-dy*4,y2-dy*7+dx*4);c.lineTo(x2,y2);c.lineTo(x2-dx*7+dy*4,y2-dy*7-dx*4);c.stroke()}}}
+        c.strokeStyle='rgba(255,179,71,'+(.95*al).toFixed(3)+')';c.lineWidth=1.4;c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.moveTo(x2-dx*7-dy*4,y2-dy*7+dx*4);c.lineTo(x2,y2);c.lineTo(x2-dx*7+dy*4,y2-dy*7-dx*4);c.stroke()}}
+    /* the cameras: a ring for each, and the window of the one playing */
+    if(camOn)try{LIVEW.layer.draw(t,g)}catch(e){}}
   function hud(){
+    var head='the Earth now, '+(camOn?'its weather, satellites and cameras':'its weather and satellites')+' as layers below: turn it, tap anything',
+      cam=camOn&&LIVEW.layer.open()?LIVEW.layer.hud():'';
+    if(cam)return head+'\n'+cam;
+    var b=wxHud(),xs=[];if(LY.sats&&!probe){var o=ORBIT.layer.hud();if(o)xs.push(o)}if(camOn&&!probe){var o2=LIVEW.layer.hud();if(o2)xs.push(o2)}
+    return head+(b?'\n'+b:'')+(xs.length?'\n'+xs.join('\n'):'')}
+  function wxHud(){
     var w=LIVE.wind,a=LIVE.aurora,s=LIVE.strikes;if(!w)return LIVE.asked?'reading the wind':'';
     var r=reading();
     if(r&&r.wind){var la=probe.lat,lo=probe.lon,h=Math.floor(r.hour),m=Math.floor((r.hour-h)*60),F=r.fire,S=r.storm,l3,nm=placeName(la,lo),
@@ -1862,10 +2030,11 @@ var WIND=(function(){
     return [null]}
   return {enter:enter,leave:leave,resize:resize,down:down,move:move,up:up,gesture:gesture,wheel:wheel,key:key,seq:seq,step:step,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
     dbg:function(){return {ok:!!(P&&dye),byte8:byte8,dw:dw,dh:dh,wind:!!windT,aurora:!!aurT,strikes:SK.length,flashes:flashes.length,ready:GLOBE.ready(),lat0:lat0,lon0:lon0,R:g.R,cx:g.cx,cy:g.cy,zoom:zoom,turned:turned,
-      LY:LY,lyr:!$('lyr').hidden,probe:probe?{lat:probe.lat,lon:probe.lon,ghost:probe.ghost,r:reading()}:null,vis:SK.filter(function(k){return k.p[2]>.3}).length,fires:FR.length,fireGL:fireN,storms:ST.map(function(k){return {name:k.s.name,lat:k.s.lat,lon:k.s.lon,x:k.p[0],y:k.p[1],z:k.p[2]}}),foc:!!FOC,
+      LY:LY,lyr:!$('lyr').hidden,cams:camOn,fly:!!FLY,probe:probe?{lat:probe.lat,lon:probe.lon,ghost:probe.ghost,r:reading()}:null,vis:SK.filter(function(k){return k.p[2]>.3}).length,fires:FR.length,fireGL:fireN,storms:ST.map(function(k){return {name:k.s.name,lat:k.s.lat,lon:k.s.lon,x:k.p[0],y:k.p[1],z:k.p[2]}}),foc:!!FOC,
       fireAt:FR.filter(function(k){return k.p[2]>.3}).slice(0,3).map(function(k){return {x:k.p[0],y:k.p[1],frp:k.f.frp}})}},
     windAt:windAt,
-    look:function(la,lo,zm){FOC=null;lat0=la;lon0=lo;if(zm){zoom=zm;geo()}idle=-1e6;vlon=vlat=0}}
+    look:function(la,lo,zm){FOC=null;FLY=null;lat0=la;lon0=lo;if(zm){zoom=zm;geo()}idle=-1e6;vlon=vlat=0},
+    layer:function(k,v){if(!(k in LY))return null;if(v!==undefined){LY[k]=v?1:0;lyKey='';lyrSync(true)}return LY[k]}}
 })();
 
 /* ---------- ORBIT: everything that is working in orbit round the Earth, where it is. Each point is a real satellite (about fifteen
@@ -1882,7 +2051,7 @@ var ORBIT=(function(){
   var P=null,gen=-1,satB=null,satH=null,HB=null,satN=0,satV=-1,starB=null,starN=0,EL=null,GRP=null,FLG=null,VB=null,baseT=0,
     g={cx:0,cy:0,R:100,E:[0,0,0],N:[0,0,0],C:[0,0,0]},lat0=22,lon0=clamp(-(new Date().getTimezoneOffset())/4,-180,180),zoom=.86,vlon=0,vlat=0,idle=0,
     off=0,spd=1,want=1,ret=false,drag=0,keyRate=0,simMs=Date.now(),th=0,RE3=[0,0,0],RN3=[0,0,0],RC3=[0,0,0],
-    sunV=[0,0,0],moonV=[0,0,0],sunE=[0,0,0],moonI=null,issI=-1,sel=-1,selQ=[0,0,0],selI=null,path=null,pathAt=0,notable=[],lit=[],tmp=[0,0,0],tq=[0,0,0],
+    sunV=[0,0,0],moonV=[0,0,0],sunE=[0,0,0],moonI=null,issI=-1,sel=-1,selQ=[0,0,0],selI=null,path=null,pathAt=0,notable=[],NOTE=null,lit=[],tmp=[0,0,0],tq=[0,0,0],
     MU=398600.4418,RE=6378.137,J2=1.08262668e-3,WE=0.0043752691;
   /* the kinds, their colours and how big a point each is drawn */
   var KIND=['satellite','Starlink','OneWeb','new constellation','navigation','geostationary','Earth-watching','space station','communications','wreckage','military'],
@@ -1909,7 +2078,7 @@ var ORBIT=(function(){
      same body at two moments (k runs 0 at the body to 1 at the far end). The body stays where it really is this second; light runs
      along the trail towards it, so that in real time, when a lap takes an hour and a half, the eye still sees which way everything
      is going. (Kepler's equation is solved a step less finely here: the trail is a few pixels wide) */
-  var TN=4,TRAILS=true;
+  var TN=4,TRAILS=true,LAY=false;
   var TVS=VS.replace('attribute vec4 a_c;','attribute vec4 a_c;varying float v_ph;')
     .replace('E=E-(E-e*sin(E)-M)/(1.0-e*cos(E));E=E-(E-e*sin(E)-M)/(1.0-e*cos(E));E=E-(E-e*sin(E)-M)/(1.0-e*cos(E));','E=E-(E-e*sin(E)-M)/(1.0-e*cos(E));E=E-(E-e*sin(E)-M)/(1.0-e*cos(E));')
     .replace('v_c=vec4(a_c.rgb*hid*(q.z<0.0?0.5:1.0)*(a_e1.x<1.7?uGain:1.0),1.0-k);}','v_c=vec4(a_c.rgb*hid*(q.z<0.0?0.4:1.0)*(a_e1.x<1.7?uGain:1.0),k);v_ph=fract(a_e3.x*0.1591549+a_e2.x*0.2347);}');
@@ -1945,10 +2114,10 @@ var ORBIT=(function(){
       for(v=0;v<TN*2;v++){var o2=(i*TN*2+v)*16,q2=i*11;VB[o2]=EL[q2];VB[o2+1]=EL[q2+1];VB[o2+2]=EL[q2+2];VB[o2+3]=EL[q2+3];VB[o2+5]=EL[q2+5];VB[o2+7]=EL[q2+7];VB[o2+9]=EL[q2+9];VB[o2+10]=GRP[i];VB[o2+11]=((v>>1)+(v&1))/TN;
         VB[o2+12]=c[0]*br;VB[o2+13]=c[1]*br;VB[o2+14]=c[2]*br;VB[o2+15]=sz}}
     /* the ones that ring: the two space stations, and a dozen of the satellites that watch the Earth (the weather and the land) */
-    notable=[];lit=[];var watch=[];
+    notable=[];lit=[];NOTE=new Uint8Array(satN);var watch=[];
     for(i=0;i<satN;i++){var nm=S.names[i]||'';if(nm==='ISS (ZARYA)'||nm==='CSS (TIANHE)'){notable.push(i);lit.push(0)}else if(GRP[i]===6&&EL[i*11]<1.3)watch.push(i)}
     for(i=0;i<12&&watch.length;i++){notable.push(watch[Math.floor(i*watch.length/12)]);lit.push(0)}
-    issI=-1;for(i=0;i<notable.length;i++)if(S.names[notable[i]]==='ISS (ZARYA)')issI=notable[i];
+    issI=-1;for(i=0;i<notable.length;i++){NOTE[notable[i]]=1;if(S.names[notable[i]]==='ISS (ZARYA)')issI=notable[i]}
     sel=-1;path=null;cardBuild();rebase(simMs)}
   /* the chip counts time from a moment not far off, so its numbers stay small and exact: every ten hours of shown time the angles are
      brought forward to a new moment */
@@ -2032,6 +2201,12 @@ var ORBIT=(function(){
     if(LIVE.sats&&satV!==LIVE.ver.sats)unpack();
     if(!PTN){lon0+=vlon*dt;lat0=clamp(lat0+vlat*dt,-85,85);var k=Math.exp(-dt*2.4);vlon*=k;vlat*=k;idle+=dt;if(idle>4&&!reduce)lon0+=dt*.9*smooth((idle-4)/4)}else idle=0;
     lon0=AS.n180(lon0);GLOBE.basis(lat0,lon0,g);
+    clock(dt,t);
+    /* the Earth makes room for the card: up, when the card lies along the bottom; to the left, when it stands at the side */
+    var cd=$('card'),ch=sel>=0&&cd&&!cd.hidden?cd.offsetHeight:0,cw=ch?cd.offsetWidth:0,side=cw>0&&cw<STG.w*.62,cyT=STG.cy-(side?0:Math.min(ch*.5,STG.h*.22)),cxT=STG.cx-(side?Math.min((cw+16)*.5,STG.w*.24):0),ke=Math.min(1,dt*5);
+    g.cy+=(cyT-g.cy)*ke;if(!g.cxs)g.cxs=STG.cx;g.cxs+=(cxT-g.cxs)*ke;if(Math.abs(g.cxs-cxT)<.3)g.cxs=cxT;g.cx=g.cxs;
+    nowSync()}
+  function clock(dt,t){
     /* time */
     if(keyRate){off+=keyRate*dt*5400000*.35;ret=false}
     if(ret){if(ret===true)ret={t0:FT,from:off};var rk=clamp((FT-ret.t0)/1500,0,1);off=ret.from*(1-smooth(rk));if(rk>=1){off=0;ret=false}}
@@ -2050,15 +2225,14 @@ var ORBIT=(function(){
         for(var j=0;j<=96;j++){var E=j/96*TAU,xp=a*(Math.cos(E)-e),yp=a*Math.sqrt(1-e*e)*Math.sin(E);path[j*3]=(cw*cO-sw*sO*cI)*xp+(-sw*cO-cw*sO*cI)*yp;path[j*3+1]=(cw*sO+sw*cO*cI)*xp+(-sw*sO+cw*cO*cI)*yp;path[j*3+2]=sw*sI2*xp+cw*sI2*yp}}}
     /* the card: built when a satellite is chosen, again when the catalogue arrives, and its two living lines four times a second;
        while it is up, the Earth moves up the screen to stay clear of it */
-    if(sel>=0&&(cardFor!==sel||(!cardHad&&SATINFO)))cardBuild();cardLive(t);
-    /* the Earth makes room for the card: up, when the card lies along the bottom; to the left, when it stands at the side */
-    var cd=$('card'),ch=sel>=0&&cd&&!cd.hidden?cd.offsetHeight:0,cw=ch?cd.offsetWidth:0,side=cw>0&&cw<STG.w*.62,cyT=STG.cy-(side?0:Math.min(ch*.5,STG.h*.22)),cxT=STG.cx-(side?Math.min((cw+16)*.5,STG.w*.24):0),ke=Math.min(1,dt*5);
-    g.cy+=(cyT-g.cy)*ke;if(!g.cxs)g.cxs=STG.cx;g.cxs+=(cxT-g.cxs)*ke;if(Math.abs(g.cxs-cxT)<.3)g.cxs=cxT;g.cx=g.cxs;
-    nowSync()}
+    if(sel>=0&&(cardFor!==sel||(!cardHad&&SATINFO)))cardBuild();cardLive(t)}
   function draw(t){
     if(!GLX.ok||GLX.lost){blank();return}if(gen!==GLX.gen)glSetup();if(!P){blank();return}
     var gl=GLX.gl,bg=[ABYSS[0]*.6,ABYSS[1]*.6,ABYSS[2]*.7],u,a,i;
     glClear(bg[0],bg[1],bg[2]);GLOBE.draw(g,{sun:sunV,moon:moonV,moonK:moonI?moonI.phase:0,bg:bg,dim:.8,flow:null,aur:null,time:t*.001});
+    sky(t)}
+  function sky(t){
+    var gl=GLX.gl,u,a,i;
     glAttrOff();gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.viewport(0,0,GLX.w,GLX.h);gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE);
     /* the stars; the shekere makes them shiver */
     u=P.star.u;a=P.star.a;gl.useProgram(P.star.p);gl.uniform3f(u.uE,RE3[0],RE3[1],RE3[2]);gl.uniform3f(u.uN,RN3[0],RN3[1],RN3[2]);gl.uniform3f(u.uV,RC3[0],RC3[1],RC3[2]);
@@ -2070,14 +2244,14 @@ var ORBIT=(function(){
       glAttrOff();u=P.sat.u;a=P.sat.a;gl.useProgram(P.sat.p);gl.uniform3f(u.uE,RE3[0],RE3[1],RE3[2]);gl.uniform3f(u.uN,RN3[0],RN3[1],RN3[2]);gl.uniform3f(u.uV,RC3[0],RC3[1],RC3[2]);
       gl.uniform2f(u.uC,g.cx,g.cy);gl.uniform2f(u.uRes,VW,VH);gl.uniform1f(u.uR,g.R);gl.uniform1f(u.uT,(simMs-baseT)/60000);gl.uniform1f(u.uTail,lerp(1.2,3.2,fast));
       /* seen from far off the low swarm is thousands of points in a small disc: it is dimmed there, so the Earth still shows through it */
-      gl.uniform1f(u.uPt,DPR*clamp(.5+.5*zoom,.62,1.5)*(1+.1*HIT[4]*G[4]));gl.uniform1f(u.uGain,clamp(.1+zoom*1.05,.2,1));
+      gl.uniform1f(u.uPt,DPR*clamp(.5+.5*zoom,.62,1.5)*(LAY?.8:1)*(1+.1*HIT[4]*G[4]));gl.uniform1f(u.uGain,clamp(.1+zoom*1.05,.2,1)*(LAY?.42:1));
       gl.bindBuffer(gl.ARRAY_BUFFER,satB);
       var ptr=function(stride){gl.enableVertexAttribArray(a.a_e1);gl.vertexAttribPointer(a.a_e1,4,gl.FLOAT,false,stride,0);gl.enableVertexAttribArray(a.a_e2);gl.vertexAttribPointer(a.a_e2,4,gl.FLOAT,false,stride,16);
         gl.enableVertexAttribArray(a.a_e3);gl.vertexAttribPointer(a.a_e3,4,gl.FLOAT,false,stride,32);gl.enableVertexAttribArray(a.a_c);gl.vertexAttribPointer(a.a_c,4,gl.FLOAT,false,stride,48)};
       /* the trails, then the bodies (the first entry of each body's run in the same list) */
       if(P.trail&&TRAILS){var tu=P.trail.u,ta=P.trail.a;glAttrOff();gl.useProgram(P.trail.p);
         gl.uniform3f(tu.uE,RE3[0],RE3[1],RE3[2]);gl.uniform3f(tu.uN,RN3[0],RN3[1],RN3[2]);gl.uniform3f(tu.uV,RC3[0],RC3[1],RC3[2]);gl.uniform2f(tu.uC,g.cx,g.cy);gl.uniform2f(tu.uRes,VW,VH);
-        gl.uniform1f(tu.uR,g.R);gl.uniform1f(tu.uT,(simMs-baseT)/60000);gl.uniform1f(tu.uTail,lerp(9,14,fast));gl.uniform1f(tu.uGain,clamp(.1+zoom*1.05,.2,1));gl.uniform1f(tu.uPt,1);
+        gl.uniform1f(tu.uR,g.R);gl.uniform1f(tu.uT,(simMs-baseT)/60000);gl.uniform1f(tu.uTail,lerp(9,14,fast));gl.uniform1f(tu.uGain,clamp(.1+zoom*1.05,.2,1)*(LAY?.32:1));gl.uniform1f(tu.uPt,1);
         gl.uniform1f(tu.uLine,clamp(.1+zoom*.12,.12,.3)*(1+.5*fast));gl.uniform1f(tu.uPh,reduce?0:(t*.00055)%1);
         [['a_e1',0],['a_e2',16],['a_e3',32],['a_c',48]].forEach(function(x){var l=ta[x[0]];if(l>=0){gl.enableVertexAttribArray(l);gl.vertexAttribPointer(l,4,gl.FLOAT,false,64,x[1])}});
         gl.drawArrays(gl.LINES,0,n*TN*2);glAttrOff();gl.useProgram(P.sat.p)}
@@ -2101,7 +2275,7 @@ var ORBIT=(function(){
   function ghost(t){var u=(t*.12)%1;if(u>.5)return [null];var e=smooth(u/.5),k=Math.floor(t*.12)%2?1:-1;return [{x:g.cx+k*g.R*(.55-1.1*e),y:g.cy+g.R*.2}]}
   return {enter:enter,leave:leave,resize:resize,down:down,move:move,up:up,gesture:gesture,ghostEnd:ghostEnd,wheel:wheel,key:key,seq:seq,tick:tick,draw:draw,hud:hud,ghost:ghost,toNow:toNow,gl:function(){gen=-1},
     dbg:function(){var o={n:satN,off:off,spd:spd,want:want,live:live(),sel:sel,name:sel>=0?nameOf(sel):null,info:selI,card:$('card')&&!$('card').hidden?$('card').innerText:null,cat:!!SATINFO,zoom:zoom,R:g.R,lat0:lat0,lon0:lon0,stars:starN,notable:notable.length,base:baseT,sim:simMs,vis:[]};
-      if(EL)for(var i=0;i<satN&&o.vis.length<8;i+=Math.max(1,Math.floor(satN/400))){view(place(i,simMs,tmp),tq);if(shown(tq)&&tq[2]>0&&Math.hypot(tq[0],tq[1])<(STG.w/2-20)/g.R)o.vis.push([Math.round(g.cx+tq[0]*g.R),Math.round(g.cy-tq[1]*g.R),i])}return o},
+      if(EL)for(var i=0;i<satN&&o.vis.length<8;i+=Math.max(1,Math.floor(satN/1600))){view(place(i,simMs,tmp),tq);var hr=Math.hypot(tq[0],tq[1]);if(shown(tq)&&tq[2]>0&&hr<(STG.w/2-20)/g.R&&(hr>1.08||GRP[i]===7||(NOTE&&NOTE[i])))o.vis.push([Math.round(g.cx+tq[0]*g.R),Math.round(g.cy-tq[1]*g.R),i])}return o},
     place:function(i,ms){var p=place(i,ms,[0,0,0]);return [p[0]*RE,p[1]*RE,p[2]*RE]},nameOf:nameOf,
     look:function(la,lo,zm){lat0=la;lon0=lo;if(zm){zoom=zm;geo()}idle=-1e6;vlon=vlat=0},
     time:function(o,w){off=o;if(w!==undefined){want=w;spd=w}ret=false},
@@ -2116,17 +2290,32 @@ var ORBIT=(function(){
     iss:function(ms){if(LIVE.sats&&satV!==LIVE.ver.sats)unpack();if(!EL||issI<0)return null;var th=AS.gmst(ms)*AS.D,p=place(issI,ms,[0,0,0]),q=place(issI,ms+1000,[0,0,0]),
       X=p[0]*Math.cos(th)+p[1]*Math.sin(th),Y=-p[0]*Math.sin(th)+p[1]*Math.cos(th),r=Math.sqrt(p[0]*p[0]+p[1]*p[1]+p[2]*p[2]);
       return {lat:Math.asin(p[2]/r)/AS.D,lon:Math.atan2(Y,X)/AS.D,alt:(r-1)*RE,kmh:Math.sqrt((q[0]-p[0])*(q[0]-p[0])+(q[1]-p[1])*(q[1]-p[1])+(q[2]-p[2])*(q[2]-p[2]))*RE*3600}},
-    pick:function(name){var S=LIVE.sats;for(var i=0;i<satN;i++)if((S.names[i]||'')===name){sel=i;path=null;selI=null;satInfoLoad();cardBuild();return i}return -1}}
+    pick:function(name){var S=LIVE.sats;for(var i=0;i<satN;i++)if((S.names[i]||'')===name){sel=i;path=null;selI=null;satInfoLoad();cardBuild();return i}return -1},
+    /* the satellites as a layer of the Earth world: its globe is theirs (the same Earth, the same turn of it), time is the present */
+    layer:{
+      on:function(){LAY=true;if(GLX.ok&&gen!==GLX.gen)glSetup();liveLoad()},
+      off:function(){if(sel<0)return;sel=-1;path=null;selI=null;cardBuild()},
+      tick:function(dt,t,gx){if(LIVE.sats&&satV!==LIVE.ver.sats)unpack();g.cx=gx.cx;g.cy=gx.cy;g.R=gx.R;for(var k=0;k<3;k++){g.E[k]=gx.E[k];g.N[k]=gx.N[k];g.C[k]=gx.C[k]}
+        zoom=gx.R/Math.max(1,Math.min(STG.w,STG.h)*.3);off=0;want=1;spd=1;ret=false;clock(dt,t)},
+      draw:function(t){if(!GLX.ok||GLX.lost)return;if(gen!==GLX.gen)glSetup();if(!P)return;sky(t)},
+      /* a tap near a satellite: the nearest within reach is chosen (true), or none is (false). Over the Earth's face a tap is for the
+         place under it (the swarm is so thick there that a satellite is within reach of every point), so only the space stations and the
+         few satellites the sound follows are taken there; in the dark round the Earth, any satellite */
+      pick:function(p){if(!EL)return false;var i,best=-1,on=Math.hypot(p.x-g.cx,p.y-g.cy)<g.R,bd=on?14*14:18*18,d;
+        for(i=0;i<satN;i++){if(on&&GRP[i]!==7&&!(NOTE&&NOTE[i]))continue;view(place(i,simMs,tmp),tq);if(!shown(tq))continue;var x=g.cx+tq[0]*g.R-p.x,y=g.cy-tq[1]*g.R-p.y;d=x*x+y*y;if(GRP[i]===7||(FLG[i]&1))d*=.45;if(d<bd){bd=d;best=i}}
+        if(best<0)return false;sel=best;path=null;selI=null;satInfoLoad();tone('glass',pent(clamp(Math.round(14-Math.log(EL[best*11])*9),2,14),52),.45,pan(p.x));cardBuild();return true},
+      sel:function(){return sel},
+      hud:function(){var S=LIVE.sats;if(!S||!EL)return LIVE.asked?'reading the orbits':'';return satN.toLocaleString('en-US')+' satellites, where they are now · orbits of '+stampUTC(S.fresh||S.asOf)}}}
 })();
 
-/* ---------- Live: cameras that stream around the clock from interesting places, the video filling the screen. Only where the page is
-   served from the owner's own host (HOSTED): a Claude artifact may not show any outside video. Asked for on 10 Nov ("def give me live
-   video feeds from interesting places"), and on 12 Nov he chose all four of: every camera plays, full-screen video, better places, many
-   more cameras browsable by theme.
-   The video fills the screen (held upright, a wide view is cropped to the screen and slowly looked across, side to side; two fingers
-   bring it closer or show all of it). A small Earth in the corner turns to where the camera is; a tap on it opens the map, where the
-   whole Earth shows every camera of the theme, and a tap on one goes there. A swipe goes to the next camera east or west. The row of
-   themes along the bottom: all, animals, volcanoes, space, cities, the sea, night skies, mountains, things that move.
+/* ---------- the cameras: a layer of the Earth (12-wind.js), only where the page is served from the owner's own host (HOSTED): a Claude
+   artifact may not show any outside video. Asked for on 10 Nov ("def give me live video feeds from interesting places"); on 12 Nov he
+   chose every camera playing, better places and many more of them, browsable by theme; on 13 Nov "Put them all on the same globe as
+   satellites and make that just a layer", and for a camera tapped, "Window over the globe".
+   So each camera of the theme is a ring on the Earth (bright when it is known to be on the air); a tap on one opens a window in the
+   corner of the screen where it plays, and the Earth turns to it. A swipe across the window goes to the next camera east or west, a
+   tap on it makes it bigger (or smaller again), its cross closes it. The row of kinds above the layers: all, animals, volcanoes,
+   space, cities, the sea, night skies, mountains, things that move.
    The readout says what is true of the place now: its hour by the Sun and the Sun's height, the wind (NOAA's GFS), how many satellites
    are above its horizon (worked out from every published orbit), how far the space station is. The cameras' own sound is never
    played: the band is the sound.
@@ -2135,11 +2324,8 @@ var ORBIT=(function(){
 var LIVEW=(function(){
   var CAMS=[],THEMES=[],TH='all',cur=-1,asked=false,player=null,ytReady=false,ytAsked=false,ytFail=false,ytWant=null,ytId='',
     el=null,box=null,img=null,imgUrl='',imgAt=0,imgT=0,
-    g={cx:0,cy:0,R:100,E:[0,0,0],N:[0,0,0],C:[0,0,0]},lat0=20,lon0=-40,
-    MAP=false,mapK=0,mapT=0,turned=0,gs={x:0,y:0,r:0},
-    vr={x:0,y:0,w:0,h:0,disk:false},zoom=1,panx=0,pany=0,sweep=0,touchT=-1e9,drag=0,
-    sunV=[0,0,0],moonV=[0,0,0],sunI=null,moonI=null,stat='',statT=0,liveT=0,bad={},ST={},waitQ=[],asking=0,over=null,overT=0,issNow=null,issT=0,
-    on=false,lastT=0,camP=[],tmp=[0,0,0],seq=0;
+    sunV=[0,0,0],sunI=null,stat='',statT=0,liveT=0,bad={},ST={},waitQ=[],asking=0,over=null,overT=0,issNow=null,issT=0,
+    on=false,camP=[],tmp=[0,0,0],seq=0,big=false,win={x:0,y:0,w:0,h:0},fly=null;
   function $e(id){return document.getElementById(id)}
   function valid(c){return c&&typeof c.id==='string'&&/^[a-z0-9\-]{1,24}$/i.test(c.id)&&typeof c.name==='string'&&isFinite(+c.lat)&&isFinite(+c.lon)&&(c.kind==='yt'||c.kind==='img')}
   function word(v,n){return String(v===undefined||v===null?'':v).replace(/[^0-9A-Za-zÀ-ÿ .,:;'()\/&°\-]/g,'').slice(0,n||60)}
@@ -2152,7 +2338,7 @@ var LIVEW=(function(){
         by:word(c.by,60),every:clamp(+c.every||600,60,3600)}});
       CAMS.sort(function(a,b){return a.lon-b.lon});
       THEMES=(Array.isArray(d.themes)?d.themes:[]).filter(function(x){return Array.isArray(x)&&/^[a-z]{2,8}$/.test(x[0])}).map(function(x){return [x[0],word(x[1],24)]});
-      themesBuild();if(on&&cur<0)start()}).catch(function(){asked=false})}catch(e){asked=false}}
+      themesBuild();if(on)primeTheme()}).catch(function(){asked=false})}catch(e){asked=false}}
   /* the Sun's height (degrees) at a place now */
   function sunAt(la,lo){if(!sunI)return 0;var v=AS.llv(la,lo,tmp);return Math.asin(clamp(v[0]*sunV[0]+v[1]*sunV[1]+v[2]*sunV[2],-1,1))/AS.D}
   function camLL(c){if(c.moving&&issNow)return [issNow.lat,issNow.lon];return [c.lat,c.lon]}
@@ -2173,17 +2359,16 @@ var LIVEW=(function(){
   function primeTheme(){var L=[],i;if(cur>=0){var n=CAMS.length;for(i=1;i<4;i++){L.push(CAMS[(cur+i)%n].id,CAMS[(cur-i+n)%n].id)}}
     CAMS.forEach(function(c){if(inTheme(c)&&c.kind==='yt')L.push(c.id)});ask(L.filter(function(id){var c=find(id);return c&&inTheme(c)&&c.kind==='yt'}),false)}
   function find(id){for(var i=0;i<CAMS.length;i++)if(CAMS[i].id===id)return CAMS[i];return null}
-  /* where to begin: a camera of the theme known to be on the air, whose light suits it now (a city by day, the aurora by night) */
-  function start(){var bi=-1,bs=-1e9;CAMS.forEach(function(c,i){if(!inTheme(c)||!usable(c))return;var e=sunAt(c.lat,c.lon),s=(onAir(c)?3:0)+(c.kind==='yt'?1.5:0)+Math.random()*.6+
-      (c.best==='day'?(e>4?2:-1):c.best==='night'?(e<-8?2.5:-1):1);if(s>bs){bs=s;bi=i}});primeTheme();if(bi>=0)show(bi)}
   /* the next camera east or west in the theme: one known to be on the air if there is one, else the next not known to be off */
   function step(dir){if(!CAMS.length)return;var n=CAMS.length,i=cur<0?0:cur,k,fb=-1;
     for(k=0;k<n;k++){i=(i+dir+n)%n;var c=CAMS[i];if(!inTheme(c)||!usable(c))continue;if(onAir(c)){show(i);return}if(fb<0)fb=i}
     if(fb>=0)show(fb)}
   function fade(v){if(box)box.classList.toggle('on',!!v)}
+  /* a camera chosen: the window opens (or changes) and the Earth turns to it */
   function show(i){
-    var c=CAMS[i];if(!c)return;var same=i===cur;cur=i;seq++;stat='finding';statT=FT;liveT=0;if(!same){zoom=1;panx=pany=0;sweep=0}fade(false);ytId='';
-    if(box)box.classList.toggle('disk',c.kind==='img');geo();
+    var c=CAMS[i];if(!c)return;cur=i;seq++;stat='finding';statT=FT;liveT=0;fade(false);ytId='';
+    winOpen();if(box)box.classList.toggle('disk',c.kind==='img');winGeo();
+    var ll=camLL(c);if(fly)fly(ll[0],ll[1]);
     var n=CAMS.length;ask([CAMS[(i+1)%n].id,CAMS[(i-1+n)%n].id].filter(function(id){var x=find(id);return x&&x.kind==='yt'}),true);
     if(c.kind==='img'){if(player)try{player.pauseVideo()}catch(e){}imgLoad(c,true);return}
     if(img)img.hidden=true;
@@ -2208,103 +2393,71 @@ var LIVEW=(function(){
     try{if(player&&player.loadVideoById){player.loadVideoById(id);player.mute();return}
       player=new window.YT.Player('vidp',{host:'https://www.youtube-nocookie.com',videoId:id,width:'100%',height:'100%',
         playerVars:{autoplay:1,mute:1,playsinline:1,controls:0,disablekb:1,fs:0,iv_load_policy:3,rel:0,modestbranding:1,cc_load_policy:0,origin:location.origin},
-        events:{onReady:function(e){try{e.target.mute();if(on)e.target.playVideo();else e.target.pauseVideo()}catch(x){}},
+        events:{onReady:function(e){try{e.target.mute();if(on&&cur>=0)e.target.playVideo();else e.target.pauseVideo()}catch(x){}},
           onStateChange:function(e){if(e.data===1){if(stat!=='live')arrive();stat='live';liveT=FT;fade(true);el&&el.classList.remove('tap')}
-            else if(e.data===0&&on){var c=CAMS[cur];if(c)bad[c.id]=FT;step(1)}},
+            else if(e.data===0&&on&&cur>=0){var c=CAMS[cur];if(c)bad[c.id]=FT;step(1)}},
           onError:function(){var c=CAMS[cur];if(c){bad[c.id]=FT;if(ST[c.id])ST[c.id].id=''}stat='off';statT=FT}}})}catch(e){ytFail=true}}
   function arrive(){if(!reduce)tone('bowl',pent(2,52),.3,0)}
-  /* ---- the picture: the video fills the screen; a still of the whole Earth stands in the stage, round ---- */
-  function geo(){
-    var c=CAMS[cur],disk=c&&c.kind==='img';vr.disk=disk;
-    if(disk){var d=Math.min(STG.w*.94,STG.h*.94);vr.w=vr.h=d;vr.x=STG.cx-d/2;vr.y=STG.cy-d/2}
-    else{var k=Math.max(VW/16,VH/9);vr.w=16*k;vr.h=9*k;vr.x=(VW-vr.w)/2;vr.y=(VH-vr.h)/2}
-    place()}
-  /* how far the cropped picture may be looked across, side to side and up and down, at this closeness */
-  function reachX(){return Math.max(0,(vr.w*zoom-VW)/2)}function reachY(){return Math.max(0,(vr.h*zoom-VH)/2)}
-  function place(){if(!box)return;var w=vr.w*zoom,h=vr.h*zoom,x=vr.x+vr.w/2-w/2+panx+drag,y=vr.y+vr.h/2-h/2+pany;
-    if(!vr.disk&&!MAP){var sx=reachX();x+=sx*sweep}
+  /* ---- the window: in the corner of the stage above the music and the layers, sixteen by nine; tapped, across the top of the stage ---- */
+  function winOpen(){if(!el)return;el.hidden=false;document.body.classList.add('camw')}
+  function winClose(){cur=-1;seq++;stat='';fade(false);try{if(player)player.pauseVideo()}catch(e){}if(el){el.hidden=true;el.classList.remove('tap')}document.body.classList.remove('camw');big=false}
+  function winGeo(){var w,h;if(big){w=STG.w-16;h=w*9/16;win.x=STG.x0+8;win.y=STG.y0+8}else{w=clamp(STG.w*.58,170,420);h=w*9/16;win.x=STG.x1-w-8;win.y=STG.y1-h-8}win.w=w;win.h=h;place()}
+  function place(){if(!box)return;var c=CAMS[cur],x=win.x,y=win.y,w=win.w,h=win.h;
+    if(c&&c.kind==='img'){var d=Math.min(w,h);x+=(w-d)/2;w=h=d}
     /* (the size only when it changes: resizing the player every frame would make it lay itself out every frame) */
     var W2=Math.round(w),H2=Math.round(h);if(W2!==box._w||H2!==box._h){box._w=W2;box._h=H2;box.style.width=W2+'px';box.style.height=H2+'px'}box.style.transform='translate('+Math.round(x)+'px,'+Math.round(y)+'px)'}
-  /* the Earth: small in the corner above the music, or (the map) filling the stage */
-  function globeGeo(){var fb=$('foot').getBoundingClientRect(),r0=clamp(Math.min(VW,VH)*.12,40,66),x0=VW-r0-14,y0=(fb.top>0?fb.top:VH-120)-r0-12,
-      R1=Math.min(STG.w,STG.h)*.42,k=smooth(mapK);
-    g.R=lerp(r0,R1,k);g.cx=lerp(x0,STG.cx,k);g.cy=lerp(y0,STG.cy,k);
-    if(Math.abs(gs.x-g.cx)>.5||Math.abs(gs.y-g.cy)>.5||Math.abs(gs.r-g.R)>.5){gs.x=g.cx;gs.y=g.cy;gs.r=g.R;var st=document.body.style;
-      st.setProperty('--gx',Math.round(g.cx)+'px');st.setProperty('--gy',Math.round(g.cy)+'px');st.setProperty('--gr',Math.round(g.R+(MAP||mapK>.01?VW+VH:1))+'px')}}
-  function mapOpen(v){MAP=!!v;mapT=FT;turned=0;document.body.classList.toggle('lmap',MAP);if(MAP)primeTheme()}
+  function inWin(x,y){return cur>=0&&x>=win.x&&x<=win.x+win.w&&y>=win.y&&y<=win.y+win.h}
+  function onX(x,y){return cur>=0&&x>=win.x+win.w-34&&y<=win.y+34}
+  /* a finger on the window: across it, the next camera east or west; a tap, bigger or smaller; on its cross, closed */
+  function winUp(p){if(p.ghost||p.multi)return;var dx=p.x-p.x0,dy=p.y-p.y0,ax=Math.abs(dx),ay=Math.abs(dy),tap=FT-p.t0<600&&p.moved<14;
+    if(tap){if(onX(p.x0,p.y0)){winClose();hit('tok',.25,0);return}big=!big;winGeo();hit('tok',.2,0);return}
+    if((ax>50&&ax>ay*1.2)||(Math.abs(p.vx||0)>600&&ax>24&&ax>ay))step(dx<0?1:-1)}
+  function nearestMark(x,y,lim){var bi=-1,bd=lim*lim;for(var i=0;i<camP.length;i++){var q=camP[i];if(!q||q[2]<=.05||!inTheme(CAMS[i]))continue;var d=(q[0]-x)*(q[0]-x)+(q[1]-y)*(q[1]-y);if(d<bd){bd=d;bi=i}}return bi}
   /* ---- the row of themes ---- */
   function themesBuild(){var r=$('themes');if(!r||r.childNodes.length||!THEMES.length)return;
     [['all','all']].concat(THEMES).forEach(function(t){var b=document.createElement('button');b.type='button';b.className='lb';b.id='th_'+t[0];
       b.textContent=t[0]==='all'?'all':t[0];b.title=t[1];b.addEventListener('click',function(){themeSet(t[0])});r.appendChild(b)});themesSync()}
   function themesSync(){var r=$('themes');if(!r)return;r.querySelectorAll('.lb').forEach(function(b){b.setAttribute('aria-pressed',b.id==='th_'+TH?'true':'false')})}
-  function themeSet(k){TH=k;themesSync();primeTheme();var c=CAMS[cur];if(!c||!inTheme(c))start();if(AU.auto)musicOn()}
-  function enter(){
-    on=true;el=$e('vid');box=$e('vidbox');img=$e('vidi');if(el)el.hidden=false;document.body.classList.add('livev');var r=$e('themes');if(r)r.hidden=false;
-    GLOBE.load();liveLoad();camsLoad();themesBuild();lastT=0;
-    if(cur<0&&CAMS.length)start();else if(player&&stat!=='off')try{player.playVideo()}catch(e){}geo();globeGeo()}
-  function leave(){on=false;if(el){el.hidden=true;el.classList.remove('tap')}try{if(player)player.pauseVideo()}catch(e){}drag=0;mapOpen(false);mapK=0;
-    document.body.classList.remove('livev');var r=$e('themes');if(r)r.hidden=true}
-  function resize(){geo();globeGeo()}
-  document.addEventListener('visibilitychange',function(){try{if(!player)return;if(document.hidden)player.pauseVideo();else if(on)player.playVideo()}catch(e){}});
-  /* ---- fingers. A finger that was ever one of two is a pinch, not a swipe or a tap ---- */
-  function onGlobe(x,y,pad){return Math.hypot(x-g.cx,y-g.cy)<g.R+(pad||0)}
-  function down(p){touchT=FT;if(p.n>=2)eachPT(function(q){q.multi=true});p.map=MAP&&onGlobe(p.x,p.y,8)}
-  function move(p){if(p.n>=2){p.multi=true;if(drag){drag=0;place()}return}
-    if(MAP){if(p.map){var k=1/Math.max(40,g.R),dx=p.x-(p.lx===undefined?p.x0:p.lx),dy=p.y-(p.ly===undefined?p.y0:p.ly);p.lx=p.x;p.ly=p.y;lon0=AS.n180(lon0-dx*k*57.3);lat0=clamp(lat0+dy*k*57.3,-80,80);turned=FT}return}
-    var dx2=p.x-p.x0;drag=dx2*(p.ghost?.25:.35);place()}
-  function nearestMark(x,y,lim){var bi=-1,bd=lim*lim;for(var i=0;i<camP.length;i++){var q=camP[i];if(!q||q[2]<=.05||!inTheme(CAMS[i]))continue;var d=(q[0]-x)*(q[0]-x)+(q[1]-y)*(q[1]-y);if(d<bd){bd=d;bi=i}}return bi}
-  function up(p){
-    var dx=p.x-p.x0,dy=p.y-p.y0,dtm=FT-p.t0;drag=0;place();if(p.ghost||p.multi)return;var tap=dtm<600&&p.moved<14;
-    if(MAP){if(!tap)return;var i=nearestMark(p.x,p.y,24);if(i>=0){mapOpen(false);if(i!==cur)show(i);return}if(!onGlobe(p.x,p.y,8))mapOpen(false);return}
-    if(tap&&onGlobe(p.x,p.y,10)){mapOpen(true);hit('tok',.25,0);return}
-    var ax=Math.abs(dx),ay=Math.abs(dy);
-    if((ax>70&&ax>ay*1.3)||(Math.abs(p.vx)>650&&ax>28&&ax>ay)){step(dx<0?1:-1);return}
-    if((ay>90&&ay>ax*1.5)||(Math.abs(p.vy||0)>700&&ay>36&&ay>ax)){step(dy<0?1:-1);return}}
-  /* two fingers: the picture comes closer, or steps back to show all of it, and can be moved about */
-  function gesture(e){if(e.ghost||MAP)return;var lo=vr.disk?1:Math.min(VW/vr.w,VH/vr.h)*.999;zoom=clamp(zoom*e.scale,lo,3);
-    panx=clamp(panx+e.dx,-reachX(),reachX());pany=clamp(pany+e.dy,-reachY(),reachY());sweep=0;place()}
-  function key(e,dn){if(e.key==='Escape'&&dn&&MAP){mapOpen(false);return true}if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft')return false;if(dn&&!e.repeat)step(e.key==='ArrowRight'?1:-1);return true}
-  function tick(dt,t){
-    var now=Date.now(),c=CAMS[cur];
-    sunI=AS.sun(now);moonI=AS.moon(now);AS.llv(sunI.sublat,sunI.sublon,sunV);AS.llv(moonI.sublat,moonI.sublon,moonV);
-    if(FT-issT>1000){issT=FT;try{issNow=ORBIT.iss(now)}catch(e){issNow=null}}
-    mapK=clamp(mapK+(MAP?dt:-dt)*3.2,0,1);globeGeo();
-    /* the Earth turns to the camera, unless a finger has just turned it on the map */
-    if(!(MAP&&FT-turned<6000)){var ll=c?camLL(c):[20,lon0],k=Math.min(1,dt*1.6),dl=AS.n180(ll[1]-lon0);lon0=AS.n180(lon0+dl*k);lat0+=(clamp(ll[0],-60,60)-lat0)*k}
-    if(!c&&!reduce)lon0=AS.n180(lon0+dt*3);GLOBE.basis(lat0,lon0,g);
-    camP.length=CAMS.length;for(var i=0;i<CAMS.length;i++){var q=camP[i]||(camP[i]=[0,0,0]),l2=camLL(CAMS[i]);GLOBE.pr(AS.llv(l2[0],l2[1],tmp),g,q)}
-    if(c&&FT-overT>3000){overT=FT;var l3=camLL(c);try{over=ORBIT.above(l3[0],l3[1],now)}catch(e){over=null}}
-    /* held upright, the cropped picture is looked across, slowly, side to side (a minute there and back); a touch holds it a while */
-    if(!reduce&&!MAP&&zoom<=1.001&&FT-touchT>12000&&stat==='live'){sweep=Math.sin((FT-liveT)/60000*TAU)*.92;place()}
-    /* a still is fetched again when the satellite has taken a new picture */
-    if(c&&c.kind==='img'&&FT-imgT>c.every*1000)imgLoad(c,false);
-    /* a stream that will not start is passed over after twelve seconds (one that waits for a tap, after twenty-five) */
-    if(c&&on&&!MAP&&stat==='connecting'&&FT-statT>(el&&el.classList.contains('tap')?25000:12000)){bad[c.id]=FT;step(1)}
-    if(c&&on&&stat==='finding'&&FT-statT>20000){bad[c.id]=FT;step(1)}
-    if(c&&on&&stat==='connecting'&&FT-statT>6000&&el)el.classList.add('tap');
-    if(c&&on&&!MAP&&stat==='off'&&FT-statT>1400){statT=FT;step(1)}
-    if(on&&!CAMS.length&&!asked)camsLoad()}
-  function draw(t){
-    var c=OV,i,q;
-    if(GLX.ok&&!GLX.lost){var gl=GLX.gl,bg=[ABYSS[0]*.6,ABYSS[1]*.6,ABYSS[2]*.7];glAttrOff();gl.disable(gl.BLEND);glClear(bg[0],bg[1],bg[2]);
-      GLOBE.draw(g,{sun:sunV,moon:moonV,moonK:moonI?moonI.phase:0,bg:bg,dim:.75,cld:GLOBE.hasCloud(),cldK:.9,time:t*.001})}
-    /* the cameras on the Earth: on the map, a ring for each in the theme (bright when known to be on the air); the one shown, brighter */
-    var k=smooth(mapK);
-    for(i=0;i<camP.length;i++){q=camP[i];if(!q||q[2]<=.05)continue;var me=i===cur,cm=CAMS[i];if(!me&&(k<.05||!inTheme(cm)))continue;
-      var air=onAir(cm),a=me?.95:(air?.85:.32)*clamp(q[2]*2,0,1)*k,r=me?(4+k*2)+Math.sin(t*.005)*1.2:air?3.4:2.4;
-      c.strokeStyle=(air||me?'rgba(62,240,255,':'rgba(234,249,255,')+a.toFixed(3)+')';c.lineWidth=me?1.4:1;c.beginPath();c.arc(q[0],q[1],r,0,TAU);c.stroke();
-      if(me){c.fillStyle='rgba(234,249,255,.95)';c.beginPath();c.arc(q[0],q[1],1.6,0,TAU);c.fill()}}
-    /* the small Earth's rim, and while a stream is found a slow ring in the middle of the screen */
-    if(k<.99){c.strokeStyle='rgba(62,240,255,'+(.35*(1-k)).toFixed(3)+')';c.lineWidth=1;c.beginPath();c.arc(g.cx,g.cy,g.R+3,0,TAU);c.stroke()}
-    if(CAMS[cur]&&stat!=='live'&&!MAP){var u=(t*.0006)%1,cx=VW/2,cy=STG.cy;c.strokeStyle='rgba(234,249,255,'+(.35*(1-u)).toFixed(3)+')';c.lineWidth=1;c.beginPath();c.arc(cx,cy,8+u*30,0,TAU);c.stroke()}}
+  function themeSet(k){TH=k;themesSync();primeTheme();var c=CAMS[cur];if(c&&!inTheme(c))step(1);if(AU.auto)musicOn()}
   function hour(la,lo){if(!sunI)return '';var hr=(((12+AS.n180(lo-sunI.sublon)/15)%24)+24)%24,h=Math.floor(hr),m=Math.floor((hr-h)*60),e=sunAt(la,lo);
     return (h<10?'0':'')+h+':'+(m<10?'0':'')+m+' by the Sun · '+(e>-.83?'Sun '+Math.round(e)+'° up':e>-18?(hr<12?'dawn':'dusk'):'night')}
   function themeName(){if(TH==='all')return 'all the cameras';for(var i=0;i<THEMES.length;i++)if(THEMES[i][0]===TH)return THEMES[i][1];return TH}
   function airCount(){var n=0,m=0;CAMS.forEach(function(c){if(!inTheme(c))return;m++;if(onAir(c))n++});return [n,m]}
+  /* ---- the layer: switched on and off from the Earth's row of layers; it reads the cameras, the Earth's turn and taps from there ---- */
+  function layerOn(v){
+    on=!!v;el=$e('vid');box=$e('vidbox');img=$e('vidi');var r=$e('themes');
+    if(on){camsLoad();themesBuild();if(r)r.hidden=false;primeTheme()}else{winClose();if(r)r.hidden=true}}
+  function tick(dt,g){
+    var now=Date.now(),c=CAMS[cur];if(c)winGeo();
+    sunI=AS.sun(now);AS.llv(sunI.sublat,sunI.sublon,sunV);
+    if(FT-issT>1000){issT=FT;try{issNow=ORBIT.iss(now)}catch(e){issNow=null}}
+    camP.length=CAMS.length;for(var i=0;i<CAMS.length;i++){var q=camP[i]||(camP[i]=[0,0,0]),l2=camLL(CAMS[i]);GLOBE.pr(AS.llv(l2[0],l2[1],tmp),g,q)}
+    if(!c)return;
+    if(FT-overT>3000){overT=FT;var l3=camLL(c);try{over=ORBIT.above(l3[0],l3[1],now)}catch(e){over=null}}
+    /* a still is fetched again when the satellite has taken a new picture */
+    if(c.kind==='img'&&FT-imgT>c.every*1000)imgLoad(c,false);
+    /* a stream that will not start is passed over after twelve seconds (one that waits for a tap, after twenty-five) */
+    if(stat==='connecting'&&FT-statT>(el&&el.classList.contains('tap')?25000:12000)){bad[c.id]=FT;step(1)}
+    if(stat==='finding'&&FT-statT>20000){bad[c.id]=FT;step(1)}
+    if(stat==='connecting'&&FT-statT>6000&&el)el.classList.add('tap');
+    if(stat==='off'&&FT-statT>1400){statT=FT;step(1)}}
+  function draw(t,g){
+    var c=OV,i,q;
+    /* a ring for each camera of the theme (bright when known to be on the air); the one playing, brighter, with a line to its window */
+    for(i=0;i<camP.length;i++){q=camP[i];if(!q||q[2]<=.05)continue;var me=i===cur,cm=CAMS[i];if(!me&&!inTheme(cm))continue;
+      var air=onAir(cm),a=me?.95:(air?.85:.34)*clamp(q[2]*2,0,1),r=me?5+Math.sin(t*.005)*1.2:air?3.6:2.6;
+      c.strokeStyle='rgba(1,4,10,.5)';c.lineWidth=2.6;c.beginPath();c.arc(q[0],q[1],r,0,TAU);c.stroke();
+      c.strokeStyle=(air||me?'rgba(62,240,255,':'rgba(234,249,255,')+a.toFixed(3)+')';c.lineWidth=me?1.5:1.1;c.beginPath();c.arc(q[0],q[1],r,0,TAU);c.stroke();
+      if(me){c.fillStyle='rgba(234,249,255,.95)';c.beginPath();c.arc(q[0],q[1],1.7,0,TAU);c.fill()}}
+    var cm2=CAMS[cur];if(!cm2)return;
+    var mq=camP[cur];if(mq&&mq[2]>.05){c.setLineDash([2,5]);c.strokeStyle='rgba(62,240,255,.45)';c.lineWidth=1;c.beginPath();c.moveTo(mq[0],mq[1]);c.lineTo(win.x+win.w/2,win.y);c.stroke();c.setLineDash([])}
+    /* the window's frame, its cross, and while a stream is found a slow ring in its middle */
+    c.strokeStyle='rgba(234,249,255,.55)';c.lineWidth=1;c.strokeRect(win.x-.5,win.y-.5,win.w+1,win.h+1);
+    var xx=win.x+win.w-17,xy=win.y+17;c.fillStyle='rgba(1,4,10,.6)';c.beginPath();c.arc(xx,xy,11,0,TAU);c.fill();c.strokeStyle='rgba(234,249,255,.9)';c.lineWidth=1.3;
+    c.beginPath();c.moveTo(xx-4.5,xy-4.5);c.lineTo(xx+4.5,xy+4.5);c.moveTo(xx+4.5,xy-4.5);c.lineTo(xx-4.5,xy+4.5);c.stroke();
+    if(stat!=='live'){var u=(t*.0006)%1;c.strokeStyle='rgba(234,249,255,'+(.4*(1-u)).toFixed(3)+')';c.beginPath();c.arc(win.x+win.w/2,win.y+win.h/2,6+u*Math.min(28,win.h*.3),0,TAU);c.stroke()}}
   function hud(){
-    var c=CAMS[cur];if(!c)return asked?(CAMS.length?'':'finding the cameras'):'';
-    var ac=airCount(),l0=themeName()+' · '+(ac[0]?ac[0]+' of '+ac[1]+' on the air now':ac[1]+' cameras');
-    if(MAP)return 'live cameras, around the world: '+themeName()+'\n'+(ac[0]?ac[0]+' of '+ac[1]+' on the air now':'finding which are on the air')+' · tap one to go there\ndrag to turn the Earth · tap off the Earth to go back';
+    var c=CAMS[cur];if(!c){if(!on)return '';if(!CAMS.length)return asked?'finding the cameras':'';var ac=airCount();return themeName()+' · '+(ac[0]?ac[0]+' of '+ac[1]+' on the air now':ac[1]+' cameras')+' · tap a ring to watch'}
     var ll=camLL(c),la=ll[0],lo=ll[1],l1=c.name+(c.place?' · '+c.place:''),l2='',l3='',w=null,s=ST[c.id];
     if(c.moving&&issNow){l1=c.name;l2='over '+Math.abs(la).toFixed(1)+'°'+(la>=0?'N':'S')+' '+Math.abs(lo).toFixed(1)+'°'+(lo>=0?'E':'W')+' · '+Math.round(issNow.alt)+' km up · '+Math.round(issNow.kmh).toLocaleString('en-US')+' km/h'}
     else if(c.kind==='img')l2=imgAt?'picture of '+stampUTC(imgAt):'';
@@ -2312,12 +2465,399 @@ var LIVEW=(function(){
     var by=s&&s.ch?s.ch:c.by,st=stat==='live'?(c.kind==='img'?c.by:'live'+(by?' · '+by:'')):stat==='off'?'not on the air now':'finding the stream';
     if(over&&c.kind!=='img')l3=over.n.toLocaleString('en-US')+' satellites above'+(over.iss>0&&over.iss<2600&&!c.moving?' · the space station '+Math.round(over.iss).toLocaleString('en-US')+' km away':'')+' · '+st;
     else l3=st;
-    return l1+'\n'+l2+'\n'+l3+'\n'+l0+' · swipe for the next · the Earth for the map'}
-  function ghost(t){if(MAP)return [null];var u=(t*.15)%1;if(u<.4){var e=smooth(u/.4);return [{x:VW/2+Math.min(STG.w,300)*(.3-.6*e),y:STG.cy}]}return [null]}
-  return {enter:enter,leave:leave,resize:resize,down:down,move:move,up:up,gesture:gesture,key:key,tick:tick,draw:draw,hud:hud,ghost:ghost,
-    dbg:function(){var c=CAMS[cur];return {cams:CAMS.length,themes:THEMES.map(function(x){return x[0]}),th:TH,cur:cur,id:c?c.id:'',kind:c?c.kind:'',stat:stat,yt:ytId,ready:ytReady,fail:ytFail,bad:Object.keys(bad),zoom:zoom,
-      map:MAP,mapK:mapK,air:airCount(),st:Object.keys(ST).length,box:{x:vr.x,y:vr.y,w:vr.w,h:vr.h},g:{cx:g.cx,cy:g.cy,R:g.R},marks:camP.map(function(q){return q?[q[0],q[1],q[2]]:null}),ids:CAMS.map(function(c){return c.id}),onair:CAMS.filter(function(c){return onAir(c)}).map(function(c){return c.id}),over:over,iss:issNow,img:img&&!img.hidden}},
-    go:function(id){for(var i=0;i<CAMS.length;i++)if(CAMS[i].id===id){show(i);return i}return -1},theme:themeSet,map:mapOpen}
+    return l1+'\n'+l2+'\n'+l3+'\nswipe the window for the next · tap it, bigger · × to close'}
+  document.addEventListener('visibilitychange',function(){try{if(!player)return;if(document.hidden)player.pauseVideo();else if(on&&cur>=0)player.playVideo()}catch(e){}});
+  return {layer:{on:layerOn,tick:tick,draw:draw,hud:hud,hit:inWin,up:winUp,resize:function(){if(cur>=0)winGeo()},
+      /* a tap on the Earth: a camera's ring within reach opens its window (true) */
+      pick:function(x,y){if(!on)return false;var i=nearestMark(x,y,22);if(i<0)return false;show(i);hit('tok',.25,0);return true},
+      open:function(){return cur>=0},close:winClose,flyTo:function(f){fly=f}},
+    dbg:function(){var c=CAMS[cur];return {on:on,cams:CAMS.length,themes:THEMES.map(function(x){return x[0]}),th:TH,cur:cur,id:c?c.id:'',kind:c?c.kind:'',stat:stat,yt:ytId,ready:ytReady,fail:ytFail,bad:Object.keys(bad),
+      air:airCount(),st:Object.keys(ST).length,win:{x:win.x,y:win.y,w:win.w,h:win.h,big:big},marks:camP.map(function(q){return q?[q[0],q[1],q[2]]:null}),ids:CAMS.map(function(c){return c.id}),
+      onair:CAMS.filter(function(c){return onAir(c)}).map(function(c){return c.id}),over:over,iss:issNow,img:img&&!img.hidden}},
+    go:function(id){for(var i=0;i<CAMS.length;i++)if(CAMS[i].id===id){show(i);return i}return -1},theme:themeSet,close:winClose}
+})();
+
+/* ---------- the mixer's sounds (13 Nov: "a music dj mixer page with pitch control hundreds of other samples"). Every one is made here
+   from plain arithmetic, like the toys' voices: struck once and dying away, nothing blown, bowed or held, none of them a tone from an
+   oscillator, no harp. Sixteen kits of sixteen drums each (256: kicks, snares, claps, rims, hats, toms, congas, bongos, shakers,
+   tambourines, cowbells, wood, bells, snaps, each kit a different room, size and grain), and sixteen struck or plucked instruments
+   (marimba, vibraphone, glockenspiel, xylophone, kalimba, steel pan, piano, electric piano, celesta, gamelan, handpan, music box,
+   upright bass, clavinet, glass, bells), each recorded here at a few notes and played at the rest by speed, as the toys are.
+   Nothing is made until it is wanted: a kit when it is chosen or a loop needs it, an instrument the same.
+   The band's scale is E minor pentatonic (E G A B D), so every melodic loop is in it. ---------- */
+var MIXS=(function(){
+  var SR=44100;
+  /* a seeded random, so a kit is the same kit every time */
+  function rng(seed){var s=seed>>>0||1;return function(){s^=s<<13;s>>>=0;s^=s>>17;s^=s<<5;s>>>=0;return s/4294967296}}
+  function fin(o,fade,peak){var n=o.length,i,pk=0,f=Math.floor(SR*(fade||.02));for(i=0;i<f&&i<n;i++)o[n-1-i]*=i/f;for(i=0;i<n;i++){var a=Math.abs(o[i]);if(a>pk)pk=a}
+    if(pk>0){var k=(peak||1)/pk;for(i=0;i<n;i++)o[i]*=k}return o}
+  /* dying sine waves: [frequency, level, how fast it dies], by a two-term recurrence */
+  function modes(o,parts,att,from){var n=o.length,k,i;for(k=0;k<parts.length;k++){var w=TAU*parts[k][0]/SR;if(w>=Math.PI*.92||w<=0)continue;var r=Math.exp(-parts[k][2]/SR),c=2*r*Math.cos(w),r2=r*r,y1=0,y0=parts[k][1]*r*Math.sin(w),y;
+      var s0=from||0;o[s0+1]+=y0;for(i=s0+2;i<n;i++){y=c*y0-r2*y1;y1=y0;y0=y;o[i]+=y}}
+    var an=Math.max(1,Math.floor(SR*(att||.001)));for(i=0;i<an&&i<n;i++)o[i]*=i/an;return o}
+  /* a pitched membrane or a kick: a sine whose pitch falls, worked by adding up its phase */
+  function sweep(o,f0,f1,fr,dec,lvl){var n=o.length,ph=0,i;for(i=0;i<n;i++){var t=i/SR,f=f1+(f0-f1)*Math.exp(-t*fr);ph+=TAU*f/SR;o[i]+=Math.sin(ph)*Math.exp(-t*dec)*(lvl||1)}return o}
+  /* hiss, shaped: through a two-pole band (centre, width), dying at dec, starting over att */
+  function hiss(o,rand,cf,q,dec,lvl,att,from){var n=o.length,lp=0,bp=0,k=2*Math.sin(Math.PI*Math.min(cf,SR*.22)/SR),i,s0=from||0;
+    for(i=s0;i<n;i++){var t=(i-s0)/SR,hp=(rand()*2-1)-lp-q*bp;bp+=k*hp;lp+=k*bp;o[i]+=bp*Math.exp(-t*dec)*(lvl||1)*(att?Math.min(1,t/att):1)}return o}
+  function hipass(o,fc){var a=Math.exp(-TAU*fc/SR),y=0,x1=0,i;for(i=0;i<o.length;i++){var x=o[i];y=a*(y+x-x1);x1=x;o[i]=y}return o}
+  function lopass(o,fc){var a=1-Math.exp(-TAU*fc/SR),y=0,i;for(i=0;i<o.length;i++){y+=a*(o[i]-y);o[i]=y}return o}
+  function drive(o,k){if(k<=0)return o;for(var i=0;i<o.length;i++)o[i]=Math.tanh(o[i]*(1+k))/Math.tanh(1+k);return o}
+  function buf(d){return new Float32Array(Math.max(8,Math.floor(SR*d)))}
+  /* the sixteen drums of a kit, each from its own few numbers */
+  var V={
+    kick:function(p,r){var o=buf(p.d*1.1);sweep(o,p.f0,p.f1,p.fr,p.dec,1);hiss(o,r,3200,1,180,.25*p.click);return drive(fin(o,.02),p.drv)},
+    snare:function(p,r){var o=buf(p.d);sweep(o,p.f*1.6,p.f,40,p.tdec,.6);modes(o,[[p.f*1.48,.3,p.tdec*1.4]],.001);hiss(o,r,p.nf,.6,p.ndec,1.1,.001);return fin(o,.02)},
+    clap:function(p,r){var o=buf(p.d),k;for(k=0;k<4;k++)hiss(o,r,p.nf,.9,k<3?160:p.ndec,k<3?.9:1,0,Math.floor(SR*k*p.sp));return fin(hipass(o,500),.02)},
+    rim:function(p,r){var o=buf(.16);modes(o,[[p.f,1,60],[p.f*2.3,.5,90],[p.f*3.7,.3,140]],.0004);hiss(o,r,p.f*2.5,1,300,.4);return fin(o,.01)},
+    hat:function(p,r){var o=buf(p.d),n=o.length,ph=[0,0,0,0,0,0],rt=[1,1.483,1.799,2.546,2.63,3.897],i,k;
+      for(i=0;i<n;i++){var t=i/SR,s=0;for(k=0;k<6;k++){ph[k]+=TAU*p.f*rt[k]/SR;s+=Math.sin(ph[k])>0?1:-1}o[i]=(s/6*.6+(r()*2-1)*.5)*Math.exp(-t*p.dec)}
+      return fin(hipass(hipass(o,p.hp),p.hp),.01)},
+    tom:function(p,r){var o=buf(p.d);sweep(o,p.f*1.5,p.f,22,p.dec,1);modes(o,[[p.f*1.6,.25,p.dec*1.6]],.001);hiss(o,r,1800,1,90,.12);return fin(o,.02)},
+    conga:function(p,r){var o=buf(p.d);modes(o,[[p.f,1,p.dec],[p.f*1.59,.45,p.dec*1.7],[p.f*2.14,.25,p.dec*2.4],[p.f*2.65,.12,p.dec*3]],.0008);hiss(o,r,p.f*6,1,250,p.slap);return fin(o,.02)},
+    shaker:function(p,r){var o=buf(p.d);hiss(o,r,p.cf,.5,p.dec,1,p.att);return fin(o,.015)},
+    tamb:function(p,r){var o=buf(p.d);hiss(o,r,7000,.4,p.dec,.8,.002);modes(o,[[p.f,.25,p.dec*.6],[p.f*1.34,.2,p.dec*.7],[p.f*1.88,.15,p.dec*.8]],.001);return fin(hipass(o,2500),.02)},
+    cowbell:function(p,r){var o=buf(p.d),n=o.length,a=0,b=0,i;for(i=0;i<n;i++){var t=i/SR;a+=TAU*p.f/SR;b+=TAU*p.f*1.48/SR;o[i]=((Math.sin(a)>0?1:-1)+(Math.sin(b)>0?1:-1)*.8)*Math.exp(-t*p.dec)*Math.min(1,t/.0015)}
+      return fin(lopass(hipass(o,p.f*.8),p.f*5),.02)},
+    wood:function(p,r){var o=buf(.25);modes(o,[[p.f,1,p.dec],[p.f*2.76,.35,p.dec*2],[p.f*5.4,.12,p.dec*3]],.0005);return fin(o,.01)},
+    bell:function(p,r){var o=buf(p.d);modes(o,[[p.f,1,p.dec],[p.f*2.756,.55,p.dec*1.3],[p.f*5.404,.3,p.dec*1.9],[p.f*8.933,.12,p.dec*2.6]],.0008);return fin(o,.03)},
+    snap:function(p,r){var o=buf(.14);hiss(o,r,p.cf,.7,70,1,.0008);modes(o,[[p.cf*.5,.3,120]],.0005);return fin(o,.01)},
+    pot:function(p,r){var o=buf(p.d),k,parts=[];for(k=0;k<5;k++)parts.push([p.f*(1+k*(.9+r()*1.3)),.8/(k+1),p.dec*(1+k*.5)]);modes(o,parts,.0008);hiss(o,r,p.f*4,1,200,.2);return fin(o,.03)}
+  };
+  /* the kits: each a character (how deep, how long, how bright, how rough) that sets the numbers of all its sixteen */
+  var KITS=[['808 room',.5,1.1,.6,.2],['dust',.55,.7,.4,.6],['hand drums',.65,.9,.5,0],['kitchen',.8,.6,.8,.1],['wood',.75,.5,.6,0],['metal',.7,.8,1,.2],
+    ['glass',.9,.9,1,0],['paper',.7,.35,.7,.1],['deep',.3,1.3,.3,.3],['tight',.6,.35,.9,.1],['lo-fi',.45,.6,.3,.9],['clay',.6,.7,.45,0],
+    ['rain',.8,.5,.75,0],['ice',.95,.7,1,0],['thunder',.25,1.4,.35,.6],['toy',1,.4,.9,0]];
+  var ROLES=['kick','snare','clap','rim','hat','open hat','low tom','high tom','conga','bongo','shaker','tamb','cowbell','wood','bell','snap'];
+  function kitParams(k){var K=KITS[k],hi=K[1],len=K[2],br=K[3],rough=K[4],r=rng(7919*(k+1)),j=function(a){return 1+(r()-.5)*a};
+    var P=[
+      ['kick',{f0:(130+90*hi)*j(.2),f1:(38+22*hi)*j(.2),fr:22+30*br,dec:(6/len)*j(.3),d:.5*len+.1,click:.4+br*.6,drv:rough*2}],
+      ['snare',{f:(150+120*hi)*j(.2),tdec:28/len,nf:1800+3200*br,ndec:(14+10/len)*j(.3),d:.28*len+.08}],
+      ['clap',{nf:900+900*br,sp:.009*j(.3),ndec:18/len,d:.3*len+.05}],
+      ['rim',{f:(600+900*hi)*j(.3)}],
+      ['hat',{f:(300+200*br)*j(.2),dec:(55+30/len)*j(.2),hp:6000+2500*br,d:.12}],
+      ['hat',{f:(300+200*br)*j(.2),dec:(7+5/len)*j(.2),hp:5500+2500*br,d:.6*len+.15}],
+      ['tom',{f:(80+70*hi)*j(.2),dec:9/len,d:.45*len+.1}],
+      ['tom',{f:(140+120*hi)*j(.2),dec:11/len,d:.38*len+.08}],
+      ['conga',{f:(180+120*hi)*j(.2),dec:10/len,slap:.1+.3*br,d:.42*len+.08}],
+      ['conga',{f:(320+220*hi)*j(.2),dec:14/len,slap:.2+.4*br,d:.3*len+.06}],
+      ['shaker',{cf:3200+3500*br,dec:28/len,att:.012,d:.16*len+.06}],
+      ['tamb',{f:(4200+2500*br)*j(.2),dec:16/len,d:.32*len+.08}],
+      ['cowbell',{f:(480+300*hi)*j(.15),dec:10/len,d:.4*len+.08}],
+      ['wood',{f:(700+900*hi)*j(.3),dec:40/len}],
+      ['bell',{f:(700+1300*hi)*j(.3),dec:3.5/len,d:1.2*len+.2}],
+      [hi>.85||k===3?'pot':'snap',{cf:2200+1800*br,f:(300+500*hi)*j(.3),dec:6/len,d:.6*len+.1}]];
+    return P}
+  /* the instruments: [name, how it is made, the notes it is made at (MIDI), its level] */
+  var INSTS=[['marimba','mar',[40,52,64,76],1],['vibraphone','vib',[52,64,76],.8],['glockenspiel','glk',[76,88],.5],['xylophone','xyl',[64,76,88],.65],
+    ['kalimba','kal',[64,76],.8],['steel pan','pan',[52,64,76],.75],['piano','pno',[40,52,64,76],.9],['electric piano','ep',[40,52,64,76],.85],
+    ['celesta','cel',[64,76,88],.6],['gamelan','gam',[52,64,76],.65],['handpan','hp',[52,64],.85],['music box','mb',[76,88],.5],
+    ['upright bass','bass',[28,40],1],['clavinet','clv',[40,52,64],.7],['glass','gls',[64,76],.55],['bells','bel',[64,76],.55]];
+  function mf(m){return 440*Math.pow(2,(m-69)/12)}
+  var I={
+    mar:function(f){return fin(modes(buf(1.4),[[f,1,4.2],[f*3.93,.3,18],[f*9.2,.08,50]],.002))},
+    vib:function(f){var o=modes(buf(2.6),[[f,1,1.2],[f*4,.2,6],[f*10,.04,24]],.003),n=o.length,i;for(i=0;i<n;i++)o[i]*=1-.25*(.5-.5*Math.cos(TAU*5.2*i/SR));return fin(o,.05)},
+    glk:function(f){return fin(modes(buf(1.8),[[f,1,2.6],[f*2.71,.4,6],[f*5.15,.15,14]],.0006))},
+    xyl:function(f){return fin(modes(buf(.7),[[f,1,9],[f*3,.35,26],[f*6,.1,60]],.0008))},
+    kal:function(f){var o=modes(buf(1.4),[[f,1,3.6],[f*2,.12,6],[f*5.42,.2,30],[f*8.9,.05,55]],.0015);return fin(o)},
+    pan:function(f){return fin(modes(buf(1.6),[[f,1,3],[f*2,.5,4],[f*3,.25,6],[f*4.02,.15,9],[f*1.005,.4,3.2]],.0012))},
+    /* a piano string struck: its overtones a little sharp, two strings a hair apart */
+    pno:function(f){var p=[],k,B=.0004;for(k=1;k<=9;k++){var fk=f*k*Math.sqrt(1+B*k*k);if(fk>SR*.45)break;p.push([fk,1/Math.pow(k,1.1),1.2+k*.9]);p.push([fk*1.0012,.5/Math.pow(k,1.1),1.4+k*.9])}
+      var o=modes(buf(2.4),p,.002);var r=rng(f|0);hiss(o,r,f*6,1,300,.06);return fin(o,.06)},
+    /* a tine struck by a hammer: the bell of it, then the round tone */
+    ep:function(f){return fin(modes(buf(2.2),[[f,1,1.6],[f*2,.18,3],[f*7.1,.25,18],[f*14.2,.08,40]],.0015),.06)},
+    cel:function(f){return fin(modes(buf(1.5),[[f,1,3.4],[f*2,.25,6],[f*4.1,.1,12]],.0008))},
+    gam:function(f){return fin(modes(buf(2.2),[[f,1,1.6],[f*1.008,.6,1.7],[f*2.4,.3,4],[f*3.85,.15,7]],.0015),.06)},
+    hp:function(f){return fin(modes(buf(2.4),[[f,1,1.4],[f*2,.45,2.4],[f*3,.2,3.6],[f*.5,.12,2],[f*2.01,.2,2.6]],.004),.08)},
+    mb:function(f){return fin(modes(buf(1.4),[[f,1,4],[f*3.05,.3,10],[f*6.1,.1,22]],.0006))},
+    /* a plucked string, worked out as a string: a delay as long as one swing of it, a little softened each time round */
+    bass:function(f){var n=Math.floor(SR*1.6),o=new Float32Array(n),L=Math.max(2,Math.round(SR/f)),d=new Float32Array(L),r=rng(f*13|0),i,k=0,prev=0;
+      for(i=0;i<L;i++)d[i]=(r()*2-1)*(.5+.5*Math.sin(Math.PI*i/L));
+      for(i=0;i<n;i++){var v=d[k],nx=d[(k+1)%L];var y=.4985*(v+nx);d[k]=y*.998;o[i]=v;k=(k+1)%L}
+      return fin(lopass(o,f*8),.05)},
+    clv:function(f){var n=Math.floor(SR*.9),o=new Float32Array(n),L=Math.max(2,Math.round(SR/f)),d=new Float32Array(L),r=rng(f*7|0),i,k=0;
+      for(i=0;i<L;i++)d[i]=r()*2-1;for(i=0;i<n;i++){var v=d[k];d[k]=.5*(v+d[(k+1)%L])*.996;o[i]=v*Math.exp(-i/SR*3);k=(k+1)%L}return fin(hipass(o,f*.7),.04)},
+    gls:function(f){return fin(modes(buf(2.2),[[f,1,2.4],[f*1.004,.4,2],[f*2.76,.16,6.5],[f*5.4,.05,13]],.005))},
+    bel:function(f){return fin(modes(buf(3),[[f*.5,.35,1.2],[f,1,1.4],[f*1.183,.4,2],[f*1.506,.3,2.6],[f*2,.5,2.2],[f*2.514,.2,3.4]],.001),.1)}
+  };
+  /* what has been made: buffers on the context given; a kit or instrument a few sounds a frame, so nothing stalls */
+  var KB={},IB={},queue=[],busy=false;
+  function toBuf(c,a){var b=c.createBuffer(1,a.length,SR);if(b.copyToChannel)b.copyToChannel(a,0);else b.getChannelData(0).set(a);return b}
+  function kitNow(c,k){if(KB[k]&&KB[k].c===c)return KB[k].b;var P=kitParams(k),r=rng(31*(k+1)),b=P.map(function(e){return toBuf(c,V[e[0]](e[1],r))});KB[k]={c:c,b:b};return b}
+  function instNow(c,i){if(IB[i]&&IB[i].c===c)return IB[i].s;var D=INSTS[i],s=D[2].map(function(m){return {m:m,b:toBuf(c,I[D[1]](mf(m)))}});IB[i]={c:c,s:s};return s}
+  function pump(c){if(busy)return;busy=true;(function go(){var q=queue.shift();if(!q){busy=false;return}try{if(q[0]==='k')kitNow(c,q[1]);else instNow(c,q[1])}catch(e){}setTimeout(go,16)})()}
+  function want(c,kind,i){if(kind==='k'?(KB[i]&&KB[i].c===c):(IB[i]&&IB[i].c===c))return;queue.push([kind,i]);pump(c)}
+  /* the buffer for a kit's drum, or an instrument's nearest note (and how much faster or slower to play it), if it is made yet */
+  function drum(c,k,j){var e=KB[k];if(!e||e.c!==c){want(c,'k',k);return null}return e.b[j]||null}
+  function note(c,i,m){var e=IB[i];if(!e||e.c!==c){want(c,'i',i);return null}var best=e.s[0],bd=1e9;e.s.forEach(function(x){var d=Math.abs(x.m-m);if(d<bd){bd=d;best=x}});return {b:best.b,rate:Math.pow(2,(m-best.m)/12),g:INSTS[i][3]}}
+  /* ---- the machine's loops: patterns of sixteenths, one or two bars, in the band's scale ----
+     a drum loop: [step, drum (0..15), how hard]; a note loop: [step, MIDI note, how hard] */
+  var E=[40,43,45,47,50];
+  function pn(k,o){var n=E.length,q=Math.floor(k/n),r=((k%n)+n)%n;return E[r]+12*(q+(o||0))}
+  function hits(spec){var a=[];spec.forEach(function(s){var d=s[0],v=s[1],pat=s[2];for(var i=0;i<pat.length;i++){var ch=pat[i];if(ch==='x')a.push([i,d,v]);else if(ch==='o')a.push([i,d,v*.55])}});return a}
+  var DRUMLOOPS=[
+    {n:'four',len:16,h:hits([[0,1,'x...x...x...x...'],[1,.8,'....x.......x...'],[4,.5,'..x...x...x...x.'],[4,.4,'o.o.o.o.o.o.o.o.']])},
+    {n:'afro',len:16,h:hits([[0,1,'x..x..x...x..x..'],[3,.6,'..x...x.x...x...'],[10,.5,'xoxoxoxoxoxoxoxo'],[1,.7,'........x.......']])},
+    {n:'broken',len:16,h:hits([[0,1,'x.....x...x.....'],[1,.85,'....x......x.x..'],[4,.45,'x.x.x.x.x.x.x.xx'],[2,.5,'.......x........']])},
+    {n:'half',len:32,h:hits([[0,1,'x.........x.....x.........x.....'],[1,.9,'........x...............x.......'],[4,.45,'x...x...x...x...x...x...x...x...'],[13,.5,'..x.......x.........x.....x.....']])},
+    {n:'roll',len:16,h:hits([[0,1,'x...x...x...x...'],[4,.5,'xxxxxxxxxxxxxxxx'],[7,.6,'............x.x.'],[6,.7,'..............xx'],[1,.7,'....x.......x...']])},
+    {n:'sparse',len:16,h:hits([[0,1,'x.........x.....'],[2,.75,'....x.......x...'],[14,.4,'.......x........']])}];
+  var PERCLOOPS=[
+    {n:'congas',len:16,h:hits([[8,.8,'x..x....x..x....'],[9,.7,'..x.x.x...x.x.x.'],[10,.4,'xoxoxoxoxoxoxoxo']])},
+    {n:'bell',len:16,h:hits([[12,.7,'x.x.xx.x.x.xx.x.'],[13,.5,'...x.....x...x..']])},
+    {n:'shakers',len:16,h:hits([[10,.6,'xoxoxoxoxoxoxoxo'],[11,.5,'....x.......x...']])},
+    {n:'bongos',len:16,h:hits([[9,.75,'x.xx.x.xx.x.xx.x'],[8,.6,'...x.......x....']])},
+    {n:'wood',len:16,h:hits([[13,.7,'x..x..x...x..x..'],[3,.5,'..x.....x....x..']])},
+    {n:'bells',len:32,h:hits([[14,.5,'x.......x.......x.......x.......'],[12,.5,'....x.......x.......x.......x...']])}];
+  /* note loops: (step, scale degree, octave) turned into notes */
+  function nl(len,a){return {len:len,h:a.map(function(x){return [x[0],pn(x[1],x[2]||0),x[3]||.8]})}}
+  var BASSLOOPS=[nl(32,[[0,0],[6,0],[10,3],[16,0],[22,4,-1],[26,3]]),nl(16,[[0,0],[3,0],[6,2],[8,0],[11,4,-1],[14,3]]),nl(32,[[0,0],[12,2],[16,4,-1],[28,3]]),
+    nl(16,[[0,0],[2,5,-1],[4,0],[7,1],[10,0],[12,3],[14,4]]),nl(32,[[0,0],[4,0],[8,1],[12,0],[16,3],[20,3],[24,2],[28,1]]),nl(16,[[0,0],[10,0]])];
+  var KEYLOOPS=[nl(16,[[0,5],[0,7],[0,9],[6,6],[6,8],[10,5],[10,7]]),nl(16,[[0,5],[2,7],[4,9],[6,7],[8,6],[10,8],[12,10],[14,8]]),nl(32,[[0,5],[0,8],[0,10],[16,6],[16,9],[16,11]]),
+    nl(16,[[0,10],[3,9],[6,8],[8,7],[11,6],[14,5]]),nl(16,[[0,5],[1,7],[2,9],[3,10],[8,6],[9,8],[10,10],[11,11]]),nl(32,[[0,7],[8,6],[16,5],[24,4]])];
+  var BELLLOOPS=[nl(32,[[0,10],[6,12],[12,11],[16,10],[22,9],[28,8]]),nl(16,[[0,12],[4,11],[8,10],[12,13]]),nl(16,[[2,10],[6,11],[10,12],[14,13]]),
+    nl(32,[[0,15],[3,14],[6,13],[16,12],[19,11],[22,10]]),nl(16,[[0,10],[3,12],[6,10],[8,13],[11,12],[14,10]]),nl(32,[[0,12],[24,14]])];
+  return {SR:SR,KITS:KITS,ROLES:ROLES,INSTS:INSTS,drum:drum,note:note,want:want,kitNow:kitNow,instNow:instNow,
+    DRUMLOOPS:DRUMLOOPS,PERCLOOPS:PERCLOOPS,BASSLOOPS:BASSLOOPS,KEYLOOPS:KEYLOOPS,BELLLOOPS:BELLLOOPS,
+    count:function(){return KITS.length*ROLES.length+INSTS.reduce(function(a,x){return a+x[2].length},0)},
+    /* for the tests: a drum or a note made straight into an array */
+    raw:function(kind,i,j){if(kind==='k'){var P=kitParams(i);return V[P[j][0]](P[j][1],rng(31*(i+1)))}var D=INSTS[i];return I[D[1]](mf(D[2][j||0]))}};
+})();
+
+/* ---------- MIX: a DJ's mixer for the band and a machine of sounds (13 Nov: "Make a music dj mixer page with pitch control hundreds
+   of other samples and ability to abeloton live the music and make it way more fun and interactive"; asked which parts, he chose all
+   four: a clip grid like Ableton, two decks and a crossfader, drum pads, effects to sweep).
+   Deck A is the band: its nine players, each a column of six loops cut from its own recording (the whole four bars, the first two,
+   the last two, one bar, one beat, and the whole at half speed). Deck B is the machine: drums, percussion, bass, keys and bells, six
+   loops each, played from the sounds made in 15-mixsnd.js, and a column of loops of your own, recorded from the pads.
+   A loop starts on the next bar of its deck and keeps time with it (Ableton's way); a row's number starts the whole row.
+   Each deck has its own clock: its pitch fader makes it faster and higher, or slower and lower, as a record does (up to 16% either
+   way); the arrows nudge it while held; sync matches it to the other. The crossfader goes from the band to the machine. Each deck
+   has a filter (left darker, right thinner). The effects pad: a finger across it sweeps a filter over both decks, up it adds echo;
+   stutter repeats the last beat, half or quarter while held; brake stops a deck as a record stops.
+   The band keeps its own levels and its own room; the machine and the pads go through the toys' bus, under its ceiling, so nothing
+   here comes out louder than the band (tools/t_levels.js measures it). ---------- */
+var MIXON=false;
+var MIX=(function(){
+  var BPS=16/STEML,SPB=STEML/16,SC=6,on=false,built=false,gr=null,iv=0,started=false,view='a',PK=0,REC=false,RECK=0,XF=.5,FXP=null,STUT=null,lastUi=0,
+    DK=[{n:'A',rate:1,fader:1,nudge:0,ne:0,tRef:0,bRef:0,last:-1,filt:0,brake:0},{n:'B',rate:1,fader:1,nudge:0,ne:0,tRef:0,bRef:0,last:-1,filt:0,brake:0}],
+    TR=[],UI={};
+  var BANDCLIPS=[{n:'whole',b0:0,len:16},{n:'bars 1-2',b0:0,len:8},{n:'bars 3-4',b0:8,len:8},{n:'one bar',b0:0,len:4},{n:'one beat',b0:0,len:1},{n:'slow',b0:0,len:16,slow:1}];
+  var SHORT=['dundun','shekere','djembe','talking','agogo','bass','balafon','kora','guitar'];
+  /* the machine's columns: what each plays, and with which kit or instrument in each of its six loops */
+  var MACH=[{n:'drums',k:'drum',L:MIXS.DRUMLOOPS,src:[0,1,8,9,10,14],col:'#3ef0ff'},{n:'perc',k:'drum',L:MIXS.PERCLOOPS,src:[2,11,2,2,4,5],col:'#7dffb2'},
+    {n:'bass',k:'note',L:MIXS.BASSLOOPS,src:[12,12,12,12,12,12],col:'#c6ff6b'},{n:'keys',k:'note',L:MIXS.KEYLOOPS,src:[6,7,0,5,10,13],col:'#ffb347'},
+    {n:'bells',k:'note',L:MIXS.BELLLOOPS,src:[2,1,8,9,11,15],col:'#ff2d8a'},{n:'pads',k:'pads',L:null,src:null,col:'#b46bff'}];
+  (function(){var i;for(i=0;i<NL;i++)TR.push({d:0,i:i,n:SHORT[i],col:BCOL[i],k:'stem',clips:BANDCLIPS.map(function(c){return c}),play:-1,next:-1,src:null,g:null});
+    MACH.forEach(function(m,j){TR.push({d:1,i:j,n:m.n,col:m.col,k:m.k,clips:m.k==='pads'?[0,1,2,3,4,5].map(function(){return {n:'empty',len:16,h:[],kit:0}}):m.L.map(function(l,k){return {n:l.n||((m.k==='note'?MIXS.INSTS[m.src[k]][0]:MIXS.KITS[m.src[k]][0])),len:l.len,h:l.h,kit:m.k==='drum'?m.src[k]:-1,inst:m.k==='note'?m.src[k]:-1}}),
+      play:-1,next:-1,src:null,g:null})})})();
+  /* ---- each deck's clock: beats(t) = bRef + (t - tRef) * beats a second; changed only by re-anchoring it where it is ---- */
+  function eff(d){return BPS*Math.max(.02,d.rate*(1+d.nudge))}
+  /* a deck's beat at a time, and the time of a beat. A sync's nudge ends at a set time (ne): after it the deck runs at its own speed again
+     (the players' speeds are switched at that moment by the sound itself, so the beat is exact however late the page gets round to it) */
+  function plain(d){return BPS*Math.max(.02,d.rate)}
+  function beatAt(d,t){if(d.ne&&t>d.ne)return d.bRef+(d.ne-d.tRef)*eff(d)+(t-d.ne)*plain(d);return d.bRef+(t-d.tRef)*eff(d)}
+  function timeOf(d,b){if(d.ne){var be=d.bRef+(d.ne-d.tRef)*eff(d);if(b>be)return d.ne+(b-be)/plain(d)}return d.tRef+(b-d.bRef)/eff(d)}
+  function rateAt(d,t){return d.ne&&t>=d.ne?d.rate:d.rate*(1+d.nudge)}
+  /* a nudge that has run its time is closed at exactly its end; one still running, when the deck is touched again, is stopped now */
+  function settle(k,t){var d=DK[k];if(!d.ne)return;if(t>=d.ne){d.bRef=d.bRef+(d.ne-d.tRef)*eff(d);d.tRef=d.ne;d.nudge=0;d.ne=0;return}
+    anchor(d,t);d.ne=0;d.nudge=0;TR.forEach(function(tr){if(tr.d!==k||!tr.src)return;try{tr.src.playbackRate.cancelScheduledValues(t)}catch(e){}});stemRates(k,t)}
+  function anchor(d,t){d.bRef=beatAt(d,t);d.tRef=t}
+  function ctx(){return AU.c}
+  /* ---- the signal path: each deck a filter (low then high) and the crossfader, then deck A into the band's room and deck B into the
+     toys' bus with its ceiling; an echo fed by both, coming back under the same ceiling ---- */
+  function graphOn(c,dst){
+    var G={c:c,d:[],t:[]},k;
+    for(k=0;k<2;k++){var inp=c.createGain(),lp=c.createBiquadFilter(),hp=c.createBiquadFilter(),xf=c.createGain(),es=c.createGain();
+      lp.type='lowpass';lp.frequency.value=20000;lp.Q.value=.75;hp.type='highpass';hp.frequency.value=10;hp.Q.value=.75;es.gain.value=0;
+      inp.connect(lp);lp.connect(hp);hp.connect(xf);xf.connect(k?dst.toy:dst.bus);xf.connect(es);G.d.push({inp:inp,lp:lp,hp:hp,xf:xf,es:es})}
+    var dl=c.createDelay(2),fb=c.createGain(),elp=c.createBiquadFilter(),ret=c.createGain();dl.delayTime.value=SPB*.75;fb.gain.value=.42;elp.type='lowpass';elp.frequency.value=3000;ret.gain.value=.9;
+    G.d[0].es.connect(dl);G.d[1].es.connect(dl);dl.connect(elp);elp.connect(fb);fb.connect(dl);elp.connect(ret);ret.connect(dst.toy);G.dl=dl;G.fb=fb;
+    TR.forEach(function(t,j){var g=c.createGain();g.gain.value=t.d===0?SG[t.i]:.9;
+      if(t.d===0&&(t.i===1||t.i===4)){var hs=c.createBiquadFilter();hs.type='highshelf';hs.frequency.value=4500;hs.gain.value=-6;g.connect(hs);hs.connect(G.d[0].inp)}else g.connect(G.d[t.d].inp);G.t[j]=g});
+    return G}
+  function ensure(){var c=ctx();if(!c)return null;if(!gr||gr.c!==c){gr=graphOn(c,{bus:AU.bus,toy:AU.toy});xfApply();DK.forEach(function(d,k){filtApply(k)})}return gr}
+  function xfApply(){if(!gr)return;var c=gr.c,n=c.currentTime,a=Math.cos(XF*Math.PI/2),b=Math.sin(XF*Math.PI/2);gr.d[0].xf.gain.setTargetAtTime(a,n,.02);gr.d[1].xf.gain.setTargetAtTime(b,n,.02)}
+  /* a filter: -1 (only the lows) through 0 (open) to 1 (only the highs) */
+  function filtApply(k,v){if(!gr)return;var f=v===undefined?DK[k].filt:v,c=gr.c,n=c.currentTime,D=gr.d[k];
+    var lpF=f<0?80*Math.pow(250,1+f):20000,hpF=f>0?10*Math.pow(400,f):10;D.lp.frequency.setTargetAtTime(lpF,n,.03);D.hp.frequency.setTargetAtTime(hpF,n,.03)}
+  /* ---- the band's loops: a recording looped over part of itself, at the deck's speed, lined up with the deck's beats ---- */
+  function stemSrc(tr,clip,beat,when){var c=ctx(),b=AU.bufs[tr.i];if(!c||!b||!gr)return null;var d=DK[0],s=c.createBufferSource(),sl=clip.slow?.5:1,span=clip.len/sl;
+    s.buffer=b;s.loop=true;s.loopStart=STEMP+clip.b0*SPB;s.loopEnd=STEMP+(clip.b0+clip.len)*SPB;s.playbackRate.value=rateAt(d,when)*sl;if(d.ne&&when<d.ne)s.playbackRate.setValueAtTime(d.rate*sl,d.ne);
+    var ph=(((beat%span)+span)%span)*sl;s.connect(gr.t[TR.indexOf(tr)]);s.start(Math.max(when,c.currentTime),s.loopStart+ph*SPB);s._sl=sl;return s}
+  function stemStop(tr,when){if(tr.src){try{tr.src.stop(Math.max(when||0,ctx()?ctx().currentTime:0))}catch(e){}tr.src=null}}
+  /* ---- the machine's sounds, on deck B: a drum or a note, at the deck's speed (a faster deck plays them higher, as a record does) ---- */
+  var VOXM=0;
+  function sound(j,b,rate,gain,when,pan){var c=ctx();if(!c||!gr||!b||VOXM>40)return;var s=c.createBufferSource(),g=c.createGain(),o=g;s.buffer=b;s.playbackRate.value=clamp(rate,.25,4);g.gain.value=gain;s.connect(g);
+    if(c.createStereoPanner){var p=c.createStereoPanner();p.pan.value=clamp(pan||0,-1,1);g.connect(p);o=p}o.connect(gr.t[j]);VOXM++;s.onended=function(){VOXM--;try{o.disconnect()}catch(e){}};s.start(Math.max(when,c.currentTime))}
+  function trigger(j,tr,clip,h,when){var c=ctx(),d=DK[tr.d],r=rateAt(d,when),v=clamp(h[2],0,1);
+    if(tr.k==='drum'||tr.k==='pads'){var kit=tr.k==='pads'?clip.kit:clip.kit,b=MIXS.drum(c,kit,h[1]);sound(j,b,r,v*.62,when,((h[1]%4)-1.5)*.25)}
+    else{var nt=MIXS.note(c,clip.inst,h[1]);if(nt)sound(j,nt.b,nt.rate*r,v*.5*nt.g*tilt(h[1]),when,((h[1]%7)-3)*.12)}}
+  /* ---- the clock's work, a little ahead of time: each sixteenth of each deck, what starts and stops on it and what plays on it ---- */
+  function pump(){
+    var c=ctx();if(!c||!on||c.state!=='running'||!ensure())return;var now=c.currentTime,la=document.hidden?1.2:.16;
+    DK.forEach(function(d,k){if(d.ne&&now>=d.ne)settle(k,now);
+      if(d.brake){var bk=clamp((now-d.brake.t)/.9,0,1);anchor(d,now);d.rate=Math.max(.04,d.brake.r*(1-bk));stemRates(k,now);if(bk>=1){d.brake=null;TR.forEach(function(tr){if(tr.d===k){tr.next=-1;off(tr,now)}});anchor(d,now);d.rate=d.fader;stemRates(k,now)}}
+      var s1=Math.floor(beatAt(d,now+la)*4);if(d.last<0||d.last<Math.floor(beatAt(d,now)*4)-8)d.last=Math.floor(beatAt(d,now)*4);
+      while(d.last<s1){d.last++;var s=d.last,t=timeOf(d,s/4)+((s&1)?SPB/4*SWING/Math.max(.2,d.rate):0);step(k,s,t)}})}
+  function off(tr,when){if(tr.k==='stem')stemStop(tr,when);tr.play=-1;if(tr.d===0&&ON[tr.i]){ON[tr.i]=0;dotSync(tr.i)}}
+  function step(k,s,t){
+    var d=DK[k];
+    /* on the bar: what was asked to start or stop does so now */
+    if(s%16===0)TR.forEach(function(tr){if(tr.d!==k||tr.next===-1)return;var nx=tr.next;tr.next=-1;
+      if(nx===-2){off(tr,t);return}
+      if(tr.k==='stem'){if(!AU.ready){tr.next=nx;return}stemStop(tr,t);tr.src=stemSrc(tr,tr.clips[nx],s/4,t);if(!tr.src){tr.next=nx;return}tr.play=nx;if(!ON[tr.i]){ON[tr.i]=1;dotSync(tr.i)}}
+      else tr.play=nx});
+    /* what plays on this sixteenth: the machine's loops (a stutter holds them to the same few sixteenths) */
+    var ss=STUT&&STUT.s0[k]!==undefined&&s>=STUT.s0[k]?STUT.s0[k]+((s-STUT.s0[k])%STUT.L):s;
+    TR.forEach(function(tr,j){if(tr.d!==k||tr.play<0||tr.k==='stem')return;var clip=tr.clips[tr.play],L=clip.len||16,q=((ss%L)+L)%L;
+      for(var i=0;i<clip.h.length;i++)if(clip.h[i][0]===q)trigger(j,tr,clip,clip.h[i],t)})}
+  /* the deck's speed has changed: every loop of the band on it plays at the new speed from now */
+  function stemRates(k,t){var d=DK[k],r=d.rate*(1+d.nudge);TR.forEach(function(tr){if(tr.d!==k||!tr.src)return;try{tr.src.playbackRate.setValueAtTime(r*(tr.src._sl||1),t)}catch(e){}})}
+  function setRate(k,r,nudge){var c=ctx(),d=DK[k];if(c){settle(k,c.currentTime);anchor(d,c.currentTime)}if(r!==undefined){d.fader=r;if(!d.brake)d.rate=r}if(nudge!==undefined)d.nudge=nudge;if(c)stemRates(k,c.currentTime)}
+  /* sync: the other deck's speed, and its beat caught up by a nudge (a second for a small gap, never more than 12% faster or slower) */
+  function sync(k){var c=ctx(),o=DK[1-k],d=DK[k];settle(1-k,c?c.currentTime:0);setRate(k,o.fader);if(!c)return;var n=c.currentTime,e=(beatAt(o,n)%1)-(beatAt(d,n)%1);if(e>.5)e-=1;if(e<-.5)e+=1;
+    hit('tok',.2,k?.4:-.4);if(Math.abs(e)<.003)return;var nd=clamp(e/plain(d),-.12,.12),T=e/(plain(d)*nd);setRate(k,undefined,nd);d.ne=n+T;
+    TR.forEach(function(tr){if(tr.d!==k||!tr.src)return;try{tr.src.playbackRate.setValueAtTime(d.rate*(tr.src._sl||1),d.ne)}catch(x){}})}
+  function brake(k){var c=ctx();if(!c)return;var d=DK[k];settle(k,c.currentTime);anchor(d,c.currentTime);d.brake={t:c.currentTime,r:d.rate}}
+  /* ---- stutter: from the next sixteenth, the last beat (or half, or quarter) of everything again and again while held ---- */
+  function stutOn(L){var c=ctx();if(!c||!gr||STUT)return;var n=c.currentTime;settle(0,n);settle(1,n);STUT={L:L,s0:{},src:[]};
+    DK.forEach(function(d,k){var s=Math.ceil(beatAt(d,n)*4),t=timeOf(d,s/4);STUT.s0[k]=s-L;
+      TR.forEach(function(tr){if(tr.d!==k||!tr.src||tr.play<0)return;var clip=tr.clips[tr.play],sl=clip.slow?.5:1,span=clip.len/sl,b=(s-L)/4,ph=(((b%span)+span)%span)*sl,
+        st=STEMP+(clip.b0+ph)*SPB,x=c.createBufferSource();x.buffer=tr.src.buffer;x.loop=true;x.loopStart=st;x.loopEnd=st+L/4*SPB*sl;x.playbackRate.value=d.rate*(1+d.nudge)*sl;
+        x.connect(gr.t[TR.indexOf(tr)]);try{tr.src.stop(t)}catch(e){}x.start(t,st);STUT.src.push({tr:tr,x:x,was:tr.src})})})}
+  function stutOff(){var c=ctx();if(!STUT||!c){STUT=null;return}var n=c.currentTime,S=STUT;STUT=null;
+    S.src.forEach(function(o){var tr=o.tr,d=DK[tr.d],s=Math.ceil(beatAt(d,n)*4),t=timeOf(d,s/4);try{o.x.stop(t)}catch(e){}if(tr.play>=0&&tr.src===o.was)tr.src=stemSrc(tr,tr.clips[tr.play],s/4,t)})}
+  /* ---- launching: on the next bar of the deck ---- */
+  function launch(j,k){var tr=TR[j];if(!tr)return;wake();var clip=tr.clips[k];if(!clip)return;if(tr.k==='pads'&&!clip.h.length&&!(REC&&tr.k==='pads'))return;
+    if(tr.play===k&&tr.next===-1){tr.next=-2;return}tr.next=k}
+  function stopT(j){var tr=TR[j];if(tr&&(tr.play>=0||tr.next>=0))tr.next=-2}
+  function scene(k){wake();TR.forEach(function(tr,j){var clip=tr.clips[k];if(clip&&!(tr.k==='pads'&&!clip.h.length))tr.next=k;else if(tr.play>=0)tr.next=-2})}
+  function stopAll(){TR.forEach(function(tr){if(tr.play>=0||tr.next>=0)tr.next=-2})}
+  /* the sound wakes with the first touch here, as everywhere (and the band's usual loops stand aside for the decks) */
+  function wake(){if(!AU.want||!AU.c||AU.c.state!=='running')musicOn();ensure()}
+  /* ---- the pads: sixteen drums of a kit, played now on deck B; while recording, each hit is laid into the loop on its sixteenth ---- */
+  function pad(j,v){wake();var c=ctx();if(!c||!gr)return;var b=MIXS.drum(c,PK,j),pt=TR.length-1;sound(pt,b,DK[1].rate*(1+DK[1].nudge),(v||.9)*.62,c.currentTime,((j%4)-1.5)*.25);
+    if(REC){var tr=TR[pt],clip=tr.clips[RECK],d=DK[1],s=Math.round(beatAt(d,c.currentTime+.01)*4),L=clip.len,q=((s%L)+L)%L;
+      if(!clip.h.length)clip.kit=PK;if(clip.kit!==PK){clip.h=[];clip.kit=PK}clip.h=clip.h.filter(function(h){return !(h[0]===q&&h[1]===j)});clip.h.push([q,j,v||.9]);clip.n='mine';if(tr.play!==RECK&&tr.next!==RECK)tr.next=RECK;padsSave()}
+    var el=UI.pads&&UI.pads[j];if(el){el.classList.add('hit');setTimeout(function(){el.classList.remove('hit')},90)}}
+  function recSet(v){REC=!!v;wake();var tr=TR[TR.length-1];if(REC&&tr.play!==RECK)tr.next=RECK;uiSync(true)}
+  function padsSave(){try{localStorage.setItem('lc.mix.pads',JSON.stringify(TR[TR.length-1].clips.map(function(c){return {len:c.len,kit:c.kit,h:c.h.slice(0,256)}})))}catch(e){}}
+  function padsLoad(){try{var a=JSON.parse(localStorage.getItem('lc.mix.pads')||'null');if(!Array.isArray(a))return;var tr=TR[TR.length-1];
+    a.slice(0,6).forEach(function(x,k){if(!x||!Array.isArray(x.h))return;var c=tr.clips[k];c.len=x.len===32?32:16;c.kit=clamp(x.kit|0,0,15);c.h=x.h.filter(function(h){return Array.isArray(h)&&h.length===3}).map(function(h){return [clamp(h[0]|0,0,31),clamp(h[1]|0,0,15),clamp(+h[2]||.9,.1,1)]});if(c.h.length)c.n='mine'})}catch(e){}}
+  /* ---- the effects pad: across, a filter over both decks; up, the echo; let go and they ease off ---- */
+  function fxSet(x,y){FXP={x:x,y:y};if(!gr)return;var c=gr.c,n=c.currentTime,f=x*2-1;filtApply(0,f);filtApply(1,f);
+    var e=clamp(y,0,1);gr.d[0].es.gain.setTargetAtTime(e*.55,n,.03);gr.d[1].es.gain.setTargetAtTime(e*.55,n,.03);gr.fb.gain.setTargetAtTime(.3+e*.3,n,.05)}
+  function fxOff(){FXP=null;if(!gr)return;var n=gr.c.currentTime;filtApply(0);filtApply(1);gr.d[0].es.gain.setTargetAtTime(0,n,.15);gr.d[1].es.gain.setTargetAtTime(0,n,.15)}
+  /* ===================== the screen ===================== */
+  function E(tag,cls,txt,par){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined&&txt!==null)e.textContent=txt;if(par)par.appendChild(e);return e}
+  function btn(cls,txt,par,fn){var b=E('button',cls,txt,par);b.type='button';if(fn)b.addEventListener('click',fn);return b}
+  function hold(b,dn,up){var on2=false;b.addEventListener('pointerdown',function(e){e.preventDefault();on2=true;try{b.setPointerCapture(e.pointerId)}catch(x){}dn();b.classList.add('held')});
+    ['pointerup','pointercancel','lostpointercapture'].forEach(function(ev){b.addEventListener(ev,function(){if(!on2)return;on2=false;up();b.classList.remove('held')})})}
+  /* a slider: drag along it; a double tap puts it back to its middle */
+  function slider(par,name,val,fn,fmt){var w=E('div','mxs',null,par),lab=E('span','mxsl',name,w),tr=E('div','mxst',null,w),th=E('i',null,null,tr),out=E('span','mxsv','',w),v=val,lt=0;
+    function show(){th.style.left=(v*100).toFixed(2)+'%';out.textContent=fmt?fmt(v):''}
+    function at(e){var r=tr.getBoundingClientRect();v=clamp((e.clientX-r.left)/Math.max(1,r.width),0,1);show();fn(v)}
+    var dn=false;tr.addEventListener('pointerdown',function(e){e.preventDefault();dn=true;try{tr.setPointerCapture(e.pointerId)}catch(x){}var n=performance.now();if(n-lt<320){v=.5;show();fn(v);dn=false}else at(e);lt=n;wake()});
+    tr.addEventListener('pointermove',function(e){if(dn)at(e)});['pointerup','pointercancel'].forEach(function(ev){tr.addEventListener(ev,function(){dn=false})});
+    show();return {set:function(x){v=x;show()},get:function(){return v}}}
+  function build(){
+    if(built)return;built=true;padsLoad();
+    var R=E('div','mx',null,document.body);R.id='mix';R.hidden=true;UI.root=R;
+    var tabs=E('div','mxtabs',null,R);UI.tabs={};
+    [['a','band'],['b','machine'],['pads','pads'],['fx','effects']].forEach(function(t){UI.tabs[t[0]]=btn('mxt',t[1],tabs,function(){view=t[0];uiSync(true);wake()})});
+    var V=E('div','mxv',null,R);UI.v=V;
+    /* the two grids */
+    UI.grid={};['a','b'].forEach(function(dk){var k=dk==='a'?0:1,cols=TR.filter(function(t){return t.d===k}),g=E('div','mxg',null,V);g.style.gridTemplateColumns='30px repeat('+cols.length+',minmax(0,1fr))';UI.grid[dk]={el:g,cells:[]};
+      E('span','mxh','',g);cols.forEach(function(t){var h=E('span','mxh',t.n,g);h.style.setProperty('--c',t.col)});
+      for(var r=0;r<SC;r++)(function(r){var sb=btn('mxr',String(r+1),g,function(){scene(r)});sb.title='start row '+(r+1);
+        cols.forEach(function(t){var j=TR.indexOf(t),c=btn('mxc','',g,function(){launch(j,r)});c.style.setProperty('--c',t.col);UI.grid[dk].cells.push({el:c,j:j,r:r})})})(r);
+      btn('mxr mxx','stop',g,function(){TR.forEach(function(t,j){if(t.d===k)stopT(j)})});cols.forEach(function(t){var j=TR.indexOf(t),s=btn('mxc mxsc','■',g,function(){stopT(j)});s.style.setProperty('--c',t.col)})});
+    /* the pads */
+    var P=E('div','mxp',null,V);UI.padv=P;var kr=E('div','mxkr',null,P);btn('mxa','◀',kr,function(){PK=(PK+15)%16;padLabels();MIXS.want(ctx(),'k',PK)});UI.kit=E('span','mxkn','',kr);btn('mxa','▶',kr,function(){PK=(PK+1)%16;padLabels();MIXS.want(ctx(),'k',PK)});
+    var pg=E('div','mxpg',null,P);UI.pads=[];for(var j=0;j<16;j++)(function(j){var b=E('button','mxpad','',pg);b.type='button';b.addEventListener('pointerdown',function(e){e.preventDefault();pad(j,.9)});UI.pads.push(b)})(j);
+    var rr=E('div','mxrr',null,P);UI.rec=btn('mxb mxrec','rec',rr,function(){recSet(!REC)});UI.recInto=btn('mxb','into loop 1',rr,function(){RECK=(RECK+1)%SC;uiSync(true)});
+    UI.len=btn('mxb','1 bar',rr,function(){var c=TR[TR.length-1].clips[RECK];c.len=c.len===16?32:16;uiSync(true)});btn('mxb','clear',rr,function(){var tr=TR[TR.length-1],c=tr.clips[RECK];c.h=[];c.n='empty';if(tr.play===RECK)tr.next=-2;padsSave();uiSync(true)});
+    /* the effects */
+    var F=E('div','mxf',null,V);UI.fxv=F;var xy=E('div','mxxy',null,F);UI.xy=xy;E('span','mxxl','filter: darker ← → thinner · echo ↑',xy);UI.dot=E('i',null,null,xy);
+    var xyAt=function(e){var r=xy.getBoundingClientRect();fxSet(clamp((e.clientX-r.left)/r.width,0,1),clamp(1-(e.clientY-r.top)/r.height,0,1));UI.dot.style.left=(FXP.x*100)+'%';UI.dot.style.top=((1-FXP.y)*100)+'%'},xyDn=false;
+    xy.addEventListener('pointerdown',function(e){e.preventDefault();xyDn=true;wake();try{xy.setPointerCapture(e.pointerId)}catch(x){}xyAt(e);xy.classList.add('held')});xy.addEventListener('pointermove',function(e){if(xyDn)xyAt(e)});
+    ['pointerup','pointercancel'].forEach(function(ev){xy.addEventListener(ev,function(){xyDn=false;fxOff();xy.classList.remove('held')})});
+    var fr=E('div','mxrr',null,F);E('span','mxlab','stutter',fr);[['1 beat',4],['1/2',2],['1/4',1]].forEach(function(s){var b=btn('mxb',s[0],fr);hold(b,function(){wake();stutOn(s[1])},stutOff)});
+    var fr2=E('div','mxrr',null,F);btn('mxb','brake A',fr2,function(){brake(0)});btn('mxb','brake B',fr2,function(){brake(1)});btn('mxb','stop all',fr2,stopAll);
+    /* the decks along the bottom: each its speed, nudges, sync and filter; between them the crossfader */
+    var D=E('div','mxd',null,R);UI.dk=[];
+    var row=E('div','mxdr',null,D);
+    [0,1].forEach(function(k){var d=DK[k],w=E('div','mxdk',null,row),top=E('div','mxdt',null,w),u={};u.name=E('span','mxdn',d.n,top);u.bpm=E('span','mxbpm','',top);u.beat=E('span','mxbt','',top);
+      u.pitch=slider(w,'pitch',.5,function(v){setRate(k,1+(v-.5)*.32)},function(v){var p=(v-.5)*32;return (p>=0?'+':'')+p.toFixed(1)+'%'});
+      var br=E('div','mxbr',null,w);var nm=btn('mxb','◀',br),np=btn('mxb','▶',br);hold(nm,function(){wake();setRate(k,undefined,-.05)},function(){setRate(k,undefined,0)});hold(np,function(){wake();setRate(k,undefined,.05)},function(){setRate(k,undefined,0)});
+      btn('mxb','sync',br,function(){wake();sync(k)});
+      u.filt=slider(w,'filter',.5,function(v){d.filt=v*2-1;if(!FXP)filtApply(k)},function(v){var f=v*2-1;return Math.abs(f)<.03?'open':f<0?'darker':'thinner'});
+      UI.dk.push(u)});
+    UI.xf=slider(D,'A · crossfader · B',.5,function(v){XF=v;xfApply()},function(v){return v<.03?'band':v>.97?'machine':''});
+    padLabels();uiSync(true)}
+  function padLabels(){if(!UI.kit)return;UI.kit.textContent='kit '+(PK+1)+' of 16 · '+MIXS.KITS[PK][0];UI.pads.forEach(function(b,j){b.textContent=MIXS.ROLES[j]})}
+  /* the screen follows the sound: what plays (lit), what waits for the bar (blinking), the decks' speeds and beats */
+  function uiSync(force){
+    if(!built)return;var n=performance.now();if(!force&&n-lastUi<90)return;lastUi=n;
+    for(var t in UI.tabs)UI.tabs[t].setAttribute('aria-pressed',view===t?'true':'false');
+    UI.grid.a.el.hidden=view!=='a';UI.grid.b.el.hidden=view!=='b';UI.padv.hidden=view!=='pads';UI.fxv.hidden=view!=='fx';
+    ['a','b'].forEach(function(dk){if(UI.grid[dk].el.hidden)return;UI.grid[dk].cells.forEach(function(c){var tr=TR[c.j],cl=tr.clips[c.r],st=tr.play===c.r?(tr.next===-2?'stopping':'on'):tr.next===c.r?'wait':'';
+      var lab=tr.k==='pads'?(cl.h.length?'mine':'·'):tr.k==='stem'?cl.n:cl.n;if(c.el._l!==lab){c.el._l=lab;c.el.textContent=lab}if(c.el._s!==st){c.el._s=st;c.el.className='mxc'+(st?' '+st:'')+(tr.k==='pads'&&!cl.h.length?' empty':'')}})});
+    if(view==='pads'){UI.rec.setAttribute('aria-pressed',REC?'true':'false');UI.recInto.textContent='into loop '+(RECK+1);UI.len.textContent=TR[TR.length-1].clips[RECK].len===32?'2 bars':'1 bar'}
+    var c=ctx();UI.dk.forEach(function(u,k){var d=DK[k],bp=(BPS*60*d.rate*(1+d.nudge)).toFixed(1);if(u.bpm._v!==bp){u.bpm._v=bp;u.bpm.textContent=bp+' bpm'}
+      var b=c&&c.state==='running'?beatAt(d,c.currentTime):0,bt=Math.floor(((b%4)+4)%4),s='';for(var q=0;q<4;q++)s+=q===bt?'●':'○';if(u.beat._v!==s){u.beat._v=s;u.beat.textContent=s}})}
+  function place(){if(!UI.root)return;var r=UI.root,d=$('data'),y=STG.y0;if(d){var b=d.getBoundingClientRect();if(b.height)y=Math.max(y,Math.round(b.bottom+8))}
+    if(y===UI.py&&STG.y1===UI.py1)return;UI.py=y;UI.py1=STG.y1;r.style.top=y+'px';r.style.height=Math.max(160,STG.y1-y)+'px'}
+  /* ===================== the world ===================== */
+  function enter(){build();on=true;MIXON=true;UI.root.hidden=false;UI.py=-1;place();started=false;DK.forEach(function(d){d.last=-1});
+    /* the band's usual loops hand over to deck A where they are, without a gap: the same players, the same beat */
+    if(AU.run&&AU.c&&AU.ready&&ensure()){var c=AU.c,n=c.currentTime+.06,b=(loopT()+.06)*BPS;
+      AU.src.forEach(function(x){try{x&&x.stop(n)}catch(e){}});AU.src=[];AU.run=false;clearInterval(AU.iv);if(AU.live){AU.live=false;CLK.w0=performance.now()-(loopT())*1000}
+      DK.forEach(function(d){d.tRef=n;d.bRef=b;d.last=-1;d.rate=d.fader});
+      TR.forEach(function(tr){if(tr.d===0&&ON[tr.i]){tr.src=stemSrc(tr,tr.clips[0],b,n);if(tr.src)tr.play=0}});started=true}
+    else if(AU.run)stemsStop();
+    clearInterval(iv);iv=setInterval(pump,25);uiSync(true)}
+  function leave(){on=false;var c=ctx(),n=c?c.currentTime:0;stutOff();fxOff();
+    /* whoever plays in the band on deck A stays in it after: the usual loops take over */
+    TR.forEach(function(tr){var was=tr.play>=0;off(tr,n);tr.next=-1;if(tr.d===0&&was){ON[tr.i]=1;dotSync(tr.i)}});
+    clearInterval(iv);iv=0;MIXON=false;if(UI.root)UI.root.hidden=true;for(var i=0;i<NL;i++)bandApply(i,true);
+    /* and back: the usual loops pick up from deck A's beat */
+    if(c&&started){AU.live=false;CLK.w0=performance.now()-beatAt(DK[0],n)/BPS*1000}if(AU.want)stemsStart()}
+  function tick(dt,t){
+    /* the music has come on (the first touch, or the note): the players who were in the band come in on deck A, on the next bar */
+    if(soundLive()&&!started&&AU.ready){started=true;ensure();var c=ctx(),n=c.currentTime;DK.forEach(function(d){d.tRef=n;d.bRef=0;d.last=-1});TR.forEach(function(tr){if(tr.d===0&&ON[tr.i]&&tr.play<0)tr.next=0})}
+    if(!soundLive())started=false;
+    place();uiSync(false)}
+  function draw(t){
+    if(GLX.ok&&!GLX.lost)glClear(ABYSS[0],ABYSS[1],ABYSS[2]);
+    /* behind the controls, each deck's beat as a ring that swells and fades: the band's in cyan, the machine's in amber */
+    var c=ctx(),o=OV;if(!c||c.state!=='running')return;
+    DK.forEach(function(d,k){var b=beatAt(d,c.currentTime),f=b-Math.floor(b),busy=TR.some(function(tr){return tr.d===k&&tr.play>=0});if(!busy)return;
+      var R=Math.min(STG.w,STG.h)*(.32+.06*(1-f)),x=STG.x0+STG.w*(k?.72:.28),y=STG.cy;o.strokeStyle=(k?'rgba(255,179,71,':'rgba(62,240,255,')+(.22*(1-f)).toFixed(3)+')';o.lineWidth=1.2;o.beginPath();o.arc(x,y,R,0,TAU);o.stroke()})}
+  function hud(){
+    var c=ctx(),a=TR.some(function(t){return t.d===0&&t.play>=0}),b=TR.some(function(t){return t.d===1&&t.play>=0}),e=0,l2='';
+    if(c&&c.state==='running'){var n=c.currentTime;e=(beatAt(DK[1],n)%1)-(beatAt(DK[0],n)%1);if(e>.5)e-=1;if(e<-.5)e+=1}
+    var ra=BPS*60*DK[0].rate*(1+DK[0].nudge),rb=BPS*60*DK[1].rate*(1+DK[1].nudge);
+    if(a&&b)l2=Math.abs(rb-ra)<.05&&Math.abs(e)<.06?'the two decks are in time':'B is '+(Math.abs(rb-ra)>=.05?(rb>ra?'faster':'slower')+' than A':Math.abs(e).toFixed(2)+' of a beat '+(e>0?'ahead':'behind'))+': sync it, or nudge it by ear';
+    if(REC)l2=(l2?l2+' · ':'')+'recording the pads into loop '+(RECK+1);
+    return 'the band and '+MIXS.count()+' more sounds: tap a loop, it comes in on the next bar'+(l2?'\n'+l2:'')}
+  return {enter:enter,leave:leave,tick:tick,draw:draw,hud:hud,resize:function(){if(UI.root)UI.py=-1;place()},
+    /* the band's circles here bring a player in or out on deck A (its whole loop) */
+    dot:function(i){var j=i;var tr=TR[j];if(!tr)return;wake();if(tr.play>=0||tr.next>=0)tr.next=-2;else tr.next=0;BD.auto=false;BD.manual=true},
+    dbg:function(){var c=ctx(),n=c?c.currentTime:0;return {on:on,ctx:c?c.state:'none',graph:!!gr,view:view,xf:XF,kit:PK,rec:REC,recInto:RECK,count:MIXS.count(),
+      decks:DK.map(function(d){return {rate:d.rate,fader:d.fader,nudge:d.nudge,ne:d.ne?+(d.ne-n).toFixed(3):0,filt:d.filt,beat:c?beatAt(d,n):0,brake:!!d.brake}}),
+      tracks:TR.map(function(t){return {n:t.n,d:t.d,play:t.play,next:t.next,src:!!t.src}}),pads:TR[TR.length-1].clips.map(function(c){return c.h.length}),stut:!!STUT,fx:FXP}},
+    launch:launch,stop:stopT,scene:scene,stopAll:stopAll,rate:function(k,r){setRate(k,r)},sync:sync,xf:function(v){XF=v;xfApply();if(UI.xf)UI.xf.set(v)},pad:pad,rec:recSet,kit:function(k){PK=k;padLabels()},
+    view:function(v){view=v;uiSync(true)},brake:brake,stut:function(L){if(L)stutOn(L);else stutOff()},fx:function(x,y){if(x===null)fxOff();else fxSet(x,y)},
+    /* for the loudness test: the decks built on another context (an offline one), and what deck B plays laid out on it */
+    offline:function(c,dst,secs,busy){var G=graphOn(c,dst),b=G.d[1].xf.gain,a=G.d[0].xf.gain;a.value=0;b.value=1;
+      var t0=.05,hitsAt=function(j,tr,clip,from,to){var spb=SPB/4;for(var s=0;t0+s*spb<to;s++){var t=t0+s*spb;if(t<from)continue;var q=s%clip.len;clip.h.forEach(function(h){if(h[0]!==q)return;
+        var r=1,v=clamp(h[2],0,1);if(tr.k==='note'){var D=MIXS.INSTS[clip.inst],bb=MIXS.instNow(c,clip.inst),best=bb[0];bb.forEach(function(x){if(Math.abs(x.m-h[1])<Math.abs(best.m-h[1]))best=x});
+          var s2=c.createBufferSource(),g=c.createGain();s2.buffer=best.b;s2.playbackRate.value=Math.pow(2,(h[1]-best.m)/12);g.gain.value=v*.5*D[3]*tilt(h[1]);s2.connect(g);g.connect(G.t[j]);s2.start(t)}
+        else{var kb=MIXS.kitNow(c,clip.kit)[h[1]],s3=c.createBufferSource(),g3=c.createGain();s3.buffer=kb;g3.gain.value=v*.62;s3.connect(g3);g3.connect(G.t[j]);s3.start(t)}})}};
+      TR.forEach(function(tr,j){if(tr.d!==1||tr.k==='pads')return;var k=busy?{drums:4,perc:0,bass:3,keys:4,bells:4}[tr.n]:0;hitsAt(j,tr,tr.clips[k],0,secs)});
+      return G}};
 })();
 
 /* ---------- the shell: the worlds, the fingers on the glass, the few controls, the photo ---------- */
@@ -2328,11 +2868,12 @@ var OVC=$('ov'),OV=OVC.getContext('2d'),STAGE=$('stage');
    agogo, bass, balafon, kora, guitar) */
 var WORLDS=[
   {id:'smoke',name:'Smoke',o:DRIFT,sc:[1,1,1,1,1,1,1,1,1],photo:true,ic:'<path d="M8 21c-3-3 3-5 0-8s3-5 0-8M15.5 21c-3-3 3-5 0-8s2.2-4 .6-6.6"/>'},
-  {id:'wind',name:'Wind',o:WIND,sc:[1,1,1,1,1,1,1,1,1],ic:'<circle cx="12" cy="12" r="8.5"/><path d="M5.2 9.6c3.2-1.9 5.4 1.6 8.6-.2 1.9-1.1 3-1.2 4.9-.6M5 14.6c2.6-1.6 4.6 1.2 7.4.1 2.2-.9 3.6-1.5 6.4-.5"/>'},
-  {id:'orbit',name:'Orbit',o:ORBIT,sc:[1,1,1,1,1,1,1,1,1],ic:'<circle cx="12" cy="12" r="3.4"/><ellipse cx="12" cy="12" rx="9.5" ry="4.2" transform="rotate(-24 12 12)"/><circle cx="19.7" cy="7.7" r="1.1"/><circle cx="5" cy="15.4" r=".8"/>'},
+  /* the Earth: the weather, the satellites and (on the site) the live cameras, each a layer of one globe (13 Nov: "Put them all on the
+     same globe as satellites and make that just a layer"); Wind, Orbit and Live were three worlds before */
+  {id:'earth',name:'Earth',o:WIND,sc:[1,1,1,1,1,1,1,1,1],ic:'<circle cx="12" cy="12" r="6.6"/><path d="M6.2 10.4c2.4-1.3 4.1 1 6.5-.1 1.5-.7 2.4-.8 3.8-.4"/><ellipse cx="12" cy="12" rx="10.6" ry="3.9" transform="rotate(-22 12 12)"/>'},
+  /* the mixer: the band on one deck, a machine of sounds on the other (13 Nov) */
+  {id:'mix',name:'Mix',o:MIX,sc:[1,1,1,1,1,1,1,1,1],ic:'<circle cx="7" cy="10" r="4.4"/><circle cx="17" cy="10" r="4.4"/><circle cx="7" cy="10" r=".9"/><circle cx="17" cy="10" r=".9"/><path d="M3.5 19.5h17M12 17v5"/>'},
 ];
-/* the live cameras: only where the page is served from the owner's own host (a Claude artifact may not show outside video) */
-if(HOSTED&&typeof LIVEW!=='undefined')WORLDS.push({id:'live',name:'Live',o:LIVEW,sc:[1,1,1,1,1,1,1,1,1],ic:'<rect x="3" y="5.5" width="18" height="11.5" rx="2.4"/><circle cx="12" cy="11.25" r="2.7"/><path d="M8.5 20h7"/>'});
 var CUR=null,CURI=-1,PT={},PTN=0,GP={},PS=[],HV=null,touched={},lastTouch=-1e9,SAYT=0,SAYX='',SAYC='',swT=0,GOT=0,FDT=.016;
 function safe(f){try{f()}catch(e){if(window.__lc){window.__lc.errs=(window.__lc.errs||[]);window.__lc.errs.push(String(e&&e.stack||e))}}}
 function PTR(id){return PT[id]||GP[id]||null}
@@ -2349,12 +2890,12 @@ function railBuild(){var r=$('rail');r.innerHTML='';WORLDS.forEach(function(w,i)
 function dotsBuild(){var d=$('dots');d.innerHTML='';for(var i=0;i<NL;i++)(function(i){var b=document.createElement('button');b.type='button';b.className='dot';b.id='d_'+i;b.style.setProperty('--c',BCOL[i]);
   b.setAttribute('aria-label',BNAMES[i]);b.setAttribute('aria-pressed',ON[i]?'true':'false');b.appendChild(document.createElement('i'));
   /* a circle brings its player in or out. With the music off, it turns the music on with that player in it */
-  b.addEventListener('click',function(){BD.auto=false;BD.manual=true;if(!soundLive()){musicOn();if(!ON[i])setPlayer(i,true)}else setPlayer(i,!ON[i])});d.appendChild(b)})(i)}
+  b.addEventListener('click',function(){if(CUR&&CUR.dot){CUR.dot(i);return}BD.auto=false;BD.manual=true;if(!soundLive()){musicOn();if(!ON[i])setPlayer(i,true)}else setPlayer(i,!ON[i])});d.appendChild(b)})(i)}
 function dotSync(i){var b=$('d_'+i);if(b)b.setAttribute('aria-pressed',ON[i]?'true':'false')}
 function chrome(){
   var w=WORLDS[CURI];if(!w)return;$('wname').textContent=w.name;
   WORLDS.forEach(function(x,i){var b=$('w_'+x.id);if(b)b.setAttribute('aria-current',i===CURI?'true':'false')});
-  $('bPhoto').hidden=!w.photo;$('bClear').hidden=!(w.photo&&PHOTO.has);$('bSave').hidden=!DL||w.id==='live';if(w.id!=='orbit')$('bNow').hidden=true;
+  $('bPhoto').hidden=!w.photo;$('bClear').hidden=!(w.photo&&PHOTO.has);$('bSave').hidden=!DL;$('bNow').hidden=true;
   $('bPhoto').setAttribute('aria-pressed',PHOTO.has?'true':'false');
   try{if(location.hash!=='#'+w.id)history.replaceState(null,'','#'+w.id)}catch(e){}
   layout();if(CUR&&CUR.resize)safe(function(){CUR.resize(VW,VH)});DATAX='';dataPaint(true)}
@@ -2368,7 +2909,7 @@ function go(i,instant){
   document.body.classList.add('sw');doorDip();GOT=setTimeout(swap,200)}
 function worldsGL(){WORLDS.forEach(function(w){if(w.o.gl)w.o.gl()});PHOTO.tex=null}
 /* links to worlds that have been renamed or have gone still land somewhere sensible */
-var OLDHASH={drift:'smoke',earth:'wind',loom:'smoke',bloom:'smoke',band:'smoke'};
+var OLDHASH={drift:'smoke',loom:'smoke',bloom:'smoke',band:'smoke',wind:'earth',orbit:'earth',live:'earth'};
 function worldOf(h){h=OLDHASH[h]||h;for(var i=0;i<WORLDS.length;i++)if(WORLDS[i].id===h)return i;return -1}
 addEventListener('hashchange',function(){var i=worldOf(location.hash.slice(1));if(i>=0)go(i)});
 

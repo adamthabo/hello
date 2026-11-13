@@ -59,8 +59,12 @@ const size = process.argv[2] || 'phone';
   await tap(nodes.nodes[3].x, nodes.nodes[3].y); await sleep(500); s = await D(); ok(s.d.path && s.d.pz < 0, 'a level not reached yet does not open');
   await tap(nodes.nodes[0].x, nodes.nodes[0].y); await sleep(2600); s = await D();
   ok(s.d.pz === 0 && !s.d.path && s.d.cups.length === 1 && s.d.fix.fans === 1 && s.on === '100001000', 'level 1: one source, one ring, and the band is the low drum and the bass: ' + s.on);
-  ok(/^level 1 of \d+ · walls · fill each ring with smoke of its colour/.test(s.data) && /cyan ring \d+%/.test(s.data) && /you can still build 2 walls · three stars with 1 piece/.test(s.data) && s.tools.startsWith('ink,wall*,puz,undo'), 'the readout and the tools say what may be built: ' + s.data.replace(/\n/g, ' | ') + ' / ' + s.tools);
-  ok(await page.evaluate(() => [...document.querySelectorAll('#tools .tb span')].map(e => e.textContent).join()) === 'hand,wall,fan,prism,drain,tunnel,levels,again', 'each tool carries its name');
+  ok(/^level 1 of \d+ · walls · build, then release the smoke/.test(s.data) && /fill every ring with smoke of its colour before the tank runs dry/.test(s.data) && /to build: 2 walls · ★★★: 1 piece, a third of the smoke left/.test(s.data) && s.tools === 'wall*,go,puz,undo', 'the readout and the tools say what may be built, and that the smoke waits to be let go: ' + s.data.replace(/\n/g, ' | ') + ' / ' + s.tools);
+  ok(await page.evaluate(() => [...document.querySelectorAll('#tools .tb span')].map(e => e.textContent).join()) === 'hand,wall,fan,prism,drain,tunnel,release,levels,again', 'each tool carries its name');
+  // nothing built and the smoke let go: the tank runs dry, the ring is not filled, and the page says so
+  await click('t_go'); await sleep(400); s = await D(); ok(s.d.run && /smoke left: \d/.test(s.data) && /cyan ring \d+%/.test(s.data) && await page.evaluate(() => document.getElementById('t_go').firstChild.textContent) === 'stop', 'release lets the smoke go, and the button becomes stop: ' + s.data.split('\n')[0]);
+  for (let k = 0; k < 160; k++) { await sleep(1000); s = await D(); if (!s.d.run) break; }
+  ok(!s.d.run && !s.d.won && s.d.out && /out of smoke: change something, then release it again/.test(s.data), 'with nothing built the tank runs dry and the ring stays short: ' + s.data.split('\n')[0]);
   ok(s.d.board.w / s.d.board.h > .6 && s.d.board.w / s.d.board.h < .68 && s.d.fix.walls === 4, 'a level is played in a tank of fixed shape: ' + Math.round(s.d.board.w) + ' x ' + Math.round(s.d.board.h));
   await page.screenshot({ path: `shots/smoke_${size}_level1.png` });
   // the level's own solution, drawn with real touches: walls dragged, fans dragged the way they blow, prisms and drains tapped
@@ -72,7 +76,8 @@ const size = process.argv[2] || 'phone';
     else if (b[0] === 'prism') { await click('t_prism'); await tap(BX(a[0]), BY(a[1])); }
     else if (b[0] === 'drain') { await click('t_drain'); await tap(BX(a[0]), BY(a[1])); }
     else if (b[0] === 'tunnel') { await click('t_tunnel'); await drag(BX(a[0]), BY(a[1]), BX(a[2]), BY(a[3]), 12); } }
-  s = await D(); ok(s.d.walls + s.d.fans + s.d.drains + s.d.prisms + s.d.tunnels === L0.sol.length, 'level 1\'s solution built with touches: ' + L0.sol.map(b => b[0]).join(', '));
+  s = await D(); ok(s.d.walls + s.d.fans + s.d.drains + s.d.prisms + s.d.tunnels === L0.sol.length && !s.d.run, 'level 1\'s solution built with touches, the smoke still held: ' + L0.sol.map(b => b[0]).join(', '));
+  await click('t_go');
   let best = 0; for (let k = 0; k < 150; k++) { await sleep(1000); s = await D(); if (s.d.cups[0]) best = Math.max(best, s.d.cups[0].fill); if (s.d.won || s.d.pz > 0) break; }
   ok(s.d.won || s.d.pz > 0, 'with it the ring fills: ' + Math.round(best * 100) + '% (match ' + (s.d.cups[0] ? s.d.cups[0].match.toFixed(3) : '-') + ')');
   if (s.d.won) { ok(s.d.winStars === 3 && /^level 1 solved ★★★ · 1 piece/.test(s.data), 'solved with the fewest pieces: three stars: ' + s.data.replace(/\n/g, ' | ')); await page.screenshot({ path: `shots/smoke_${size}_level1_won.png` }); }

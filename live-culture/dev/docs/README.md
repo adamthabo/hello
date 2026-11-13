@@ -1,9 +1,9 @@
 # Live Culture: working notes
 
-Live Culture is a published Claude artifact: three worlds to play in (Smoke, Wind, Orbit), with one band playing under all of them,
-and the same page served live from the owner's own Cloudflare Worker, where it reads every source as it changes and has a fourth
-world, Live (camera streams). It was rebuilt from nothing on 9 Nov 2026 after the owner said he hated the previous version, reshaped
-the same evening after his first look, and three times more on 10 Nov (his words are under "Hard rules").
+Live Culture is a published Claude artifact: three worlds to play in (Smoke, Earth, Mix), with one band playing under all of them,
+and the same page served live from the owner's own Cloudflare Worker, where it reads every source as it changes and the Earth has one
+more layer, live cameras. It was rebuilt from nothing on 9 Nov 2026 after the owner said he hated the previous version, reshaped
+the same evening after his first look, three times more on 10 Nov, on 12 Nov and on 13 Nov (his words are under "Hard rules").
 
 Artifact: https://claude.ai/artifact/PCzaFJH2vjXe4Kv8KK4Xic (publish to this URL only; never make a second artifact)
 
@@ -77,12 +77,27 @@ Artifact: https://claude.ai/artifact/PCzaFJH2vjXe4Kv8KK4Xic (publish to this URL
    place tapped (the weather now and for three days, and the rain radar), and storms seen up close. The artifact cannot reach weather
    services or video, so the layers, the card's forecast and radar, and the cameras are on the site only; say so plainly.
 
+14. **What his sixth look (13 Nov, 11:40) settled.** "Some is good, I like the videos and I like the weather, but is it real? Put them
+   all on the same globe as satélites and make that just a layer. Make a music dj mixer page with pitch control hundreds of other
+   samples and ability to abeloton live the music and make it way more fun and interactive. And then make the smoke game clearer and
+   work better. The game should also be harder and more fun." Asked, he chose for the mixer all four of "Clip grid, like Ableton", "Two
+   decks and a crossfader", "Drum pads", "Effects to sweep"; of the smoke game he said "Too much smoke makes filling the holes too easy";
+   for harder, "Tougher puzzles", "Moving parts", "Limited smoke"; for the cameras, "Window over the globe". So: Wind and Orbit are one
+   world, Earth, where the weather, the satellites and (on the site) the cameras are layers of one globe, switched along the bottom; a
+   camera's ring on the globe opens its window over the Earth; the satellites stay in the present (winding time and the ×60 chip went
+   with Orbit's own world). Mix is a new world: the band and a machine of 300 sounds as two decks of
+   loops started on the bar, a grid like Ableton Live's clips, each deck with its pitch, nudges and sync, a crossfader, sixteen pads to
+   play and record into loops, and effects to sweep. In Smoke a level's smoke waits to be let go and its tank runs dry; a jet carries
+   about half the ink it did and a ring fills only with a jet streaming through it; walls turn the water along them; a source sweeps
+   and rings drift; the 24 levels are new and every ring was placed where the measured smoke goes. His question "is
+   it real" was answered: the site's data is real and as fresh as each source (listed under "Live data"); the artifact's is a snapshot.
+
 ## What the page is
 
 One screen. The world fills it edge to edge; top left its name and a few lines of live readings; top right a photo button in
-Smoke, a save button where the viewer can take a file, "Now" in Orbit; along the bottom Smoke's tools (in Smoke) or
-Wind's layers (in Wind), each with its name, the music (a note for the whole band and nine circles, one a player) and under it the worlds. The band
-starts with the first touch anywhere.
+Smoke and a save button where the viewer can take a file; along the bottom Smoke's tools (in Smoke) or the Earth's layers (in
+the Earth; on the site also the cameras' themes), each with its name, the music (a note for the whole band and nine circles, one a
+player) and under it the worlds. The band starts with the first touch anywhere. In Mix the mixer's own controls fill the middle.
 
 **The first touch on an iPhone.** iOS starts no sound on a stroke, only on a plain tap (a touch that lifts where it landed; this is
 how WebKit has behaved since iOS 9, and it could not be tried here). So a first touch that is a stroke asks for the music and gets
@@ -92,22 +107,19 @@ the page stops asking. `node tools/t_lock.js` plays such a phone.
 
 | World | What it is | Hands | Its own sound |
 |---|---|---|---|
-| Smoke | a real fluid (GPU stable fluids) with ink that rises like smoke; a photo becomes the ink and remembers itself. A machine to build in: walls stop the water and the ink, fans push it (and breathe ink), prisms give the smoke passing through their colour, drains swallow it, tunnels take what goes in one end out of the other. And a game of 24 levels in six chapters, each bringing a piece (walls, fans, prisms, drains, tunnels, then all together): fixed sources breathe coloured jets inside a tank of fixed shape, and each ring wants its colour (a white ring wants cyan and amber together); a ring fills only while smoke of its colour, and nothing else, streams through it, so no level solves itself. Stars: three for the fewest pieces known to work (`par`), two for one more, one otherwise. A map of the levels (one row a chapter, a line through them all); each level opens when the one before is solved; every third level solved brings a player in (the shekere, the djembe, the talking drum, the agogo, the balafon, the kora), the electric guitar with the last | the tools along the bottom, each named: the hand (drag: push, ink; tap: a drop; stay: a spring), wall (drag: a straight wall whose ends join others; tap one: away), fan (drag: where and which way), prism (tap; tap one: away), drain (tap), tunnel (drag from where the smoke goes in to where it comes out; tap an end: away), levels (the map; on it "play freely"), "again"; two fingers turning: a whirlpool, closing: pull the water in, opening: throw it out. In a level the hand moves the water but leaves no ink | glass notes, nine rows; a thump for a wall, a kalimba note for a fan, glass for a prism, a bowl for a drain and two for a tunnel, glass for each ring filled, a bowl and a glass note a star for a level solved |
-| Wind | layers that can be switched along the bottom: the wind near the ground or the jet streams ten kilometres up (one or the other), the temperature, the pressure (isobars every 4 hPa, the highs and lows), the waves, the clouds, the rain, the Sun (all but the wind and the Sun only where the page is served live: NOAA's GFS read from its GRIB2 files on the device). The clouds and the rain drift with the real wind. The globe (Blue Marble, city lights, the real day/night line) wrapped in the real wind shown as smoke (NOAA's GFS 10 m wind carrying thousands of small plumes); the strongest fires of the last day (NASA FIRMS) as embers, their smoke carried off by the same wind; the tropical storms turning now, by name; the aurora where NOAA expects it; the last half hour's lightning as the GOES satellites saw it | one finger: turn the Earth (it coasts); tap a place: its name (the nearest town), wind, the Sun's height, the hour by the Sun, the aurora, lightning near, and where served live the model's temperature, pressure and waves there and a card: the weather now and for three days (Open-Meteo) and the last hour of rain radar (RainViewer); tap a storm: the Earth turns to it and comes close, its arms turning the way it turns, as wide as it is strong, and the line its present motion carries it along for two days; tap a fire: what is known of it; two fingers: slide to turn, pinch to come closer | glass notes by latitude; a soft shaker tick for each lightning flash (the half hour replayed over sixteen bars) |
-| Orbit | every working satellite (about 15,900) and four wreckage clouds (about 2,700 pieces) round the Earth, each solved from its published orbit by the graphics chip every frame, in real time, each with a trail of its last nine minutes along which light runs towards it (so in real time, when a lap takes an hour and a half, the eye still sees everything going round); real stars behind; the Earth lit for the moment shown | one finger: turn; pinch: travel out to the geostationary ring; two fingers turning: wind time (one turn = 90 min; it goes on at its own pace from there); tap a satellite: its card; the chip: "Now" back to the present when time is wound, "×60" to run it fast | glass when the two space stations and a dozen Earth-watching satellites cross between sunlight and shadow; a glass note on a tap |
-
-**The satellite card** (`cardBuild`, `cardLive` in `13-orbit.js`): name; kind, status and owner; catalogue number and international
+| Smoke | a real fluid (GPU stable fluids) with ink that rises like smoke; a photo becomes the ink and remembers itself. A machine to build in: walls stop the water and the ink, fans push it (and breathe ink), prisms give the smoke passing through their colour, drains swallow it, tunnels take what goes in one end out of the other. And a game of 24 levels in six chapters, each bringing a piece (walls, fans, prisms, drains, tunnels, then all together): fixed sources breathe coloured jets inside a tank of fixed shape, and each ring wants its colour (a white ring wants cyan and amber together); a ring fills only while smoke of its colour, and nothing else, streams through it, so no level solves itself. The smoke waits until it is let go (the release button; it becomes stop) and then runs from a tank of a few seconds (`tank`); when the tank has run dry and the rings are not full, the level says so and waits for a change and another release. A source may sweep and rings may drift (and a fixed fan may blow by turns, though no level uses that now). Stars: three for the fewest pieces known to work (`par`) with a third of the tank left, two for one more piece or less smoke left, one otherwise. A map of the levels (one row a chapter, a line through them all); each level opens when the one before is solved; every third level solved brings a player in (the shekere, the djembe, the talking drum, the agogo, the balafon, the kora), the electric guitar with the last | the tools along the bottom, each named: the hand (drag: push, ink; tap: a drop; stay: a spring), wall (drag: a straight wall whose ends join others; tap one: away), fan (drag: where and which way), prism (tap; tap one: away), drain (tap), tunnel (drag from where the smoke goes in to where it comes out; tap an end: away), release (in a level: let the smoke go; stop), levels (the map; on it "play freely"), "again"; two fingers turning: a whirlpool, closing: pull the water in, opening: throw it out. In a level the hand moves the water but leaves no ink | glass notes, nine rows; a thump for a wall, a kalimba note for a fan, glass for a prism, a bowl for a drain and two for a tunnel, glass for each ring filled, a bowl and a glass note a star for a level solved |
+| Earth | one globe with its layers switched along the bottom. The weather: the wind near the ground or the jet streams ten kilometres up (one or the other), the temperature, the pressure (isobars every 4 hPa, the highs and lows), the waves, the clouds, the rain, the Sun (all but the wind and the Sun only where the page is served live: NOAA's GFS read from its GRIB2 files on the device). The clouds and the rain drift with the real wind. The globe (Blue Marble, city lights, the real day/night line) wrapped in the real wind shown as smoke (NOAA's GFS 10 m wind carrying thousands of small plumes); the strongest fires of the last day (NASA FIRMS) as embers, their smoke carried off by the same wind; the tropical storms turning now, by name; the aurora where NOAA expects it; the last half hour's lightning as the GOES satellites saw it. The satellites: every working satellite (about 15,900) and four wreckage clouds (about 2,700 pieces), each solved from its published orbit by the graphics chip every frame, in real time, each with a trail of its last nine minutes along which light runs; dimmed a little over the weather. The cameras (on the site only): a ring on the globe for each of 86 live cameras in eight themes (bright: on the air now) | one finger: turn the Earth (it coasts); tap a place: its name (the nearest town), wind, the Sun's height, the hour by the Sun, the aurora, lightning near, and where served live the model's temperature, pressure and waves there and a card: the weather now and for three days (Open-Meteo) and the last hour of rain radar (RainViewer); tap a storm: the Earth turns to it and comes close; tap a fire: what is known of it; tap a satellite: its card; tap a camera's ring: its window opens over the Earth (the stream; a tap on it: bigger or smaller; a swipe across it: the next camera east or west in the theme; its cross: closed) and the Earth turns to the camera; two fingers: slide to turn, pinch to come closer or travel out to the geostationary ring | glass notes by latitude; a soft shaker tick for each lightning flash (the half hour replayed over sixteen bars); glass when the two space stations and a dozen Earth-watching satellites cross between sunlight and shadow; a bowl note when a camera comes on |
+| Mix | a DJ's mixer for the band and a machine of 300 more sounds, all struck: two decks of loops in a grid like Ableton Live's clips. Deck A is the band: its nine players, each with six loops cut from its own recording (the whole loop, its halves, one bar, one beat, half speed). Deck B is the machine: drums, percussion, bass, keys, bells and the pads, each with six loops written for it, played from 16 drum kits of 16 sounds and sixteen tuned instruments, all struck or plucked (marimba, vibraphone, glockenspiel, xylophone, kalimba, steel pan, piano, electric piano, celesta, gamelan, handpan, music box, upright bass, clavinet, glass, bells), every sound made on the device. A loop tapped starts on the next bar, in time with its deck; a row's number starts the row | tap a loop: in on the next bar (blinking while it waits; tap it again: out at the bar); a row's number: the whole row; "stop": a deck's column or all of it; each deck: pitch (±16%, by ear), nudge (held: a little faster or slower, to bring the beats together), sync (to the other deck's speed and beat), a filter (darker or thinner); the crossfader between them; the band's circles bring a player in or out on deck A; pads: 16, played with fingers, in kits chosen with the arrows; "rec" records them into a loop of deck B (each hit put on the nearest sixteenth), one bar or two, which then plays and is kept in this browser; effects: a pad to sweep with a finger (left darker, right thinner, up more echo), a stutter held (the last beat, half or quarter beat again and again), a brake for each deck, stop all | the band's own stems; the machine's sounds; nothing held or blown, and never louder than the band (measured: `t_levels.js`). Leaving Mix, whoever played on deck A plays on in the band, in step |
+**The satellite card** (`cardBuild`, `cardLive` in `13-orbit.js`, shown in the Earth): name; kind, status and owner; catalogue number and international
 designator; launch date and site and years up; perigee and apogee, tilt and period (from the element set); where it is over now, its
 height and speed, sunlit or in shadow (worked out every quarter second); radar cross-section and standard brightness; radio downlinks
 (SatNOGS); the epoch of its element set and how long ago that was. The catalogue part comes from `data/satinfo.json` (published next
 to the page, about 570 KB, read at the first tap; 20 bytes an object, layout in `tools/gen_live.py`). On a wide or a turned screen
 the card stands at the right and the Earth moves over; on a phone it lies above the circles and the Earth moves up.
 
-| Live (hosted version only) | live camera streams from 86 places in eight themes (animals, volcanoes, space, cities, the sea, night skies, mountains, things that move), the video filling the screen (held upright, the wide picture is cropped and slowly looked across); a small Earth in the corner turns to where the camera is, and opens into a map of every camera in the theme (bright: on the air now); the readout gives the place's hour by the Sun, the Sun's height, the wind there, the satellites above its horizon and how far the space station is; only cameras on the air are shown; when YouTube's player cannot load, NOAA's GOES pictures of the whole Earth | swipe (either way): the next camera east or west in the theme; the row of themes; tap the small Earth: the map, where a tap on a camera goes to it and a tap off the Earth comes back; two fingers: closer, or step back to see all of the picture | a bowl note when a camera comes on |
-
-Deep links: `#smoke #wind #orbit`, and `#live` in the hosted version (old links still land: `#drift`, `#bloom`, `#loom` and `#band`
-on Smoke, `#earth` on Wind). Keys: 1-3 worlds (1-4 hosted), space music, arrows in Wind, Orbit and Live, N in Orbit.
-Smoke keeps the number of puzzles solved in the viewer's own browser (`localStorage`, `lc.smoke.solved`); nothing else is kept.
+Deep links: `#smoke #earth #mix` (old links still land: `#drift`, `#bloom`, `#loom` and `#band` on Smoke, `#wind`, `#orbit` and
+`#live` on the Earth). Keys: 1-3 worlds, space music, arrows in the Earth. Kept in the viewer's own browser (`localStorage`), and
+nothing else: Smoke's stars (`lc.smoke.stars`) and the loops recorded on Mix's pads (`lc.mix.pads`).
 
 ## Live data: what is live, what is a snapshot
 
@@ -219,15 +231,24 @@ governor is live in this test and the headless browser draws slowly, so Smoke us
 - `06-live.js` `LIVE`: the six data sets, `liveTake()` (checks and unpacks one; every name that will be shown is cut down to letters,
   digits and a few marks), `liveLoad()` (reads `data/live.json`, then watches the store's stamp); `SATINFO`, `satInfo(id)` the catalogue.
 - `07-globe.js` `GLOBE`: the Earth drawn by ray in one fragment shader (day, night lights, relief, sea glint, air), with two optional
-  layers: a smoke picture and the aurora grid. Shared by Wind and Orbit. `GLOBE.at(x,y,g)` gives the latitude and longitude under a finger.
-- `11-drift.js` (the world called Smoke), `12-wind.js`, `13-orbit.js` the three worlds. Each is an object with any of:
-  `enter leave resize down move up hover gesture wheel key seq step tick draw hud ghost gl dbg`.
+  layers: a smoke picture and the aurora grid. `GLOBE.at(x,y,g)` gives the latitude and longitude under a finger.
+- `11-drift.js` (the world called Smoke), `12-wind.js` (the Earth), `16-mix.js` (Mix) the three worlds. Each is an object with any of:
+  `enter leave resize down move up hover gesture wheel key seq step tick draw hud ghost gl dbg`. Since 13 Nov the satellites
+  (`13-orbit.js`, `ORBIT`) and the cameras (`14-live.js`, `LIVEW`, in the hosted build only) are not worlds but layers the Earth
+  runs: each has `layer: {on, off, tick, draw, pick, hud}` (the cameras also `hit`, `up` for their window, `open`, `close`, `flyTo`),
+  and the Earth turns them on and off from its row of layers, hands them its globe (`g`) every frame, draws them over its own, and
+  offers them a tap first (a camera's ring, then a satellite within 20 pixels, then a storm or a fire, then the place). Over the
+  weather the satellites are dimmed (`LAY`). Mix is DOM controls over the canvas (`#mix`, placed under the readout each frame).
   The two worlds taken out on 10 Nov are in `dev/archive/`: `world-bloom.js` (`BLOOM`) and `world-band.js` (`BANDW`). To bring one
   back: put it in `src/` as `10-bloom.js` or `15-band.js`, add it to `mods` in `build.py`, add its row to `WORLDS` in `20-ui.js` (the
   rows that were there are in the v14 source of `20-ui.js` in this artifact's history), and rerun every test.
   Smoke: stable fluids on the GPU (velocity at 128 cells across a phone, ink at 512), buoyancy by the ink's density. Walls are
   drawn into a grid at the water's size (`obs`) that masks the water and the ink (`msk`) and that the advection reads (`uObs`):
-  nothing is carried across a wall in one step, or a fast jet jumps a 10-pixel wall. A prism is a pass over the ink (`tint`: inside it
+  nothing is carried across a wall in one step, or a fast jet jumps a 10-pixel wall; where the way back crosses a wall the place
+  keeps what it had (until 13 Nov it took nothing, which ate the smoke of every jet that met a wall). Since 13 Nov the pressure sees
+  the walls too (`div`, `prs`, `grad`: a wall's cell takes the pressure of the water against it, and the water beside a wall loses
+  only the part of its speed that goes into it), so a jet that meets a wall slides along it instead of stopping dead and spreading.
+  Measured on the first level: before, a jet turned by a wall came away with a third of the smoke a straight jet carries. A prism is a pass over the ink (`tint`: inside it
   the ink takes its colour, as bright as it was); a tunnel is a pass that moves the ink in one mouth into the other, place for place
   (`tun`), with a pull at one end and a push out of the other. Rings are measured from the ink read back at 64 across (`readBack`,
   `sample`: density times how close the colour, taken all together, is) and fill by the water's own time at `LP.fk*(match - LP.f0)`.
@@ -239,7 +260,15 @@ governor is live in this test and the headless browser draws slowly, so Smoke us
   Each level has its solution (`LEVELS[i].sol`). `node tools/t_design.js levels.json [first] [last] [seconds]` plays levels from a
   file (stepping as a 60-frame phone: `fixdt`) with nothing built (no ring may pass half) and with their solutions (every ring
   must fill), and any `bad` builds listed; `node tools/t_puzzles.js` does the same for the levels in the page. Slow: two to four
-  minutes a level. Change a level, the water or the rings: run them. Levels that failed: two jets head on (their rising plume
+  minutes a level. Change a level, the water or the rings: run them. Since 13 Nov the rings are placed by measurement: a level is
+  drafted without rings but with `want` (the rings' colours) and its solution; `node tools/t_place.js drafts.json [first] [last]
+  out.json` lets each draft's smoke go with its solution built and with nothing built and records what a ring of each colour would get
+  at 400 points of the tank every quarter second (the page takes the readings itself: `rec`, `recGet`; the water is worked out but
+  not shown: `nodraw`; about five minutes a level here, two at a time); `python3 tools/place_rings.py drafts.json out.json ...
+  [--fk --f0 --k] [--write levels.json]` then tries every point as a ring by the page's own rule and lists the places where the
+  solution fills it soonest while nothing built stays well short (and its neighbours do too, so a ring a little off still behaves),
+  and can try other settings of the water without running it again; `python3 tools/set_levels.py levels.json` writes the chosen
+  levels into the source. Then `t_design.js` plays them for real. Levels that failed: two jets head on (their rising plume
   filled both rings), a ring above a jet (smoke rises into it), anything carried by drift alone, a fixed fan far from the jet it
   should bend, a jet sheltered from a fixed fan near it (the fan's flow comes round the shelter), an intruder whose colour is near
   the ring's (a ring judges the colour of all the smoke in it together). In a level a
@@ -249,16 +278,28 @@ governor is live in this test and the headless browser draws slowly, so Smoke us
   real wind is bringing it (semi-Lagrangian, speeded up about 30,000 times), fed by small fixed "fires" that each burn a few seconds,
   by a haze where the wind is strong, and by the real fires (each a point drawn into the picture every frame, `P.pts`). The storms are
   drawn over the globe; a tap goes to the storm's eye or the fire under the finger before the place.
-  Orbit: eight vertices a satellite in one static buffer (its trail in four pieces, from the body to the same body nine minutes
+  The satellites (`13-orbit.js`): eight vertices a satellite in one static buffer (its trail in four pieces, from the body to the same body nine minutes
   earlier, light running along it), and the bodies alone in a second (a stride of eight would pass WebGL's 255-byte limit); the vertex shader
   solves Kepler's equation; the angles are brought forward to a new base time every ten hours of shown time so the numbers stay small.
+- `15-mixsnd.js` `MIXS`: Mix's machine of sounds, every one made on the device into a buffer, struck and dying away (no oscillator):
+  16 drum kits of 16 roles (kick to snap, each kit its own tuning, length and grit), 16 tuned instruments sampled at a few notes each
+  and played between them by speed, and the loops written for them (drums, percussion, bass, keys, bells; six each). Made a few at a
+  time in the background (`want`, `pump`) so the page never stalls.
+- `16-mix.js` `MIX`: the mixer. `TR` the tracks (the band's nine on deck A, the machine's six on deck B), `DK` the decks (each its own
+  beat clock: `beats(t) = bRef + (t - tRef) * BPS * rate * (1 + nudge)`, re-anchored whenever the speed changes). Every 25 ms
+  `pump` schedules what falls in the next 160 ms (1.2 s while the page is hidden): a band loop is its stem played from the loop's place, looping; a machine loop is its
+  hits as one-shot buffers. Launches wait for the deck's next bar. Its sound goes through the page's own buses: deck A into the band's
+  (so the band sounds as it always does), deck B, the pads and the echo into the bus every hand-played sound goes into (with its
+  ceiling), so nothing on Mix can come out louder than the band: `t_levels.js` measures deck B at its busiest, with the echo up, and
+  ten fingers on the pads (`MIX.offline` builds the decks on an offline context). Entering Mix hands the band's usual loops over to
+  deck A where they are, without a gap; leaving hands them back on deck A's beat.
 - `20-ui.js` the worlds table, pointers (real fingers `PT`, ghost fingers `GP`, a hovering mouse), two-finger gestures, the hints, the
   music's note and circles (`swSync`, `dotsBuild`), the photo, saving, keys.
 - `21-main.js` the frame loop and start.
 
 Conventions: everything that moves uses `dt`; GLSL ES 1.00 only; `[hidden]` via `el.hidden`; a world's GL state never leaks into the next
 (`glAttrOff()` first, blend and scissor switched back off); free what you replace (`glFree`).
-Reduced motion: no hints, no band-driven motion, the worlds hold still until touched; the wind moves slowly; Orbit stays in the present.
+Reduced motion: no hints, no band-driven motion, the worlds hold still until touched; the wind moves slowly; the satellites stay in the present.
 
 ## Sound levels (measured, not guessed)
 
@@ -273,6 +314,12 @@ every loop and again on every touch. That is the failure this section exists to 
   the lightning's ticks with fast glass on top sit 6.5 under; ten fingers hammering every voice at once sits 3.4 dB under.
   (The room's echo is random, so runs differ by half a dB or so.)
 - `node tools/t_spec.js` shows the same per octave.
+- Mix (13 Nov): deck B, the pads and the echo play into the same bus as the touch voices, so the same ceiling holds them; deck A is
+  the band's own stems at the band's own gains (`SG`). `t_levels.js` renders deck B at its busiest (its fullest drum, bass, keys and
+  bells loops together), the same with the echo all the way up, ten fingers on the pads (every kit, a hit every 30 ms), and all of
+  that at once; each must stay under the full band like everything else a hand plays. Measured on 13 Nov: deck B at its busiest
+  2.1 dB under the full band, with the echo up 1.9, the pads 2.0, all at once 2.0 (the ceiling holds them all at about the same
+  level); ten fingers on the touch voices 3.8 under.
 - Higher notes are played softer (`tilt()`: 3 dB per octave around E4).
 - If you change a voice or a gain in `INSTDEF`, rerun both. If you add a voice, it must be struck.
 
@@ -312,8 +359,11 @@ the build at once.
 - Sources it adds beyond the artifact's: CelesTrak directly (then the mirrors), NOAA SWPC directly, the clouds (EUMETSAT world cloud
   map via clouds.matteason.co.uk, 3-hourly), the rain (NASA IMERG precipitation rate from NASA GIBS WMS, the newest half hour that has
   data, about four hours back), NOAA GOES-19 and GOES-18 full-disk GeoColor pictures, and YouTube streams.
-- The Live world is `src/14-live.js` (in the hosted build only). The cameras are listed in `worker.js` (`CAMS`, sorted west to east
-  as it loads); to add one, copy a line with its theme `t`. 86 cameras in eight themes since 12 Nov (found by web search; none could
+- The cameras are `src/14-live.js` (in the hosted build only): until 13 Nov a world of their own (Live), full screen; since then a
+  layer of the Earth (his words: "Put them all on the same globe as satélites and make that just a layer", and he chose "Window over
+  the globe"): a ring on the globe for each camera of the theme, and a tapped ring opens the stream in a window over the Earth (at the
+  bottom right; a tap on it: across the stage, and back; a swipe across it: the next camera east or west; its cross: closed). The
+  cameras are listed in `worker.js` (`CAMS`, sorted west to east as it loads); to add one, copy a line with its theme `t`. 86 cameras in eight themes since 12 Nov (found by web search; none could
   be watched from here). Before that, 29 cameras since 10 Nov, 13:30 (his words: "I want many many more videos"):
   the ISS (Sen), Kilauea, Vancouver, Monterey's sea nettles, Las Vegas, Jackson Hole, Starbase, Churchill's aurora, Satellite Beach,
   Times Square, Maho Beach, Rio's Christ the Redeemer, Amsterdam, Venice, St Peter's, Etna, three African waterholes (Namib, Onguma,
@@ -324,7 +374,7 @@ the build at once.
 - Testing here: `node tools/hostmock.mjs` (port 8758) runs the real `worker.js` with every upstream played from local files, a few
   made-up YouTube pages (a search, a looped film, a stream that may not be embedded), GFS (pygrib's 2.5-degree GFS sample with an index
   in NOAA's form, and a made-up wave file: `tools/mkgfs.py`), Open-Meteo and RainViewer made up in their shapes; `node tools/t_hosted.js` checks the live reading, the clouds and rain on the globe, the merged orbits, and the
-  Live world with a stand-in for YouTube's player (and without it). What it cannot check: the real sources' answers from Cloudflare,
+  cameras' layer and window with a stand-in for YouTube's player (and without it). What it cannot check: the real sources' answers from Cloudflare,
   YouTube's player, and the look of the real clouds and rain.
 - To update the live copy after a change: build, `sh tools/pack_hosted.sh`, and push the folder's contents to his `live-culture`
   repository (Workers Builds deploys it); keep `hello/live-culture/` the same.

@@ -8,7 +8,7 @@ const { launch, open } = require('./lib');
   const res = await page.evaluate(async () => {
     const L = window.__lc, sr = 44100, dur = 13, a0 = 3.5;
     const stems = await Promise.all(L.STEMF.map(n => fetch('audio/stem' + n + '.mp3').then(r => r.arrayBuffer())));
-    async function render(band, toys) {
+    async function render(band, toys, mix) {
       const O = new OfflineAudioContext(2, sr * dur, sr), g = L.buildGraph(O); g.out.gain.value = 0.3;
       if (band) {
         const bufs = await Promise.all(stems.map(ab => O.decodeAudioData(ab.slice(0))));
@@ -22,6 +22,7 @@ const { launch, open } = require('./lib');
         const s = O.createBufferSource(), gn = O.createGain(); s.buffer = best.b; s.playbackRate.value = midi ? f / best.f : 1; gn.gain.value = vel * def[0] * (midi ? L.tilt(midi) : 1); s.connect(gn); gn.connect(g.toy); s.start(when);
       }
       if (toys) toys(note);
+      if (mix) mix(O, g);
       const buf = await O.startRendering(), l = buf.getChannelData(0), r = buf.getChannelData(1);
       let s2 = 0, pk = 0, n = 0; for (let i = Math.floor(a0 * sr); i < l.length; i++) { const m = (l[i] + r[i]) * .5; s2 += m * m; n++; const a = Math.max(Math.abs(l[i]), Math.abs(r[i])); if (a > pk) pk = a; }
       // loudest half-second
@@ -40,6 +41,15 @@ const { launch, open } = require('./lib');
     out['orbit: glass bells four times a second'] = await render(null, note => { for (let t = a0; t < dur; t += .25) note('glass', [71, 69, 67, 64, 62][Math.floor(t * 4) % 5], .45, t); });
     out['ten fingers hammering everything at once'] = await render(null, note => { let k = 0; for (let t = a0; t < dur; t += .03) { const nm = ['glass', 'kal', 'mal', 'glass', 'bowl'][k % 5]; note(nm, P[(k * 7) % P.length] + (nm === 'kal' ? 12 : 0), 1, t); if (k % 3 === 0) note(['thump', 'tok', 'tick'][(k / 3) % 3 | 0], 0, 1, t); k++; } });
     out['band, all nine, WITH ten fingers hammering'] = await render(all, note => { let k = 0; for (let t = a0; t < dur; t += .03) { const nm = ['glass', 'kal', 'mal', 'glass', 'bowl'][k % 5]; note(nm, P[(k * 7) % P.length] + (nm === 'kal' ? 12 : 0), 1, t); if (k % 3 === 0) note(['thump', 'tok', 'tick'][(k / 3) % 3 | 0], 0, 1, t); k++; } });
+    // the mixer: deck B, the machine of sounds, plays into the bus everything a hand plays goes into (limited); its loops at their busiest,
+    // the echo all the way up, and the pads hit as hard and as fast as ten fingers can, with every kit
+    const deckB = (echo) => (O, g) => { const G = L.MIX.offline(O, { bus: g.bus, toy: g.toy }, dur, true); if (echo) { G.d[1].es.gain.value = .55; G.fb.gain.value = .6; } return G; };
+    const pads = (G, O) => { let k = 0; const pt = G.t.length - 1; for (let t = a0 - 1; t < dur; t += .03) { const b = L.MIXS.kitNow(O, k % 16)[(k * 5) % 16], s = O.createBufferSource(), gn = O.createGain(); s.buffer = b; gn.gain.value = .62; s.connect(gn); gn.connect(G.t[pt]); s.start(t); k++; } };
+    out['mix: deck B at its busiest (drums, bass, keys, bells)'] = await render(null, null, deckB(false));
+    out['mix: deck B at its busiest, the echo all the way up'] = await render(null, null, deckB(true));
+    out['mix: ten fingers on the pads, every kit, as hard as they go'] = await render(null, null, (O, g) => pads(L.MIX.offline(O, { bus: g.bus, toy: g.toy }, dur, false), O));
+    out['mix: all of that at once'] = await render(null, null, (O, g) => pads(deckB(true)(O, g), O));
+    out['band, all nine, WITH deck B, the echo and the pads'] = await render(all, null, (O, g) => pads(deckB(true)(O, g), O));
     return out;
   });
   const band = res['band, all nine'];
