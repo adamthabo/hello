@@ -13,7 +13,7 @@ const S = page => page.evaluate(() => { const L = window.__lc, w = L.WORLDS[L.CU
     for (const i of [0, 1, 2]) { await page.evaluate(i => window.__lc.go(i, true), i); await sleep(i >= 1 ? 6500 : 5000); const s = await S(page); await page.screenshot({ path: `shots/misc_old_${s.id}.png` });
       if (i === 0) ok(s.dbg.ok && s.dbg.simple && !s.hf, 'smoke falls back to plain ink');
       if (i === 1) { ok(s.dbg.ok && s.dbg.byte8 && s.dbg.ready && s.dbg.wind && !s.deriv && s.dbg.fireGL > 4, 'the Earth keeps its smoke in plain bytes, feeds it from the fires, and draws the globe without derivatives'); const n = await page.evaluate(() => window.__lc.ORBIT.dbg().n); ok(n > 10000, 'the Earth has its satellites: ' + n); }
-      if (i === 2) ok(s.dbg.on && s.dbg.loops === 56, 'the mixer opens, a grid of ' + s.dbg.loops + ' loops');
+      if (i === 2) ok(s.dbg.on && s.dbg.loops === 20, 'the mixer opens: ten instruments, ' + s.dbg.loops + ' loops');
       ok(!s.errs.length, s.id + ' no page errors ' + JSON.stringify(s.errs)); }
     all = all.concat(errs.map(e => 'old: ' + e)); await ctx.close(); }
   // ---- 2. the graphics context lost and given back, in every world ----
@@ -50,7 +50,7 @@ const S = page => page.evaluate(() => { const L = window.__lc, w = L.WORLDS[L.CU
     await page.evaluate(() => { const n = 360 * 181 * 2, b = new Uint8Array(n); for (let i = 0; i < n; i += 2) { b[i] = 192; b[i + 1] = 128; } let t = ''; for (let i = 0; i < n; i += 8192) t += String.fromCharCode.apply(null, b.subarray(i, i + 8192));
       window.__docs['feeds/wind'] = { asOf: '2030-01-02T06:00:00Z', src: 'NOAA GFS', max: 20, b64: btoa(t) }; window.__subs['feeds/stamp']({ wind: '2030-01-02T06:00:00Z' }); }); await sleep(900);
     s = await S(page); r = await page.evaluate(() => ({ gets: window.__gets.slice(), at: window.__lc.LIVE.at.wind }));
-    ok(r.gets.join() === 'feeds/wind' && r.at === Date.parse('2030-01-02T06:00:00Z') && /2 Jan 06:00 UTC/.test(s.data) && /72 km\/h/.test(s.data), 'newer wind in the store takes over at once: ' + s.data.split('\n')[1]);
+    ok(r.gets.join() === 'feeds/wind' && r.at === Date.parse('2030-01-02T06:00:00Z') && /weather of 2 Jan 06:00 UTC/.test(s.data) && /up to 72 km\/h · 2 Jan 06:00 UTC/.test(await page.evaluate(() => document.querySelector('#l_wind .lyd').textContent)), 'newer wind in the store takes over at once: ' + s.data.replace(/\n/g, ' | '));
     // a broken one, newer still: ignored, and the page is unharmed
     await page.evaluate(() => { window.__docs['feeds/wind'] = { asOf: '2031-01-01T00:00:00Z', b64: 'not the wind' }; window.__docs['feeds/sats'] = { asOf: '2031-01-01T00:00:00Z', b64: 'AAAA', names: 5 }; window.__subs['feeds/stamp']({ wind: '2031-01-01T00:00:00Z', sats: '2031-01-01T00:00:00Z' }); }); await sleep(600);
     s = await S(page); r = await page.evaluate(() => ({ at: window.__lc.LIVE.at.wind, n: window.__lc.LIVE.sats.n })); ok(r.at === Date.parse('2030-01-02T06:00:00Z') && r.n > 10000 && !s.errs.length, 'broken documents are ignored without harm');
@@ -60,7 +60,7 @@ const S = page => page.evaluate(() => { const L = window.__lc, w = L.WORLDS[L.CU
       window.__docs['feeds/storms'] = { asOf: '2030-01-02T06:00:00Z', list: [{ name: 'Zed<script>', cls: 'HU', lat: 12, lon: -40, kmh: 150, hpa: 960, by: 'NOAA NHC', at: '2030-01-02T03:00:00Z' }, { name: 'bad', lat: 999, lon: 0 }] };
       window.__subs['feeds/stamp']({ fires: '2030-01-02T06:00:00Z', storms: '2030-01-02T06:00:00Z' }); }); await sleep(900);
     s = await S(page); r = await page.evaluate(() => { const L = window.__lc.LIVE; return { f: L.fires.list.length, sat: L.fires.list[0].sat, st: L.storms.list.map(x => x.name).join(), gets: window.__gets.slice() }; });
-    ok(r.f === 2 && r.sat === 'Test bSATb' && r.st === 'Zedscript' && s.dbg.fires === 2 && s.dbg.fireGL === 2 && s.dbg.storms.length === 1 && /2 fires seen from orbit · tropical storm Zedscript/.test(s.data) && !s.errs.length, 'newer fires and storms in the store take over, cleaned: ' + JSON.stringify(r) + ' ' + s.data.split('\n')[3]);
+    ok(r.f === 2 && r.sat === 'Test bSATb' && r.st === 'Zedscript' && s.dbg.fires === 2 && s.dbg.fireGL === 2 && s.dbg.storms.length === 1 && /now: 1 storm · 2 fires/.test(s.data) && !s.errs.length, 'newer fires and storms in the store take over, cleaned: ' + JSON.stringify(r) + ' ' + s.data.replace(/\n/g, ' | '));
     const saveShown = await page.evaluate(() => !document.getElementById('bSave').hidden); ok(saveShown, 'the save button shows when the viewer can take a file');
     await page.evaluate(() => document.getElementById('bSave').click()); let saved = null; for (let k = 0; k < 24 && !saved; k++) { await sleep(400); saved = await page.evaluate(() => window.__saved); }
     ok(saved && /^live-culture-earth-\d{8}-\d{6}\.png$/.test(saved.filename) && saved.size > 20000, 'saving hands over a PNG: ' + JSON.stringify(saved));

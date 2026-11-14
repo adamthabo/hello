@@ -10,7 +10,7 @@ var GLOBE=(function(){
   var PICS=[['day','img/earth-day.jpg'],['lit','img/earth-lights.jpg'],['water','img/earth-water.jpg'],['topo','img/earth-topo.jpg']];
   var VS='attribute vec2 a_p;void main(){gl_Position=vec4(a_p,0.0,1.0);}';
   function fsrc(){return (GLX.deriv?'#extension GL_OES_standard_derivatives : enable\n#define DERIV\n':'')+
-    'precision highp float;uniform vec2 uC;uniform float uR;uniform mat3 uM;uniform vec3 uSun;uniform vec3 uSunV;uniform vec3 uMoon;uniform float uMoonK;uniform float uReady;uniform vec3 uBg;\n'+
+    'precision highp float;uniform sampler2D uDet;uniform vec4 uDetR;uniform float uDetK;uniform vec2 uC;uniform float uR;uniform mat3 uM;uniform vec3 uSun;uniform vec3 uSunV;uniform vec3 uMoon;uniform float uMoonK;uniform float uReady;uniform vec3 uBg;\n'+
     'uniform sampler2D uDay;uniform sampler2D uLit;uniform sampler2D uWater;uniform sampler2D uTopo;uniform sampler2D uFlow;uniform sampler2D uAur;uniform float uFlowK;uniform float uAurK;uniform float uDim;uniform float uTime;uniform sampler2D uCld;uniform float uCldK;uniform sampler2D uRain;uniform float uRainK;uniform float uSunK;uniform sampler2D uWx;uniform float uHeatK;uniform float uWaveK;uniform float uIsoK;uniform sampler2D uWindF;uniform float uFlowA;uniform float uFlowT;\n'+
     /* the colours of the model's fields: the temperature (-40 to 45 degrees: violet, blue, ice, green, yellow, orange, red) and the waves (calm to ten metres and more) */
     'vec3 heatCol(float t){vec3 c=mix(vec3(0.24,0.10,0.47),vec3(0.18,0.31,0.85),smoothstep(0.0,0.235,t));c=mix(c,vec3(0.62,0.85,1.0),smoothstep(0.235,0.47,t));c=mix(c,vec3(0.45,0.88,0.62),smoothstep(0.47,0.59,t));\n'+
@@ -21,7 +21,11 @@ var GLOBE=(function(){
     /* a picture wrapped round a ball meets itself along one line; near that line the same place is looked up by a second count that has its join on the other side */
     '#ifdef DERIV\nfloat ub=fract(ua+0.5)-0.5;float u=fwidth(ub)<fwidth(ua)?ub:ua;\n#else\nfloat u=ua;\n#endif\n'+
     'vec2 uv=vec2(u,0.5-lat*0.31830989);float cl=max(cos(lat),0.25);\n'+
-    'vec3 dc=texture2D(uDay,uv).rgb;float l0=texture2D(uLit,uv).r;float l1=texture2D(uLit,uv,2.5).r;float wat=texture2D(uWater,uv).r;\n'+
+    'vec3 dc=texture2D(uDay,uv).rgb;\n'+
+    /* close up (on the site): NASA's Blue Marble at 500 m for the part of the Earth in view, laid over the whole Earth's picture */
+    'if(uDetK>0.0){float dlo=mod(lon-uDetR.x+3.14159265,6.28318531)-3.14159265;vec2 dq=vec2(dlo*uDetR.z,(uDetR.y-lat)*uDetR.w);\n'+
+    'if(dq.x>0.0&&dq.x<1.0&&dq.y>0.0&&dq.y<1.0){float ed=smoothstep(0.0,0.05,min(min(dq.x,1.0-dq.x),min(dq.y,1.0-dq.y)));dc=mix(dc,texture2D(uDet,dq).rgb,ed*uDetK);}}\n'+
+    'float l0=texture2D(uLit,uv).r;float l1=texture2D(uLit,uv,2.5).r;float wat=texture2D(uWater,uv).r;\n'+
     'float hE=texture2D(uTopo,uv+vec2(0.0012/cl,0.0)).r-texture2D(uTopo,uv-vec2(0.0012/cl,0.0)).r;float hN=texture2D(uTopo,uv-vec2(0.0,0.0012)).r-texture2D(uTopo,uv+vec2(0.0,0.0012)).r;\n'+
     'dc=mix(vec3(0.02,0.07,0.12),dc,uReady);\n'+
     /* the Sun on the ground: the slope of the land leans the light */
@@ -94,6 +98,8 @@ var GLOBE=(function(){
     glBind(4,(o.flow||dot1.tex),u.uFlow);glBind(5,(o.aur||dot1.tex),u.uAur);var ck=o.cld&&tex.cld?(o.cldK===undefined?1:o.cldK):0;glBind(6,ck?tex.cld.tex:dot1.tex,u.uCld);gl.uniform1f(u.uCldK,ck);
     var rk=o.rain&&tex.rain?(o.rainK===undefined?1:o.rainK):0;glBind(7,rk?tex.rain.tex:dot1.tex,u.uRain);gl.uniform1f(u.uRainK,rk);gl.uniform1f(u.uSunK,o.sunK||0);
     glBind(9,o.windF||dot1.tex,u.uWindF);gl.uniform1f(u.uFlowA,o.windF&&!reduce?1:0);gl.uniform1f(u.uFlowT,(o.time||0)/7);
+    var dk=tex.det&&DETR?Math.min(1,(FT-DETR.t)/600):0;glBind(10,dk?tex.det.tex:dot1.tex,u.uDet);gl.uniform1f(u.uDetK,dk);
+    if(dk)gl.uniform4f(u.uDetR,DETR.w*AS.D,DETR.n*AS.D,1/((DETR.e-DETR.w)*AS.D),1/((DETR.n-DETR.s)*AS.D));
     glBind(8,o.wx||dot1.tex,u.uWx);gl.uniform1f(u.uHeatK,o.wx?o.heatK||0:0);gl.uniform1f(u.uWaveK,o.wx?o.waveK||0:0);gl.uniform1f(u.uIsoK,o.wx?o.isoK||0:0);
     /* only the square the globe and its glow fill is worked out */
     var k=R*1.6*DPR,x0=Math.max(0,Math.floor(cx*DPR-k)),y0=Math.max(0,Math.floor((VH-cy)*DPR-k)),x1=Math.min(GLX.w,Math.ceil(cx*DPR+k)),y1=Math.min(GLX.h,Math.ceil((VH-cy)*DPR+k));
@@ -102,5 +108,7 @@ var GLOBE=(function(){
   /* a new picture of the clouds: it replaces the last one, and comes back with the rest if the graphics chip is lost and returned */
   function layer(k,im){imgs[k]={im:im,done:true};if(GLX.ok&&gen===GLX.gen){var old=tex[k];upload(k);if(old&&old!==tex[k])glFree(old)}}
   function cloud(im){layer('cld',im)}
-  return {load:load,basis:basis,pr:pr,at:at,draw:draw,dot:dot,cloud:cloud,rain:function(im){layer('rain',im)},hasCloud:function(){return !!tex.cld},hasRain:function(){return !!tex.rain},ready:function(){return ready},gl:function(){gen=-1}}
+  /* a close picture of part of the Earth (south, west, north, east in degrees): it fades in over the whole Earth's picture */
+  var DETR=null;function detail(im,r){layer('det',im);DETR={s:r.s,w:r.w,n:r.n,e:r.e,t:DETR&&FT-DETR.t>600?FT-600:FT}}
+  return {load:load,basis:basis,pr:pr,at:at,draw:draw,dot:dot,cloud:cloud,detail:detail,detR:function(){return DETR},rain:function(im){layer('rain',im)},hasCloud:function(){return !!tex.cld},hasRain:function(){return !!tex.rain},ready:function(){return ready},gl:function(){gen=-1}}
 })();

@@ -262,7 +262,7 @@ var ORBIT=(function(){
       /* a tap near a satellite: the nearest within reach is chosen (true), or none is (false). Over the Earth's face a tap is for the
          place under it (the swarm is so thick there that a satellite is within reach of every point), so only the space stations and the
          few satellites the sound follows are taken there; in the dark round the Earth, any satellite */
-      pick:function(p){if(!EL)return false;var i,best=-1,on=Math.hypot(p.x-g.cx,p.y-g.cy)<g.R,bd=on?14*14:18*18,d;
+      pick:function(p){if(!EL)return false;var i,best=-1,on=Math.hypot(p.x-g.cx,p.y-g.cy)<g.R,bd=on?20*20:26*26,d;
         for(i=0;i<satN;i++){if(on&&GRP[i]!==7&&!(NOTE&&NOTE[i]))continue;view(place(i,simMs,tmp),tq);if(!shown(tq))continue;var x=g.cx+tq[0]*g.R-p.x,y=g.cy-tq[1]*g.R-p.y;d=x*x+y*y;if(GRP[i]===7||(FLG[i]&1))d*=.45;if(d<bd){bd=d;best=i}}
         if(best<0)return false;sel=best;path=null;selI=null;satInfoLoad();tone('glass',pent(clamp(Math.round(14-Math.log(EL[best*11])*9),2,14),52),.45,pan(p.x));cardBuild();return true},
       sel:function(){return sel},

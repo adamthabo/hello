@@ -1,6 +1,6 @@
 // Smoke as a machine and a game, played with real touches: the tools, a wall that stops the smoke, a fan, a drain, a whirlpool; then
-// the game: play starts a round (no map, no levels to pick: a set-up of its own each time, harder as rounds are won, mirrored half the
-// time), the first round solved by building, the next one coming by itself, new, every set-up both ways, and back to playing freely.
+// the game: play starts a round (nothing to place: smoke pours from a vent and a finger pushes it into a glowing ring before it fades),
+// a ring filled by real pushes, the rounds growing, the clock running out, the best kept, again, and back to playing freely.
 // usage: node tools/t_smoke.js [size]
 const { launch, open } = require('./lib'); const sleep = ms => new Promise(r => setTimeout(r, ms));
 const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') + m); if (!c) fail.push(m); };
@@ -48,54 +48,63 @@ const size = process.argv[2] || 'phone';
   await click('t_ink'); const cx = X(s, .5), cy = Y(s, .5);
   await touch([[cx + 60, cy], [cx - 60, cy]], 'touchStart'); for (let k = 1; k <= 16; k++) { const a = k * .12; await touch([[cx + 60 * Math.cos(a), cy + 60 * Math.sin(a)], [cx - 60 * Math.cos(a), cy - 60 * Math.sin(a)]], 'touchMove'); await sleep(16); }
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await sleep(500); s = await D(); ok(!s.errs.length && s.d.ok, 'two fingers turning make a whirlpool, without fault');
-  // the game: no map and no levels to pick; play starts a round, a set-up of its own each time (the first, before any is won, the simplest)
+  // the game (13 Nov, night: "the game is awful" ... "Push the smoke"): nothing to place; smoke pours from a vent and a finger pushes it
+  // into a glowing ring before it fades; short rounds against the clock, each a little faster; a score, and the best kept
+  // (the game's clock is the water's own, stepped here as a phone at sixty frames a second steps it, a sixtieth of a second a frame:
+  // this machine draws only a few frames a second, so its pushes are made one move a frame, as a finger on a phone makes them)
   const ON0 = await page.evaluate(() => window.__lc.ON.join(''));
-  await page.evaluate(() => { try { localStorage.removeItem('lc.smoke.wins'); } catch (e) {} window.__lc.WORLDS[0].o.wins(0); });
-  ok(await page.evaluate(() => document.getElementById('t_puz').firstChild.textContent) === 'play', 'out of a round the game\'s button reads play');
-  await click('t_puz'); await sleep(900); s = await D();
-  const NP = await page.evaluate(() => window.__lc.WORLDS[0].o.levels.length);
-  ok(s.d.pz === 0 && s.d.round === 1 && s.d.cups.length === 1 && s.d.fix.fans === 1, 'play: the first round is the simplest set-up, one jet and one ring (round ' + s.d.round + ', set-up ' + (s.d.pz + 1) + (s.d.mir ? ', mirrored' : '') + ')');
-  ok(/^get the cyan smoke into the cyan ring\nyou can place 2 walls, then press release\ndrag to draw a wall: smoke slides along it$/.test(s.data) && s.tools === 'wall*,go,puz,undo', 'three plain lines say what to do, what there is to place and what the piece in hand does: ' + s.data.replace(/\n/g, ' | ') + ' · tools ' + s.tools);
-  ok(await page.evaluate(() => [...document.querySelectorAll('#tools .tb span')].map(e => e.textContent).join()) === 'hand,wall,fan,prism,drain,tunnel,release,new,free', 'each tool carries its name; in a round the game\'s button reads new, and free goes back to playing freely');
-  ok(await page.evaluate(() => { const d = document.getElementById('data').getBoundingClientRect(); return d.bottom; }) < s.d.board.y0, 'the words sit above the tank, clear of it');
-  ok(s.on === ON0, 'a round leaves the music as it is: ' + s.on);
-  // nothing built and the smoke let go: the tank runs dry, the ring is not filled, and the page says so
-  await click('t_go'); await sleep(400); s = await D(); ok(s.d.run && /smoke left \d/.test(s.data) && /cyan \d+%/.test(s.data) && await page.evaluate(() => document.getElementById('t_go').firstChild.textContent) === 'stop', 'release lets the smoke go, and the button becomes stop: ' + s.data.split('\n').join(' | '));
-  for (let k = 0; k < 160; k++) { await sleep(1000); s = await D(); if (!s.d.run) break; }
-  await sleep(500); s = await D();
-  ok(!s.d.run && !s.d.won && s.d.out && /not quite: move a piece, then release again/.test(s.data), 'with nothing built the tank runs dry and the ring stays short: ' + s.data.split('\n')[1]);
-  ok(s.d.board.w / s.d.board.h > .6 && s.d.board.w / s.d.board.h < .68 && s.d.fix.walls === 4, 'a round is played in a tank of fixed shape: ' + Math.round(s.d.board.w) + ' x ' + Math.round(s.d.board.h));
-  await page.screenshot({ path: `shots/smoke_${size}_round1.png` });
-  // the set-up's own answer, as it stands on the screen (mirrored with it), drawn with real touches
-  const sol = await page.evaluate(() => window.__lc.WORLDS[0].o.sol());
+  const look = n => page.screenshot({ path: `shots/smoke_${size}_${n}.png` });
+  const until = async (f, ms) => { const t = Date.now(); s = await D(); while (!f(s) && Date.now() - t < ms) { await sleep(200); s = await D(); } return f(s); };
+  const frame = () => page.evaluate(() => new Promise(r => requestAnimationFrame(() => r())));
+  const push = async (x0, y0, x1, y1, n, hold) => { await touch([[x0, y0]], 'touchStart'); await frame(); for (let k = 1; k <= n; k++) { await touch([[x0 + (x1 - x0) * k / n, y0 + (y1 - y0) * k / n]], 'touchMove'); await frame(); }
+    for (let k = 0; k < hold; k++) await frame(); await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await frame(); };
+  await page.evaluate(() => { try { localStorage.removeItem('lc.smoke.best'); } catch (e) {} const o = window.__lc.WORLDS[0].o; o.best(0); o.fixdt(1 / 60); });
+  s = await D(); ok(await page.evaluate(() => document.getElementById('t_puz').firstChild.textContent) === 'play' && /\nplay: push the smoke into rings against the clock/.test(s.data), 'out of a game the button reads play, and the words say what play is: ' + s.data.replace(/\n/g, ' | '));
+  await click('t_puz'); await sleep(300); s = await D();
+  ok(s.d.pz === 0 && s.d.game.round === 1 && s.d.game.phase === 'intro' && s.d.game.need === 3 && s.d.cups.length === 0 && s.d.fix.fans === 1 && s.d.fix.walls === 4 && s.d.walls + s.d.fans + s.d.drains + s.d.prisms + s.d.tunnels === 0,
+    'play: round 1, one vent, one ring, three rings to fill, nothing placed: ' + JSON.stringify(s.d.game) + ' fix ' + JSON.stringify(s.d.fix));
+  ok(/^round 1: fill 3 rings in 32 seconds\ntouch a stream and drag it into the ring of its colour\nscore 0$/.test(s.data), 'three plain lines say what to do: ' + s.data.replace(/\n/g, ' | '));
+  ok(s.tools === 'puz,undo' && await page.evaluate(() => ['t_puz', 't_undo'].map(i => document.getElementById(i).firstChild.textContent).join()) === 'again,free', 'in a game only two buttons: again, and free: ' + s.tools);
+  ok(await page.evaluate(() => document.getElementById('data').getBoundingClientRect().bottom) < s.d.board.y0, 'the words sit above the tank, clear of it');
+  ok(s.d.board.w / s.d.board.h > .6 && s.d.board.w / s.d.board.h < .68, 'a round is played in a tank of fixed shape: ' + Math.round(s.d.board.w) + ' x ' + Math.round(s.d.board.h));
+  ok(s.on === ON0, 'a game leaves the music as it is: ' + s.on);
+  await until(s => s.d.game.phase === 'play' && /^steer/.test(s.data), 60000);
+  ok(s.d.game.phase === 'play' && s.d.cups.length === 1 && /^steer the cyan smoke into the cyan ring\nround 1 · 0 of 3 rings · 0:\d\d left\nscore 0$/.test(s.data), 'after a moment the ring is there and the clock runs: ' + s.data.replace(/\n/g, ' | '));
+  await look('game');
+  // pushed with real fingers: from just over the vent, up into the ring, again and again, until it fills
   const BX = u => s.d.board.x0 + s.d.board.w * u, BY = v => s.d.board.y0 + s.d.board.h * v;
-  for (const b of sol) { const a = b[1];
-    if (b[0] === 'wall') { await click('t_wall'); await drag(BX(a[0]), BY(a[1]), BX(a[2]), BY(a[3]), 14); }
-    else if (b[0] === 'fan') { await click('t_fan'); const m = Math.hypot(a[2], a[3]) || 1; await drag(BX(a[0]), BY(a[1]), BX(a[0]) + a[2] / m * 44, BY(a[1]) + a[3] / m * 44, 6); }
-    else if (b[0] === 'prism') { await click('t_prism'); await tap(BX(a[0]), BY(a[1])); }
-    else if (b[0] === 'drain') { await click('t_drain'); await tap(BX(a[0]), BY(a[1])); }
-    else if (b[0] === 'tunnel') { await click('t_tunnel'); await drag(BX(a[0]), BY(a[1]), BX(a[2]), BY(a[3]), 12); } }
-  s = await D(); ok(s.d.walls + s.d.fans + s.d.drains + s.d.prisms + s.d.tunnels === sol.length && !s.d.run, 'the answer built with touches, the smoke still held: ' + sol.map(b => b[0]).join(', ') + ' · ' + s.data.split('\n')[1]);
-  await click('t_go');
-  let best = 0; for (let k = 0; k < 150; k++) { await sleep(1000); s = await D(); if (s.d.cups[0]) best = Math.max(best, s.d.cups[0].fill); if (s.d.won || s.d.round > 1) break; }
-  ok(s.d.won || s.d.round > 1, 'with it the ring fills: ' + Math.round(best * 100) + '% (match ' + (s.d.cups[0] ? s.d.cups[0].match.toFixed(3) : '-') + ')');
-  if (s.d.won) { ok(/^in! here comes another · rounds won: 1$/.test(s.data), 'won: the page says so, and counts it: ' + s.data); await page.screenshot({ path: `shots/smoke_${size}_round1_won.png` }); }
-  if (s.d.round === 1 && !s.d.won) await page.evaluate(() => window.__lc.WORLDS[0].o.win());
-  for (let k = 0; k < 14; k++) { await sleep(500); s = await D(); if (s.d.round === 2) break; }
-  ok(s.d.round === 2 && s.d.pz !== 0 && !s.d.won && s.d.wins === 1 && await page.evaluate(() => { try { return localStorage.getItem('lc.smoke.wins'); } catch (e) { return '1'; } }) === '1', 'a moment later the next round sets itself up, a different one, and the win is kept: set-up ' + (s.d.pz + 1) + (s.d.mir ? ' (mirrored)' : ''));
-  // new: another set-up at once, never the same one twice running
-  let prev = s.d.pz, same = 0, mir = 0; for (let k = 0; k < 12; k++) { await click('t_puz'); await sleep(250); s = await D(); if (s.d.pz === prev) same++; if (s.d.mir) mir++; prev = s.d.pz; }
-  ok(!same && mir > 0 && mir < 12, 'new gives another set-up each time, never the one just played, mirrored about half the time (' + mir + ' of 12)');
-  // harder as rounds are won: with none won only the walls' set-ups come up; with ten, every kind
-  const pool = await page.evaluate(() => { const o = window.__lc.WORLDS[0].o, r = {}; for (const w of [0, 10]) { o.wins(w); const seen = new Set(); for (let k = 0; k < 80; k++) { o.round(); seen.add(o.dbg().pz); } r[w] = [...seen].sort((a, b) => a - b); } o.wins(1); return r; });
-  ok(pool[0].every(i => i < 4) && pool[10].some(i => i >= 20) && pool[10].length >= 12, 'harder as rounds are won: none won, set-ups ' + pool[0].map(i => i + 1).join(',') + '; ten won, ' + pool[10].length + ' kinds, up to ' + (Math.max(...pool[10]) + 1));
-  // every set-up, as it is and mirrored, sets up without fault
-  let bad = []; for (let i = 0; i < NP; i++) for (const m of [false, true]) { await page.evaluate(a => window.__lc.WORLDS[0].o.level(a[0], a[1]), [i, m]); await sleep(m ? 120 : 260); s = await D();
-    if (!(s.d.pz === i && s.d.mir === m && s.d.cups.length >= 1 && !s.errs.length && s.data.split('\n').length === 3)) bad.push((i + 1) + (m ? 'm' : '')); if (!m && i % 6 === 0) await page.screenshot({ path: `shots/smoke_${size}_setup${i + 1}.png` }); }
-  ok(!bad.length, 'all ' + NP + ' set-ups, as they are and mirrored, set up with three lines of words' + (bad.length ? ': failing ' + bad.join(' ') : ''));
+  const ring0 = s.d.cups[0]; let got = 0, t0 = Date.now(), np = 0;
+  // (as a player would: a finger on the stream just above its vent, drawn to the ring and held there; the vent turns its stream to
+  // follow the finger; up to three times)
+  for (let k = 0; k < 3 && !got; k++) { const c = (await D()).d.cups[0]; if (!c) break; const v = s.d.vents.find(q => q.c === c.c) || s.d.vents[0];
+    const v0 = s.d.vents[0], a0 = v0.a; await push(v.x, v.y - 30, c.x, c.y, 30, 150); np++; s = await D(); got = s.d.game.got; }
+  ok(got >= 1 && s.d.game.score >= 1, 'a finger pushing the smoke from the vent into the ring fills it (' + np + ' push' + (np > 1 ? 'es' : '') + '): ' + JSON.stringify(s.d.game));
+  ok(s.d.cups.length === 1 && Math.hypot(s.d.cups[0].x - ring0.x, s.d.cups[0].y - ring0.y) > 20, 'a filled ring gives way to the next, somewhere else');
+  ok(/ · 1 of 3 rings · /.test(s.data) && /^score 1/m.test(s.data), 'the words count it: ' + s.data.replace(/\n/g, ' | '));
+  await look('game_ring');
+  // a tap blows the smoke away, without fault
+  await tap(BX(.5), BY(.6)); await sleep(200); s = await D(); ok(!s.errs.length && s.d.game.phase === 'play', 'a tap in a round blows the smoke away, without fault');
+  // the round won: the next comes by itself, a little faster
+  for (let k = 0; k < 10 && s.d.game.got < s.d.game.need; k++) { await until(s => s.d.cups.length === 1, 20000); await page.evaluate(() => window.__lc.WORLDS[0].o.win()); await sleep(80); s = await D(); }
+  await until(s => /^round 1 done/.test(s.data) || s.d.game.phase !== 'won', 8000);
+  ok(s.d.game.phase === 'won' && /^round 1 done · next one is faster/.test(s.data), 'all three rings: the round is done: ' + s.data.replace(/\n/g, ' | '));
+  await until(s => s.d.game.round >= 2, 60000);
+  ok(s.d.game.round === 2 && s.d.game.score === 3 && s.d.game.got === 0 && /^round 2: fill 3 rings in 30 seconds/.test(s.data), 'a moment later round 2, with less time: ' + s.data.split('\n')[0]);
+  // the rounds grow: two vents and two colours from round 3, three from round 5, the ring drifting from round 4, a wall in the way from round 6
+  const plan = await page.evaluate(() => { const o = window.__lc.WORLDS[0].o, r = []; for (const n of [1, 3, 4, 5, 6, 9]) { o.goRound(n); const d = o.dbg(); r.push({ n, vents: d.fix.fans, cols: d.game.cols.length, wall: d.game.wall, need: d.game.need, cups: d.cups.length, walls: d.fix.walls }); } o.goRound(2); return r; });
+  ok(plan.map(p => p.vents + '/' + p.cols).join() === '1/1,2/2,2/2,3/3,3/3,3/3' && plan.map(p => p.wall).join() === 'false,false,false,false,true,true' && plan.every(p => p.cups === 0 && p.walls === (p.wall ? 5 : 4)) && plan[5].need > plan[0].need,
+    'the rounds grow: more vents and colours, a wall later on, more rings to fill: ' + JSON.stringify(plan));
+  // time up: the score stays, the best is kept
+  await page.evaluate(() => window.__lc.WORLDS[0].o.goRound(2)); await until(s => s.d.game.phase === 'play', 60000); await page.evaluate(() => window.__lc.WORLDS[0].o.left(.3));
+  await until(s => s.d.game.phase === 'over' && /^time up/.test(s.data), 30000);
+  const sc = s.d.game.score;
+  ok(s.d.game.phase === 'over' && sc >= 3 && new RegExp('^time up · ' + sc + ' rings, a new best\npress again to play again, or free to stop').test(s.data) && s.d.game.best === sc && await page.evaluate(() => { try { return localStorage.getItem('lc.smoke.best'); } catch (e) { return null; } }) === String(sc),
+    'time up: the score, a new best, and the best kept: ' + s.data.replace(/\n/g, ' | '));
+  await look('game_over');
+  await click('t_puz'); await sleep(300); await until(s => /^round 1/.test(s.data), 5000); ok(s.d.game.round === 1 && s.d.game.score === 0 && new RegExp('score 0 · best ' + sc + '$').test(s.data), 'again: round 1, score 0, the best still there: ' + s.data.replace(/\n/g, ' | '));
   // free: back to playing freely, every piece there to build with
-  await click('t_undo'); await sleep(500); s = await D();
-  ok(s.d.pz < 0 && s.d.walls === 0 && s.tools === 'ink*,wall,fan,prism,drain,tunnel,puz' && await page.evaluate(() => document.getElementById('t_puz').firstChild.textContent) === 'play', 'free: back to playing freely, with every piece: ' + s.tools);
+  await click('t_undo'); await sleep(500); await page.evaluate(() => window.__lc.WORLDS[0].o.fixdt(0)); s = await D();
+  ok(s.d.pz < 0 && s.d.cups.length === 0 && s.tools === 'ink*,wall,fan,prism,drain,tunnel,puz' && await page.evaluate(() => document.getElementById('t_puz').firstChild.textContent) === 'play', 'free: back to playing freely, with every piece: ' + s.tools);
   await click('t_prism'); await tap(X(s, .3), Y(s, .4)); await click('t_tunnel'); await drag(X(s, .2), Y(s, .7), X(s, .7), Y(s, .3), 10); s = await D();
   ok(s.d.prisms === 1 && s.d.tunnels === 1, 'a prism (a tap) and a tunnel (a drag from one end to the other) are built');
   await sleep(1500); await page.screenshot({ path: `shots/smoke_${size}_free_pieces.png` });

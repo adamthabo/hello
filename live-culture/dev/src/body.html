@@ -1,5 +1,6 @@
 <canvas id="gl" aria-hidden="true"></canvas>
-<div class="vid" id="vid" hidden aria-hidden="true"><div class="vb" id="vidbox"><div id="vidp"></div><img id="vidi" alt="" hidden></div></div>
+<div class="vid" id="vid" hidden><div class="vb" id="vidbox"><div id="vidp"></div><img id="vidi" alt="" hidden></div></div>
+<div class="vidc" id="vidc" hidden role="group" aria-label="The camera"><button type="button" id="vW" aria-label="The next camera to the west">west</button><button type="button" id="vE" aria-label="The next camera to the east">east</button><button type="button" id="vX" aria-label="Close the camera">close</button></div>
 <canvas id="ov" aria-hidden="true"></canvas>
 <div id="stage" role="application" aria-label="The world. Touch it, drag through it, use more than one finger"></div>
 
@@ -16,10 +17,15 @@
 <p class="data" id="data" aria-live="off"></p>
 
 <aside class="card" id="card" hidden aria-live="polite"></aside>
+<section class="lys" id="lys" hidden aria-label="Layers of the Earth">
+  <div class="lyh"><b>layers</b><span>what the Earth shows</span><button type="button" id="lyX">done</button></div>
+  <div class="lyl" id="lyr" role="group" aria-label="Layers of the Earth"></div>
+</section>
+<div class="zm" id="zm" hidden><button type="button" id="zIn" aria-label="Come closer">+</button><button type="button" id="zOut" aria-label="Go further out">&minus;</button></div>
 
 <footer class="foot" id="foot">
   <div class="lyr scr" id="themes" hidden role="group" aria-label="Kinds of camera"></div>
-  <div class="lyr scr" id="lyr" hidden role="group" aria-label="Layers of the Earth"></div>
+  <div class="lyr scr now" id="nowr" hidden role="group" aria-label="What is happening on the Earth now"></div>
   <div class="tools" id="tools" hidden role="toolbar" aria-label="Build in the water"></div>
   <nav class="rail" id="rail" aria-label="Worlds"></nav>
 </footer>

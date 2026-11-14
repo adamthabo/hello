@@ -15,7 +15,7 @@ var LIVEW=(function(){
   var CAMS=[],THEMES=[],TH='all',cur=-1,asked=false,player=null,ytReady=false,ytAsked=false,ytFail=false,ytWant=null,ytId='',
     el=null,box=null,img=null,imgUrl='',imgAt=0,imgT=0,
     sunV=[0,0,0],sunI=null,stat='',statT=0,liveT=0,bad={},ST={},waitQ=[],asking=0,over=null,overT=0,issNow=null,issT=0,
-    on=false,camP=[],tmp=[0,0,0],seq=0,big=false,win={x:0,y:0,w:0,h:0},fly=null;
+    on=false,camP=[],tmp=[0,0,0],seq=0,big=false,win={x:0,y:0,w:0,h:0},fly=null,nextWant=false;
   function $e(id){return document.getElementById(id)}
   function valid(c){return c&&typeof c.id==='string'&&/^[a-z0-9\-]{1,24}$/i.test(c.id)&&typeof c.name==='string'&&isFinite(+c.lat)&&isFinite(+c.lon)&&(c.kind==='yt'||c.kind==='img')}
   function word(v,n){return String(v===undefined||v===null?'':v).replace(/[^0-9A-Za-zÀ-ÿ .,:;'()\/&°\-]/g,'').slice(0,n||60)}
@@ -28,7 +28,7 @@ var LIVEW=(function(){
         by:word(c.by,60),every:clamp(+c.every||600,60,3600)}});
       CAMS.sort(function(a,b){return a.lon-b.lon});
       THEMES=(Array.isArray(d.themes)?d.themes:[]).filter(function(x){return Array.isArray(x)&&/^[a-z]{2,8}$/.test(x[0])}).map(function(x){return [x[0],word(x[1],24)]});
-      themesBuild();if(on)primeTheme()}).catch(function(){asked=false})}catch(e){asked=false}}
+      themesBuild();if(on)primeTheme();if(nextWant){nextWant=false;step(1)}}).catch(function(){asked=false})}catch(e){asked=false}}
   /* the Sun's height (degrees) at a place now */
   function sunAt(la,lo){if(!sunI)return 0;var v=AS.llv(la,lo,tmp);return Math.asin(clamp(v[0]*sunV[0]+v[1]*sunV[1]+v[2]*sunV[2],-1,1))/AS.D}
   function camLL(c){if(c.moving&&issNow)return [issNow.lat,issNow.lon];return [c.lat,c.lon]}
@@ -89,10 +89,16 @@ var LIVEW=(function(){
           onError:function(){var c=CAMS[cur];if(c){bad[c.id]=FT;if(ST[c.id])ST[c.id].id=''}stat='off';statT=FT}}})}catch(e){ytFail=true}}
   function arrive(){if(!reduce)tone('bowl',pent(2,52),.3,0)}
   /* ---- the window: in the corner of the stage above the music and the layers, sixteen by nine; tapped, across the top of the stage ---- */
-  function winOpen(){if(!el)return;el.hidden=false;document.body.classList.add('camw')}
-  function winClose(){cur=-1;seq++;stat='';fade(false);try{if(player)player.pauseVideo()}catch(e){}if(el){el.hidden=true;el.classList.remove('tap')}document.body.classList.remove('camw');big=false}
-  function winGeo(){var w,h;if(big){w=STG.w-16;h=w*9/16;win.x=STG.x0+8;win.y=STG.y0+8}else{w=clamp(STG.w*.58,170,420);h=w*9/16;win.x=STG.x1-w-8;win.y=STG.y1-h-8}win.w=w;win.h=h;place()}
+  function winOpen(){if(!el)return;el.hidden=false;document.body.classList.add('camw');var b=$e('vidc');if(b)b.hidden=false;ctlWire()}
+  function winClose(){cur=-1;seq++;stat='';fade(false);try{if(player)player.pauseVideo()}catch(e){}if(el){el.hidden=true;el.classList.remove('tap')}document.body.classList.remove('camw');big=false;var b=$e('vidc');if(b)b.hidden=true}
+  /* the window (14 Nov): as wide as the stage on a phone, sixteen by nine (YouTube's player will not play smaller than 200 pixels), at the
+     foot of the stage with its three buttons above it; on a wide screen in the corner. A tap on it now reaches the player itself */
+  function winGeo(){var w,h,wide=STG.w>=640;if(wide){w=clamp(STG.w*.4,356,640);h=w*9/16;win.x=STG.x1-w-12;win.y=STG.y1-h-12}else{w=Math.max(200,STG.w-16);h=Math.max(200*9/16,w*9/16);if(h<200&&STG.h>320)h=Math.min(200,STG.h*.45);win.x=STG.x0+(STG.w-w)/2;win.y=STG.y1-h-8}
+    win.w=w;win.h=h;place()}
+  var ctlW=false;function ctlWire(){if(ctlW)return;var a=$e('vW'),b=$e('vE'),x=$e('vX');if(!a||!b||!x)return;ctlW=true;
+    a.addEventListener('click',function(){step(-1);hit('tok',.2,0)});b.addEventListener('click',function(){step(1);hit('tok',.2,0)});x.addEventListener('click',function(){winClose();hit('tok',.25,0)})}
   function place(){if(!box)return;var c=CAMS[cur],x=win.x,y=win.y,w=win.w,h=win.h;
+    var cb=$e('vidc');if(cb&&!cb.hidden){cb.style.width=Math.round(w)+'px';cb.style.transform='translate('+Math.round(x)+'px,'+Math.round(y-40)+'px)'}
     if(c&&c.kind==='img'){var d=Math.min(w,h);x+=(w-d)/2;w=h=d}
     /* (the size only when it changes: resizing the player every frame would make it lay itself out every frame) */
     var W2=Math.round(w),H2=Math.round(h);if(W2!==box._w||H2!==box._h){box._w=W2;box._h=H2;box.style.width=W2+'px';box.style.height=H2+'px'}box.style.transform='translate('+Math.round(x)+'px,'+Math.round(y)+'px)'}
@@ -143,8 +149,6 @@ var LIVEW=(function(){
     var mq=camP[cur];if(mq&&mq[2]>.05){c.setLineDash([2,5]);c.strokeStyle='rgba(62,240,255,.45)';c.lineWidth=1;c.beginPath();c.moveTo(mq[0],mq[1]);c.lineTo(win.x+win.w/2,win.y);c.stroke();c.setLineDash([])}
     /* the window's frame, its cross, and while a stream is found a slow ring in its middle */
     c.strokeStyle='rgba(234,249,255,.55)';c.lineWidth=1;c.strokeRect(win.x-.5,win.y-.5,win.w+1,win.h+1);
-    var xx=win.x+win.w-17,xy=win.y+17;c.fillStyle='rgba(1,4,10,.6)';c.beginPath();c.arc(xx,xy,11,0,TAU);c.fill();c.strokeStyle='rgba(234,249,255,.9)';c.lineWidth=1.3;
-    c.beginPath();c.moveTo(xx-4.5,xy-4.5);c.lineTo(xx+4.5,xy+4.5);c.moveTo(xx+4.5,xy-4.5);c.lineTo(xx-4.5,xy+4.5);c.stroke();
     if(stat!=='live'){var u=(t*.0006)%1;c.strokeStyle='rgba(234,249,255,'+(.4*(1-u)).toFixed(3)+')';c.beginPath();c.arc(win.x+win.w/2,win.y+win.h/2,6+u*Math.min(28,win.h*.3),0,TAU);c.stroke()}}
   function hud(){
     var c=CAMS[cur];if(!c){if(!on)return '';if(!CAMS.length)return asked?'finding the cameras':'';var ac=airCount();return themeName()+' · '+(ac[0]?ac[0]+' of '+ac[1]+' on the air now':ac[1]+' cameras')+' · tap a ring to watch'}
@@ -155,12 +159,13 @@ var LIVEW=(function(){
     var by=s&&s.ch?s.ch:c.by,st=stat==='live'?(c.kind==='img'?c.by:'live'+(by?' · '+by:'')):stat==='off'?'not on the air now':'finding the stream';
     if(over&&c.kind!=='img')l3=over.n.toLocaleString('en-US')+' satellites above'+(over.iss>0&&over.iss<2600&&!c.moving?' · the space station '+Math.round(over.iss).toLocaleString('en-US')+' km away':'')+' · '+st;
     else l3=st;
-    return l1+'\n'+l2+'\n'+l3+'\nswipe the window for the next · tap it, bigger · × to close'}
+    return l1+'\n'+l2+'\n'+l3+(stat==='connecting'&&el&&el.classList.contains('tap')?'\ntap the picture to start it':'')}
   document.addEventListener('visibilitychange',function(){try{if(!player)return;if(document.hidden)player.pauseVideo();else if(on&&cur>=0)player.playVideo()}catch(e){}});
   return {layer:{on:layerOn,tick:tick,draw:draw,hud:hud,hit:inWin,up:winUp,resize:function(){if(cur>=0)winGeo()},
       /* a tap on the Earth: a camera's ring within reach opens its window (true) */
       pick:function(x,y){if(!on)return false;var i=nearestMark(x,y,22);if(i<0)return false;show(i);hit('tok',.25,0);return true},
-      open:function(){return cur>=0},close:winClose,flyTo:function(f){fly=f}},
+      open:function(){return cur>=0},close:winClose,flyTo:function(f){fly=f},
+      next:function(){if(!CAMS.length){nextWant=true;camsLoad();return}step(1)}},
     dbg:function(){var c=CAMS[cur];return {on:on,cams:CAMS.length,themes:THEMES.map(function(x){return x[0]}),th:TH,cur:cur,id:c?c.id:'',kind:c?c.kind:'',stat:stat,yt:ytId,ready:ytReady,fail:ytFail,bad:Object.keys(bad),
       air:airCount(),st:Object.keys(ST).length,win:{x:win.x,y:win.y,w:win.w,h:win.h,big:big},marks:camP.map(function(q){return q?[q[0],q[1],q[2]]:null}),ids:CAMS.map(function(c){return c.id}),
       onair:CAMS.filter(function(c){return onAir(c)}).map(function(c){return c.id}),over:over,iss:issNow,img:img&&!img.hidden}},

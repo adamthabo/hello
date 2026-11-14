@@ -43,7 +43,18 @@ body.livev .vid{z-index:1}
 body.camw .vid::before,body.camw .vid::after{display:none}
 body.livev #gl{z-index:2;-webkit-clip-path:circle(var(--gr,0px) at var(--gx,0px) var(--gy,0px));clip-path:circle(var(--gr,0px) at var(--gx,0px) var(--gy,0px))}
 .vid.tap{z-index:4}
-.vid.tap .vb{pointer-events:auto}
+.vid.tap .vb{pointer-events:auto;opacity:1}
+/* a camera in a window over the Earth (14 Nov: "Videos doesn't seem to really be working"): above everything, so a tap on the picture
+   reaches the player itself (a phone may wait for one before it plays), never smaller than YouTube's player allows, and its own row
+   of three buttons over it */
+body.camw .vid{z-index:5}
+body.camw .vid .vb{pointer-events:auto}
+.vidc{position:fixed;left:0;top:0;z-index:6;display:flex;gap:6px;will-change:transform}
+.vidc[hidden]{display:none}
+.vidc button{height:32px;padding:0 13px;border-radius:16px;border:1px solid rgba(234,249,255,.3);background:rgba(1,4,10,.7);color:var(--ink);
+  font:500 10px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.vidc button:active{background:rgba(62,240,255,.2)}
+.vidc #vX{margin-left:auto}
 /* a little dusk at the top, so the readings can be read over anything bright (a photo, the day side of the Earth) */
 body::before{content:"";position:fixed;z-index:4;left:0;right:0;top:0;height:calc(170px + env(safe-area-inset-top,0px));pointer-events:none;
   background:linear-gradient(to bottom,rgba(1,4,10,.62),rgba(1,4,10,.38) 45%,rgba(1,4,10,0))}
@@ -89,6 +100,42 @@ body.dropping::after{content:"";position:fixed;inset:10px;z-index:30;border:1px 
   font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;transition:color .25s,border-color .25s,background .25s}
 .lb svg{width:13px;height:13px;display:block;fill:none;stroke:currentColor;stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round}
 .lb[aria-pressed=true]{color:var(--ink);border-color:rgba(62,240,255,.42);background:rgba(62,240,255,.08)}
+/* the Earth's "now": what is happening, each a name that flies the globe there (bigger than the layer switches: they are the way in) */
+.now .lb{height:32px;padding:0 12px 0 10px;border-radius:16px;color:var(--ink);border-color:rgba(255,179,71,.4);background:rgba(255,179,71,.07);font-size:10px}
+.now .lb svg{width:14px;height:14px}
+.now .lb.go{border-color:var(--warm);background:rgba(255,179,71,.2)}
+.now .lb.lyb{border-color:rgba(62,240,255,.5);background:rgba(62,240,255,.1)}
+.now .lb.lyb[aria-expanded=true]{background:rgba(62,240,255,.24);border-color:var(--lume)}
+/* the layers: a short list over the bottom of the globe, each a name, what it shows in plain words, and whether it is on */
+.lys{position:fixed;z-index:7;left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));bottom:calc(var(--foot,120px) + 4px);
+  margin:0 auto;max-width:460px;max-height:min(62vh,520px);display:flex;flex-direction:column;border-radius:16px;border:1px solid rgba(62,240,255,.28);
+  background:rgba(1,4,10,.86);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);font-family:var(--mono);touch-action:pan-y}
+.lyh{display:flex;align-items:baseline;gap:10px;padding:12px 12px 8px 16px}
+.lyh b{font:500 12px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink)}
+.lyh span{flex:1;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.lyh button{height:34px;padding:0 14px;border-radius:17px;border:1px solid rgba(62,240,255,.45);background:rgba(62,240,255,.1);color:var(--ink);
+  font:500 10px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase}
+.lyl{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 8px 10px;display:flex;flex-direction:column;gap:4px}
+.ly{display:grid;grid-template-columns:24px 1fr auto;grid-template-areas:"i n o" "i d o";column-gap:10px;row-gap:2px;align-items:center;text-align:left;
+  min-height:50px;padding:7px 10px 7px 10px;border-radius:12px;border:1px solid transparent;background:transparent;color:var(--dim);font-family:var(--mono)}
+.ly[hidden]{display:none}
+.ly svg{grid-area:i;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
+.ly .lyn{grid-area:n;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink)}
+.ly .lyd{grid-area:d;font-size:10px;letter-spacing:.04em;line-height:1.35;color:var(--dim)}
+.ly .lyo{grid-area:o;min-width:46px;height:28px;border-radius:14px;display:grid;place-items:center;border:1px solid rgba(234,249,255,.22);
+  font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.ly[aria-pressed=true]{background:rgba(62,240,255,.06)}
+.ly[aria-pressed=true] svg{color:var(--lume)}
+.ly[aria-pressed=true] .lyo{background:var(--lume);border-color:var(--lume);color:#01040a;font-weight:500}
+.ly:active{background:rgba(62,240,255,.14)}
+/* the Earth's zoom: two round buttons at the right of the globe, for a thumb */
+.zm{position:fixed;right:max(12px,env(safe-area-inset-right,0px));z-index:6;display:flex;flex-direction:column;gap:8px}
+.zm[hidden]{display:none}
+/* (while a camera's window is open its own buttons are where the zoom's would be: two fingers still come closer) */
+body.camw .zm{display:none}
+.zm button{width:42px;height:42px;border-radius:21px;border:1px solid rgba(234,249,255,.22);background:rgba(1,4,10,.55);color:var(--ink);font:400 22px/1 var(--mono);display:grid;place-items:center;
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.zm button:active{background:rgba(62,240,255,.18)}
 /* the music button: a note, warm and lit while the music can be heard, struck through while it cannot */
 .mst{color:var(--dim)}
 .mst .sl{stroke-width:1.6}
@@ -145,25 +192,27 @@ body.dropping::after{content:"";position:fixed;inset:10px;z-index:30;border:1px 
   #gl,#ov,.ic,.wb,.vid,.vid .vb{transition:none}
 }
 
-/* ---- the mixer (16-mix.js): two tabs, and under them a grid of loops ---- */
-#mix{position:fixed;left:0;right:0;z-index:5;display:flex;flex-direction:column;gap:8px;padding:0 max(10px,env(safe-area-inset-right,0px)) 0 max(10px,env(safe-area-inset-left,0px));
-  font-family:var(--mono);color:var(--ink);touch-action:none}
+/* ---- the mixer (16-mix.js): the band's nine players, then the instruments, each a row of two loops; big buttons ---- */
+#mix{position:fixed;left:0;right:0;z-index:5;display:flex;flex-direction:column;padding:0 max(12px,env(safe-area-inset-right,0px)) 0 max(12px,env(safe-area-inset-left,0px));
+  font-family:var(--mono);color:var(--ink)}
 #mix[hidden]{display:none}
-.mxtabs{display:flex;gap:6px;justify-content:center;flex:none}
-.mxt{height:26px;padding:0 12px;border-radius:13px;border:1px solid rgba(234,249,255,.14);color:var(--dim);background:rgba(1,4,10,.45);font:500 9px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase}
-.mxt[aria-pressed=true]{color:var(--ink);border-color:rgba(62,240,255,.5);background:rgba(62,240,255,.1)}
-.mxv{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;touch-action:pan-y;scrollbar-width:none}
-.mxv::-webkit-scrollbar{display:none}
-.mxg{display:grid;gap:4px;min-height:100%;grid-template-rows:auto repeat(4,minmax(44px,1fr)) auto}
-.mxg[hidden]{display:none}
-@media (max-height:520px){.mxg{grid-template-rows:auto repeat(4,minmax(28px,1fr)) auto;gap:3px}.mxc,.mxr{min-height:28px}.mxx,.mxsc{height:20px;min-height:20px}}
-.mxh{font:500 7px/1.1 var(--mono);letter-spacing:.04em;text-transform:uppercase;color:var(--c,var(--dim));text-align:center;overflow:hidden;white-space:nowrap;padding:2px 0 3px}
-.mxr{min-height:34px;border-radius:6px;border:1px solid rgba(234,249,255,.16);color:var(--dim);font:500 10px var(--mono)}
-.mxx{height:24px;min-height:24px;font-size:7px;letter-spacing:.04em;text-transform:uppercase}
-.mxc{min-height:34px;min-width:0;border-radius:6px;border:1px solid rgba(234,249,255,.16);border-color:color-mix(in srgb,var(--c) 34%,transparent);color:var(--dim);
-  font:500 7px/1.1 var(--mono);text-transform:uppercase;letter-spacing:.02em;overflow:hidden;padding:0 1px;word-break:break-word}
-.mxc.on{color:#01040a;background:var(--c);border-color:var(--c);box-shadow:0 0 12px var(--c)}
-.mxc.wait{border-color:var(--c);color:var(--c);animation:mxblink .5s steps(2) infinite}
-.mxc.stopping{background:var(--c);color:#01040a;opacity:.5}
-.mxsc{height:24px;min-height:24px;font-size:8px}
+.mxl{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;touch-action:pan-y;display:flex;flex-direction:column;gap:6px;width:100%;max-width:560px;margin:0 auto;padding-bottom:12px;
+  scrollbar-width:none;-webkit-mask-image:linear-gradient(#000 calc(100% - 18px),transparent);mask-image:linear-gradient(#000 calc(100% - 18px),transparent)}
+.mxl::-webkit-scrollbar{display:none}
+.mxsec{font:500 9px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--dim);padding:8px 2px 2px}
+.mxband{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.mxrow{display:grid;grid-template-columns:76px minmax(0,1fr) minmax(0,1fr);gap:6px;align-items:stretch}
+.mxn{align-self:center;font:600 10px/1.1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--c);overflow:hidden;text-overflow:ellipsis}
+.mxb{min-height:46px;min-width:0;padding:0 8px;border-radius:12px;border:1.5px solid color-mix(in srgb,var(--c) 45%,transparent);background:rgba(1,4,10,.55);
+  color:var(--ink);font:500 11px/1.15 var(--mono);letter-spacing:.06em;text-transform:uppercase;transition:background .15s,box-shadow .15s,color .15s}
+.mxp{min-height:42px;font-size:10px}
+.mxb.on{color:#01040a;background:var(--c);border-color:var(--c);box-shadow:0 0 18px -3px var(--c)}
+.mxb.wait{border-color:var(--c);color:var(--c);animation:mxblink .5s steps(2) infinite}
+.mxb.stopping{background:var(--c);color:#01040a;opacity:.45}
+.mxfoot{display:flex;justify-content:center;padding-top:6px}
+.mxjf{padding:2px 0 4px}
+.mxstop.mxjam{height:46px;padding:0 22px;border-radius:23px;border-color:var(--warm);color:var(--ink);background:rgba(255,179,71,.14);font-size:11px}
+.mxstop.mxjam:active{background:rgba(255,179,71,.3)}
+.mxstop{height:36px;padding:0 16px;border-radius:18px;border:1px solid rgba(234,249,255,.2);color:var(--dim);background:rgba(1,4,10,.5);font:500 9px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase}
+@media (max-height:520px){.mxb{min-height:36px}.mxp{min-height:32px}}
 @keyframes mxblink{50%{opacity:.25}}

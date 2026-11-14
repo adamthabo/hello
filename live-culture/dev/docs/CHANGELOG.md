@@ -1,6 +1,41 @@
 # Changelog
 
 ## For the owner
+14 Nov 2026, early morning, after "You do really need to improve this. The game is awful and the map hard to use and impossible to
+make good sounds with those noises change like everything make it so much better", your choices (push the smoke; the Earth globe;
+real loops with big buttons), and "Kinda sucks game sucks music not fun world can't zoom in close enough not enough. Videos doesn't
+see to really be working fix it" (you were still looking at the old version then):
+
+- **Smoke's game is new: steer the smoke.** Nothing to place. Smoke pours up from a vent and a ring of its colour glows somewhere it
+  doesn't reach by itself: get the smoke into it with your finger before it fades (a tap blows it away). Each ring filled bursts
+  into light and the next one appears. A round is three rings in 32 seconds; every round is a little faster, then more rings, a
+  second and third colour (a ring only takes its own), rings that drift, a wall in the way. Time up ends the game; your best score
+  is kept. Two buttons only: again, and free. Touch a stream just above its vent and drag: the vent turns its stream to follow your
+  finger, so you can steer it into the ring (with two or three colours, start at the right vent). The smoke escapes at the top of
+  the tank, so rings never fill by themselves.
+- **Mix: real instruments.** Gone are the sounds the phone made up. Under the band's nine there are ten instruments, every one a
+  recording of the real thing: congas, bongos, shaker, cajon, claps, marimba, xylophone, vibraphone, piano and glockenspiel (with
+  tubular chimes). Each has two loops written for the band: on its beat, with its swing, on its two chords (E minor 7, then A7). A
+  list with big buttons: tap a loop and it comes in on the next bar, tap the other to swap, tap it again to stop; "stop the
+  instruments" leaves the band playing. Nothing is louder than the band (measured). The recordings are from the Versilian Community
+  Sample Library, which is free for anyone (public domain). At the top, "jam: a new mix": one tap and a new set of instruments comes
+  in with the band on the next bar (a drum, often a shaker or claps, one or two tuned ones); tap again for another.
+- **The Earth is easier.** Three short lines instead of six. Under the globe, the names of what is happening now: the space
+  station, each storm, the biggest fire, where the lightning is thickest, the aurora; tap one and the Earth turns to it, comes close
+  and reads it. + and − buttons beside the globe. "Layers" opens a list of the layers, each in plain words with how fresh it is, on
+  or off. The globe stays still while you read something (it only turns by itself when nothing is open), and satellites are easier
+  to tap.
+- **Much closer.** On your site the Earth now comes 48 times closer (it stopped at 3 before), and when you hold still NASA's
+  500-metre picture of the ground comes in for the part you're looking at. (In the artifact it comes 8 times closer, with the
+  whole-Earth picture only: an artifact can't fetch pictures.)
+- **Cameras.** "Live cameras" under the globe opens one straight away. The window is now the width of the phone and over
+  everything, so tapping the picture reaches YouTube's player itself (a phone sometimes wants a tap before it plays), with west, east
+  and close above it. It used to be a small window in the corner, smaller than YouTube allows a player to be, which may be why they
+  didn't play. I can't open YouTube from here, so if they still don't play, tell me what you see.
+
+Tested by machine, by pushing the smoke with simulated fingers and playing every loop. Not heard from here: how the instruments
+sound together. Not seen from here: YouTube's streams and NASA's close pictures on the real site.
+
 13 Nov 2026, evening, after "Don't understand, explain the game ... you shouldn't see the levels, you should just change the levels
 so each time it's a different set up. The mixer is nice but make it less options and more likely to result in good sounds, like
 Ableton ... And make it extend into the globe and game screens" and your choices (keep the clip grid; outside Mix just the music
@@ -67,6 +102,33 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 13 Nov 2026, night: the push game, real instruments, an easier Earth (rule 16)
+
+- Smoke: the game rewritten as the push game (`gmPlan`, `gmPlace`, `gmRing`, `gmRound`, `gmStart`, `gmOff`, `gmClock`, `gmOver`,
+  `gmRingDone`, `chord`, `gmDraw`); `LEVELS`, `CH`, `chapterOf`, `mirror`, `roundNext`, `pzLoad`, `release`, `stopRun`, `pzWin`,
+  `windOn`, `WINS` and the "go" tool removed; a finger in a game moves the water more widely and leaves no ink, a tap is a gust;
+  rings have their own radius (`c.r`); the best score in `lc.smoke.best`. The level tools moved to `archive/levels/`.
+- Mix: `16-mix.js` rewritten as a list of the band and ten recorded instruments (20 loops, `ROWS`), on the band's chords and swing;
+  `15-snd.js` (`SND`) loads eight sprite files (`snd/*.mp3`, VCSL, CC0) and cuts them by onset; `15-mixsnd.js` moved to
+  `archive/mix-machine-sounds.js`. `tools/snd/` builds the sprites. `t_levels.js` measures every instrument on its busier loop,
+  with ten fingers, with the band, and each of the 20 loops alone.
+- Earth: the row `#nowr` ("layers", then `nowList()`: the space station, the storms, the biggest fire, the densest lightning, the
+  strongest aurora; `nowGo` flies there with `FOC` and reads it), the zoom buttons `#zm` (`zoomBy`), the layers as a sheet `#lys`
+  with descriptions and times (`LYD`, `lyWhen`, `lyOpen`); `hud` three lines; the idle turn only with nothing read and not close; a
+  drag ends a flight at once; a touch on the globe closes the sheet; satellites picked within 20/26 px (was 14/18); presses on the
+  row, the zoom and the sheet stop the hints (`20-ui.js`).
+- Hosted: `public/snd/` packed and cached a week (`_headers`). Worker: `/api/detail` (NASA GIBS WMS, `BlueMarble_NextGeneration`,
+  EPSG:4326, 1024 square, JPEG only, 24 kept in memory).
+- 14 Nov (rule 17): the game's water `LP` {dye .42, ink .09, fk 12, f0 .055}; a finger takes the stream of the vent it lands nearest
+  (`GV`) and the vent turns to it (`f.a`); a moving finger carries the ink (`FQ`, the tunnels' `tun` pass, radius `cupR()*.8`, .7)
+  and draws the ink near it in (`FM`, `mag` pass, .05); the top of the tank eats ink (`snk` mode 4 over the top fifth); rings `r`
+  from 1.25. Measured as a 60-frame phone: pushing alone filled a ring now and then, too seldom to play; taking the stream, every
+  ring of rounds 1 and 3 in 2 to 4.5 s; nobody touching, none in 24 s. Mix: `jam()` and its button. Earth: `ZMAX` 48 (site) / 8, `detTick`,
+  `GLOBE.detail`, the wind's smoke fading close up, zoom buttons step 1.8. Cameras: the window wide and over everything (`camw`
+  z-index 5, `.vb` taking taps), `#vidc` (west, east, close), the canvas cross gone, `layer.next()`, "live cameras" (`#camB`).
+- Tests: `t_play.js` (Earth's row, sheet, zoom, a name flying there; Mix's list), `t_smoke.js` (the push game, pushed with
+  frame-synced touches at a phone's step), `t_published.js`, `t_misc.js` updated.
 
 ## 13 Nov 2026, evening: Smoke's rounds, Mix a grid alone, the music everywhere
 - `11-drift.js`: no map, no stars, no unlocking (`STARS`, `starsFor`, `pathNodes`, `freeBtn`, `PATH`, `unlocked` gone). `roundNext()`:

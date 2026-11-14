@@ -32,6 +32,8 @@
 - **Stars:** the Extended Hipparcos Compilation (XHIP; Anderson and Francis 2012) to magnitude 6, 5,044 stars, as packaged by
   d3-celestial (Olaf Frohn, BSD 3-Clause): `data/stars.6.json` in github.com/ofrohn/d3-celestial. Packed by `tools/gen_data.py` (6 bytes a star).
 - **Sun and Moon:** the Astronomical Almanac's low-precision series. Coded in `src/05-astro.js`.
+- **The ground up close (hosted version, since 14 Nov):** NASA Blue Marble: Next Generation (500 m), as drawn by NASA GIBS's WMS for
+  the part of the Earth in view.
 - **The Earth's pictures:** NASA Blue Marble (day), NASA Black Marble / Earth at Night (city lights), elevation and water mask,
   as shipped as example images in the npm package three-globe 2.45.6 (Vasco Asturiano, MIT). Resized and, for the lights,
   separated from the night picture by `tools/gen_earth.py`.
@@ -48,6 +50,11 @@ Both are used only by `tools/test_astro.js`; neither is in the page.
 - **The band:** nine stems rendered from sampled acoustic instruments (MuseScore General soundfont, MIT), cut as seamless
   four-bar loops at 104 beats a minute. Unchanged from the original site apart from the horn stem being left out.
 - **Touch voices:** computed in `src/03-audio.js`: sums of dying sine waves (glass, kalimba, wood, bowl) and three hand drums.
+- **Mix's instruments (since 13 Nov):** recordings from the Versilian Community Sample Library (VCSL) by Versilian Studios and Sam
+  Gossner (github.com/sgossner/VCSL), dedicated to the public domain (CC0 1.0): congas, quinto, tumba, bongos and cajon; shakers,
+  claps, claves, a woodblock, a hi-hat, agogo; marimba, vibraphone, soft-mallet xylophone, glockenspiel, tubular chimes; an upright
+  piano. Trimmed, levelled and joined into `snd/*.mp3` by `tools/snd/build_bank.py`; each note's pitch measured by
+  `tools/snd/pitch2.py`. The loops were written for the band's own chords and swing.
 - **The fluid in Smoke:** Jos Stam, "Stable Fluids" (1999), with vorticity confinement, buoyancy, and obstacles as in GPU Gems
   (Mark Harris, "Fast Fluid Dynamics Simulation on the GPU", 2004, simplified to masking).
 - **The smoke in Wind:** semi-Lagrangian advection (the same paper) in the real wind field; the way of showing wind owes to

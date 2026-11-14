@@ -8,26 +8,12 @@ changes how the page sounds.
    from a session that can: check every source arrives (the readouts give each one's time), which cameras are on the air, how the
    real clouds and rain look; fix what the stand-ins could not show. Updates go to the `live-culture` repository Cloudflare made for
    him (each push deploys; its check run says whether it went live). Never push into the repository of his trading app for this.
-2. **More set-ups for Smoke's rounds.** (Since 13 Nov's evening he never sees a level: each round is one of the set-ups, mirrored
-   half the time, harder as rounds are won. A set-up whose answer is a close thing fails mirrored now and then: mark it `nomir`, or
-   give it more smoke and test it both ways, `MIRROR=1`.) 24 levels since 13 Nov (the second set: the first, of 12 Nov, was made for smoke that never
-   ran out and walls that ate it), each ring placed by `t_place.js` and `place_rings.py` where the measured smoke goes, each level
-   checked by `t_design.js` as a 60-frame phone runs it. Until 13 Nov a wall swallowed the smoke of a jet that met it, so much of
-   what follows was learnt with weaker walls than there are now. Learnt on 13 Nov (with the new walls): an intruder jet must start
-   close to the jet it spoils (one rising from the floor arrives after the jet has filled the ring, so nothing built nearly wins);
-   white from two jets far apart pushed together by fans fails (they push each other aside), two jets aimed to meet (or two tunnels'
-   mouths side by side) make a white column that works; a rising jet turned sideways by a lid or a leaning wall is too faint after;
-   a sweeping source spreads its smoke over the whole tank (so it works as the intruder, held down by a long wall, not as the jet to
-   aim); a fixed fan blowing by turns made no level (between gusts the jet straightens and fills the ring; with the gusts swallowed the ring
-   that nothing built leaves alone sits at the jet's edge, where a run fills it or not by chance). What did not work before (try none again without a new idea): two jets head on (their rising plume fills rings beside it), a ring anywhere above a
-   jet (smoke rises into it), a vertical jet crossing a horizontal one when the ring is up the way it pushes (it acts as a ramp), a
-   fixed fan more than a tenth of the tank from the jet it should bend (too weak by then), and sheltering a jet from a fixed fan near
-   enough to bend it (a lid or a fence between them sends the fan's flow round its ends into the jet; a fan blowing back makes a
-   wall of water the jet cannot pass; a slanted wall above the bent jet lets it round its end), an intruder of a colour near the ring's
-   (green in a cyan ring, violet in a green one, amber in a rose one: mixed in, the ring still takes it for its own), smoke led along
-   a slope or trapped under a shelf (too faint). What works: a jet turned by a wall at a slant, pushed by a fan close by, stopped by
-   a lid; prisms and tunnels (they do exactly what they say); a drain on a jet (since 12 Nov a drain in a level swallows the jet's push
-   as well as its ink, so the jet stops there). An editor in the sandbox could save a level to the store and share it.
+2. **Smoke's game, next.** Since 13 Nov (night) it is the push game (rule 16), tuned on 14 Nov by measurement as a phone at sixty
+   frames a second runs it (`fixdt`): a bot pushing from the side of the plume fills a ring in two to nine seconds; nobody touching
+   fills none. Worth watching: whether a person finds round 1 too easy or too hard (`gmPlan`: rings, seconds, ring size), whether the
+   held finger's blowing feels right, how a phone at thirty frames a second plays it. Ideas, only if he wants more: a ring that moves
+   along a path, two rings at once of two colours, a short combo for rings filled quickly. (The 24 set-ups of 13 Nov, their tools and
+   what was learnt making them are in the artifact's version 28 and this file's history.)
 3. **Hear it and hold it.** The two things no machine test covers: every voice by ear, and every world on a real iPhone
    (frame rate in Wind and Orbit above all, the first touch starting the band with the ring switch on silent, whether a first stroke
    leaves the sound waiting for a tap as expected, the card's size).
@@ -41,11 +27,13 @@ changes how the page sounds.
 6. **More on the Earth.** The hundred brightest objects (mostly spent rocket stages, not in the active list); a ring on the ground
    under a chosen satellite; the Moon at its true place far out; passes over a place he names; winding time again (it went with
    Orbit's own world on 13 Nov), if he misses it.
-9. **Mix, next.** Since 13 Nov's evening it is a grid of loops alone, by his choice ("less options and more likely to result in good
-   sounds"): do not bring back knobs, decks or pads unless he asks. Worth trying: more ways for the band's players that keep the
-   chords lined up (the second beat, the off-beats, a fill on the last bar), cut on each player's own onsets (`BAND_DATA`) rather than
-   by the bar; the machine's keys and bells following the chords as its bass does; a few more loops a column only if every one of
-   them fits with every other. Learnt on 13 Nov: the band's four bars are two chords (E for two bars, then A), read off the stems;
-   any loop of part of a player's recording that does not keep its place in the four bars puts it on the wrong chord.
+9. **Mix, next.** Since 13 Nov (night) a list: the band's nine and ten recorded instruments (VCSL, CC0), two loops each, written on
+   the band's chords (Em7, A7) and swing, and "jam" (14 Nov). Do not bring back knobs, decks or pads unless he asks. Worth doing: hear
+   it (no ear has); a third loop for the instruments he uses most; more of VCSL's struck instruments if he wants them (steel drum,
+   handbells, tabla, frame drums; never the kalimbas: their other tines ring out of key when a note is moved). Any new loop: its notes
+   on the chord of its bar (measure them as on 13 Nov), and `t_levels.js` with it alone and with everything.
+10. **The cameras, for real.** Since 14 Nov the window is big and takes taps; whether YouTube plays in it on his iPhone, from the
+   Worker's lookups, could not be seen from here. Ask him what he sees; if YouTube refuses the Worker (a consent or "not a bot" page),
+   the lookups need another way (the channels' own pages, or a list kept fresh by hand).
 7. **Video as ink.** A clip from his camera roll through the file picker (allowed in the artifact) playing as the ink in Smoke.
 8. **Record a loop.** Save one four-bar loop of a world as video (the `downloads` capability takes mp4 and webm).

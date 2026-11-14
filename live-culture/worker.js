@@ -7,6 +7,7 @@
 //   /api/live?ids=    the same for up to eight cameras at once
 //   /api/gfs/<field>  one field of NOAA's weather model, now (temperature, pressure, the jet streams, the waves), as GRIB2
 //   /api/wx?lat=&lon= the weather at one place, now and for the next three days (Open-Meteo)
+//   /api/detail?b=s,w,n,e  a close picture of the ground for the part of the Earth in view (NASA's Blue Marble at 500 m, from NASA GIBS)
 // Nothing else is forwarded and nothing is stored beyond a few minutes in memory. No keys, no accounts, nothing to set up.
 //
 // Every source is public. Each feed lists where to get it, best first: the official source, then public mirrors of it on GitHub.
@@ -371,6 +372,32 @@ export default {
         MEM.set(key, { at: now, v });
         return json(v, 600);
       } catch (e) { return new Response('Not available just now', { status: 503, headers: { 'retry-after': '120', ...CORS } }); }
+    }
+    // a close picture of the ground (14 Nov: "can't zoom in close enough"): the part of the Earth in view, south, west, north and east in
+    // degrees, as NASA GIBS draws NASA's Blue Marble (500 m a pixel) for it, 1024 pixels square; the last few kept in memory
+    if (p === '/api/detail') {
+      const b = (url.searchParams.get('b') || '').split(',').map(Number), [s, w, n, e] = b;
+      if (b.length !== 4 || !b.every(Number.isFinite) || !(s >= -90 && n <= 90 && n - s >= 0.5 && n - s <= 70 && w >= -180 && e <= 180 && e - w >= 0.5 && e - w <= 360))
+        return new Response('Which part of the Earth?', { status: 400, headers: CORS });
+      const key = 'det:' + b.map(v => v.toFixed(3)).join(','), hit = MEM.get(key), hd = { 'content-type': 'image/jpeg', 'cache-control': 'public, max-age=86400', ...CORS };
+      if (hit) return new Response(hit.v, { headers: hd });
+      try {
+        // (the Blue Marble, then the same with the relief shaded in, should the first not be drawn; a WMS that cannot draw a picture
+        // answers with an XML message, not an error code)
+        let v = null;
+        for (const layer of ['BlueMarble_NextGeneration', 'BlueMarble_ShadedRelief_Bathymetry']) {
+          const r = await fetch('https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?SERVICE=WMS&REQUEST=GetMap&VERSION=1.3.0&STYLES=&CRS=EPSG:4326&BBOX=' +
+            [s, w, n, e].map(x => x.toFixed(4)).join(',') + '&WIDTH=1024&HEIGHT=1024&FORMAT=image/jpeg&LAYERS=' + layer, { headers: { 'user-agent': UA } });
+          if (!r.ok || !/image\/jpeg/.test(r.headers.get('content-type') || '')) continue;
+          const b2 = await r.arrayBuffer();
+          if (b2.byteLength >= 2000) { v = b2; break; }
+        }
+        if (!v) throw new Error('gibs: no picture');
+        let nd = 0; for (const k of MEM.keys()) if (k.startsWith('det:')) nd++;
+        if (nd >= 24) for (const k of MEM.keys()) if (k.startsWith('det:')) { MEM.delete(k); break; }
+        MEM.set(key, { at: Date.now(), v });
+        return new Response(v, { headers: hd });
+      } catch (err) { return new Response('Not available just now', { status: 503, headers: { 'retry-after': '60', ...CORS } }); }
     }
     if (p === '/api/cams') return json({ cams: CAMS.map(({ c, s, ...k }) => k), themes: THEMES }, 600);
     // several cameras at once (the page asks for a theme's worth as it goes): no more than eight, each as /api/yt/ would answer

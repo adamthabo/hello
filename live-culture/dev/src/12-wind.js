@@ -116,30 +116,94 @@ var WIND=(function(){
     cams:'<rect x="1.8" y="4.2" width="9.6" height="7.6" rx="1.4"/><path d="M11.4 7.2l3-1.8v5.2l-3-1.8"/>',jet:'<path d="M1.6 9.4c2.4-3.6 5.4-3.6 7.6-1.2 2 2.2 3.8 2.1 5.2-.4M3.8 12.6c1.8-1.6 3.6-1.4 5 0"/>',heat:'<path d="M6.6 9.6V3.6a1.6 1.6 0 1 1 3.2 0v6a3.1 3.1 0 1 1-3.2 0z"/><path d="M8.2 7v4.6"/>',
     pressure:'<path d="M2.2 5.6c2.6-2.4 9-2.4 11.6 0M2.6 9.4c2.4-1.6 8.4-1.6 10.8 0M4.6 12.9c1.6-.7 5.2-.7 6.8 0"/>',waves:'<path d="M1.6 7.4c1.6-1.6 3.1-1.6 4.4 0s2.9 1.6 4.4 0 3.1-1.6 4.1 0M1.6 11.4c1.6-1.6 3.1-1.6 4.4 0s2.9 1.6 4.4 0 3.1-1.6 4.1 0"/>',wind:'<path d="M2.5 6h8.2a2.2 2.2 0 1 0-2.2-2.2M2.5 9.8h11a2.3 2.3 0 1 1-2.3 2.3"/>',clouds:'<path d="M4.6 12.5h7a2.9 2.9 0 0 0 .2-5.8 4 4 0 0 0-7.6-.6 3.2 3.2 0 0 0 .4 6.4z"/>',
     rain:'<path d="M4.6 9.2h7a2.6 2.6 0 0 0 .2-5.2 3.6 3.6 0 0 0-6.9-.5 2.9 2.9 0 0 0-.3 5.7M5.6 11.6l-.9 2.2M8.4 11.6l-.9 2.2M11.2 11.6l-.9 2.2"/>',sun:'<circle cx="8" cy="8" r="2.9"/><path d="M8 1.6v1.6M8 12.8v1.6M1.6 8h1.6M12.8 8h1.6M3.5 3.5l1.1 1.1M11.4 11.4l1.1 1.1M3.5 12.5l1.1-1.1M11.4 4.6l1.1-1.1"/>'};
-  function lyrBuild(){var r=$('lyr');if(!r||r.childNodes.length)return;LYK.forEach(function(k){var b=document.createElement('button');b.type='button';b.className='lb';b.id='l_'+k;
-    b.innerHTML='<svg viewBox="0 0 16 16" aria-hidden="true">'+LYI[k]+'</svg><span></span>';b.lastChild.textContent=LYN[k]||k;b.setAttribute('aria-pressed','true');
+  /* the layers (13 Nov, night: "the map hard to use ... the layers"): a short list, opened from the one "layers" button under the globe,
+     each with its name, what it shows in plain words, and on or off */
+  var LYD={sats:'every satellite, where it is now',cams:'live cameras round the world: tap a ring to watch',wind:'the wind near the ground, as smoke',
+    jet:'the fast winds 10 km up, in place of the wind',heat:'how warm the air is near the ground',pressure:'the highs and the lows of the air',
+    waves:'how high the sea is running',clouds:'the clouds, seen from space',rain:'where it is raining',sun:'day and night: where the Sun is up'},lyOn=false,lyBtn=null;
+  function lyrBuild(){var r=$('lyr');if(!r||r.childNodes.length)return;LYK.forEach(function(k){var b=document.createElement('button');b.type='button';b.className='ly';b.id='l_'+k;
+    b.innerHTML='<svg viewBox="0 0 16 16" aria-hidden="true">'+LYI[k]+'</svg><span class="lyn"></span><span class="lyd"></span><span class="lyo"></span>';
+    b.querySelector('.lyn').textContent=LYN[k]||(k==='jet'?'jet streams':k);b.setAttribute('aria-pressed','true');
     /* the wind near the ground and the jet streams are one smoke or the other */
-    b.addEventListener('click',function(){LY[k]=LY[k]?0:1;if(LY[k]&&k==='jet')LY.wind=0;if(LY[k]&&k==='wind')LY.jet=0;lyKey='';lyrSync(true)});r.appendChild(b)})}
+    b.addEventListener('click',function(){LY[k]=LY[k]?0:1;if(LY[k]&&k==='jet')LY.wind=0;if(LY[k]&&k==='wind')LY.jet=0;lyKey='';lyrSync(true);tone('glass',pent(LY[k]?11:8,40),.3,0)});r.appendChild(b)});
+    $('lyX').addEventListener('click',function(){lyOpen(false)})}
+  function lyOpen(v){v=!!v;lyOn=v;var s=$('lys');if(s)s.hidden=!v;if(lyBtn)lyBtn.setAttribute('aria-expanded',v?'true':'false');if(v){lyKey='';lyrSync(true)}}
+  /* when each layer's picture is of, said in its row */
+  function lyWhen(k){var X=typeof WX!=='undefined'?WX:{},t=function(ms){return ms?stampUTC(ms):''};
+    return k==='clouds'?t(CLOUD.at):k==='rain'?t(RAIN.at):k==='wind'&&LIVE.wind?'up to '+Math.round(LIVE.wind.max*3.6)+' km/h · '+t(LIVE.wind.asOf):(k==='jet'||k==='heat'||k==='pressure'||k==='waves')&&X.at?t(X.at):
+      k==='sats'?(function(){var m=/^([\d,]+) satellites.*orbits of (.*)$/.exec(ORBIT.layer.hud()||'');return m?m[1]+' of them, orbits of '+m[2]:''})():''}
   /* which layers there are data for: the clouds and the rain only where the page is served from the owner's own host */
   function lyrSync(force){var X=typeof WX!=='undefined'?WX:{},has={sats:!!LIVE.sats,cams:!!HOSTED&&typeof LIVEW!=='undefined',wind:!!LIVE.wind,jet:!!(X.jet&&jetT),heat:!!X.t2m,pressure:!!X.mslp,waves:!!X.wave,clouds:GLOBE.hasCloud(),rain:GLOBE.hasRain(),sun:true},key='',k;
-    camSync(has.cams&&LY.cams);for(k in LY)key+=(has[k]?1:0)+''+LY[k];if(key===lyKey&&!force)return;lyKey=key;
-    var r=$('lyr');if(!r)return;var vis=false;for(k in LY){var b=$('l_'+k);if(!b)continue;b.hidden=!has[k];b.setAttribute('aria-pressed',LY[k]?'true':'false');if(has[k])vis=true}
-    var was=r.hidden,h0=r.offsetHeight;r.hidden=!vis;if(was!==r.hidden||r.offsetHeight!==h0){layout();geo()}}
+    camSync(has.cams&&LY.cams);for(k in LY)key+=(has[k]?1:0)+''+LY[k];key+=':'+LIVE.ver.wind+':'+LIVE.ver.sats+':'+CLOUD.ver+':'+RAIN.ver+':'+(X.at||0);if(key===lyKey&&!force)return;lyKey=key;
+    var r=$('lyr');if(!r)return;for(k in LY){var b=$('l_'+k);if(!b)continue;b.hidden=!has[k];b.setAttribute('aria-pressed',LY[k]?'true':'false');
+      b.querySelector('.lyo').textContent=LY[k]?'on':'off';var wh=has[k]?lyWhen(k):'';b.querySelector('.lyd').textContent=LYD[k]+(wh?' · '+wh:'')}}
   function camSync(v){v=!!v;if(v===camOn)return;camOn=v;try{LIVEW.layer.on(v)}catch(e){}layout();geo()}
-  function enter(){if(GLX.ok&&gen!==GLX.gen)glSetup();GLOBE.load();liveLoad();size();lyrBuild();var r=$('lyr');if(r)r.hidden=false;lyKey='';lyrSync(true);geo();idle=0;lastT=0;
-    try{ORBIT.layer.on()}catch(e){}try{LIVEW.layer.flyTo(flyTo)}catch(e){}}
-  function leave(){flashes.length=0;var r=$('lyr');if(r)r.hidden=true;cardOff();try{ORBIT.layer.off()}catch(e){}camSync(false)}
+  function enter(){if(GLX.ok&&gen!==GLX.gen)glSetup();GLOBE.load();liveLoad();size();lyrBuild();lyKey='';lyrSync(true);geo();idle=0;lastT=0;
+    try{ORBIT.layer.on()}catch(e){}try{LIVEW.layer.flyTo(flyTo)}catch(e){}nowKey='';nowAt=0;zmSync(true);
+    if(!zmW){zmW=1;$('zIn').addEventListener('click',function(){zoomBy(1.8)});$('zOut').addEventListener('click',function(){zoomBy(1/1.8)})}}
+  function leave(){flashes.length=0;lyOpen(false);var n=$('nowr');if(n)n.hidden=true;zmSync(false);cardOff();try{ORBIT.layer.off()}catch(e){}camSync(false)}
+  /* ---- what is happening now (13 Nov, night: "the map hard to use"): a row of names under the globe, each a storm turning now, the
+     space station, the biggest fire, where the lightning is thickest, where the aurora is strongest. A name turns the Earth to its place
+     and comes close, and reads it, as a tap there would ---- */
+  var NOWL=[],nowKey='',nowAt=0,zmW=0,camBtn=null,NOWI={storm:'<path d="M8 8m-1.6 0a1.6 1.6 0 1 0 3.2 0 1.6 1.6 0 1 0-3.2 0M8 2.2c-3.6 0-5.4 2.4-5.6 4.6M8 13.8c3.6 0 5.4-2.4 5.6-4.6M13.4 5.2C12.6 3.4 10.8 2.4 9 2.4M2.6 10.8c.8 1.8 2.6 2.8 4.4 2.8"/>',
+    iss:'<path d="M2 6.2h3.6v3.6H2zM10.4 6.2H14v3.6h-3.6zM5.6 8h4.8M8 5.4v5.2"/>',fire:'<path d="M8 14c-2.8 0-4.4-1.8-4.4-4.2 0-2.6 2.2-3.8 2.4-6.8 1.6 1 2.2 2.4 2.2 3.6.6-.6.9-1.4.9-2.2 1.6 1.2 3.3 3 3.3 5.4 0 2.4-1.6 4.2-4.4 4.2z"/>',
+    bolt:'<path d="M9.2 1.8L4.4 9h3.2l-1 5.2L11.6 7H8.4z"/>',aurora:'<path d="M1.8 11.6c2-4.4 4.2-6.6 6.2-6.6s4.2 2.2 6.2 6.6M3.6 12.8c1.4-3 2.9-4.4 4.4-4.4s3 1.4 4.4 4.4"/>'};
+  function nowList(){var L=[],i,j;
+    try{var s=ORBIT.iss(Date.now());if(s)L.push({k:'iss',n:'space station',lat:s.lat,lon:s.lon})}catch(e){}
+    ST.forEach(function(k){var c=CLS[k.s.cls]||'cyclone',w=/hurricane/.test(c)?'hurricane':/typhoon/.test(c)?'typhoon':/depression/.test(c)?'depression':/storm/.test(c)?'storm':'cyclone';
+      L.push({k:'storm',n:w+' '+String(k.s.name||'').replace(/^no\.\s*0*/i,'no. '),lat:k.s.lat,lon:k.s.lon,tg:k.s})});
+    if(FR.length){var b=FR[0].f;FR.forEach(function(x){if(x.f.frp>b.frp)b=x.f});L.push({k:'fire',n:'biggest fire',lat:b.lat,lon:b.lon,tg:b})}
+    /* the lightning: the flash with the most others within 300 km (a few hundred tried, against all) */
+    if(SK.length>4){var c=Math.cos(300/6371),best=-1,bn=0,step=Math.max(1,Math.floor(SK.length/300));for(i=0;i<SK.length;i+=step){var n=0;for(j=0;j<SK.length;j++)if(GLOBE.dot(SK[i].v,SK[j].v)>c)n++;if(n>bn){bn=n;best=i}}
+      if(best>=0){var v=SK[best].v;L.push({k:'bolt',n:'lightning',lat:Math.asin(clamp(v[2],-1,1))/AS.D,lon:Math.atan2(v[1],v[0])/AS.D})}}
+    var A=LIVE.aurora;if(A&&A.max>=10){var mi=0,G=A.grid;for(i=1;i<G.length;i++)if(G[i]>G[mi])mi=i;L.push({k:'aurora',n:'aurora',lat:90-Math.floor(mi/360),lon:AS.n180(mi%360)})}
+    return L}
+  function nowSync(){var r=$('nowr');if(!r)return;if(FT-nowAt<5000&&nowKey)return;nowAt=FT;NOWL=nowList();var key=NOWL.map(function(x){return x.k+x.n}).join('|');
+    if(!lyBtn){lyBtn=document.createElement('button');lyBtn.type='button';lyBtn.className='lb lyb';lyBtn.id='lyB';lyBtn.setAttribute('aria-expanded','false');lyBtn.setAttribute('aria-controls','lys');
+      lyBtn.innerHTML='<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.2l5.8 3L8 8.2 2.2 5.2zM2.2 8l5.8 3 5.8-3M2.2 10.8l5.8 3 5.8-3"/></svg><span>layers</span>';
+      lyBtn.addEventListener('click',function(){lyOpen(!lyOn)})}
+    /* on the site, the cameras at once: the next one on the air opens over the Earth (14 Nov: "Videos doesn't seem to really be working") */
+    if(!camBtn&&HOSTED&&typeof LIVEW!=='undefined'){camBtn=document.createElement('button');camBtn.type='button';camBtn.className='lb lyb';camBtn.id='camB';
+      camBtn.innerHTML='<svg viewBox="0 0 16 16" aria-hidden="true">'+LYI.cams+'</svg><span>live cameras</span>';camBtn.setAttribute('aria-label','Watch a live camera');
+      camBtn.addEventListener('click',function(){lyOpen(false);if(!LY.cams){LY.cams=1;lyKey='';lyrSync(true)}try{LIVEW.layer.next()}catch(e){}})}
+    if(key!==nowKey||r.firstChild!==lyBtn){nowKey=key;r.innerHTML='';r.appendChild(lyBtn);if(camBtn)r.appendChild(camBtn);NOWL.forEach(function(it,i){var b=document.createElement('button');b.type='button';b.className='lb';b.id='n_'+i;
+        b.innerHTML='<svg viewBox="0 0 16 16" aria-hidden="true">'+NOWI[it.k]+'</svg><span></span>';b.lastChild.textContent=it.n;b.setAttribute('aria-label','Go to the '+it.n);
+        b.addEventListener('click',function(){nowGo(NOWL[i]||it)});r.appendChild(b)})}
+    if(r.hidden){r.hidden=false;layout();geo()}}
+  function nowGo(it){if(!it)return;if(it.k==='iss'){try{var s=ORBIT.iss(Date.now());if(s){it.lat=s.lat;it.lon=s.lon}}catch(e){}}
+    FLY=null;FOC={s:{lat:it.lat,lon:it.lon},t:FT,lat:lat0,lon:lon0,z:zoom,tz:{storm:2.2,fire:2.6,bolt:2.2,aurora:1.5,iss:1.6}[it.k]||2};idle=0;vlon=vlat=0;lyOpen(false);
+    if(it.k==='iss'){probe=null;cardOff();try{ORBIT.pick('ISS (ZARYA)')}catch(e){}}
+    else{try{ORBIT.layer.off()}catch(e){}probe={lat:it.lat,lon:it.lon,v:AS.llv(it.lat,it.lon),p:[0,0,0],q:[0,0,0],t:FT,ghost:false,fire:it.k==='fire'?it.tg:null,storm:it.k==='storm'?it.tg:null};cardOff()}
+    tone('glass',pent(9,40),.4,0);
+    var r=$('nowr');if(r)[].forEach.call(r.childNodes,function(b,i){b.classList.toggle('go',NOWL[i]===it)})}
+  /* ---- the zoom buttons, at the right of the globe ---- */
+  function zmSync(v){var z=$('zm');if(!z)return;z.hidden=!v;if(v){z.style.top=Math.round(g.cy-46)+'px'}}
+  function zoomBy(k){FOC=null;zoom=clamp(zoom*k,.16,ZMAX);geo();idle=0;zmSync(true)}
+  /* how close the Earth can come (14 Nov: "can't zoom in close enough"): on the site, where NASA's 500-metre pictures of the ground come
+     in for the part in view, to a few kilometres across the screen; in the artifact, which has only the whole Earth's picture, less */
+  var ZMAX=HOSTED?48:8,DET={busy:false,key:'',mt:0,lz:0,la:0,lo:0,n:0,err:0};
+  function detTick(){if(!HOSTED||DET.busy||DET.err>3)return;
+    if(Math.abs(zoom-DET.lz)>.001||Math.abs(lat0-DET.la)>.01||Math.abs(lon0-DET.lo)>.01||FOC||FLY){DET.lz=zoom;DET.la=lat0;DET.lo=lon0;DET.mt=FT;return}
+    if(FT-DET.mt<500||zoom<2.4)return;
+    /* the box: a side of 1 to 64 degrees (the smallest that holds the view with a margin), centred on a grid of a quarter of it */
+    var hs=Math.asin(Math.min(1,Math.hypot(STG.w,STG.h)/2/g.R))/AS.D,side=1;while(side<hs*2.05&&side<64)side*=2;
+    var cl=Math.max(.2,Math.cos(lat0*AS.D)),sl=side,sw=Math.min(360,side/cl),q=side/4,cla=Math.round(lat0/q)*q,clo=Math.round(lon0/(sw/4))*(sw/4);
+    var n=Math.min(90,cla+sl/2),s=Math.max(-90,n-sl);n=Math.min(90,s+sl);var w=clo-sw/2,e=clo+sw/2;if(w<-180){e+=-180-w;w=-180}if(e>180){w-=e-180;e=180}w=Math.max(-180,w);
+    var key=[s,w,n,e].map(function(v){return v.toFixed(3)}).join(',');if(key===DET.key)return;DET.key=key;DET.busy=true;
+    fetch('/api/detail?b='+key).then(function(r){if(!r.ok)throw new Error('detail '+r.status);return r.blob()}).then(function(b){
+      var u=URL.createObjectURL(b),im=new Image();im.onload=function(){GLOBE.detail(im,{s:s,w:w,n:n,e:e});DET.n++;DET.busy=false;DET.err=0;setTimeout(function(){URL.revokeObjectURL(u)},4000)};
+      im.onerror=function(){DET.busy=false;DET.err++;URL.revokeObjectURL(u)};im.src=u}).catch(function(){DET.busy=false;DET.err++})}
   /* the Earth turns to a place over a second (a camera opened, say); a finger on it stops the turning */
   function flyTo(la,lo){FOC=null;FLY={t:FT,a:lat0,b:lon0,la:clamp(la,-70,70),lo:lo};idle=-30}
-  function resize(){geo();if(GLX.ok&&P)size()}
+  function resize(){geo();if(GLX.ok&&P)size();if(!$('zm').hidden)zmSync(true)}
   function pan(x){return clamp((x-g.cx)/Math.max(1,g.R)*.8,-1,1)}
   /* one finger turns the globe; let go while moving and it coasts */
-  function down(p){if(camOn&&!p.ghost&&LIVEW.layer.hit(p.x,p.y)){p.win=1;return}idle=0;vlon=vlat=0;FLY=null;if(FOC&&FT-FOC.t>1400)FOC=null}
+  function down(p){if(lyOn&&!p.ghost){lyOpen(false);p.win=2;return}if(camOn&&!p.ghost&&LIVEW.layer.hit(p.x,p.y)){p.win=1;return}idle=0;vlon=vlat=0;FLY=null;if(FOC&&FT-FOC.t>1400)FOC=null}
   function move(p){if(p.n>=2||p.win)return;var k=57.2958/g.R,c=Math.max(.35,Math.cos(lat0*AS.D));lon0-=(p.x-p.px)*k/c;lat0=clamp(lat0+(p.y-p.py)*k,-80,80);
-    if(!p.ghost){turned=1;vlon=-p.vx*k/c;vlat=p.vy*k}idle=0}
+    if(!p.ghost){turned=1;vlon=-p.vx*k/c;vlat=p.vy*k;if(p.moved>12)FOC=null}idle=0}
   /* a tap on a place reads it; a tap on the dark puts the reading away. A finger down up to 600 ms and not moved is a tap (a slow
      phone can be that long in passing the lifting on); the hints' ghost fingers keep to their own 320 */
-  function up(p){if(p.win){LIVEW.layer.up(p);return}idle=0;if(FT-p.t0>(p.ghost?320:600)||p.moved>12)return;var w=GLOBE.at(p.x,p.y,g),i,bd,d,tg=null;
+  function up(p){if(p.win){if(p.win===1)LIVEW.layer.up(p);return}idle=0;if(FT-p.t0>(p.ghost?320:600)||p.moved>12)return;var w=GLOBE.at(p.x,p.y,g),i,bd,d,tg=null;
     /* a camera's ring, then a satellite, are what a tap meant before the place under it */
     if(!p.ghost&&camOn&&LIVEW.layer.pick(p.x,p.y)){probe=null;cardOff();try{ORBIT.layer.off()}catch(e){}return}
     if(!p.ghost&&LY.sats&&ORBIT.layer.pick(p)){probe=null;cardOff();return}
@@ -155,8 +219,8 @@ var WIND=(function(){
     if(!p.ghost){tone('glass',pent(5+clamp(Math.floor((w.lat+72)/144*9),0,8),40),.4,pan(p.x));if(!tg)placeCard(w.lat,w.lon);else cardOff()}}
   /* two fingers: sliding turns the globe too, a pinch comes closer */
   function gesture(e){var k=57.2958/g.R;lon0-=e.dx*k/Math.max(.35,Math.cos(lat0*AS.D));lat0=clamp(lat0+e.dy*k,-80,80);
-    if(!e.ghost){zoom=clamp(zoom*e.scale,.16,3.2);geo();vlon=-e.dx/e.dt*k/Math.max(.35,Math.cos(lat0*AS.D))*.5;vlat=e.dy/e.dt*k*.5}idle=0}
-  function wheel(e){if(e.shiftKey){lon0+=e.deltaY*.05}else{zoom=clamp(zoom*Math.exp(-e.deltaY*.0012),.16,3.2);geo()}idle=0}
+    if(!e.ghost){zoom=clamp(zoom*e.scale,.16,ZMAX);geo();vlon=-e.dx/e.dt*k/Math.max(.35,Math.cos(lat0*AS.D))*.5;vlat=e.dy/e.dt*k*.5}idle=0}
+  function wheel(e){if(e.shiftKey){lon0+=e.deltaY*.05}else{zoom=clamp(zoom*Math.exp(-e.deltaY*.0012),.16,ZMAX);geo()}idle=0}
   function key(e,dn){if(!dn)return false;if(e.key==='ArrowLeft')lon0-=6;else if(e.key==='ArrowRight')lon0+=6;else if(e.key==='ArrowUp')lat0=clamp(lat0+5,-80,80);else if(e.key==='ArrowDown')lat0=clamp(lat0-5,-80,80);else return false;idle=0;return true}
   /* the real figures for a place: the wind there (read off the model's grid between its four nearest points), the Sun's height and the
      hour by the Sun, the chance of aurora overhead, the lightning within 300 km in the last half hour */
@@ -235,10 +299,11 @@ var WIND=(function(){
       /* the rows along the bottom can grow (the kinds of camera arrive, a layer's data comes): the stage is measured again */
       var fh=$('foot').offsetHeight;if(fh!==footH){footH=fh;layout();geo();try{LIVEW.layer.resize()}catch(e){}}}
     if(PCD.on&&PCD.fr.length>1&&FT-PCD.ft>(PCD.fi===PCD.fr.length-1?1500:420)){PCD.ft=FT;PCD.fi=(PCD.fi+1)%PCD.fr.length;radarDraw()}
-    if(!PTN){lon0+=vlon*dt;lat0=clamp(lat0+vlat*dt,-80,80);var kk=Math.exp(-dt*2.4);vlon*=kk;vlat*=kk;idle+=dt;if(idle>5&&!reduce)lon0+=dt*1.3*smooth((idle-5)/4)}else idle=0;
+    if(!PTN){lon0+=vlon*dt;lat0=clamp(lat0+vlat*dt,-80,80);var kk=Math.exp(-dt*2.4);vlon*=kk;vlat*=kk;idle+=dt;if(idle>5&&!reduce&&!probe&&!FOC&&zoom<1.3&&!(ORBIT.layer.sel&&ORBIT.layer.sel()>=0))lon0+=dt*1.3*smooth((idle-5)/4)}else idle=0;
     /* (the last step lands exactly on the storm, however long the frames: a slow phone's last frame of the flight could otherwise end it short) */
     if(FOC&&!FOC.done){var fk=smooth(Math.min(1,(FT-FOC.t)/1400));lat0=lerp(FOC.lat,clamp(FOC.s.lat,-80,80),fk);lon0=FOC.lon+AS.n180(FOC.s.lon-FOC.lon)*fk;zoom=lerp(FOC.z,FOC.tz,fk);geo();idle=0;if(fk>=1)FOC.done=true}
     if(FLY){var yk=smooth((FT-FLY.t)/1100);lat0=lerp(FLY.a,FLY.la,yk);lon0=FLY.b+AS.n180(FLY.lo-FLY.b)*yk;vlon=vlat=0;if(yk>=1)FLY=null}
+    nowSync();detTick();
     lon0=AS.n180(lon0);GLOBE.basis(lat0,lon0,g);
     if(LY.sats)try{ORBIT.layer.tick(dt,t,g)}catch(e){}
     if(camOn)try{LIVEW.layer.tick(dt,g)}catch(e){}
@@ -268,7 +333,7 @@ var WIND=(function(){
       glClear(bg[0],bg[1],bg[2]);
       /* with the real clouds on, the Earth is shown nearer to how it looks from orbit and the wind's smoke is laid over it more lightly */
       var cl=GLOBE.hasCloud()&&LY.clouds,rn=GLOBE.hasRain()&&LY.rain,hk=LY.heat&&WX.t2m,dim=fl?(cl||hk?.64:.38):.82;
-      if(!GLOBE.draw(g,{sun:sunV,moon:moonV,moonK:moonI?moonI.phase:0,bg:bg,dim:dim,flow:P&&dye&&fl?dye.r.tex:null,flowK:cl||hk?.62:1.15,aur:aurT,aurK:1,cld:cl,cldK:hk?.7:.95,rain:rn,rainK:1,sunK:LY.sun?1:0,time:t*.001,
+      if(!GLOBE.draw(g,{sun:sunV,moon:moonV,moonK:moonI?moonI.phase:0,bg:bg,dim:dim,flow:P&&dye&&fl?dye.r.tex:null,flowK:(cl||hk?.62:1.15)*clamp((10-zoom)/6,.3,1),aur:aurT,aurK:1,cld:cl,cldK:hk?.7:.95,rain:rn,rainK:1,sunK:LY.sun?1:0,time:t*.001,
         wx:wxT,windF:windT,heatK:hk?1:0,waveK:LY.waves&&WX.wave?1:0,isoK:LY.pressure&&WX.mslp?1:0}))blank();
       /* the satellites over the same Earth: the stars behind, every satellite where it is this second, the one tapped with its orbit */
       if(LY.sats)try{ORBIT.layer.draw(t)}catch(e){}}
@@ -312,12 +377,15 @@ var WIND=(function(){
         c.strokeStyle='rgba(255,179,71,'+(.95*al).toFixed(3)+')';c.lineWidth=1.4;c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.moveTo(x2-dx*7-dy*4,y2-dy*7+dx*4);c.lineTo(x2,y2);c.lineTo(x2-dx*7+dy*4,y2-dy*7-dx*4);c.stroke()}}
     /* the cameras: a ring for each, and the window of the one playing */
     if(camOn)try{LIVEW.layer.draw(t,g)}catch(e){}}
+  /* the words: how to use it, then (a place read) what is there, or (nothing read) what is happening and how fresh it is */
   function hud(){
-    var head='the Earth now, '+(camOn?'its weather, satellites and cameras':'its weather and satellites')+' as layers below: turn it, tap anything',
+    var head='drag to turn · tap a place or a name',
       cam=camOn&&LIVEW.layer.open()?LIVEW.layer.hud():'';
     if(cam)return head+'\n'+cam;
-    var b=wxHud(),xs=[];if(LY.sats&&!probe){var o=ORBIT.layer.hud();if(o)xs.push(o)}if(camOn&&!probe){var o2=LIVEW.layer.hud();if(o2)xs.push(o2)}
-    return head+(b?'\n'+b:'')+(xs.length?'\n'+xs.join('\n'):'')}
+    var b=wxHud();if(probe)return b||head;
+    /* (on the site: how many cameras are on the air, and how to watch one) */
+    var cm=camOn?LIVEW.layer.hud():'';
+    return head+(b?'\n'+b:'')+(cm?'\n'+cm:'')}
   function wxHud(){
     var w=LIVE.wind,a=LIVE.aurora,s=LIVE.strikes;if(!w)return LIVE.asked?'reading the wind':'';
     var r=reading();
@@ -333,23 +401,18 @@ var WIND=(function(){
       else if(r.near)l3=r.near+' lightning flash'+(r.near>1?'es':'')+' within 300 km';
       else l3='NOAA GFS, '+stampUTC(w.asOf);
       return l1+'\n'+l2+'\n'+l3}
-    var l1='wind of '+stampUTC(w.asOf)+' · up to '+Math.round(w.max*3.6)+' km/h · NOAA GFS',l3=[],l4=[];
-    if(a)l3.push('aurora '+(a.max<10?'quiet':a.max<30?'low':a.max<60?'active':'strong')+' '+Math.round(a.max)+'%');
-    if(s)l3.push(s.list.length.toLocaleString('en-US')+' flashes of lightning to '+stampUTC(s.asOf).replace(/^\d+ \w+ /,'').replace(' UTC',''));
-    if(FR.length)l4.push(FR.length+' fires seen from orbit');if(ST.length)l4.push(ST.length===1?'tropical storm '+ST[0].s.name:ST.length+' tropical storms');
-    if(CLOUD.img&&GLOBE.hasCloud()&&LY.clouds)l4.push('clouds of '+stampUTC(CLOUD.at).replace(/^\d+ \w+ /,''));
-    if(RAIN.img&&GLOBE.hasRain()&&LY.rain)l4.push(RAIN.at?'rain of '+stampUTC(RAIN.at).replace(/^\d+ \w+ /,''):'rain, the latest');
-    var X=typeof WX!=='undefined'?WX:{},on=[LY.jet&&X.jet?'jet streams':'',LY.heat&&X.t2m?'temperature':'',LY.pressure&&X.mslp?'pressure':'',LY.waves&&X.wave?'waves':''].filter(Boolean);
-    if(on.length)l4.push(on.join(', ')+': NOAA GFS of '+stampUTC(X.at).replace(/^\d+ \w+ /,''));
-    return l1+(l3.length?'\n'+l3.join(' · '):'')+(l4.length?'\n'+l4.join(' · '):'')}
+    /* nothing read: two short lines, what is happening now and how fresh the weather is (each layer says its own age in the list of layers) */
+    var n=[];if(ST.length)n.push(ST.length===1?'1 storm':ST.length+' storms');if(FR.length)n.push(FR.length.toLocaleString('en-US')+' fires');
+    if(s&&s.list.length)n.push(s.list.length.toLocaleString('en-US')+' flashes of lightning');if(a&&a.max>=30)n.push('aurora '+(a.max<60?'active':'strong'));
+    return (n.length?'now: '+n.join(' · ')+'\n':'')+'weather of '+stampUTC(w.asOf)}
   /* the hint: one finger turns the globe a little, one way and then the other; then it taps a place */
   function ghost(t){var u=(t*.1)%1,R=g.R,dir=Math.floor(t*.1)%2?1:-1;
     if(u<.3){var e=smooth(u/.3);return [{x:g.cx+dir*R*(.4-.8*e),y:g.cy+R*.12*Math.sin(e*3.1)}]}
     if(u>.46&&u<.5)return [{x:g.cx-dir*R*.22,y:g.cy-R*.28}];
     return [null]}
-  return {enter:enter,leave:leave,resize:resize,down:down,move:move,up:up,gesture:gesture,wheel:wheel,key:key,seq:seq,step:step,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
+  return {nowGo:function(i){nowGo(NOWL[i])},zoomBy:zoomBy,nowList:function(){return NOWL.map(function(x){return x.k+':'+x.n})},enter:enter,leave:leave,resize:resize,down:down,move:move,up:up,gesture:gesture,wheel:wheel,key:key,seq:seq,step:step,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
     dbg:function(){return {ok:!!(P&&dye),byte8:byte8,dw:dw,dh:dh,wind:!!windT,aurora:!!aurT,strikes:SK.length,flashes:flashes.length,ready:GLOBE.ready(),lat0:lat0,lon0:lon0,R:g.R,cx:g.cx,cy:g.cy,zoom:zoom,turned:turned,
-      LY:LY,lyr:!$('lyr').hidden,cams:camOn,fly:!!FLY,probe:probe?{lat:probe.lat,lon:probe.lon,ghost:probe.ghost,r:reading()}:null,vis:SK.filter(function(k){return k.p[2]>.3}).length,fires:FR.length,fireGL:fireN,storms:ST.map(function(k){return {name:k.s.name,lat:k.s.lat,lon:k.s.lon,x:k.p[0],y:k.p[1],z:k.p[2]}}),foc:!!FOC,
+      LY:LY,lyr:!!(lyBtn&&!$('nowr').hidden),lys:lyOn,now:NOWL.map(function(x){return x.k+':'+x.n}),cams:camOn,fly:!!FLY,probe:probe?{lat:probe.lat,lon:probe.lon,ghost:probe.ghost,r:reading()}:null,vis:SK.filter(function(k){return k.p[2]>.3}).length,fires:FR.length,fireGL:fireN,storms:ST.map(function(k){return {name:k.s.name,lat:k.s.lat,lon:k.s.lon,x:k.p[0],y:k.p[1],z:k.p[2]}}),foc:!!FOC,
       fireAt:FR.filter(function(k){return k.p[2]>.3}).slice(0,3).map(function(k){return {x:k.p[0],y:k.p[1],frp:k.f.frp}})}},
     windAt:windAt,
     look:function(la,lo,zm){FOC=null;FLY=null;lat0=la;lon0=lo;if(zm){zoom=zm;geo()}idle=-1e6;vlon=vlat=0},
