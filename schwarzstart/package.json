@@ -1,0 +1,8 @@
+{
+  "name": "schwarzstart",
+  "private": true,
+  "version": "1.0.0",
+  "description": "SCHWARZSTART · Berlin: browser third-person shooter with real multiplayer on Cloudflare Durable Objects",
+  "scripts": { "dev": "wrangler dev", "deploy": "wrangler deploy" },
+  "devDependencies": { "wrangler": "^4.0.0" }
+}

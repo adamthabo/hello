@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>SCHWARZSTART · Berlin</title>
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/ui.css">
+<script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
+</head>
+<body>
+<div id="app">
+  <canvas id="c"></canvas>
+  <canvas id="ov"></canvas>
+
+  <div id="hud" class="hidden">
+    <div id="fps" class="hidden">--</div>
+    <div id="netN"></div>
+    <div id="mm"><canvas id="mmc" width="264" height="264"></canvas><div id="mmN">N</div></div>
+    <div id="loc"><b id="locS"></b><span id="locD"></span></div>
+    <div id="obj"><i></i><div><b id="objT"></b><span id="objS"></span></div></div>
+    <div id="top">
+      <button class="ib" data-open="map" aria-label="Map"><svg viewBox="0 0 24 24"><path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20z M9 4v13.5 M15 6.5V20"/></svg></button>
+      <button class="ib" data-open="inv" aria-label="Gear"><svg viewBox="0 0 24 24"><path d="M6 8h12l1.5 12h-15z M9 8V6a3 3 0 0 1 6 0v2 M4.8 13h14.4"/></svg></button>
+      <button class="ib" data-open="menu" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M4 7h16 M4 12h16 M4 17h16"/></svg></button>
+    </div>
+    <div id="cross"><i></i><i></i><i></i><i></i><b></b><u id="lock"></u></div>
+    <div id="hitm"></div>
+    <div id="hurtdir"><i></i></div>
+    <div id="vit">
+      <div id="lvl">1</div>
+      <div id="bars"><div id="armB"><i></i></div><div id="hpB"><i></i></div><div id="xpB"><i></i></div></div>
+      <div id="ammo"><b id="amMag">30</b><span id="amRes">180</span><em id="amName"></em></div>
+    </div>
+    <div id="toasts"></div>
+    <div id="banner"><div id="bT"></div><div id="bS"></div></div>
+    <button id="prompt" class="hidden" data-act="use"><kbd>F</kbd><div><b id="prT"></b><span id="prS"></span></div><i id="prP"></i></button>
+    <div id="hint" class="hidden"></div>
+    <div id="pad">
+      <div id="joy"><i></i></div>
+      <button class="tb big" id="bFire" data-act="fire">FIRE</button>
+      <button class="tb" id="bAim" data-act="aim">AIM</button>
+      <button class="tb" id="bCover" data-act="cover">COVER</button>
+      <button class="tb" id="bReload" data-act="reload">RELOAD</button>
+      <button class="tb" id="bSwap" data-act="swap">SWAP</button>
+      <button class="tb" id="bRoll" data-act="roll">ROLL</button>
+      <button class="tb sk" id="bS1" data-act="s1"><span>PULSE</span><kbd>Q</kbd><i></i></button>
+      <button class="tb sk" id="bS2" data-act="s2"><span>TURRET</span><kbd>E</kbd><i></i></button>
+      <button class="tb sk" id="bNade" data-act="nade"><span>BOMB</span><kbd>G</kbd><b></b><i></i></button>
+      <button class="tb sk" id="bKit" data-act="kit"><span>KIT</span><kbd>H</kbd><b></b><i></i></button>
+    </div>
+  </div>
+
+  <div id="fade"></div>
+
+  <div id="title" class="screen">
+    <div class="tin">
+      <div class="kick" id="kick">NOTBETRIEB BERLIN · WINTER</div>
+      <h1>SCHWARZ<wbr>START</h1>
+      <div class="sub">BERLIN</div>
+      <p class="prem" id="prem">Eleven days after the grid went down, Berlin is dark and frozen. What is left of the city government holds Museumsinsel. You are a Lotse, one of the linemen, medics and track walkers who keep the last lights on. Take the city back one Kiez at a time: power, water, heat, signal, rail.</p>
+      <div id="load"><i></i></div>
+      <div id="loadT">Loading the city</div>
+      <div class="cta"><button id="btnStart" class="pill hot hidden">Begin the shift</button><button id="btnNew" class="pill hidden">New Lotse</button></div>
+      <div id="modes" class="hidden">
+        <div class="mh"><span>Spielmodi</span></div>
+        <div class="mgrid" id="mgrid"></div>
+        <div class="mroom"><label><span>Raum</span><input id="mRoom" maxlength="24" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done"></label><label><span>Dein Name</span><input id="mName" maxlength="16" autocomplete="off" spellcheck="false" enterkeyhint="done"></label></div>
+        <p class="fine dim" id="mNote"></p>
+      </div>
+      <p class="fine" id="ctl"></p>
+      <p class="fine dim">An original game. Built with Claude and three.js. Continues from Der Plakatschreiber.</p>
+    </div>
+  </div>
+
+  <div id="panel" class="screen hidden">
+    <div class="phead"><div class="tabs" id="tabs"></div><button class="ib" id="pClose" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12 M18 6 6 18"/></svg></button></div>
+    <div class="pbody" id="pMap"><canvas id="mapc"></canvas><div id="mapCard" class="hidden"></div><div id="mapLeg"></div></div>
+    <div class="pbody" id="pInv"></div>
+    <div class="pbody" id="pNet"></div>
+    <div class="pbody" id="pOps"></div>
+    <div class="pbody" id="pAgent"></div>
+    <div class="pbody" id="pMenu"></div>
+  </div>
+  <div id="err" class="hidden"></div>
+</div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
