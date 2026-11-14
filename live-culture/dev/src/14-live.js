@@ -89,8 +89,11 @@ var LIVEW=(function(){
           onError:function(){var c=CAMS[cur];if(c){bad[c.id]=FT;if(ST[c.id])ST[c.id].id=''}stat='off';statT=FT}}})}catch(e){ytFail=true}}
   function arrive(){if(!reduce)tone('bowl',pent(2,52),.3,0)}
   /* ---- the window: in the corner of the stage above the music and the layers, sixteen by nine; tapped, across the top of the stage ---- */
-  function winOpen(){if(!el)return;el.hidden=false;document.body.classList.add('camw');var b=$e('vidc');if(b)b.hidden=false;ctlWire()}
-  function winClose(){cur=-1;seq++;stat='';fade(false);try{if(player)player.pauseVideo()}catch(e){}if(el){el.hidden=true;el.classList.remove('tap')}document.body.classList.remove('camw');big=false;var b=$e('vidc');if(b)b.hidden=true}
+  /* (14 Nov: the kinds of camera shown only while a camera is open: they choose which cameras west and east go through, and the row
+     took room from the Earth the rest of the time) */
+  function thRow(v){var r=$e('themes');if(!r||r.hidden===!v)return;r.hidden=!v;try{layout();WIND.resize()}catch(e){}}
+  function winOpen(){if(!el)return;el.hidden=false;document.body.classList.add('camw');var b=$e('vidc');if(b)b.hidden=false;ctlWire();thRow(true)}
+  function winClose(){cur=-1;seq++;stat='';fade(false);try{if(player)player.pauseVideo()}catch(e){}if(el){el.hidden=true;el.classList.remove('tap')}document.body.classList.remove('camw');big=false;var b=$e('vidc');if(b)b.hidden=true;thRow(false)}
   /* the window (14 Nov): as wide as the stage on a phone, sixteen by nine (YouTube's player will not play smaller than 200 pixels), at the
      foot of the stage with its three buttons above it; on a wide screen in the corner. A tap on it now reaches the player itself */
   function winGeo(){var w,h,wide=STG.w>=640;if(wide){w=clamp(STG.w*.4,356,640);h=w*9/16;win.x=STG.x1-w-12;win.y=STG.y1-h-12}else{w=Math.max(200,STG.w-16);h=Math.max(200*9/16,w*9/16);if(h<200&&STG.h>320)h=Math.min(200,STG.h*.45);win.x=STG.x0+(STG.w-w)/2;win.y=STG.y1-h-8}
@@ -122,7 +125,7 @@ var LIVEW=(function(){
   /* ---- the layer: switched on and off from the Earth's row of layers; it reads the cameras, the Earth's turn and taps from there ---- */
   function layerOn(v){
     on=!!v;el=$e('vid');box=$e('vidbox');img=$e('vidi');var r=$e('themes');
-    if(on){camsLoad();themesBuild();if(r)r.hidden=false;primeTheme()}else{winClose();if(r)r.hidden=true}}
+    if(on){camsLoad();themesBuild();primeTheme()}else{winClose();if(r)r.hidden=true}}
   function tick(dt,g){
     var now=Date.now(),c=CAMS[cur];if(c)winGeo();
     sunI=AS.sun(now);AS.llv(sunI.sublat,sunI.sublon,sunV);

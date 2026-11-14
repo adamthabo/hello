@@ -4,9 +4,9 @@
    The bass rolls the water from below, the balafon and kora drip their notes into it as a score.
    Given a photo, the photo is the ink: smear it, and it slowly remembers itself.
    It is also a machine to build in, and a game. Smoke rises (warm ink is light). Walls stop the water and the ink; a fan
-   pushes the water one way for as long as it stands (and breathes ink); a prism gives the smoke that passes
-   through it its own colour; a drain swallows ink and draws the water in; a tunnel takes the smoke that goes into one end out of the
-   other. Two fingers turning make a whirlpool; two fingers closing pull the water in, opening throw it out.
+   pushes the water one way for as long as it stands (and breathes ink); a drain swallows ink and draws the water in. (The prism
+   and the tunnel went on 14 Nov: "Get rid of tunnel prism and things that don't do anything"; their passes stay, the game's
+   finger uses the tunnel's.) Two fingers turning make a whirlpool; two fingers closing pull the water in, opening throw it out.
    The game: push the smoke. Vents at the foot of a tank of fixed shape (so it plays the same on any screen) pour coloured smoke up;
    a ring waits where the smoke does not go by itself, and a finger pushes the water (no ink) to bring the smoke through it; the
    ring fills with its own colour only. So many rings in so many seconds a round, each round faster; the best score kept.
@@ -24,7 +24,7 @@ var DRIFT=(function(){
        GM: the round, the rings it asks for and has, the seconds left (by the water's own clock, so a slow phone is not a harder one),
        the score, the best (kept in this browser), the phase (intro, play, won, over) and when it began, the rings' bursts */
     PZ=-1,pzWon=0,FIXDT=0,SAVED=null,
-    GM={round:0,need:0,got:0,left:0,score:0,best:0,phase:'',phT:0,fx:[],cols:[],lastX:.5,lastC:-1},
+    GM={round:0,need:0,got:0,left:0,score:0,best:0,phase:'',phT:0,fx:[],cols:[],lastX:.5,lastC:-1,combo:0,lastT:-99,ringN:0,drain:null,cur:null},
     RUN=0,TANK=0,TANK0=6,RT=0,EMPTYT=-1,OUTT=0,
     rb=null,rbBuf=null,rbW=0,rbH=0,rbT=0,rbS=0,rbOk=false,simT=0,NOWIN=false,TRACE=null,REC=null,NODRAW=false,want=0,bdrag={},VQ=[],FASTDYE=false,FQ=[],FM=[],GV={};
   /* the five notes of the scale as five inks: E cyan, G green, A amber, B rose, D violet */
@@ -155,25 +155,38 @@ var DRIFT=(function(){
      the third round and a third from the fifth (a ring wants its own colour: the others spoil it), drifting rings from the fourth, a
      wall in the way from the sixth. A tap blows the smoke away from it. Time running out ends the game; the best score is kept. ===== */
   var VENTX=[[.5],[.28,.72],[.2,.5,.8]],VCOL=[0,2,3];
+  /* (14 Nov: "game is getting better. Needs more") each round from the second brings something: gold rings worth three, a second
+     colour, rings that move, a drain that swallows smoke, a wall, a current across the tank, two rings at once; and rings filled
+     close together count double, treble and up to five times (a combo) */
   function gmPlan(n){var k=n<3?1:n<5?2:3;return {need:Math.min(8,3+Math.floor((n-1)/2)),secs:Math.max(18,34-2*n),cols:VCOL.slice(0,k),
-    r:Math.max(.7,1.25-.06*(n-1)),drift:n>=4?Math.min(.2,.07+.02*(n-4)):0,wall:n>=6}}
+    r:Math.max(.7,1.25-.06*(n-1)),drift:n>=4?Math.min(.2,.07+.02*(n-4)):0,wall:n>=6,gold:n>=2,drain:n>=5,cur:n>=7,two:n>=8}}
+  var NEWS={2:['GOLD RINGS','a gold ring is worth three: fill it before it fades'],3:['TWO COLOURS','each ring wants its own colour'],
+    4:['MOVING RINGS','the rings move: follow them'],5:['A DRAIN','the drain swallows smoke: steer around it'],6:['A WALL','a wall in the way: go round it'],
+    7:['A CURRENT','a current across the tank pushes the smoke sideways'],8:['TWO AT ONCE','two rings at once: one of each colour']};
   function gmPlace(){var n=GM.cols.length,X=VENTX[n-1];FIX.walls=tank();
     FIX.fans=GM.cols.map(function(c,i){return {x:bx(X[i]),y:by(.955),dx:0,dy:-1,c:c,fixed:1,ph:0,a0:-Math.PI/2,sa:0,sp:4,u:X[i]}});
     if(GM.wall){var w=GM.wall;FIX.walls.push([bx(w[0]),by(w[1]),bx(w[2]),by(w[3]),1])}
-    FIX.drains=[];FIX.prisms=[];obsDirty=true}
+    FIX.drains=GM.drain?[{x:bx(GM.drain[0]),y:by(GM.drain[1]),ph:0,fixed:1}]:[];FIX.prisms=[];obsDirty=true}
   /* a ring somewhere the smoke will not reach by itself: off its vent's column, in the upper two thirds (under the top, where the smoke
-     is let out), not where the last one was */
-  function gmRing(){var P=gmPlan(GM.round),c,x,y,k,best=null,bs=-1,X=VENTX[GM.cols.length-1];
-    c=GM.cols.length>1?GM.cols.filter(function(q){return q!==GM.lastC})[Math.floor(Math.random()*(GM.cols.length-1))]:GM.cols[0];GM.lastC=c;
-    var vx=X[GM.cols.indexOf(c)];
-    for(k=0;k<24;k++){x=.14+.72*Math.random();y=.24+.38*Math.random();var sc=Math.min(Math.abs(x-vx),.4)+.6*Math.min(Math.abs(x-GM.lastX),.4)-(GM.wall&&Math.abs(y-GM.wall[1])<.08?1:0);
-      if(Math.abs(x-vx)<.2)sc-=1;if(sc>bs){bs=sc;best=[x,y]}}
-    GM.lastX=best[0];var dm=P.drift?(Math.random()<.5?-1:1)*P.drift:0;
-    CUPS=[{x:bx(best[0]),y:by(best[1]),x0:best[0],y0:best[1],mx:dm&&best[0]+dm>.1&&best[0]+dm<.9?dm:-dm,my:0,mp:5+Math.random()*2,c:c,fill:0,match:0,done:false,r:P.r,t0:RT}];
-    moveParts()}
+     is let out), not where the last one was, nor by the drain, the wall or the other ring; its colour one the other ring has not got */
+  function gmRingNew(others,plain){var P=gmPlan(GM.round),x,y,k,best=null,bs=-1,X=VENTX[GM.cols.length-1],oc=others.map(function(o){return o.c});
+    var cs2=GM.cols.filter(function(q){return oc.indexOf(q)<0});if(cs2.length>1)cs2=cs2.filter(function(q){return q!==GM.lastC});if(!cs2.length)cs2=GM.cols;
+    var c=cs2[Math.floor(Math.random()*cs2.length)];GM.lastC=c;var vx=X[GM.cols.indexOf(c)];
+    for(k=0;k<32;k++){x=.14+.72*Math.random();y=.24+.38*Math.random();var sc=Math.min(Math.abs(x-vx),.4)+.6*Math.min(Math.abs(x-GM.lastX),.4)-(GM.wall&&Math.abs(y-GM.wall[1])<.08?1:0);
+      if(Math.abs(x-vx)<.2)sc-=1;if(GM.drain&&Math.hypot(x-GM.drain[0],y-GM.drain[1])<.2)sc-=1;
+      others.forEach(function(o){if(Math.hypot(x-o.x0,y-o.y0)<.28)sc-=1});if(sc>bs){bs=sc;best=[x,y]}}
+    GM.lastX=best[0];var dm=P.drift?(Math.random()<.5?-1:1)*P.drift:0;GM.ringN++;
+    return {x:bx(best[0]),y:by(best[1]),x0:best[0],y0:best[1],mx:dm&&best[0]+dm>.1&&best[0]+dm<.9?dm:-dm,my:0,mp:5+Math.random()*2,c:c,fill:0,match:0,done:false,r:P.r,t0:RT,
+      gold:!plain&&P.gold&&GM.ringN%4===0,life:9}}
+  function gmRing(){var P=gmPlan(GM.round);CUPS=[];CUPS.push(gmRingNew([]));if(P.two&&GM.cols.length>1)CUPS.push(gmRingNew(CUPS));moveParts()}
+  /* a ring filled (or a gold one faded) gives way to a new one, the other ring left as it is */
+  function gmRingSwap(cp,plain){var o=CUPS.filter(function(q){return q!==cp}),n=gmRingNew(o,plain),i=CUPS.indexOf(cp);if(i>=0)CUPS[i]=n;else CUPS.push(n);moveParts()}
   /* a round: its plan, the vents for its colours, a moment to read what it asks, then the smoke */
-  function gmRound(n){var P=gmPlan(n);GM.round=n;GM.need=P.need;GM.got=0;GM.left=P.secs;GM.cols=P.cols;GM.lastC=-1;
+  function gmRound(n){var P=gmPlan(n);GM.round=n;GM.need=P.need;GM.got=0;GM.left=P.secs;GM.cols=P.cols;GM.lastC=-1;GM.combo=0;GM.lastT=-99;
     GM.wall=P.wall?(function(){var y=.38+.2*Math.random(),x=.25+.3*Math.random();return [x,y,x+.22+.1*Math.random(),y+(Math.random()-.5)*.12]})():null;
+    /* the drain between two vents' columns, under the rings; the current across the middle, one way or the other */
+    GM.drain=P.drain?[(Math.random()<.5?.35:.65)+(Math.random()-.5)*.06,.5+.12*Math.random()]:null;
+    GM.cur=P.cur?{y:.34+.18*Math.random(),dir:Math.random()<.5?-1:1}:null;
     gmPlace();CUPS=[];RUN=0;RT=0;GM.phase='intro';GM.phT=simT;clearInk=true;rbS=simT;toolsSync()}
   function gmStart(){if(PZ<0)SAVED={w:WALLS,f:FANS,d:DRAINS,p:PRISMS,t:TUNNELS};WALLS=[];FANS=[];DRAINS=[];PRISMS=[];TUNNELS=[];
     PZ=0;pzWon=0;TOOL='ink';GM.best=bestGet();GM.score=0;GM.fx=[];boardFit();TANK=TANK0=1e9;gmRound(1);
@@ -185,15 +198,19 @@ var DRIFT=(function(){
   /* the game's own clock, the water's time: the intro, then the round's seconds running down */
   function gmClock(dt){if(PZ<0)return;var e=simT-GM.phT;RT+=dt;
     if(GM.phase==='intro'&&e>1.8){GM.phase='play';GM.phT=simT;RUN=1;RT=0;gmRing();chord([64,71,76],.3,'marimba')}
-    else if(GM.phase==='play'){GM.left=Math.max(0,GM.left-dt);if(GM.left<=0)gmOver()}
+    else if(GM.phase==='play'){GM.left=Math.max(0,GM.left-dt);if(GM.left<=0){gmOver();return}
+      /* a gold ring not filled in time fades, and a plain one takes its place */
+      for(var gi=0;gi<CUPS.length;gi++){var gc=CUPS[gi];if(gc.gold&&!gc.done&&RT-gc.t0>gc.life){gmRingSwap(gc,true);break}}}
     else if(GM.phase==='won'&&e>2.2)gmRound(GM.round+1)}
   function gmOver(){GM.phase='over';GM.phT=simT;RUN=0;CUPS=[];
     var nb=GM.score>GM.best;if(nb){GM.best=GM.score;bestSet()}GM.newBest=nb&&GM.score>0;chord([52,59,62],.32,'vibes');toolsSync()}
   /* a ring filled: a burst of its colour, a point, a rising chord; the round won when it has its rings */
-  function gmRingDone(cp){GM.got++;GM.score++;GM.fx.push({x:cp.x,y:cp.y,t:simT,c:cp.c});
+  function gmRingDone(cp){GM.combo=simT-GM.lastT<4?Math.min(5,GM.combo+1):1;GM.lastT=simT;var pts=(cp.gold?3:1)*GM.combo;
+    GM.got++;GM.score+=pts;GM.fx.push({x:cp.x,y:cp.y,t:simT,c:cp.c,txt:'+'+pts+(cp.gold?' GOLD':'')+(GM.combo>1?' · ×'+GM.combo:'')});
     for(var k=0;k<14;k++){var a=k/14*TAU;push(WX(cp.x)+Math.cos(a)*8,WY(cp.y)+Math.sin(a)*8,Math.cos(a)*700*KS(),Math.sin(a)*700*KS(),INK[cp.c],.35,.0007*KR())}
     var up=[[64,67,71],[67,71,74],[71,74,78],[74,78,81]][Math.min(3,GM.got-1)];chord(up,.36,'marimba');
-    if(GM.got>=GM.need){GM.phase='won';GM.phT=simT;RUN=0;CUPS=[];chord([64,71,76,83],.34,'vibes');toolsSync()}else gmRing()}
+    if(cp.gold)chord([76,83,88],.3,'glock');
+    if(GM.got>=GM.need){GM.phase='won';GM.phT=simT;RUN=0;CUPS=[];chord([64,71,76,83],.34,'vibes');toolsSync()}else gmRingSwap(cp)}
   /* a few notes at once, a little rolled, on a real instrument when its sounds are here (glass otherwise) */
   function chord(ms,v,bank){var c=AU.c;if(!c||!soundLive())return;var t=c.currentTime+.01;
     ms.forEach(function(m,i){var nt=SND.note(bank,m);if(nt&&toyOk())toyPlay(nt.b,nt.rate,v,(i-1)*.3,t+i*.045);else tone('glass',m,v*.8,(i-1)*.3,t+i*.045)})}
@@ -265,9 +282,7 @@ var DRIFT=(function(){
   var TOOLS=[['ink','hand','<path d="M6 13.5c-1.6-1.8-.9-3.9.6-5.4L10 4.8c.6-.6 1.5-.5 2 .1.4.5.3 1.2-.1 1.7l-1.3 1.4 2.1-2c.6-.6 1.4-.6 1.9 0 .5.5.4 1.3-.1 1.8l-2.2 2.2 1.4-1.3c.5-.5 1.3-.5 1.8 0s.4 1.3-.1 1.8l-3.4 3.4c-1.8 1.8-4.3 2-6 .2z"/>'],
     ['wall','wall','<path d="M3 15.5L15.5 3"/><circle cx="3" cy="15.5" r="1.4"/><circle cx="15.5" cy="3" r="1.4"/>'],
     ['fan','fan','<circle cx="9.2" cy="9.2" r="1.6"/><path d="M9.2 7.6c0-3 1.4-4.6 3.2-4.2 1.5.4 1.4 2.6-1.5 4.6M10.8 9.2c3 0 4.6 1.4 4.2 3.2-.4 1.5-2.6 1.4-4.6-1.5M9.2 10.8c0 3-1.4 4.6-3.2 4.2-1.5-.4-1.4-2.6 1.5-4.6M7.6 9.2c-3 0-4.6-1.4-4.2-3.2.4-1.5 2.6-1.4 4.6 1.5"/>'],
-    ['prism','prism','<path d="M9.2 2.4l5.9 3.4v6.8l-5.9 3.4-5.9-3.4V5.8z"/><path d="M9.2 2.4v13.6"/>'],
     ['drain','drain','<circle cx="9.2" cy="9.2" r="6.4"/><path d="M9.2 5.4a3.8 3.8 0 1 1-3.6 2.6M9.2 7.8a1.4 1.4 0 1 1-1.3 1.9"/>'],
-    ['tunnel','tunnel','<circle cx="4.2" cy="13.8" r="2.3"/><circle cx="14.2" cy="4.6" r="2.3"/><path d="M5.6 11.9C6.6 7.6 9.4 5.6 11.9 5"/>'],
     ['puz','play','<path d="M5.4 3.6l9.4 5.6-9.4 5.6z"/>'],
     ['undo','free','<path d="M3.4 14.8c2-3.6 4.2-.2 6.2-3.6s4.2-.6 5.8-3.6M4.2 6.6c1.6-2.4 3.4-.4 5-2.6"/>']];
   var PLAYI=['<path d="M5.4 3.6l9.4 5.6-9.4 5.6z"/>','<path d="M14.6 7.4A5.8 5.8 0 1 0 15 11.6M15 3.6v3.8h-3.8"/>'];
@@ -320,6 +335,8 @@ var DRIFT=(function(){
       frl=lv?Math.min(FIXDT||dt,1/45)*60:fr;
     if(lv)moveParts();
     FANS.forEach(function(f){if(idle)return;f.ph+=dt*9;push(WX(f.x)+f.dx*10,WY(f.y)+f.dy*10,f.dx*820*ks,f.dy*820*ks,INK[f.c]||INK[0],PZ>=0||f.c<0?0:.05*fr,.0009*kr)});
+    /* a current across the tank (from round 7): the water pushed one way along a band */
+    if(lv&&RUN&&GM.cur){var cuy=WY(by(GM.cur.y));for(var cq=0;cq<3;cq++)push(WX(bx(.18+.32*cq)),cuy,GM.cur.dir*230*ks,0,[0,0,0],0,.006)}
     /* in the game a finger takes the stream of the vent it came down nearest to, and the vent turns its stream towards the finger
        wherever it goes (14 Nov, measured: a finger alone could not bend a stream far enough, or keep it bent, to fill a ring) */
     if(lv&&FIX.fans.length){var aim={};for(i=0;i<ps.length;i++){var pq=ps[i];if(!pq.down||pq.ghost)continue;var nv=GV[pq.id];
@@ -461,10 +478,19 @@ var DRIFT=(function(){
       c.fillStyle=s+(.07+.05*cp.fill).toFixed(3)+')';c.beginPath();c.arc(x,y,rr,0,TAU);c.fill();
       c.strokeStyle=s+(cp.done?'1)':'.85)');c.lineWidth=cp.done?2.6:2;c.setLineDash(cp.c==='mix'?[3,4]:[]);c.beginPath();c.arc(x,y,rr*pu,0,TAU);c.stroke();c.setLineDash([]);
       c.lineWidth=4;c.strokeStyle=s+'.95)';c.beginPath();c.arc(x,y,rr+7,-Math.PI/2,-Math.PI/2+TAU*cp.fill);c.stroke();
-      if(cp.done){c.fillStyle=s+(.18+.1*Math.sin(t*.006)).toFixed(3)+')';c.beginPath();c.arc(x,y,rr,0,TAU);c.fill()}});
+      if(cp.done){c.fillStyle=s+(.18+.1*Math.sin(t*.006)).toFixed(3)+')';c.beginPath();c.arc(x,y,rr,0,TAU);c.fill()}
+      if(cp.gold&&!cp.done){var gl=clamp(1-(RT-cp.t0)/cp.life,0,1);c.strokeStyle='rgba(255,201,74,.95)';c.lineWidth=2.4;c.beginPath();c.arc(x,y,rr*pu+3,0,TAU);c.stroke();
+        c.lineWidth=2;c.strokeStyle='rgba(255,201,74,.6)';c.beginPath();c.arc(x,y,rr+13,-Math.PI/2,-Math.PI/2+TAU*gl);c.stroke();
+        for(k=0;k<4;k++){var ga=t*.002+k*TAU/4,gx=x+Math.cos(ga)*(rr+13),gy=y+Math.sin(ga)*(rr+13);c.fillStyle='rgba(255,230,160,.9)';c.beginPath();c.arc(gx,gy,1.6,0,TAU);c.fill()}
+        c.save();c.textAlign='center';c.fillStyle='rgba(255,201,74,.95)';c.font='500 9px "JetBrains Mono", ui-monospace, monospace';c.fillText('×3',x,y-rr-18);c.restore()}});
     /* a ring filled: its light opening out */
-    if(PZ>=0)GM.fx.forEach(function(f){var e=(simT-f.t)/1.2,col=INK[f.c],s=cpre(col);c.strokeStyle=s+(.9*(1-e)).toFixed(3)+')';c.lineWidth=3*(1-e)+1;
-      c.beginPath();c.arc(WX(f.x),WY(f.y),cr*(1+2.4*e),0,TAU);c.stroke()});
+    if(PZ>=0)GM.fx.forEach(function(f){var e=(simT-f.t)/1.2,col=INK[f.c],s=cpre(col);if(e>1.6)return;if(e<=1){c.strokeStyle=s+(.9*(1-e)).toFixed(3)+')';c.lineWidth=3*(1-e)+1;
+      c.beginPath();c.arc(WX(f.x),WY(f.y),cr*(1+2.4*e),0,TAU);c.stroke()}
+      if(f.txt){var ea=clamp(e/1.6,0,1);c.save();c.textAlign='center';c.globalAlpha=1-ea*ea;c.fillStyle=/GOLD/.test(f.txt)?'rgba(255,214,110,1)':'rgba(234,249,255,1)';
+        c.font='800 '+Math.round(Math.min(26,B.w*.07))+'px Anybody, system-ui, sans-serif';c.fillText(f.txt,WX(f.x),WY(f.y)-cr-10-ea*46);c.restore()}});
+    /* the current: chevrons drifting the way it pushes */
+    if(PZ>=0&&GM.cur&&GM.phase!=='over'){var cyy=B.y0+B.h*GM.cur.y,dir=GM.cur.dir;c.save();c.strokeStyle='rgba(234,249,255,.22)';c.lineWidth=1.4;
+      for(k=0;k<7;k++){var u2=((k/7+(t*.00012)*dir)%1+1)%1,xx=B.x0+B.w*(.04+.92*u2);c.beginPath();c.moveTo(xx-dir*5,cyy-6);c.lineTo(xx+dir*3,cyy);c.lineTo(xx-dir*5,cyy+6);c.stroke()}c.restore()}
     if(PZ>=0)gmDraw(c,t);
     c.lineCap='butt'}
   function gmDraw(c,t){var P=gmPlan(GM.round),e=simT-GM.phT,cx=B.x0+B.w/2,cy=B.y0+B.h*.42,k;
@@ -478,11 +504,11 @@ var DRIFT=(function(){
     /* between rounds and at the end: big words in the middle of the tank */
     function big(a,b,al){c.save();c.globalAlpha=al;c.textAlign='center';c.fillStyle='rgba(234,249,255,.96)';c.font='800 '+Math.round(Math.min(46,B.w*.13))+'px Anybody, system-ui, sans-serif';
       c.fillText(a,cx,cy);if(b){c.font='500 '+Math.round(Math.min(14,B.w*.04))+'px "JetBrains Mono", ui-monospace, monospace';c.fillStyle='rgba(234,249,255,.8)';c.fillText(b,cx,cy+28)}c.restore()}
-    if(GM.phase==='intro')big('ROUND '+GM.round,'FILL '+GM.need+' RINGS',smooth(e/.25)*(1-smooth((e-1.5)/.3)));
+    if(GM.phase==='intro')big('ROUND '+GM.round,'FILL '+GM.need+' RINGS'+(NEWS[GM.round]?' · NEW: '+NEWS[GM.round][0]:''),smooth(e/.25)*(1-smooth((e-1.5)/.3)));
     else if(GM.phase==='won'){c.fillStyle='rgba(1,4,10,'+(.35*smooth(e/.4)).toFixed(3)+')';c.fillRect(B.x0,B.y0,B.w,B.h);big('ROUND '+GM.round+' DONE','NEXT: FASTER',smooth(e/.3));
       for(k=0;k<3;k++){var g2=smooth((e-k*.22)/.9);if(g2<=0||g2>=1)continue;c.strokeStyle='rgba(234,249,255,'+(.7*(1-g2)).toFixed(3)+')';c.lineWidth=2;c.beginPath();c.arc(cx,cy,20+g2*B.w*.42,0,TAU);c.stroke()}}
     else if(GM.phase==='over'){c.fillStyle='rgba(1,4,10,'+(.5*smooth(e/.5)).toFixed(3)+')';c.fillRect(B.x0,B.y0,B.w,B.h);
-      big('TIME UP',GM.score+(GM.score===1?' RING':' RINGS')+(GM.newBest?' · NEW BEST':' · BEST '+GM.best),smooth(e/.4))}}
+      big('TIME UP',GM.score+(GM.score===1?' POINT':' POINTS')+(GM.newBest?' · NEW BEST':' · BEST '+GM.best),smooth(e/.4))}}
   function resize(){if(GLX.ok&&P)size()}
   var CN=['cyan','green','amber','rose','violet'];
   function left(n,one,many){return n+' '+(n===1?one:many)}
@@ -494,10 +520,10 @@ var DRIFT=(function(){
   /* the game's words, three lines: what to do, how the round goes, the score */
   function hud(){
     if(PZ>=0){var cp=CUPS[0],secs=Math.ceil(GM.left),tm=Math.floor(secs/60)+':'+('0'+secs%60).slice(-2),best=GM.best?' · best '+GM.best:'';
-      if(GM.phase==='intro')return 'round '+GM.round+': fill '+GM.need+' rings in '+gmPlan(GM.round).secs+' seconds\ntouch a stream and drag it into the ring of its colour\nscore '+GM.score+best;
+      if(GM.phase==='intro')return 'round '+GM.round+': fill '+GM.need+' rings in '+gmPlan(GM.round).secs+' seconds\n'+(NEWS[GM.round]?'new: '+NEWS[GM.round][1]:'touch a stream and drag it into the ring of its colour')+'\nscore '+GM.score+best;
       if(GM.phase==='won')return 'round '+GM.round+' done · next one is faster\n\nscore '+GM.score+best;
-      if(GM.phase==='over')return 'time up · '+GM.score+(GM.score===1?' ring':' rings')+(GM.newBest?', a new best':'')+'\npress again to play again, or free to stop\nscore '+GM.score+best;
-      return 'steer the '+(cp?CN[cp.c]+' smoke into the '+CN[cp.c]+' ring':'smoke into the ring')+'\nround '+GM.round+' · '+GM.got+' of '+GM.need+' rings · '+tm+' left\nscore '+GM.score+best}
+      if(GM.phase==='over')return 'time up · score '+GM.score+(GM.newBest?', a new best':'')+'\npress again to play again, or free to stop\nscore '+GM.score+best;
+      return (CUPS.length>1?'steer each colour into its own ring':'steer the '+(cp?CN[cp.c]+' smoke into the '+CN[cp.c]+' ring':'smoke into the ring'))+(GM.combo>1&&simT-GM.lastT<4?' · combo ×'+GM.combo:'')+'\nround '+GM.round+' · '+GM.got+' of '+GM.need+' rings · '+tm+' left\nscore '+GM.score+best}
     var bt=[[WALLS.length,'wall','walls'],[FANS.length,'fan','fans'],[PRISMS.length,'prism','prisms'],[DRAINS.length,'drain','drains'],[TUNNELS.length,'tunnel','tunnels']].filter(function(a){return a[0]}).map(function(a){return left(a[0],a[1],a[2])}).join(' · ');
     if(PHOTO.has)return 'your photo is the ink: smear it and it remembers itself'+(bt?'\nbuilt: '+bt:'');
     return 'real smoke, worked out as it moves: push it with a finger, tap for a drop\nplay: push the smoke into rings against the clock'+(bt?'\nbuilt: '+bt:'')}
@@ -515,8 +541,8 @@ var DRIFT=(function(){
   function U(x){return PZ>=0?bx(x):(STG.x0+x*STG.w)/VW}function V(y){return PZ>=0?by(y):(STG.y0+y*STG.h)/VH}
   return {enter:enter,leave:leave,resize:function(){resize();pzRelayout();obsDirty=true},down:down,up:up,gesture:gesture,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
     dbg:function(){return {ok:!!(P&&dye),simT:simT,simple:simple,sw:sw,sh:sh,dw:dw,dh:dh,lin:GLX.hfLin,tool:TOOL,pz:PZ,won:!!pzWon,walls:WALLS.length,fans:FANS.length,drains:DRAINS.length,prisms:PRISMS.length,tunnels:TUNNELS.length,wn:WN,
-      game:{round:GM.round,need:GM.need,got:GM.got,left:+GM.left.toFixed(2),score:GM.score,best:GM.best,phase:GM.phase,cols:GM.cols.slice(),wall:!!GM.wall},board:{x0:B.x0,y0:B.y0,w:B.w,h:B.h},run:RUN,rt:RT,
-      cups:CUPS.map(function(c){return {c:c.c,fill:c.fill,match:c.match,done:c.done,x:WX(c.x),y:WY(c.y),r:cupR()*(c.r||1)}}),vents:FIX.fans.map(function(f){return {x:WX(f.x),y:WY(f.y),c:f.c,a:f.a===undefined?-Math.PI/2:f.a}}),fix:{walls:FIX.walls.length,fans:FIX.fans.length,drains:FIX.drains.length,prisms:FIX.prisms.length},rb:rbOk}},
+      game:{round:GM.round,need:GM.need,got:GM.got,left:+GM.left.toFixed(2),score:GM.score,best:GM.best,phase:GM.phase,cols:GM.cols.slice(),wall:!!GM.wall,combo:GM.combo,drain:GM.drain,cur:GM.cur,ringN:GM.ringN},board:{x0:B.x0,y0:B.y0,w:B.w,h:B.h},run:RUN,rt:RT,
+      cups:CUPS.map(function(c){return {c:c.c,fill:c.fill,match:c.match,done:c.done,x:WX(c.x),y:WY(c.y),r:cupR()*(c.r||1),gold:!!c.gold}}),vents:FIX.fans.map(function(f){return {x:WX(f.x),y:WY(f.y),c:f.c,a:f.a===undefined?-Math.PI/2:f.a}}),fix:{walls:FIX.walls.length,fans:FIX.fans.length,drains:FIX.drains.length,prisms:FIX.prisms.length},rb:rbOk}},
     /* for the tests: how much ink there is around a point (pixels), from the last copy read back; and a level by number */
     sample:function(x,y,r){want=1;return sample(x,y,r,null,false)},
     /* for designing levels: what a ring of a colour would get, at each point of an nx by ny grid over the tank (from the last copy read back) */
@@ -539,5 +565,6 @@ var DRIFT=(function(){
       else if(k==='drain')DRAINS.push({x:U(a[0]),y:V(a[1]),ph:0});else if(k==='prism')PRISMS.push({x:U(a[0]),y:V(a[1]),c:a[2],ph:0});
       else if(k==='tunnel')TUNNELS.push({ax:U(a[0]),ay:V(a[1]),bx:U(a[2]),by:V(a[3]),ph:0});obsDirty=true},
     /* the ring in play filled at once, as if the smoke had done it */
-    win:function(){var c=CUPS[0];if(!c||PZ<0||GM.phase!=='play')return;c.fill=1;c.done=true;gmRingDone(c)}}
+    win:function(){var c=CUPS[0];if(!c||PZ<0||GM.phase!=='play')return;c.fill=1;c.done=true;gmRingDone(c)},
+    gold:function(){var c=CUPS[0];if(c){c.gold=true;c.t0=RT}}}
 })();

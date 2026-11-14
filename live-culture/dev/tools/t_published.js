@@ -34,7 +34,7 @@ const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') 
   const lit = i => page.evaluate(i => [...document.querySelectorAll('#mix .mxrow .mxb')][i].classList.contains('on'), i);
   ok(await lit(li), 'a loop tapped (the marimba\'s) comes in on the next bar'); await page.screenshot({ path: 'shots/published_2.png' });
   // Smoke: its tools and its game; the loop set in the mixer is still playing when the mixer is opened again
-  ok(await page.evaluate(() => { document.getElementById('w_smoke').click(); return new Promise(r => setTimeout(() => r(!document.getElementById('tools').hidden && document.querySelectorAll('#tools .tb').length === 8), 900)); }), 'Smoke has its tools');
+  ok(await page.evaluate(() => { document.getElementById('w_smoke').click(); return new Promise(r => setTimeout(() => r(!document.getElementById('tools').hidden && document.querySelectorAll('#tools .tb').length === 6), 900)); }), 'Smoke has its tools');
   s = await look(); ok(s.music === 'true', 'and the music plays on in Smoke');
   await page.click('#t_puz'); await sleep(600); ok(/^round 1: fill 3 rings in \d+ seconds\ntouch a stream and drag it into the ring of its colour/.test(await page.evaluate(() => document.getElementById('data').textContent)) && await page.evaluate(() => document.getElementById('t_puz').firstChild.textContent) === 'again', 'play starts a round, with plain lines of what to do'); await page.screenshot({ path: 'shots/published_round.png' });
   await page.click('#t_undo'); await sleep(300);

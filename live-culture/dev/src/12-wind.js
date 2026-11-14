@@ -110,6 +110,8 @@ var WIND=(function(){
       c.stroke()}
     return c.getImageData(0,0,W,Hh).data}
   function geo(){var y1=STG.y1,cd=PCD&&PCD.on?$('card'):null;if(cd&&!cd.hidden){var ct=cd.getBoundingClientRect().top;if(ct>STG.y0+80&&ct<y1)y1=ct-6}
+    /* the layers' list open: the globe whole above it */
+    if(lyOn){var ls=$('lys');if(ls&&!ls.hidden){var lt=ls.getBoundingClientRect().top;if(lt>STG.y0+60&&lt<y1)y1=lt-6}}
     var h=y1-STG.y0;g.R=Math.min(STG.w,h-10)*.47*zoom;g.cx=STG.cx;g.cy=STG.y0+h/2}
   var LYK=['sats','cams','wind','jet','heat','pressure','waves','clouds','rain','sun'],LYN={sats:'satellites',cams:'cameras'},LYI={
     sats:'<circle cx="8" cy="8" r="2.6"/><ellipse cx="8" cy="8" rx="6.6" ry="2.7" transform="rotate(-24 8 8)"/><circle cx="13.4" cy="4.9" r=".9"/>',
@@ -125,9 +127,12 @@ var WIND=(function(){
     b.innerHTML='<svg viewBox="0 0 16 16" aria-hidden="true">'+LYI[k]+'</svg><span class="lyn"></span><span class="lyd"></span><span class="lyo"></span>';
     b.querySelector('.lyn').textContent=LYN[k]||(k==='jet'?'jet streams':k);b.setAttribute('aria-pressed','true');
     /* the wind near the ground and the jet streams are one smoke or the other */
-    b.addEventListener('click',function(){LY[k]=LY[k]?0:1;if(LY[k]&&k==='jet')LY.wind=0;if(LY[k]&&k==='wind')LY.jet=0;lyKey='';lyrSync(true);tone('glass',pent(LY[k]?11:8,40),.3,0)});r.appendChild(b)});
+    b.addEventListener('click',function(){LY[k]=LY[k]?0:1;if(LY[k]&&k==='jet')LY.wind=0;if(LY[k]&&k==='wind')LY.jet=0;lyKey='';lyrSync(true);tone('glass',pent(LY[k]?11:8,40),.3,0);
+      /* its words, at the top of the list */
+      var w=$('lyw');if(w)w.textContent=(LYN[k]||(k==='jet'?'jet streams':k))+(LY[k]?' on: ':' off: ')+b.querySelector('.lyd').textContent});r.appendChild(b)});
     $('lyX').addEventListener('click',function(){lyOpen(false)})}
-  function lyOpen(v){v=!!v;lyOn=v;var s=$('lys');if(s)s.hidden=!v;if(lyBtn)lyBtn.setAttribute('aria-expanded',v?'true':'false');if(v){lyKey='';lyrSync(true)}}
+  function lyOpen(v){v=!!v;var was=lyOn;lyOn=v;var s=$('lys');if(s)s.hidden=!v;if(lyBtn)lyBtn.setAttribute('aria-expanded',v?'true':'false');if(v){lyKey='';lyrSync(true);var w=$('lyw');if(w&&!was)w.textContent='tap one to switch it on or off'}
+    if(was!==v){geo();if(!$('zm').hidden)zmSync(true)}}
   /* when each layer's picture is of, said in its row */
   function lyWhen(k){var X=typeof WX!=='undefined'?WX:{},t=function(ms){return ms?stampUTC(ms):''};
     return k==='clouds'?t(CLOUD.at):k==='rain'?t(RAIN.at):k==='wind'&&LIVE.wind?'up to '+Math.round(LIVE.wind.max*3.6)+' km/h · '+t(LIVE.wind.asOf):(k==='jet'||k==='heat'||k==='pressure'||k==='waves')&&X.at?t(X.at):
@@ -406,7 +411,10 @@ var WIND=(function(){
     if(s&&s.list.length)n.push(s.list.length.toLocaleString('en-US')+' flashes of lightning');if(a&&a.max>=30)n.push('aurora '+(a.max<60?'active':'strong'));
     return (n.length?'now: '+n.join(' · ')+'\n':'')+'weather of '+stampUTC(w.asOf)}
   /* the hint: one finger turns the globe a little, one way and then the other; then it taps a place */
-  function ghost(t){var u=(t*.1)%1,R=g.R,dir=Math.floor(t*.1)%2?1:-1;
+  function ghost(t){
+    /* (14 Nov) no hints once the Earth has been brought close, or while something is being read or watched, or the layers are open:
+       a ghost finger would turn it away from what is being looked at */
+    if(zoom>1.5||(probe&&!probe.ghost)||lyOn||(camOn&&LIVEW.layer.open()))return [null];var u=(t*.1)%1,R=g.R,dir=Math.floor(t*.1)%2?1:-1;
     if(u<.3){var e=smooth(u/.3);return [{x:g.cx+dir*R*(.4-.8*e),y:g.cy+R*.12*Math.sin(e*3.1)}]}
     if(u>.46&&u<.5)return [{x:g.cx-dir*R*.22,y:g.cy-R*.28}];
     return [null]}

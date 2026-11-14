@@ -87,7 +87,7 @@ const clean = errs => [...new Set(errs)].filter(e => !/youtube\.com|requestfaile
     let s = null; for (let k = 0; k < 40; k++) { await sleep(400); s = await D(); if (s.d.cams && s.d.air[0] > 3) break; }
     ok(s.id === 'earth' && s.hash === '#earth', 'an old link to #live opens the Earth: ' + s.id);
     ok(s.d.on && s.d.cams >= 70 && s.d.themes.length === 8, 'the cameras came from the Worker, in themes: ' + s.d.cams + ' cameras, ' + s.d.themes.join(' '));
-    ok(s.row && s.chips === 'all*,wild,fire,space,city,sea,sky,land,move', 'their themes are a row along the bottom: ' + s.chips);
+    ok(!s.row && s.chips === 'all*,wild,fire,space,city,sea,sky,land,move', 'their themes are a row of their own, shown only while a camera is open (14 Nov): ' + s.chips);
     ok(s.hidden && s.d.cur < 0 && /all the cameras · \d+ of \d+ on the air now · tap a ring to watch/.test(s.data), 'no window until a ring is tapped; the readout counts them: ' + s.data.replace(/\n/g, ' | '));
     await page.screenshot({ path: 'shots/hosted_cams_0.png' });
     const cdp = await ctx.newCDPSession(page);
@@ -96,6 +96,8 @@ const clean = errs => [...new Set(errs)].filter(e => !/youtube\.com|requestfaile
     const tap = async (x, y) => { await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1 }] }); await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); };
     const swipe = async (x0, x1, y) => { await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x0, y, id: 1 }] }); for (let k = 1; k <= 10; k++) { await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x0 + (x1 - x0) * k / 10, y, id: 1 }] }); await sleep(18); } await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); };
     // a ring tapped on the globe: its window opens over the Earth (Starbase's ring, the Earth turned to it)
+    // (a press on the zoom first: a touch of the hand's own stops the hints, whose ghost finger would turn the Earth under the tap)
+    await page.click('#zIn'); await page.click('#zOut');
     await page.evaluate(() => window.__lc.WIND.look(26, -97, 1.1)); await sleep(2500); s = await D();
     const mi = s.d.ids.indexOf('starbase'), mq = s.d.marks[mi];
     if (mq && mq[2] > .3) { for (let k = 0; k < 3 && s.d.cur < 0; k++) { await tap(mq[0], mq[1]); await sleep(600); s = await D(); }
@@ -109,6 +111,7 @@ const clean = errs => [...new Set(errs)].filter(e => !/youtube\.com|requestfaile
     const wb = await page.evaluate(() => { const v = document.getElementById('vidbox').getBoundingClientRect(), c = document.getElementById('vidc'), r = c.getBoundingClientRect(), z = getComputedStyle(document.getElementById('vid')).zIndex, st = getComputedStyle(document.getElementById('stage')).zIndex;
       return { w: v.width, h: v.height, bar: !c.hidden && r.bottom <= v.top + 2 && r.width > 200, btn: [...c.querySelectorAll('button')].map(b => b.textContent).join(), above: +z > +st, pe: getComputedStyle(document.getElementById('vidbox')).pointerEvents }; });
     ok(wb.w >= s.vw - 20 && wb.h >= 200 && wb.bar && wb.btn === 'west,east,close' && wb.above && wb.pe === 'auto', 'the window: the width of the phone, 200 pixels high or more, over the stage and taking taps, its buttons over it: ' + JSON.stringify(wb));
+    ok(await page.evaluate(() => !document.getElementById('themes').hidden), 'with a camera open, its themes along the bottom');
     await page.screenshot({ path: 'shots/hosted_cams_window.png' });
     let wv = s.d.win;
     // to a named camera; the stream address the Worker found is the one played
@@ -145,7 +148,7 @@ const clean = errs => [...new Set(errs)].filter(e => !/youtube\.com|requestfaile
     // the cameras' layer switched off: rings, themes and window gone
     await page.evaluate(() => window.__lc.LIVEW.go('monterey')); await sleep(800); await page.evaluate(() => document.getElementById('l_cams').click()); await sleep(500); s = await D();
     ok(!s.d.on && s.hidden && !s.row, 'the cameras\' layer put away takes its rings, its themes and its window with it');
-    await page.evaluate(() => document.getElementById('l_cams').click()); await sleep(500); s = await D(); ok(s.d.on && s.row, 'and back');
+    await page.evaluate(() => document.getElementById('l_cams').click()); await sleep(500); s = await D(); ok(s.d.on && !s.row, 'and back (its themes wait for a camera to be opened)');
     // leaving the Earth closes the window
     await page.evaluate(() => window.__lc.LIVEW.go('monterey')); await sleep(800); await page.evaluate(() => window.__lc.go(0, true)); await sleep(400); s = await D();
     ok(s.hidden && !s.row, 'leaving the Earth hides the window and the themes');

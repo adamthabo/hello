@@ -22,7 +22,7 @@ const size = process.argv[2] || 'phone';
   { const r = await page.evaluate(() => { const t = document.getElementById('tools').getBoundingClientRect(), f = document.getElementById('foot').getBoundingClientRect(); return { t: t.top, b: t.bottom, ft: f.top, fb: f.bottom, h: innerHeight }; });
     ok(r.t >= r.ft && r.b <= r.fb && r.t > r.h * .7, 'the tools sit in the footer, under the water (' + Math.round(r.t) + '-' + Math.round(r.b) + ' of ' + r.h + ')'); }
   await page.evaluate(() => window.__lc.WORLDS[0].o.tool('ink')); s = await D();
-  ok(s.tools === 'ink*,wall,fan,prism,drain,tunnel,puz', 'the tools are in a row along the bottom, moving the water first, then every piece, then play: ' + s.tools);
+  ok(s.tools === 'ink*,wall,fan,drain,puz', 'the tools are in a row along the bottom, moving the water first, then every piece (no prism, no tunnel since 14 Nov), then play: ' + s.tools);
   const mid = () => page.evaluate(() => window.__lc.WORLDS[0].o.mid());
   const simT = () => page.evaluate(() => window.__lc.WORLDS[0].o.dbg().simT);
   // a wall: drawn, and taken away with a tap
@@ -43,7 +43,10 @@ const size = process.argv[2] || 'phone';
   ok(s.d.fans === 1 && s.d.drains === 1, 'a fan (drag for its direction) and a drain (a tap) are built');
   await sleep(2500); await page.screenshot({ path: `shots/smoke_${size}_machine.png` });
   s = await D(); ok(/built: 1 fan · 1 drain/.test(s.data) && /^real smoke, worked out as it moves/.test(s.data), 'the readout says what this is, and counts what is built: ' + s.data.replace(/\n/g, ' | '));
-  await click('t_fan'); await tap(X(s, .2), Y(s, .4)); await click('t_drain'); await tap(X(s, .75), Y(s, .4)); s = await D(); ok(s.d.fans === 0 && s.d.drains === 0, 'and a tap on each takes it away');
+  // (a tap here can span a frame of most of a second, and a touch longer than 800 ms reads as a drag that sets a new fan: tapped again
+  // until none is left, three times at most)
+  await click('t_fan'); for (let k = 0; k < 3; k++) { await tap(X(s, .2), Y(s, .4)); if (!(await D()).d.fans) break; }
+  await click('t_drain'); await tap(X(s, .75), Y(s, .4)); s = await D(); ok(s.d.fans === 0 && s.d.drains === 0, 'and a tap on each takes it away');
   // two fingers turning: a whirlpool (no errors, the water keeps going)
   await click('t_ink'); const cx = X(s, .5), cy = Y(s, .5);
   await touch([[cx + 60, cy], [cx - 60, cy]], 'touchStart'); for (let k = 1; k <= 16; k++) { const a = k * .12; await touch([[cx + 60 * Math.cos(a), cy + 60 * Math.sin(a)], [cx - 60 * Math.cos(a), cy - 60 * Math.sin(a)]], 'touchMove'); await sleep(16); }
@@ -89,24 +92,37 @@ const size = process.argv[2] || 'phone';
   await until(s => /^round 1 done/.test(s.data) || s.d.game.phase !== 'won', 8000);
   ok(s.d.game.phase === 'won' && /^round 1 done · next one is faster/.test(s.data), 'all three rings: the round is done: ' + s.data.replace(/\n/g, ' | '));
   await until(s => s.d.game.round >= 2, 60000);
-  ok(s.d.game.round === 2 && s.d.game.score === 3 && s.d.game.got === 0 && /^round 2: fill 3 rings in 30 seconds/.test(s.data), 'a moment later round 2, with less time: ' + s.data.split('\n')[0]);
+  ok(s.d.game.round === 2 && s.d.game.score >= 3 && s.d.game.got === 0 && /^round 2: fill 3 rings in 30 seconds/.test(s.data), 'a moment later round 2, with less time: ' + s.data.split('\n')[0]);
   // the rounds grow: two vents and two colours from round 3, three from round 5, the ring drifting from round 4, a wall in the way from round 6
-  const plan = await page.evaluate(() => { const o = window.__lc.WORLDS[0].o, r = []; for (const n of [1, 3, 4, 5, 6, 9]) { o.goRound(n); const d = o.dbg(); r.push({ n, vents: d.fix.fans, cols: d.game.cols.length, wall: d.game.wall, need: d.game.need, cups: d.cups.length, walls: d.fix.walls }); } o.goRound(2); return r; });
+  const plan = await page.evaluate(() => { const o = window.__lc.WORLDS[0].o, r = []; for (const n of [1, 3, 4, 5, 6, 9]) { o.goRound(n); const d = o.dbg(); r.push({ n, vents: d.fix.fans, cols: d.game.cols.length, wall: d.game.wall, need: d.game.need, cups: d.cups.length, walls: d.fix.walls, drains: d.fix.drains, cur: !!d.game.cur }); } o.goRound(2); return r; });
   ok(plan.map(p => p.vents + '/' + p.cols).join() === '1/1,2/2,2/2,3/3,3/3,3/3' && plan.map(p => p.wall).join() === 'false,false,false,false,true,true' && plan.every(p => p.cups === 0 && p.walls === (p.wall ? 5 : 4)) && plan[5].need > plan[0].need,
     'the rounds grow: more vents and colours, a wall later on, more rings to fill: ' + JSON.stringify(plan));
+  ok(plan.map(p => p.drains).join() === '0,0,0,1,1,1' && plan.map(p => p.cur).join() === 'false,false,false,false,false,true', 'a drain from round 5, a current from round 7: ' + plan.map(p => p.n + ':' + p.drains + '/' + p.cur).join(' '));
+  // (14 Nov: "game is getting better. Needs more") each round says what it brings; a gold ring is worth three; rings filled close
+  // together count double, treble; two rings at once from round 8
+  await page.evaluate(() => window.__lc.WORLDS[0].o.goRound(2)); await until(s => /^round 2: fill 3 rings in 30 seconds\nnew: a gold ring is worth three/.test(s.data), 8000);
+  ok(/^round 2: fill 3 rings in 30 seconds\nnew: a gold ring is worth three/.test(s.data), 'a round says what is new in it: ' + s.data.replace(/\n/g, ' | '));
+  await until(s => s.d.game.phase === 'play' && s.d.cups.length === 1, 60000); const sc0 = s.d.game.score;
+  // (the points: a gold ring three times the combo, a plain one the combo; the combo one more for each ring filled within four seconds)
+  await page.evaluate(() => { const o = window.__lc.WORLDS[0].o; o.gold(); o.win(); }); s = await D(); const sc1 = s.d.game.score, k1 = s.d.game.combo, g2 = s.d.cups[0].gold;
+  await page.evaluate(() => window.__lc.WORLDS[0].o.win()); s = await D(); const k2 = s.d.game.combo;
+  ok(sc1 - sc0 === 3 * k1 && k2 === Math.min(5, k1 + 1) && s.d.game.score - sc1 === k2 * (g2 ? 3 : 1), 'a gold ring scores three times the combo; the next ring filled straight after, one more in the combo: ' + [sc0, sc1, s.d.game.score, 'combo ' + k1 + ' then ' + k2].join(' → '));
+  await look('game_gold');
+  await page.evaluate(() => window.__lc.WORLDS[0].o.goRound(8)); await until(s => s.d.game.phase === 'play' && s.d.cups.length === 2 && /^steer each/.test(s.data), 60000);
+  ok(s.d.cups.length === 2 && s.d.cups[0].c !== s.d.cups[1].c && s.d.fix.drains === 1 && !!s.d.game.cur && /^steer each colour into its own ring/.test(s.data), 'round 8: two rings at once, of two colours, with the drain and the current: ' + JSON.stringify(s.d.cups.map(c => c.c)) + ' ' + s.data.split('\n')[0]);
+  await page.evaluate(() => window.__lc.WORLDS[0].o.win()); s = await D(); ok(s.d.cups.length === 2 && s.d.game.got === 1, 'a ring of the two filled: a new one takes its place, the other stays');
+  await look('game_two');
   // time up: the score stays, the best is kept
   await page.evaluate(() => window.__lc.WORLDS[0].o.goRound(2)); await until(s => s.d.game.phase === 'play', 60000); await page.evaluate(() => window.__lc.WORLDS[0].o.left(.3));
   await until(s => s.d.game.phase === 'over' && /^time up/.test(s.data), 30000);
   const sc = s.d.game.score;
-  ok(s.d.game.phase === 'over' && sc >= 3 && new RegExp('^time up · ' + sc + ' rings, a new best\npress again to play again, or free to stop').test(s.data) && s.d.game.best === sc && await page.evaluate(() => { try { return localStorage.getItem('lc.smoke.best'); } catch (e) { return null; } }) === String(sc),
+  ok(s.d.game.phase === 'over' && sc >= 3 && new RegExp('^time up · score ' + sc + ', a new best\npress again to play again, or free to stop').test(s.data) && s.d.game.best === sc && await page.evaluate(() => { try { return localStorage.getItem('lc.smoke.best'); } catch (e) { return null; } }) === String(sc),
     'time up: the score, a new best, and the best kept: ' + s.data.replace(/\n/g, ' | '));
   await look('game_over');
   await click('t_puz'); await sleep(300); await until(s => /^round 1/.test(s.data), 5000); ok(s.d.game.round === 1 && s.d.game.score === 0 && new RegExp('score 0 · best ' + sc + '$').test(s.data), 'again: round 1, score 0, the best still there: ' + s.data.replace(/\n/g, ' | '));
   // free: back to playing freely, every piece there to build with
   await click('t_undo'); await sleep(500); await page.evaluate(() => window.__lc.WORLDS[0].o.fixdt(0)); s = await D();
-  ok(s.d.pz < 0 && s.d.cups.length === 0 && s.tools === 'ink*,wall,fan,prism,drain,tunnel,puz' && await page.evaluate(() => document.getElementById('t_puz').firstChild.textContent) === 'play', 'free: back to playing freely, with every piece: ' + s.tools);
-  await click('t_prism'); await tap(X(s, .3), Y(s, .4)); await click('t_tunnel'); await drag(X(s, .2), Y(s, .7), X(s, .7), Y(s, .3), 10); s = await D();
-  ok(s.d.prisms === 1 && s.d.tunnels === 1, 'a prism (a tap) and a tunnel (a drag from one end to the other) are built');
+  ok(s.d.pz < 0 && s.d.cups.length === 0 && s.tools === 'ink*,wall,fan,drain,puz' && await page.evaluate(() => document.getElementById('t_puz').firstChild.textContent) === 'play', 'free: back to playing freely, with every piece: ' + s.tools);
   await sleep(1500); await page.screenshot({ path: `shots/smoke_${size}_free_pieces.png` });
   const e = [...new Set(errs)]; if (e.length) console.log('ERRORS', e.slice(0, 6));
   await ctx.close(); await browser.close(); console.log(fail.length || e.length ? 'SMOKE FAILED' : 'SMOKE OK'); process.exit(fail.length || e.length ? 1 : 0);

@@ -1,6 +1,17 @@
 # Changelog
 
 ## For the owner
+14 Nov 2026, midday, after "Layers menu is in the way, game is getting better. Needs more. Get rid of tunnel prism and things that
+don't do anything!":
+
+- **Layers out of the way.** The layers are now a short list of switches in two columns, and while it's open the Earth shrinks to stay
+  whole above it, so you see each switch working. The words for the last one you switched show at the top. The row of camera kinds
+  only appears while a camera is open.
+- **Smoke's tools:** prism and tunnel are gone. Left: hand, wall, fan, drain, and play.
+- **More game.** Gold rings (from round 2) are worth three points and fade if you're too slow. Fill rings quickly one after another
+  for a combo: double, treble, up to five times the points, shown rising from the ring. Round 5 adds a drain that swallows your smoke,
+  round 7 a current across the tank, round 8 two rings at once (one of each colour). Each round tells you what's new.
+
 14 Nov 2026, early morning, after "You do really need to improve this. The game is awful and the map hard to use and impossible to
 make good sounds with those noises change like everything make it so much better", your choices (push the smoke; the Earth globe;
 real loops with big buttons), and "Kinda sucks game sucks music not fun world can't zoom in close enough not enough. Videos doesn't
@@ -102,6 +113,19 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 14 Nov 2026, midday: layers out of the way, fewer tools, more game (rule 18)
+
+- Earth: `#lys` two columns of short switches (`.ly` 38 px, a light for on), `#lyw` the words of the last switched; `geo()` keeps the
+  globe above the list while `lyOn`; `lyOpen` re-places it. Cameras: `#themes` only while a window is open (`thRow`, `layout()` and
+  `WIND.resize()`).
+- Smoke: the prism and the tunnel out of `TOOLS` (their passes stay; the game's finger uses `tun`). The game: `gmPlan` gold (n>=2),
+  drain (5), cur (7), two (8); `NEWS` per round; `gmRingNew` (colour not the other ring's, away from the drain and the other ring),
+  `gmRingSwap`; gold rings (`c.gold`, every 4th ring, 9 s, `gmClock` swaps an unfilled one), combo (`GM.combo` within 4 s, up to x5),
+  points rising (`GM.fx[].txt`); the drain as `FIX.drains`; the current three pushes a frame along `GM.cur.y`, chevrons drawn; the
+  game-over words in points. Hooks: `gold()`; `dbg().game` combo, drain, cur, ringN; cups' gold.
+- Tests: `t_smoke.js` (tools, gold, combo, round 8), `t_play.js` (the globe whole above the list), `t_hosted.js` (themes only with a
+  camera), `t_published.js` (six tools).
 
 ## 13 Nov 2026, night: the push game, real instruments, an easier Earth (rule 16)
 

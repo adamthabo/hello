@@ -62,6 +62,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       rows: [...e.querySelectorAll('.ly')].filter(b => !b.hidden).map(b => b.id + '=' + b.getAttribute('aria-pressed') + ':' + b.querySelector('.lyo').textContent + ':' + b.querySelector('.lyd').textContent) }; });
     ok(s.dbg.lys && lys.open && lys.bottom <= lys.foot + 1 && lys.rows.length === 3 && /^l_sats=true:on:every satellite, where it is now · [\d,]+ of them/.test(lys.rows[0]) && /^l_wind=true:on:the wind near the ground/.test(lys.rows[1]) && /^l_sun=true:on:day and night/.test(lys.rows[2]),
       'earth: "layers" opens the list, above the bottom row: each layer there is data for, said in plain words, on or off: ' + lys.rows.join(' | '));
+    const gl = await page.evaluate(() => { const d = window.__lc.WIND.dbg(), t = document.getElementById('lys').getBoundingClientRect().top; return { bottom: d.cy + d.R, top: t }; });
+    ok(gl.bottom <= gl.top + 2, '(14 Nov: "Layers menu is in the way") while the list is open the globe is whole above it: ' + JSON.stringify(gl));
     await shot('1a1_earth_layers');
     await tapEl('#l_wind'); s = await S(); ok(s.dbg.LY.wind === 0 && await page.evaluate(() => document.querySelector('#l_wind .lyo').textContent) === 'off', 'earth: the wind layer can be put away with a tap');
     await shot('1a2_earth_nowind'); await tapEl('#l_wind'); await tapEl('#lyX'); s = await S(); ok(!s.dbg.lys && s.dbg.LY.wind === 1, 'earth: and back; "done" puts the list away');
