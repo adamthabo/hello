@@ -4,7 +4,7 @@
    satellites and make that just a layer", and for a camera tapped, "Window over the globe".
    So each camera of the theme is a ring on the Earth (bright when it is known to be on the air); a tap on one opens a window in the
    corner of the screen where it plays, and the Earth turns to it. A swipe across the window goes to the next camera east or west, a
-   tap on it makes it bigger (or smaller again), its cross closes it. The row of kinds above the layers: all, animals, volcanoes,
+   tap on it makes it bigger (or smaller again), its cross closes it. The row of kinds (shown while a camera is open): all, animals, volcanoes,
    space, cities, the sea, night skies, mountains, things that move.
    The readout says what is true of the place now: its hour by the Sun and the Sun's height, the wind (NOAA's GFS), how many satellites
    are above its horizon (worked out from every published orbit), how far the space station is. The cameras' own sound is never
@@ -88,7 +88,7 @@ var LIVEW=(function(){
             else if(e.data===0&&on&&cur>=0){var c=CAMS[cur];if(c)bad[c.id]=FT;step(1)}},
           onError:function(){var c=CAMS[cur];if(c){bad[c.id]=FT;if(ST[c.id])ST[c.id].id=''}stat='off';statT=FT}}})}catch(e){ytFail=true}}
   function arrive(){if(!reduce)tone('bowl',pent(2,52),.3,0)}
-  /* ---- the window: in the corner of the stage above the music and the layers, sixteen by nine; tapped, across the top of the stage ---- */
+  /* ---- the window: in the corner of the stage above the Earth's row, sixteen by nine; tapped, across the top of the stage ---- */
   /* (14 Nov: the kinds of camera shown only while a camera is open: they choose which cameras west and east go through, and the row
      took room from the Earth the rest of the time) */
   function thRow(v){var r=$e('themes');if(!r||r.hidden===!v)return;r.hidden=!v;try{layout();WIND.resize()}catch(e){}}
@@ -122,7 +122,7 @@ var LIVEW=(function(){
     return (h<10?'0':'')+h+':'+(m<10?'0':'')+m+' by the Sun · '+(e>-.83?'Sun '+Math.round(e)+'° up':e>-18?(hr<12?'dawn':'dusk'):'night')}
   function themeName(){if(TH==='all')return 'all the cameras';for(var i=0;i<THEMES.length;i++)if(THEMES[i][0]===TH)return THEMES[i][1];return TH}
   function airCount(){var n=0,m=0;CAMS.forEach(function(c){if(!inTheme(c))return;m++;if(onAir(c))n++});return [n,m]}
-  /* ---- the layer: switched on and off from the Earth's row of layers; it reads the cameras, the Earth's turn and taps from there ---- */
+  /* ---- the layer: on whenever the Earth is open on the site; it reads the cameras, the Earth's turn and taps from there ---- */
   function layerOn(v){
     on=!!v;el=$e('vid');box=$e('vidbox');img=$e('vidi');var r=$e('themes');
     if(on){camsLoad();themesBuild();primeTheme()}else{winClose();if(r)r.hidden=true}}
@@ -154,7 +154,9 @@ var LIVEW=(function(){
     c.strokeStyle='rgba(234,249,255,.55)';c.lineWidth=1;c.strokeRect(win.x-.5,win.y-.5,win.w+1,win.h+1);
     if(stat!=='live'){var u=(t*.0006)%1;c.strokeStyle='rgba(234,249,255,'+(.4*(1-u)).toFixed(3)+')';c.beginPath();c.arc(win.x+win.w/2,win.y+win.h/2,6+u*Math.min(28,win.h*.3),0,TAU);c.stroke()}}
   function hud(){
-    var c=CAMS[cur];if(!c){if(!on)return '';if(!CAMS.length)return asked?'finding the cameras':'';var ac=airCount();return themeName()+' · '+(ac[0]?ac[0]+' of '+ac[1]+' on the air now':ac[1]+' cameras')+' · tap a ring to watch'}
+    var c=CAMS[cur];if(!c){if(!on)return '';if(!CAMS.length)return asked?'finding the cameras':'';var ac=airCount();
+      /* (one line of a phone: "cameras: 7 of 86 live · tap a ring to watch") */
+      return (TH==='all'?(ac[0]?'cameras: '+ac[0]+' of '+ac[1]+' live':ac[1]+' cameras'):themeName()+': '+(ac[0]?ac[0]+' of '+ac[1]+' live':ac[1]+' cameras'))+' · tap a ring to watch'}
     var ll=camLL(c),la=ll[0],lo=ll[1],l1=c.name+(c.place?' · '+c.place:''),l2='',l3='',w=null,s=ST[c.id];
     if(c.moving&&issNow){l1=c.name;l2='over '+Math.abs(la).toFixed(1)+'°'+(la>=0?'N':'S')+' '+Math.abs(lo).toFixed(1)+'°'+(lo>=0?'E':'W')+' · '+Math.round(issNow.alt)+' km up · '+Math.round(issNow.kmh).toLocaleString('en-US')+' km/h'}
     else if(c.kind==='img')l2=imgAt?'picture of '+stampUTC(imgAt):'';

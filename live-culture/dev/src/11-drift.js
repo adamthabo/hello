@@ -160,9 +160,10 @@ var DRIFT=(function(){
      close together count double, treble and up to five times (a combo) */
   function gmPlan(n){var k=n<3?1:n<5?2:3;return {need:Math.min(8,3+Math.floor((n-1)/2)),secs:Math.max(18,34-2*n),cols:VCOL.slice(0,k),
     r:Math.max(.7,1.25-.06*(n-1)),drift:n>=4?Math.min(.2,.07+.02*(n-4)):0,wall:n>=6,gold:n>=2,drain:n>=5,cur:n>=7,two:n>=8}}
-  var NEWS={2:['GOLD RINGS','a gold ring is worth three: fill it before it fades'],3:['TWO COLOURS','each ring wants its own colour'],
-    4:['MOVING RINGS','the rings move: follow them'],5:['A DRAIN','the drain swallows smoke: steer around it'],6:['A WALL','a wall in the way: go round it'],
-    7:['A CURRENT','a current across the tank pushes the smoke sideways'],8:['TWO AT ONCE','two rings at once: one of each colour']};
+  /* (each short enough for one line of a phone: the words over the tank are kept to three lines, so none of them covers it) */
+  var NEWS={2:['GOLD RINGS','gold rings are worth 3, but they fade'],3:['TWO COLOURS','each ring wants its own colour'],
+    4:['MOVING RINGS','the rings move: follow them'],5:['A DRAIN','a drain swallows smoke: go round it'],6:['A WALL','a wall in the way: go round it'],
+    7:['A CURRENT','a current pushes the smoke sideways'],8:['TWO AT ONCE','two rings at once: one of each colour']};
   function gmPlace(){var n=GM.cols.length,X=VENTX[n-1];FIX.walls=tank();
     FIX.fans=GM.cols.map(function(c,i){return {x:bx(X[i]),y:by(.955),dx:0,dy:-1,c:c,fixed:1,ph:0,a0:-Math.PI/2,sa:0,sp:4,u:X[i]}});
     if(GM.wall){var w=GM.wall;FIX.walls.push([bx(w[0]),by(w[1]),bx(w[2]),by(w[3]),1])}
@@ -520,10 +521,10 @@ var DRIFT=(function(){
   /* the game's words, three lines: what to do, how the round goes, the score */
   function hud(){
     if(PZ>=0){var cp=CUPS[0],secs=Math.ceil(GM.left),tm=Math.floor(secs/60)+':'+('0'+secs%60).slice(-2),best=GM.best?' · best '+GM.best:'';
-      if(GM.phase==='intro')return 'round '+GM.round+': fill '+GM.need+' rings in '+gmPlan(GM.round).secs+' seconds\n'+(NEWS[GM.round]?'new: '+NEWS[GM.round][1]:'touch a stream and drag it into the ring of its colour')+'\nscore '+GM.score+best;
+      if(GM.phase==='intro')return 'round '+GM.round+': fill '+GM.need+' rings in '+gmPlan(GM.round).secs+' seconds\n'+(NEWS[GM.round]?'new: '+NEWS[GM.round][1]:'drag a stream into the ring of its colour')+'\nscore '+GM.score+best;
       if(GM.phase==='won')return 'round '+GM.round+' done · next one is faster\n\nscore '+GM.score+best;
       if(GM.phase==='over')return 'time up · score '+GM.score+(GM.newBest?', a new best':'')+'\npress again to play again, or free to stop\nscore '+GM.score+best;
-      return (CUPS.length>1?'steer each colour into its own ring':'steer the '+(cp?CN[cp.c]+' smoke into the '+CN[cp.c]+' ring':'smoke into the ring'))+(GM.combo>1&&simT-GM.lastT<4?' · combo ×'+GM.combo:'')+'\nround '+GM.round+' · '+GM.got+' of '+GM.need+' rings · '+tm+' left\nscore '+GM.score+best}
+      return (CUPS.length>1?'steer each colour into its own ring':'steer the '+(cp?CN[cp.c]+' smoke into the '+CN[cp.c]+' ring':'smoke into the ring'))+'\nround '+GM.round+' · '+GM.got+' of '+GM.need+' rings · '+tm+' left\nscore '+GM.score+(GM.combo>1&&simT-GM.lastT<4?' · combo ×'+GM.combo:'')+best}
     var bt=[[WALLS.length,'wall','walls'],[FANS.length,'fan','fans'],[PRISMS.length,'prism','prisms'],[DRAINS.length,'drain','drains'],[TUNNELS.length,'tunnel','tunnels']].filter(function(a){return a[0]}).map(function(a){return left(a[0],a[1],a[2])}).join(' · ');
     if(PHOTO.has)return 'your photo is the ink: smear it and it remembers itself'+(bt?'\nbuilt: '+bt:'');
     return 'real smoke, worked out as it moves: push it with a finger, tap for a drop\nplay: push the smoke into rings against the clock'+(bt?'\nbuilt: '+bt:'')}

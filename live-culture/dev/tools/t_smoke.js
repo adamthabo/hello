@@ -66,7 +66,7 @@ const size = process.argv[2] || 'phone';
   await click('t_puz'); await sleep(300); s = await D();
   ok(s.d.pz === 0 && s.d.game.round === 1 && s.d.game.phase === 'intro' && s.d.game.need === 3 && s.d.cups.length === 0 && s.d.fix.fans === 1 && s.d.fix.walls === 4 && s.d.walls + s.d.fans + s.d.drains + s.d.prisms + s.d.tunnels === 0,
     'play: round 1, one vent, one ring, three rings to fill, nothing placed: ' + JSON.stringify(s.d.game) + ' fix ' + JSON.stringify(s.d.fix));
-  ok(/^round 1: fill 3 rings in 32 seconds\ntouch a stream and drag it into the ring of its colour\nscore 0$/.test(s.data), 'three plain lines say what to do: ' + s.data.replace(/\n/g, ' | '));
+  ok(/^round 1: fill 3 rings in 32 seconds\ndrag a stream into the ring of its colour\nscore 0$/.test(s.data), 'three plain lines say what to do: ' + s.data.replace(/\n/g, ' | '));
   ok(s.tools === 'puz,undo' && await page.evaluate(() => ['t_puz', 't_undo'].map(i => document.getElementById(i).firstChild.textContent).join()) === 'again,free', 'in a game only two buttons: again, and free: ' + s.tools);
   ok(await page.evaluate(() => document.getElementById('data').getBoundingClientRect().bottom) < s.d.board.y0, 'the words sit above the tank, clear of it');
   ok(s.d.board.w / s.d.board.h > .6 && s.d.board.w / s.d.board.h < .68, 'a round is played in a tank of fixed shape: ' + Math.round(s.d.board.w) + ' x ' + Math.round(s.d.board.h));
@@ -91,7 +91,8 @@ const size = process.argv[2] || 'phone';
   for (let k = 0; k < 10 && s.d.game.got < s.d.game.need; k++) { await until(s => s.d.cups.length === 1, 20000); await page.evaluate(() => window.__lc.WORLDS[0].o.win()); await sleep(80); s = await D(); }
   await until(s => /^round 1 done/.test(s.data) || s.d.game.phase !== 'won', 8000);
   ok(s.d.game.phase === 'won' && /^round 1 done · next one is faster/.test(s.data), 'all three rings: the round is done: ' + s.data.replace(/\n/g, ' | '));
-  await until(s => s.d.game.round >= 2, 60000);
+  // (the words are painted a little after the state changes: waited for too)
+  await until(s => s.d.game.round >= 2 && /^round 2/.test(s.data), 60000);
   ok(s.d.game.round === 2 && s.d.game.score >= 3 && s.d.game.got === 0 && /^round 2: fill 3 rings in 30 seconds/.test(s.data), 'a moment later round 2, with less time: ' + s.data.split('\n')[0]);
   // the rounds grow: two vents and two colours from round 3, three from round 5, the ring drifting from round 4, a wall in the way from round 6
   const plan = await page.evaluate(() => { const o = window.__lc.WORLDS[0].o, r = []; for (const n of [1, 3, 4, 5, 6, 9]) { o.goRound(n); const d = o.dbg(); r.push({ n, vents: d.fix.fans, cols: d.game.cols.length, wall: d.game.wall, need: d.game.need, cups: d.cups.length, walls: d.fix.walls, drains: d.fix.drains, cur: !!d.game.cur }); } o.goRound(2); return r; });
@@ -100,8 +101,8 @@ const size = process.argv[2] || 'phone';
   ok(plan.map(p => p.drains).join() === '0,0,0,1,1,1' && plan.map(p => p.cur).join() === 'false,false,false,false,false,true', 'a drain from round 5, a current from round 7: ' + plan.map(p => p.n + ':' + p.drains + '/' + p.cur).join(' '));
   // (14 Nov: "game is getting better. Needs more") each round says what it brings; a gold ring is worth three; rings filled close
   // together count double, treble; two rings at once from round 8
-  await page.evaluate(() => window.__lc.WORLDS[0].o.goRound(2)); await until(s => /^round 2: fill 3 rings in 30 seconds\nnew: a gold ring is worth three/.test(s.data), 8000);
-  ok(/^round 2: fill 3 rings in 30 seconds\nnew: a gold ring is worth three/.test(s.data), 'a round says what is new in it: ' + s.data.replace(/\n/g, ' | '));
+  await page.evaluate(() => window.__lc.WORLDS[0].o.goRound(2)); await until(s => /^round 2: fill 3 rings in 30 seconds\nnew: gold rings are worth 3, but they fade/.test(s.data), 8000);
+  ok(/^round 2: fill 3 rings in 30 seconds\nnew: gold rings are worth 3, but they fade/.test(s.data), 'a round says what is new in it: ' + s.data.replace(/\n/g, ' | '));
   await until(s => s.d.game.phase === 'play' && s.d.cups.length === 1, 60000); const sc0 = s.d.game.score;
   // (the points: a gold ring three times the combo, a plain one the combo; the combo one more for each ring filled within four seconds)
   await page.evaluate(() => { const o = window.__lc.WORLDS[0].o; o.gold(); o.win(); }); s = await D(); const sc1 = s.d.game.score, k1 = s.d.game.combo, g2 = s.d.cups[0].gold;
@@ -110,7 +111,9 @@ const size = process.argv[2] || 'phone';
   await look('game_gold');
   await page.evaluate(() => window.__lc.WORLDS[0].o.goRound(8)); await until(s => s.d.game.phase === 'play' && s.d.cups.length === 2 && /^steer each/.test(s.data), 60000);
   ok(s.d.cups.length === 2 && s.d.cups[0].c !== s.d.cups[1].c && s.d.fix.drains === 1 && !!s.d.game.cur && /^steer each colour into its own ring/.test(s.data), 'round 8: two rings at once, of two colours, with the drain and the current: ' + JSON.stringify(s.d.cups.map(c => c.c)) + ' ' + s.data.split('\n')[0]);
-  await page.evaluate(() => window.__lc.WORLDS[0].o.win()); s = await D(); ok(s.d.cups.length === 2 && s.d.game.got === 1, 'a ring of the two filled: a new one takes its place, the other stays');
+  // (counted from where it stood: in round 8 the current can carry a vent's smoke into its ring before the hook fills one)
+  { const g0 = s.d.game.got, keep = s.d.cups[1]; await page.evaluate(() => window.__lc.WORLDS[0].o.win()); s = await D();
+    ok(s.d.cups.length === 2 && s.d.game.got === g0 + 1 && s.d.cups.some(c => c.c === keep.c && Math.hypot(c.x - keep.x, c.y - keep.y) < 40), 'a ring of the two filled: a new one takes its place, the other stays: ' + JSON.stringify({ g0, got: s.d.game.got, cups: s.d.cups.map(c => c.c) })); }
   await look('game_two');
   // time up: the score stays, the best is kept
   await page.evaluate(() => window.__lc.WORLDS[0].o.goRound(2)); await until(s => s.d.game.phase === 'play', 60000); await page.evaluate(() => window.__lc.WORLDS[0].o.left(.3));

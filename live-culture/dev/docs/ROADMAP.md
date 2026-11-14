@@ -17,7 +17,9 @@ changes how the page sounds.
 3. **Hear it and hold it.** The two things no machine test covers: every voice by ear, and every world on a real iPhone
    (frame rate in Wind and Orbit above all, the first touch starting the band with the ring switch on silent, whether a first stroke
    leaves the sound waiting for a tap as expected, the card's size).
-4. **Weather, next.** Done on the site (12 Nov): the model's jet streams, temperature, pressure, waves; clouds and rain drifting with
+4. **Weather, next.** Done on the site (12 Nov): the model's jet streams, temperature, pressure, waves (drawn over the globe until 14
+   Nov, when he had the layers taken away: now the temperature, pressure and waves are read out for a place tapped, and nothing on the
+   Earth is switched on or off; anything new must earn its place always on, without a switch); clouds and rain drifting with
    the wind; the place card (Open-Meteo, RainViewer); storms up close. Next: the weather fronts (NOAA's coded surface analysis), the
    official forecast tracks and cones of the storms (NHC, JTWC, GDACS), the geostationary satellites' ten-minute infrared for the
    clouds, the model's hours ahead (play the next two days). For the artifact: nothing of this can reach it unless a copy of the data

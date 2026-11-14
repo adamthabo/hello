@@ -139,18 +139,11 @@ function satsMerge(act,deb,fetched){
 /* the real clouds, as the geostationary satellites see them (EUMETSAT's world cloud map, every three hours), for the globe */
 var CLOUD={img:null,at:0,ver:0},RAIN={img:null,at:0,ver:0};
 /* the weather model's own fields (NOAA's GFS, its newest run's picture of now), read from GRIB2 on the device: the temperature two
-   metres up, the pressure at sea level (and its highs and lows), the wind ten kilometres up (the jet streams), the height of the waves */
-var WX={t2m:null,mslp:null,jet:null,wave:null,at:0,ver:0,hl:[]};
+   metres up, the pressure at sea level and the height of the waves, read out on the Earth where a place is tapped. (Until 14 Nov they
+   were also layers of colour over the globe, with the jet streams; the owner had the layers taken away) */
+var WX={t2m:null,mslp:null,wave:null,at:0,ver:0};
 function wxTake(name,buf,tm){var m=GRIB.msgs(buf);if(!m.length)throw new Error(name+': nothing read');
-  if(name==='jet'){var u=null,v=null;m.forEach(function(f){if(f.cat===2&&f.par===2)u=f;if(f.cat===2&&f.par===3)v=f});if(!u||!v)throw new Error('jet: no wind');WX.jet={u:u,v:v}}
-  else WX[name]=m[0];
-  WX.at=Math.max(WX.at,Date.parse(tm||'')||m[0].time||0);if(name==='mslp')WX.hl=highsLows(m[0]);WX.ver++}
-/* the highs and lows: a point higher (or lower) than everything within ten degrees, and high or low enough to be one */
-function highsLows(m){var out=[],la,lo,k;function P(a,b){var v=GRIB.at(m,a,b);return v/100}
-  for(la=-74;la<=74;la+=2)for(lo=-180;lo<180;lo+=2){var p=P(la,lo);if(!(p>1019||p<1001))continue;var hi=p>1019,best=true;
-    for(var a=-10;a<=10&&best;a+=2)for(var b=-10;b<=10;b+=2){if(!a&&!b)continue;var q=P(clamp(la+a,-89,89),lo+b/Math.max(.3,Math.cos(la*AS.D)));if(hi?q>p:q<p){best=false;break}}
-    if(best){for(k=0;k<out.length;k++)if(out[k].h===hi&&Math.abs(out[k].lat-la)<9&&Math.abs(AS.n180(out[k].lon-lo))<12)break;if(k===out.length&&out.length<60)out.push({lat:la,lon:lo,hpa:Math.round(p),h:hi,v:AS.llv(la,lo)})}}
-  return out}
+  WX[name]=m[0];WX.at=Math.max(WX.at,Date.parse(tm||'')||m[0].time||0);WX.ver++}
 function wxGet(name){return fetch('/api/gfs/'+name).then(function(r){if(!r.ok)throw new Error(name+' '+r.status);var tm=r.headers.get('x-time')||'';return r.arrayBuffer().then(function(b){wxTake(name,b,tm)})})}
 function cloudTake(b,mod){try{var u=URL.createObjectURL(b),im=new Image();im.onload=function(){CLOUD.img=im;CLOUD.at=mod||Date.now();CLOUD.ver++;GLOBE.cloud(im)};im.src=u}catch(e){}}
 /* the rain of the last half hour that NASA has finished (IMERG, from the satellites of the GPM constellation; a few hours behind the clock) */
@@ -171,6 +164,6 @@ function livePull(force){
   if(due('clouds'))hostGet('clouds','blob').then(function(r){cloudTake(r.b,r.mod);PULL.ok.clouds=Date.now()}).catch(fail('clouds'));
   if(due('rain'))hostGet('rain','blob').then(function(r){rainTake(r.b,r.time);PULL.ok.rain=Date.now()}).catch(fail('rain'));
   /* the model's fields one after another (a few hundred kilobytes each), once an hour */
-  if(due('gfs'))['t2m','mslp','jet','wave'].reduce(function(p,k){return p.then(function(){return wxGet(k).catch(function(e){PULL.err['gfs-'+k]=String(e&&e.message||e).slice(0,80)})})},Promise.resolve()).then(function(){if(WX.t2m||WX.mslp)PULL.ok.gfs=Date.now()})}
+  if(due('gfs'))['t2m','mslp','wave'].reduce(function(p,k){return p.then(function(){return wxGet(k).catch(function(e){PULL.err['gfs-'+k]=String(e&&e.message||e).slice(0,80)})})},Promise.resolve()).then(function(){if(WX.t2m||WX.mslp)PULL.ok.gfs=Date.now()})}
 function liveHosted(){if(!HOSTED||PULL.timer)return;livePull(true);PULL.timer=setInterval(function(){livePull(false)},60000);
   document.addEventListener('visibilitychange',function(){if(!document.hidden)livePull(false)})}

@@ -1,6 +1,18 @@
 # Changelog
 
 ## For the owner
+14 Nov 2026, afternoon, after "I don't understand the layers. It doesn't make any sense why that's there. They hardly work. Make that
+go away so you can see the whole globe and all the gameplay":
+
+- **No more layers.** The button and its list are gone. Everything the Earth has is simply on: the wind, the clouds and rain (on your
+  site), day and night, the satellites, the lightning, the fires, the storms, the aurora, and the cameras on your site. Tap a place
+  and it still tells you the temperature, pressure and waves there. The temperature, pressure, waves and jet stream colour washes are
+  gone with the switches.
+- **The whole globe.** The words at the top are shorter (one line each on a phone), and the globe now always sits whole below them.
+  On a short screen it used to slide up under the words. When you tap a place and the reading is longer, the globe slides down a
+  little to stay whole.
+- **The game's words fit.** Three short lines above the tank, never on it. The combo now shows next to the score.
+
 14 Nov 2026, midday, after "Layers menu is in the way, game is getting better. Needs more. Get rid of tunnel prism and things that
 don't do anything!":
 
@@ -113,6 +125,23 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 14 Nov 2026, afternoon: no layers, the whole globe (rule 19)
+
+- Earth: `#lys`, `#lyB`, `LY`, `lyrBuild`, `lyOpen`, `lyrSync`, `lyWhen`, the `layer()` hook and their styles are gone; the cameras'
+  button keeps its icon (`CAMI`) and `camSync` turns the cameras on in `enter()` where hosted. Gone with the switches: the model's
+  colour washes (`wxBuild`, `wxStep`, `isobars`, `wxT`; in `07-globe.js` `uWx`, `uHeatK`, `uWaveK`, `uIsoK`, `heatCol`, `waveCol`),
+  the jet streams (`jetT`, the advection's `uVS`, `uCS`, `uJet`; `06-live.js` no longer fetches `jet`) and the highs and lows
+  (`highsLows`, `WX.hl`, `HL`). The readout of a place keeps the model's temperature, pressure and waves.
+- `geo()`: on a phone held upright the globe's top is kept under the words (`HUDB`: the words' top plus at least four lines, measured
+  but not while a hint's ghost reading shows); its size and place are targets (`GT`) that `tick()` eases `GR`, `GC` towards (at once
+  in the first 0.7 s, on `resize`), re-measured when `#data`'s height changes. The row hides itself when it has nothing in it.
+- Words: the Earth's second line `N storms · N fires · N lightning flashes` (the aurora on the weather's line); the cameras'
+  `cameras: N of M live · tap a ring to watch`. The game: round 1 `drag a stream into the ring of its colour`, `NEWS` shortened, the
+  combo on the score's line.
+- Tests: `t_play.js` (no layers; the globe whole under the words and above the row; whole again with a place read; taps that land on a
+  pickable satellite try another place), `t_hosted.js` (no layers, all on, four one-line rows, globe whole; the cameras' switch
+  gone; the model's fields without `jet`), `t_published.js`, `t_smoke.js`, `t_misc.js` (words).
 
 ## 14 Nov 2026, midday: layers out of the way, fewer tools, more game (rule 18)
 

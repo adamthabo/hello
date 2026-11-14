@@ -11,13 +11,12 @@ const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') 
   s = await look(); ok(s.music === 'true' && !s.waiting, 'the first touch starts the band (the note lit, playing)'); ok(s.lit > 150, 'the smoke is in the water after the stroke (' + s.lit + ' of 8192 sample points lit)');
   ok(await page.evaluate(() => { const b = document.getElementById('bSound'), r = b.getBoundingClientRect(); return !document.querySelector('#dotrow,.dot') && !!b.closest('header') && r.top < 60 && r.right > innerWidth - 60 && getComputedStyle(b.querySelector('.sl')).display === 'none'; }), 'the music is one small button at the top right, lit, and there are no circles');
   // the Earth: the weather, the fires and the satellites
-  await page.click('#w_earth'); await sleep(6500); s = await look();
-  ok(s.world === 'Earth' && s.hash === '#earth' && s.lit > 8 && /^drag to turn · tap a place or a name \| now: .*[\d,]+ fires/.test(s.data), 'Earth: ' + s.data + ' (' + s.lit + ' lit)'); await page.screenshot({ path: 'shots/published_1.png' });
-  ok(await page.evaluate(() => [...document.querySelectorAll('#nowr .lb')].map(b => b.textContent).slice(0, 2).join() === 'layers,space station' && [...document.querySelectorAll('#lyr .ly')].filter(b => !b.hidden).map(b => b.id).join() === 'l_sats,l_wind,l_sun'),
-    'the Earth has its row: layers (the satellites, the wind and the Sun here), then what is happening now');
-  await page.click('#lyB'); await sleep(400); ok(await page.evaluate(() => !document.getElementById('lys').hidden), '"layers" opens the list of layers'); await page.screenshot({ path: 'shots/published_1_layers.png' });
-  await page.click('#lyX'); await sleep(300);
-  await page.click('#nowr .lb >> nth=1'); await sleep(1800);
+  // (a touch on the dark first: the hints' ghost finger may have tapped a place, and its reading stays until the next touch)
+  await page.click('#w_earth'); await sleep(6500); await page.mouse.click(8, 200); await sleep(500); s = await look();
+  ok(s.world === 'Earth' && s.hash === '#earth' && s.lit > 8 && /^drag to turn · tap a place or a name \| (\d+ storms? · )?[\d,]+ fires · [\d,]+ lightning flashes \| weather of /.test(s.data), 'Earth: ' + s.data + ' (' + s.lit + ' lit)'); await page.screenshot({ path: 'shots/published_1.png' });
+  ok(await page.evaluate(() => [...document.querySelectorAll('#nowr .lb')].map(b => b.textContent)[0] === 'space station' && !document.getElementById('lys') && !document.getElementById('lyB')),
+    'the Earth has its row of what is happening now, and no layers (14 Nov: "Make that go away so you can see the whole globe")');
+  await page.click('#nowr .lb >> nth=0'); await sleep(1800);
   ok(await page.evaluate(() => { const c = document.getElementById('card'); return !c.hidden && /ISS \(ZARYA\)/.test(c.innerText); }), '"space station" flies there and shows its card'); await page.screenshot({ path: 'shots/published_1_iss.png' });
   await page.mouse.click(20, 140); await sleep(400);
   // a tap on a satellite brings up its card, filled from the catalogue published beside the page (the Earth pulled back first, so the swarm is round it)
@@ -36,7 +35,7 @@ const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') 
   // Smoke: its tools and its game; the loop set in the mixer is still playing when the mixer is opened again
   ok(await page.evaluate(() => { document.getElementById('w_smoke').click(); return new Promise(r => setTimeout(() => r(!document.getElementById('tools').hidden && document.querySelectorAll('#tools .tb').length === 6), 900)); }), 'Smoke has its tools');
   s = await look(); ok(s.music === 'true', 'and the music plays on in Smoke');
-  await page.click('#t_puz'); await sleep(600); ok(/^round 1: fill 3 rings in \d+ seconds\ntouch a stream and drag it into the ring of its colour/.test(await page.evaluate(() => document.getElementById('data').textContent)) && await page.evaluate(() => document.getElementById('t_puz').firstChild.textContent) === 'again', 'play starts a round, with plain lines of what to do'); await page.screenshot({ path: 'shots/published_round.png' });
+  await page.click('#t_puz'); await sleep(600); ok(/^round 1: fill 3 rings in \d+ seconds\ndrag a stream into the ring of its colour\nscore 0/.test(await page.evaluate(() => document.getElementById('data').textContent)) && await page.evaluate(() => document.getElementById('t_puz').firstChild.textContent) === 'again', 'play starts a round, with plain lines of what to do'); await page.screenshot({ path: 'shots/published_round.png' });
   await page.click('#t_undo'); await sleep(300);
   await page.click('#w_mix'); await sleep(900); ok(await lit(li), 'back in the mixer, the loop is still playing'); await page.click('#w_smoke'); await sleep(600);
   await page.click('#bSound'); await sleep(500); s = await look(); ok(s.music === 'false', 'the note turns the music off');

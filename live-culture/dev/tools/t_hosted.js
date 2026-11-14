@@ -26,27 +26,21 @@ const clean = errs => [...new Set(errs)].filter(e => !/youtube\.com|requestfaile
     ok(s.hosted === 1 && s.worlds === 'smoke,earth,mix', 'the hosted page has the same three worlds (its cameras are a layer of the Earth): ' + s.worlds);
     for (let k = 0; k < 40 && !s.ok.includes('gfs'); k++) { await sleep(500); s.ok = await page.evaluate(() => Object.keys(window.__lc.PULL.ok).sort()); }
     ok(s.ok.join() === 'aurora,clouds,fires,gfs,rain,sats,storms,strikes,wind', 'every source was read through the Worker: ' + s.ok.join() + ' ' + JSON.stringify(s.err));
-    { const wx = await page.evaluate(() => { const X = window.__lc.WX, G = window.__lc.GRIB; return { t: X.t2m && G.at(X.t2m, 40, -40), p: X.mslp && G.at(X.mslp, 40, -40), w: X.wave && G.at(X.wave, 40, -40), land: X.wave && G.at(X.wave, 40, -100), j: !!(X.jet && X.jet.u && X.jet.v), hl: X.hl.length }; });
-      ok(wx.t > 220 && wx.t < 320 && wx.p > 95000 && wx.p < 106000 && wx.w > 0 && Number.isNaN(wx.land) && wx.j && wx.hl > 4, 'the weather model\'s fields were read on the device (GRIB2): ' + JSON.stringify(wx)); }
+    { const wx = await page.evaluate(() => { const X = window.__lc.WX, G = window.__lc.GRIB; return { t: X.t2m && G.at(X.t2m, 40, -40), p: X.mslp && G.at(X.mslp, 40, -40), w: X.wave && G.at(X.wave, 40, -40), land: X.wave && G.at(X.wave, 40, -100), jet: 'jet' in X }; });
+      ok(wx.t > 220 && wx.t < 320 && wx.p > 95000 && wx.p < 106000 && wx.w > 0 && Number.isNaN(wx.land) && !wx.jet, 'the weather model\'s fields were read on the device (GRIB2), and no more than are read out (the jet streams went with the layers): ' + JSON.stringify(wx)); }
     ok(s.live > 8000 && s.n > 15000 && s.fresh > 0, 'the live orbit list (' + s.live + ' element sets) was laid over the snapshot: ' + s.n + ' objects');
     ok(s.at.strikes >= snap.at.strikes && s.at.aurora >= snap.at.aurora && s.at.wind >= snap.at.wind, 'nothing older than the snapshot replaced it');
     ok(s.cloud, 'the clouds are on the globe');
     await page.evaluate(() => window.__lc.WIND.look(12, 130, 1.25)); await sleep(2500);
-    const hud = await page.evaluate(() => ['clouds', 'rain'].map(k => document.querySelector('#l_' + k + ' .lyd').textContent).join(' | ')); ok(/clouds, seen from space · \d+ \w+ \d\d:\d\d UTC/.test(hud) && /where it is raining · \d+ \w+ \d\d:\d\d UTC/.test(hud), 'the list of layers says when the clouds and the rain are from: ' + hud);
-    // the jet streams' chip comes once the model's fields are drawn into the globe's picture (a few rows a frame): waited for
-    let lyr = ''; for (let k = 0; k < 25; k++) { lyr = await page.evaluate(() => [...document.querySelectorAll('#lyr .ly')].filter(b => !b.hidden).map(b => b.id).join()); if (lyr.split(',').length === 10) break; await sleep(400); } ok(lyr === 'l_sats,l_cams,l_wind,l_jet,l_heat,l_pressure,l_waves,l_clouds,l_rain,l_sun', 'all ten layers can be switched: ' + lyr);
+    // (14 Nov, afternoon: "I don't understand the layers ... Make that go away so you can see the whole globe"): nothing to switch; what
+    // there is data for is all on the globe, and the globe is whole under the words, each of them one line of the phone
+    const ea = await page.evaluate(() => { const L = window.__lc, d = L.WIND.dbg(), e = document.getElementById('data'), t = e.getBoundingClientRect(), r = document.getElementById('nowr').getBoundingClientRect();
+      return { list: !!document.getElementById('lys') || !!document.getElementById('lyB'), cloud: L.GLOBE.hasCloud(), rain: L.GLOBE.hasRain(), wind: d.wind, cams: d.cams, top: Math.round(d.cy - d.R), bottom: Math.round(d.cy + d.R), words: Math.round(t.bottom),
+        lines: Math.round(t.height / parseFloat(getComputedStyle(e).lineHeight)), row: Math.round(r.top), data: e.textContent }; });
+    ok(!ea.list && ea.cloud && ea.rain && ea.wind && ea.cams, 'no list of layers: the clouds, the rain, the wind and the cameras are all there: ' + JSON.stringify([ea.list, ea.cloud, ea.rain, ea.wind, ea.cams]));
+    ok(ea.lines === 4 && ea.top >= ea.words && ea.bottom <= ea.row && /\ncameras: \d+ of \d+ live · tap a ring to watch$/.test(ea.data), 'the whole globe shows under four one-line rows of words: ' + JSON.stringify([ea.top, ea.bottom, ea.words, ea.row, ea.lines]) + ' ' + ea.data.replace(/\n/g, ' | '));
     await page.screenshot({ path: 'shots/hosted_wind_clouds.png' });
     await page.evaluate(() => window.__lc.WIND.look(40, -40, 1)); await sleep(1500); await page.screenshot({ path: 'shots/hosted_wind_atlantic.png' });
-    for (const k of ['wind', 'rain']) await page.evaluate(k => document.getElementById('l_' + k).click(), k); await sleep(1500); await page.screenshot({ path: 'shots/hosted_wind_clouds_sun.png' });
-    for (const k of ['clouds', 'sun']) await page.evaluate(k => document.getElementById('l_' + k).click(), k); await page.evaluate(() => document.getElementById('l_rain').click()); await sleep(1500); await page.screenshot({ path: 'shots/hosted_wind_rain.png' });
-    const hud2 = await page.evaluate(() => ['clouds', 'rain'].map(k => k + ':' + document.querySelector('#l_' + k + ' .lyo').textContent).join()); ok(hud2 === 'clouds:off,rain:on', 'a layer put away says so in the list: ' + hud2);
-    for (const k of ['wind', 'clouds', 'sun']) await page.evaluate(k => document.getElementById('l_' + k).click(), k);
-    // the model's layers: the temperature and the isobars, then the waves and the jet streams (the jet takes the wind's place)
-    for (const k of ['heat', 'pressure']) await page.evaluate(k => document.getElementById('l_' + k).click(), k); await sleep(1800); await page.screenshot({ path: 'shots/hosted_wind_heat.png' });
-    let h3 = await page.evaluate(() => ['heat', 'pressure'].map(k => document.querySelector('#l_' + k + ' .lyd').textContent).join(' | ')); ok(/how warm the air is near the ground · \d+ \w+ \d\d:\d\d UTC/.test(h3) && /the highs and the lows of the air · \d+ \w+ \d\d:\d\d UTC/.test(h3), 'the list says what the model\'s layers are and when: ' + h3);
-    for (const k of ['heat', 'pressure', 'waves', 'jet']) await page.evaluate(k => document.getElementById('l_' + k).click(), k); await sleep(2500); await page.screenshot({ path: 'shots/hosted_wind_waves_jet.png' });
-    const ly = await page.evaluate(() => window.__lc.WIND.dbg().LY); ok(ly.jet && !ly.wind && ly.waves, 'the jet streams take the wind\'s place: ' + JSON.stringify(ly));
-    for (const k of ['waves', 'wind']) await page.evaluate(k => document.getElementById('l_' + k).click(), k);
     // a place tapped: the card with the weather there now, the next day and three days, and the radar
     await page.route(/basemaps\.cartocdn\.com|tilecache\.rainviewer\.com/, r => r.fulfill({ status: 200, contentType: 'image/png', body: require('fs').readFileSync('/home/claude/hello/_work/testdata/rain.png') }));
     // (look() holds the hints, so their ghost fingers cannot turn the Earth away before the tap; the place is out at sea, where no
@@ -79,7 +73,7 @@ const clean = errs => [...new Set(errs)].filter(e => !/youtube\.com|requestfaile
     ok(!keep.r && keep.same, 'a short or broken orbit list changes nothing');
     all = all.concat(clean(errs).map(e => 'data: ' + e)); await ctx.close(); }
 
-  { console.log('CAMERAS: A LAYER OF THE EARTH (a stand-in for YouTube\'s player)');
+  { console.log('CAMERAS ON THE EARTH (a stand-in for YouTube\'s player)');
     const { page, errs, ctx } = await open(browser, 'phone', { base: BASE, hash: '#live', init: FAKEYT }); await sleep(1500);
     await page.evaluate(() => { window.__lc.GOV.n = -1e9; });
     const D = () => page.evaluate(() => { const L = window.__lc, f = document.getElementById('foot').getBoundingClientRect(); return { d: L.LIVEW.dbg(), w: L.WIND.dbg(), id: L.WORLDS[L.CURI].id, hash: location.hash, data: document.getElementById('data').textContent, yt: window.__yt.slice(), hidden: document.getElementById('vid').hidden, on: document.getElementById('vidbox').classList.contains('on'),
@@ -88,7 +82,7 @@ const clean = errs => [...new Set(errs)].filter(e => !/youtube\.com|requestfaile
     ok(s.id === 'earth' && s.hash === '#earth', 'an old link to #live opens the Earth: ' + s.id);
     ok(s.d.on && s.d.cams >= 70 && s.d.themes.length === 8, 'the cameras came from the Worker, in themes: ' + s.d.cams + ' cameras, ' + s.d.themes.join(' '));
     ok(!s.row && s.chips === 'all*,wild,fire,space,city,sea,sky,land,move', 'their themes are a row of their own, shown only while a camera is open (14 Nov): ' + s.chips);
-    ok(s.hidden && s.d.cur < 0 && /all the cameras · \d+ of \d+ on the air now · tap a ring to watch/.test(s.data), 'no window until a ring is tapped; the readout counts them: ' + s.data.replace(/\n/g, ' | '));
+    ok(s.hidden && s.d.cur < 0 && /\ncameras: \d+ of \d+ live · tap a ring to watch$/.test(s.data), 'no window until a ring is tapped; the readout counts them: ' + s.data.replace(/\n/g, ' | '));
     await page.screenshot({ path: 'shots/hosted_cams_0.png' });
     const cdp = await ctx.newCDPSession(page);
     // (lifted straight away: this browser takes most of a second over a frame of the Earth with its video, and a touch held across two
@@ -145,10 +139,6 @@ const clean = errs => [...new Set(errs)].filter(e => !/youtube\.com|requestfaile
     // the Earth's row: "live cameras" opens one at once
     await page.click('#camB'); for (let k = 0; k < 30; k++) { await sleep(300); s = await D(); if (s.d.cur >= 0 && s.d.stat === 'live') break; }
     ok(s.d.cur >= 0 && s.d.stat === 'live' && !s.hidden, '"live cameras" under the globe opens a camera on the air at once: ' + s.d.id); await page.click('#vX'); await sleep(500);
-    // the cameras' layer switched off: rings, themes and window gone
-    await page.evaluate(() => window.__lc.LIVEW.go('monterey')); await sleep(800); await page.evaluate(() => document.getElementById('l_cams').click()); await sleep(500); s = await D();
-    ok(!s.d.on && s.hidden && !s.row, 'the cameras\' layer put away takes its rings, its themes and its window with it');
-    await page.evaluate(() => document.getElementById('l_cams').click()); await sleep(500); s = await D(); ok(s.d.on && !s.row, 'and back (its themes wait for a camera to be opened)');
     // leaving the Earth closes the window
     await page.evaluate(() => window.__lc.LIVEW.go('monterey')); await sleep(800); await page.evaluate(() => window.__lc.go(0, true)); await sleep(400); s = await D();
     ok(s.hidden && !s.row, 'leaving the Earth hides the window and the themes');
