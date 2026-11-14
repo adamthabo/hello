@@ -16,7 +16,7 @@ var ON=[1,0,0,0,0,1,0,0,0],SC=[1,1,1,1,1,1,1,1,1],G=new Float32Array(NL),E=new F
 function bandGain(i){return ON[i]*SC[i]*SG[i]}
 function bandApply(i,slow){if(AU.c&&AU.L[i]){var n=AU.c.currentTime,v=bandGain(i);AU.L[i].gain.cancelScheduledValues(n);AU.L[i].gain.setTargetAtTime(v,n,slow?.35:(v>0?.03:.12))}}
 function setPlayer(i,on,quiet){
-  on=on?1:0;if(ON[i]===on)return;ON[i]=on;bandApply(i);dotSync(i);
+  on=on?1:0;if(ON[i]===on)return;ON[i]=on;bandApply(i);if(MIXON)MIX.player(i,on);
   if(!quiet)say(BNAMES[i]+(on?' in':' out'),BCOL[i])}
 /* a world's arrangement of the band: crossfaded over a moment */
 function sceneSet(sc){for(var i=0;i<NL;i++){SC[i]=sc?sc[i]:1;bandApply(i,true)}}

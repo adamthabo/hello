@@ -20,22 +20,24 @@ Artifact: https://claude.ai/artifact/PCzaFJH2vjXe4Kv8KK4Xic (publish to this URL
    even ten fingers hammering every voice at once, may come out as loud as the band. See "Sound levels" below.
 2. **The band is his.** Nine recorded stems, their gains `SG`, the mixer chain, the master `OUTG=.3`, the loop, the build-up
    from two players to nine with the electric guitar last, and "on with the first touch": exactly as on the original site
-   (he listened and said "make it exactly the same"). Every world now has all nine; who plays is the visitor's choice on the row of
-   circles. Nothing ever changes a level.
+   (he listened and said "make it exactly the same"). Every world has all nine. Since 13 Nov (evening) who plays, and what more, is
+   set in Mix and goes on playing in every world; elsewhere there is only the music button. Nothing ever changes a level.
 3. **Nothing about him.** No name, no biography, no photos of his, no project categories, no links to his sites. Pictures are
    made here, are public data (NASA, the star catalogue), or are the viewer's own photo, which never leaves the device.
 4. **No tiles, no grids of image blocks.** He prefers the electronic look (thin light on black, condensed type, small mono
    readouts). An organic restyle (serif type, pebble buttons) was tried once and rejected: do not retry it.
 5. **Few controls, each with its name, and one plain line saying what a world is.** This rule first said "no words of
    instruction" and left a ghost finger to show what to do. His fourth look (10 Nov, 11:15) overruled that: "I have no idea what
-   any of that first page does. Makes no sense." So every tool carries its name (Smoke: hand, wall, fan, drain, puzzles, again),
-   and the readout of a world opens with one plain line of what it is and what a finger does there ("real smoke, worked out as it
-   moves: push it with a finger, tap for a drop"); a puzzle's readout says what to do and how far along it is. Then facts (counts,
-   places, times). Keep the words few and plain: no paragraphs, no pop-ups, no tour. The ghost finger still shows the first touch.
-   **The music is a row of small circles, not a switch.** Of the switch and the Band world he said (10 Nov) "I don't particularly
-   like the music interface"; on his portfolio site he had asked for little track circles and called a toggle confusing. So: one
-   note for the whole band, then nine circles, one a player. The note never moves by itself and is never lit over silence; while
-   the music is off the nine are dimmed, and touching one turns the music on with that player in it.
+   any of that first page does. Makes no sense." So every tool carries its name (Smoke: hand, wall, fan, prism, drain, tunnel, play;
+   in a round release, new, free), and the readout of a world opens with one plain line of what it is and what a finger does there
+   ("real smoke, worked out as it moves: push it with a finger, tap for a drop"); a round's readout is three lines: what to do, what
+   there is to place (or how the smoke is doing), what the piece in hand does. Then facts (counts, places, times). Keep the words few
+   and plain: no paragraphs, no pop-ups, no tour. The ghost finger still shows the first touch.
+   **The music is one small on/off button, at the top right of every world.** Of the old switch and the Band world he said (10 Nov)
+   "I don't particularly like the music interface", and asked on his portfolio site for little track circles; so for three days
+   there was a note and nine circles, one a player, along the bottom. On 13 Nov (evening) he asked for "a small music on off button"
+   and for the music set in Mix to play on everywhere (rule 15): the circles are gone. The button is a note, lit while the music can
+   be heard and struck through while it cannot; it never moves by itself and is never lit over silence.
 6. **It must work on his iPhone,** in the Claude app. Test at phone size; keep per-frame work bounded; respect the governor `QL`.
 7. **Never the "↗" arrow** (or any external-link icon) on anything.
 8. **Never publish a broken page.** `sh tools/check.sh all` must end with `ALL CHECKS PASSED`.
@@ -92,12 +94,25 @@ Artifact: https://claude.ai/artifact/PCzaFJH2vjXe4Kv8KK4Xic (publish to this URL
    and rings drift; the 24 levels are new and every ring was placed where the measured smoke goes. His question "is
    it real" was answered: the site's data is real and as fresh as each source (listed under "Live data"); the artifact's is a snapshot.
 
+15. **What his seventh look (13 Nov, 19:11) settled.** "Don't understand, explain the game. Brain? It's too complicated and you
+   shouldn't see the levels, you should just change the levels so each time it's a different set up. The mixer is Brice but make it
+   less options and more like ly to result in good sounds, like abelton . Player. And make it extend into the glove and game
+   screens." Asked what to keep of the mixer he chose "Clip grid"; asked what plays on the Earth and in Smoke, "Just the audio remains
+   playing. There is always a small music on off button". So: Smoke's game has no map, no level numbers and no stars; play starts a
+   round, a set-up of its own each time (one of the 24, never the one just played, mirrored left for right half the time), the first
+   round the simplest, a little harder for every two rounds won, the next round coming by itself after a win; three plain lines say
+   what to do. The rings and the jets now show their colours (they never had: see `cpre` in `11-drift.js`). Mix is only a grid of
+   loops, the band's and a machine's, with no knobs: everything is in the band's time and key, the band's four ways to play keep its
+   chords lined up, the machine's bass follows them, the two basses never play at once. What is set in Mix plays on in every world;
+   outside Mix the only control of the music is the small on/off button at the top right, and the nine circles are gone.
+
 ## What the page is
 
 One screen. The world fills it edge to edge; top left its name and a few lines of live readings; top right a photo button in
-Smoke and a save button where the viewer can take a file; along the bottom Smoke's tools (in Smoke) or the Earth's layers (in
-the Earth; on the site also the cameras' themes), each with its name, the music (a note for the whole band and nine circles, one a
-player) and under it the worlds. The band starts with the first touch anywhere. In Mix the mixer's own controls fill the middle.
+Smoke and a save button where the viewer can take a file, then the music button (a note: lit while the music plays, struck
+through while it does not); along the bottom Smoke's tools (in Smoke) or the Earth's layers (in the Earth; on the site also the
+cameras' themes), each with its name, and under them the worlds. The band starts with the first touch anywhere. In Mix its grid of
+loops fills the middle, and what is set there plays on in every world.
 
 **The first touch on an iPhone.** iOS starts no sound on a stroke, only on a plain tap (a touch that lifts where it landed; this is
 how WebKit has behaved since iOS 9, and it could not be tried here). So a first touch that is a stroke asks for the music and gets
@@ -107,19 +122,20 @@ the page stops asking. `node tools/t_lock.js` plays such a phone.
 
 | World | What it is | Hands | Its own sound |
 |---|---|---|---|
-| Smoke | a real fluid (GPU stable fluids) with ink that rises like smoke; a photo becomes the ink and remembers itself. A machine to build in: walls stop the water and the ink, fans push it (and breathe ink), prisms give the smoke passing through their colour, drains swallow it, tunnels take what goes in one end out of the other. And a game of 24 levels in six chapters, each bringing a piece (walls, fans, prisms, drains, tunnels, then all together): fixed sources breathe coloured jets inside a tank of fixed shape, and each ring wants its colour (a white ring wants cyan and amber together); a ring fills only while smoke of its colour, and nothing else, streams through it, so no level solves itself. The smoke waits until it is let go (the release button; it becomes stop) and then runs from a tank of a few seconds (`tank`); when the tank has run dry and the rings are not full, the level says so and waits for a change and another release. A source may sweep and rings may drift (and a fixed fan may blow by turns, though no level uses that now). Stars: three for the fewest pieces known to work (`par`) with a third of the tank left, two for one more piece or less smoke left, one otherwise. A map of the levels (one row a chapter, a line through them all); each level opens when the one before is solved; every third level solved brings a player in (the shekere, the djembe, the talking drum, the agogo, the balafon, the kora), the electric guitar with the last | the tools along the bottom, each named: the hand (drag: push, ink; tap: a drop; stay: a spring), wall (drag: a straight wall whose ends join others; tap one: away), fan (drag: where and which way), prism (tap; tap one: away), drain (tap), tunnel (drag from where the smoke goes in to where it comes out; tap an end: away), release (in a level: let the smoke go; stop), levels (the map; on it "play freely"), "again"; two fingers turning: a whirlpool, closing: pull the water in, opening: throw it out. In a level the hand moves the water but leaves no ink | glass notes, nine rows; a thump for a wall, a kalimba note for a fan, glass for a prism, a bowl for a drain and two for a tunnel, glass for each ring filled, a bowl and a glass note a star for a level solved |
+| Smoke | a real fluid (GPU stable fluids) with ink that rises like smoke; a photo becomes the ink and remembers itself. A machine to build in: walls stop the water and the ink, fans push it (and breathe ink), prisms give the smoke passing through their colour, drains swallow it, tunnels take what goes in one end out of the other. And a game of rounds: play sets up a tank of fixed shape with fixed sources breathing coloured jets and a ring (or two) that wants its colour (a white ring wants cyan and amber together), and gives a few pieces to place; a ring fills only while smoke of its colour, and nothing else, streams through it, so no set-up solves itself. The smoke waits until it is let go (release; it becomes stop) and runs from a tank of a few seconds; if the tank runs dry first the round says "not quite" and waits for a change and another release. A source may sweep and rings may drift. Each round is one of 24 set-ups (`LEVELS`), never the one just played, mirrored left for right half the time (`MIR`; not 'down' or 'moving target', `nomir`): the first round, before any is won, the simplest; then from the chapters the rounds won have reached (walls, fans, prisms, drains, tunnels, all together: one more for every two wins), the newest likeliest. A win: the tank dims, rings of light open out, and three seconds later the next round sets itself up. No map, no numbers, no stars; the rounds won are counted (`lc.smoke.wins`) | the tools along the bottom, each named: the hand (drag: push, ink; tap: a drop; stay: a spring), wall (drag: a straight wall whose ends join others; tap one: away), fan (drag: where and which way), prism (tap; tap one: away), drain (tap), tunnel (drag from where the smoke goes in to where it comes out; tap an end: away), play (a round); in a round: release (let the smoke go; stop), new (another set-up), free (back to playing freely); two fingers turning: a whirlpool, closing: pull the water in, opening: throw it out. In a round the hand moves the water but leaves no ink | glass notes, nine rows; a thump for a wall, a kalimba note for a fan, glass for a prism, a bowl for a drain and two for a tunnel, glass for each ring filled, a bowl and three glass notes for a round won |
 | Earth | one globe with its layers switched along the bottom. The weather: the wind near the ground or the jet streams ten kilometres up (one or the other), the temperature, the pressure (isobars every 4 hPa, the highs and lows), the waves, the clouds, the rain, the Sun (all but the wind and the Sun only where the page is served live: NOAA's GFS read from its GRIB2 files on the device). The clouds and the rain drift with the real wind. The globe (Blue Marble, city lights, the real day/night line) wrapped in the real wind shown as smoke (NOAA's GFS 10 m wind carrying thousands of small plumes); the strongest fires of the last day (NASA FIRMS) as embers, their smoke carried off by the same wind; the tropical storms turning now, by name; the aurora where NOAA expects it; the last half hour's lightning as the GOES satellites saw it. The satellites: every working satellite (about 15,900) and four wreckage clouds (about 2,700 pieces), each solved from its published orbit by the graphics chip every frame, in real time, each with a trail of its last nine minutes along which light runs; dimmed a little over the weather. The cameras (on the site only): a ring on the globe for each of 86 live cameras in eight themes (bright: on the air now) | one finger: turn the Earth (it coasts); tap a place: its name (the nearest town), wind, the Sun's height, the hour by the Sun, the aurora, lightning near, and where served live the model's temperature, pressure and waves there and a card: the weather now and for three days (Open-Meteo) and the last hour of rain radar (RainViewer); tap a storm: the Earth turns to it and comes close; tap a fire: what is known of it; tap a satellite: its card; tap a camera's ring: its window opens over the Earth (the stream; a tap on it: bigger or smaller; a swipe across it: the next camera east or west in the theme; its cross: closed) and the Earth turns to the camera; two fingers: slide to turn, pinch to come closer or travel out to the geostationary ring | glass notes by latitude; a soft shaker tick for each lightning flash (the half hour replayed over sixteen bars); glass when the two space stations and a dozen Earth-watching satellites cross between sunlight and shadow; a bowl note when a camera comes on |
-| Mix | a DJ's mixer for the band and a machine of 300 more sounds, all struck: two decks of loops in a grid like Ableton Live's clips. Deck A is the band: its nine players, each with six loops cut from its own recording (the whole loop, its halves, one bar, one beat, half speed). Deck B is the machine: drums, percussion, bass, keys, bells and the pads, each with six loops written for it, played from 16 drum kits of 16 sounds and sixteen tuned instruments, all struck or plucked (marimba, vibraphone, glockenspiel, xylophone, kalimba, steel pan, piano, electric piano, celesta, gamelan, handpan, music box, upright bass, clavinet, glass, bells), every sound made on the device. A loop tapped starts on the next bar, in time with its deck; a row's number starts the row | tap a loop: in on the next bar (blinking while it waits; tap it again: out at the bar); a row's number: the whole row; "stop": a deck's column or all of it; each deck: pitch (±16%, by ear), nudge (held: a little faster or slower, to bring the beats together), sync (to the other deck's speed and beat), a filter (darker or thinner); the crossfader between them; the band's circles bring a player in or out on deck A; pads: 16, played with fingers, in kits chosen with the arrows; "rec" records them into a loop of deck B (each hit put on the nearest sixteenth), one bar or two, which then plays and is kept in this browser; effects: a pad to sweep with a finger (left darker, right thinner, up more echo), a stutter held (the last beat, half or quarter beat again and again), a brake for each deck, stop all | the band's own stems; the machine's sounds; nothing held or blown, and never louder than the band (measured: `t_levels.js`). Leaving Mix, whoever played on deck A plays on in the band, in step |
+| Mix | a grid of loops, Ableton's clip grid without the knobs: two tabs, the band and the machine. The band: its nine players, each a column of four ways to play its own recording (the whole of it; every other bar, the first and third or the second and fourth; the first beat of each bar), all four playing the recording where it is behind a gate, so a player always meets the others on the same chord (two bars of E, then two of A). The machine: drums, percussion, bass, keys and bells, four loops each, in the band's scale, played from drum kits and struck or plucked instruments made on the device (piano, marimba, steel pan, clavinet, glockenspiel, vibraphone, gamelan, bells, upright bass); its bass follows the band's chords, and the band's bass and the machine's never play at once. A loop tapped comes in on the next bar, one a column; a row's number starts that row in every column. What is set here plays on in every world | tap a loop: in on the next bar (blinking while it waits; tap it again: out at the bar); a row's number: that row in every column of the grid; a column's ■: that column out; "stop": the whole grid out | the band's own stems at the band's own levels; the machine's sounds under the toys' ceiling, never louder than the band (measured: `t_levels.js`). The first time Mix is opened it takes the band over from its usual loops where they are, without a gap, and keeps it |
 **The satellite card** (`cardBuild`, `cardLive` in `13-orbit.js`, shown in the Earth): name; kind, status and owner; catalogue number and international
 designator; launch date and site and years up; perigee and apogee, tilt and period (from the element set); where it is over now, its
 height and speed, sunlit or in shadow (worked out every quarter second); radar cross-section and standard brightness; radio downlinks
 (SatNOGS); the epoch of its element set and how long ago that was. The catalogue part comes from `data/satinfo.json` (published next
 to the page, about 570 KB, read at the first tap; 20 bytes an object, layout in `tools/gen_live.py`). On a wide or a turned screen
-the card stands at the right and the Earth moves over; on a phone it lies above the circles and the Earth moves up.
+the card stands at the right and the Earth moves over; on a phone it lies above the bottom row and the Earth moves up.
 
 Deep links: `#smoke #earth #mix` (old links still land: `#drift`, `#bloom`, `#loom` and `#band` on Smoke, `#wind`, `#orbit` and
 `#live` on the Earth). Keys: 1-3 worlds, space music, arrows in the Earth. Kept in the viewer's own browser (`localStorage`), and
-nothing else: Smoke's stars (`lc.smoke.stars`) and the loops recorded on Mix's pads (`lc.mix.pads`).
+nothing else: how many of Smoke's rounds have been won (`lc.smoke.wins`). (`lc.smoke.stars` and `lc.mix.pads`, from 13 Nov's
+levels and pads, are no longer read.)
 
 ## Live data: what is live, what is a snapshot
 
@@ -257,6 +273,12 @@ governor is live in this test and the headless browser draws slowly, so Smoke us
   third as much, it and the water fade sooner, and it fades by the water's own time, not the clock's. That last matters: a phone
   stepping the water sixty times a second keeps smoke far longer than the headless test browser did, and the old first puzzle would
   have filled its ring with nothing built on a real phone. Now any frame rate plays a level the same, only slower or faster.
+  The 24 set-ups are `LEVELS` (the code still calls them levels; the visitor never sees a level, a number or a map: rule 15).
+  `roundNext()` picks the next: never the one just played (`LASTL`), from the chapters reached (`CH`, one more for every two rounds
+  won, `WINS`), the newest chapter three times as likely, and mirrored half the time (`MIR`: `mx`, `mdx` turn every place and push
+  left for right as a set-up is laid out; `solNow()` gives its answer as it stands on the screen). The readout (`hud`) is three
+  lines: `goal()`, what is left to place or how the smoke is doing, and `HINT` for the piece in hand. The tank is fitted under
+  three lines of words, whatever they say (`boardFit`). `node tools/t_design.js` with `MIRROR=1` plays the mirrored set-ups.
   Each level has its solution (`LEVELS[i].sol`). `node tools/t_design.js levels.json [first] [last] [seconds]` plays levels from a
   file (stepping as a 60-frame phone: `fixdt`) with nothing built (no ring may pass half) and with their solutions (every ring
   must fill), and any `bad` builds listed; `node tools/t_puzzles.js` does the same for the levels in the page. Slow: two to four
@@ -283,18 +305,27 @@ governor is live in this test and the headless browser draws slowly, so Smoke us
   solves Kepler's equation; the angles are brought forward to a new base time every ten hours of shown time so the numbers stay small.
 - `15-mixsnd.js` `MIXS`: Mix's machine of sounds, every one made on the device into a buffer, struck and dying away (no oscillator):
   16 drum kits of 16 roles (kick to snap, each kit its own tuning, length and grit), 16 tuned instruments sampled at a few notes each
-  and played between them by speed, and the loops written for them (drums, percussion, bass, keys, bells; six each). Made a few at a
-  time in the background (`want`, `pump`) so the page never stalls.
-- `16-mix.js` `MIX`: the mixer. `TR` the tracks (the band's nine on deck A, the machine's six on deck B), `DK` the decks (each its own
-  beat clock: `beats(t) = bRef + (t - tRef) * BPS * rate * (1 + nudge)`, re-anchored whenever the speed changes). Every 25 ms
-  `pump` schedules what falls in the next 160 ms (1.2 s while the page is hidden): a band loop is its stem played from the loop's place, looping; a machine loop is its
-  hits as one-shot buffers. Launches wait for the deck's next bar. Its sound goes through the page's own buses: deck A into the band's
-  (so the band sounds as it always does), deck B, the pads and the echo into the bus every hand-played sound goes into (with its
-  ceiling), so nothing on Mix can come out louder than the band: `t_levels.js` measures deck B at its busiest, with the echo up, and
-  ten fingers on the pads (`MIX.offline` builds the decks on an offline context). Entering Mix hands the band's usual loops over to
-  deck A where they are, without a gap; leaving hands them back on deck A's beat.
+  and played between them by speed, and the loops written for them (drums, percussion, bass, keys, bells; six each, of which the
+  mixer plays four; a note loop keeps each note's scale step and octave, so the bass can follow the band's chords: `pn`). Made a few
+  at a time in the background (`want`, `pump`), and only what a loop needs, so the page never stalls.
+- `16-mix.js` `MIX`: the mixer, a grid of loops (since 13 Nov, evening: no decks, pitch, crossfader, pads or effects). `TR` the
+  tracks: the band's nine (`d:0`, each with `BANDCLIPS`: the whole recording looped, through a gate `g(s)` that opens and closes it
+  sixteenth by sixteenth: always, bars 1 and 3, bars 2 and 4, the first beat of each bar) and the machine's five (`d:1`, four loops
+  each from `MACH`). One clock, `CK` (`beat(t) = bRef + (t - tRef) * BPS`). Every 25 ms `pump` schedules what falls in the next
+  160 ms (1.2 s while the page is hidden): on a bar, what was asked to start or stop (a band player's recording starts only if it
+  is not already playing, so changing its way to play never restarts it; its gate does the rest); on every sixteenth, the gates and
+  the machine's hits (one-shot buffers; the machine's bass up two scale steps in bars 3 and 4, with the band's chord, `noteOf`).
+  The two basses are rivals (`rival`): starting one stops the other on the same bar. The first time Mix is opened, `take()` hands
+  the band's usual loops over to the mixer a moment ahead, at the very place they had reached on the band's own clock (`AU.t0`, so
+  nothing jumps); from then on `MIXON` is true for good: `stemsStart` stands aside, `clockSync` and `seqPump` run on the mixer's
+  clock (whose beat 0 is `AU.t0`, so the pictures and the Earth's sixteenths stay on the beat), the band left to itself still builds
+  (`setPlayer` asks `MIX.player` for a player's whole loop), and leaving Mix changes nothing that plays. The music button pauses the
+  sound (the context is suspended) and brings it back where it was. Its sound goes through the page's own buses: the band's columns
+  into the band's (at `SG`, with the band's high shelf on the shekere and the agogo, as its usual loops), the machine's into the bus
+  every hand-played sound goes into, with its ceiling, so nothing on Mix can come out louder than the band: `t_levels.js` measures
+  the machine with every column on its busiest loop (`MIX.offline` builds it on an offline context).
 - `20-ui.js` the worlds table, pointers (real fingers `PT`, ghost fingers `GP`, a hovering mouse), two-finger gestures, the hints, the
-  music's note and circles (`swSync`, `dotsBuild`), the photo, saving, keys.
+  music button (`swSync`), the photo, saving, keys.
 - `21-main.js` the frame loop and start.
 
 Conventions: everything that moves uses `dt`; GLSL ES 1.00 only; `[hidden]` via `el.hidden`; a world's GL state never leaks into the next
@@ -314,12 +345,15 @@ every loop and again on every touch. That is the failure this section exists to 
   the lightning's ticks with fast glass on top sit 6.5 under; ten fingers hammering every voice at once sits 3.4 dB under.
   (The room's echo is random, so runs differ by half a dB or so.)
 - `node tools/t_spec.js` shows the same per octave.
-- Mix (13 Nov): deck B, the pads and the echo play into the same bus as the touch voices, so the same ceiling holds them; deck A is
-  the band's own stems at the band's own gains (`SG`). `t_levels.js` renders deck B at its busiest (its fullest drum, bass, keys and
-  bells loops together), the same with the echo all the way up, ten fingers on the pads (every kit, a hit every 30 ms), and all of
-  that at once; each must stay under the full band like everything else a hand plays. Measured on 13 Nov: deck B at its busiest
-  2.1 dB under the full band, with the echo up 1.9, the pads 2.0, all at once 2.0 (the ceiling holds them all at about the same
-  level); ten fingers on the touch voices 3.8 under.
+- Mix: the machine plays into the same bus as the touch voices, so the same ceiling holds it; the band's columns are the band's
+  own stems at the band's own gains (`SG`), exactly as its usual loops (until 13 Nov's evening the crossfader, in the middle, held
+  both at 3 dB under). `t_levels.js` renders the machine with every column on its busiest loop, and the same with ten fingers
+  hammering every touch voice on top, and each of its twenty loops alone (a lone loop is not held by the ceiling as a full mix is:
+  the compressor lets a hit through before it closes, so a sparse loop of long, low, driven kicks came out 1.8 dB louder than the
+  whole band even at a quarter of its level; the drums now play the softer kits, clay, wood, ice and rain, and the keys and bells play
+  at .45). Each must stay under the full band like everything else a hand plays. Measured on 13 Nov (evening): the machine at its
+  busiest 2.2 dB under the full band, with ten fingers on top 2.0, the loudest loop alone (the steel pan's) 1.6; ten fingers on the
+  touch voices 3.0 under. The afternoon's mixer measured only its busiest mix, so it never saw that a lone loop could pass the band.
 - Higher notes are played softer (`tilt()`: 3 dB per octave around E4).
 - If you change a voice or a gain in `INSTDEF`, rerun both. If you add a voice, it must be struck.
 

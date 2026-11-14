@@ -1,6 +1,27 @@
 # Changelog
 
 ## For the owner
+13 Nov 2026, evening, after "Don't understand, explain the game ... you shouldn't see the levels, you should just change the levels
+so each time it's a different set up. The mixer is nice but make it less options and more likely to result in good sounds, like
+Ableton ... And make it extend into the globe and game screens" and your choices (keep the clip grid; outside Mix just the music
+playing, and always a small music on/off button):
+
+- **Smoke's game, explained on the screen.** No levels to pick, no map, no stars. Press play and you get a round: a tank with a jet
+  of coloured smoke and a ring of the same colour, and a few pieces to place. Place them so the smoke reaches its ring, then press
+  release; the ring fills while its own colour streams through it. Win and the next round sets itself up, a different one each time
+  (sometimes the mirror image), getting harder as you win. New skips a round; free goes back to playing with the smoke. Three short
+  lines at the top say what to do, what you can place and what the piece in your hand does. The rings and jets now show their
+  colours: they had been drawn grey all along, which can't have helped.
+- **Mix is just the grid.** No pitch, crossfader, pads or effects: tap a loop and it comes in on the next bar. Everything is in
+  the band's time and key, so whatever you tap fits. The band's players can play the whole loop, every other bar or just the first
+  beat of each bar, always on the band's chords; the machine's bass follows those chords, and the two basses never play at once.
+- **The music follows you.** What you set up in Mix keeps playing in Smoke and on the Earth. The nine circles are gone; there is
+  one small music button at the top right, lit while the music plays and struck through when it is off.
+- **Quieter drums.** Measured one loop at a time, a few of the afternoon's drum loops came out as loud as the whole band (the test
+  had only measured everything playing at once). They play softer kits now; every loop is measured alone, and none is near the band.
+
+Tested by machine. Not heard from here: how the new loops sound together.
+
 13 Nov 2026, after "Some is good, I like the videos and I like the weather, but is it real? Put them all on the same globe as
 satélites and make that just a layer. Make a music dj mixer page ... And then make the smoke game clearer and work better. The game
 should also be harder and more fun" and your choices (a clip grid like Ableton, two decks and a crossfader, drum pads, effects; too
@@ -46,6 +67,29 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 13 Nov 2026, evening: Smoke's rounds, Mix a grid alone, the music everywhere
+- `11-drift.js`: no map, no stars, no unlocking (`STARS`, `starsFor`, `pathNodes`, `freeBtn`, `PATH`, `unlocked` gone). `roundNext()`:
+  the first round before any win is set-up 1; then never the last one (`LASTL`), from the chapters reached (`WINS` / 2), the newest
+  chapter weighted three times, mirrored half the time (`MIR`, `mx`, `mdx`, `solNow`; `nomir` on 'down' and 'moving target', which
+  failed 2 runs in 3 mirrored). A win: `WINS` kept (`lc.smoke.wins`), the tank dims and rings open out, the next round three seconds
+  later. Tools: `puz` reads play / new, `undo` reads free. `hud()`: `goal()` ("only" where other colours are about), what is left to
+  place or how the smoke is doing, `HINT[TOOL]`. `boardFit` puts the tank under three lines of words. The band is no longer changed
+  by the game. Fixed: `cs(col,'')+'.75)'` was not a colour, so the rings and the jets were drawn in the grey of the tank's wall
+  (`cpre`). Test hooks: `level(i, mirrored)`, `round`, `sol`, `wins`.
+- `16-mix.js` rewritten: tracks, one clock `CK`, gates for the band's four ways (`BANDCLIPS[].g`), `noteOf` (the machine's bass up two
+  scale steps in bars 3 and 4), `rival` basses, `take()` (once, for good: `MIXON`), `MIX.player` (the build-up while the mixer has the
+  band). Gone: decks, nudges, sync, brake, stutter, crossfader, filters, echo, pads, recording. `15-mixsnd.js`: note loops keep their
+  scale step and octave; `pn` exported. `03-audio.js`: `clockSync` and `seqPump` run while `MIXON`. `04-band.js`: `setPlayer` asks
+  the mixer. `20-ui.js`, `body.html`, `style.css`: the circles are gone (`dotsBuild`, `dotSync`, `#dotrow`, `.dot*`); `#bSound` is an
+  `.ic` button at the end of the header's `.acts`, with a stroke through it (`.sl`) while nothing can be heard; Mix's icon is a grid.
+- Loudness: measured one at a time, the drum loops on the 808 room, dust, deep, lo-fi and thunder kits came out as loud as the whole
+  band or louder (the ceiling lets a lone hit through; turning them down a quarter took off half a dB). The drums now play clay,
+  wood, ice and rain; the keys and bells play at .45, the bass at .6 (`MACH[].g`). `t_levels.js` now measures each of the twenty loops
+  alone (`MIX.offline(..., pick)`).
+- Tests: `t_smoke.js` (rounds), `t_play.js` (the grid, the rival basses, a row, the loops playing on in Smoke and on the Earth, the
+  button), `t_hide.js` (the mixer away and back), `t_lock.js`, `t_misc.js`, `t_published.js`, `t_levels.js` (the machine), `t_design.js`
+  (`MIRROR=1`).
 
 ## 13 Nov 2026: one Earth, Mix, Smoke's tank and new walls
 - Worlds: `smoke`, `earth`, `mix` (`WORLDS` in `20-ui.js`; `OLDHASH` sends `#wind`, `#orbit`, `#live` to the Earth and `#drift`,

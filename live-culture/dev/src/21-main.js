@@ -13,14 +13,13 @@ function frame(t){
     if(CUR){if(CUR.tick)CUR.tick(dt,t);if(CUR.draw)CUR.draw(t);ghostDraw()}
     if(SAVE)doSave();
     dataPaint(false);
-    for(var i=0;i<NL;i++){var b=$('d_'+i);if(b)b.style.setProperty('--lv',(1+.45*E[i]*G[i]).toFixed(3))}
   }catch(e){if(window.__lc){window.__lc.errs=(window.__lc.errs||[]);if(window.__lc.errs.length<20)window.__lc.errs.push('frame: '+String(e&&e.stack||e))}}
   finally{requestAnimationFrame(frame)}}
 function start(data){
   var i,w=0,h=(location.hash||'').slice(1);
   if(data&&data.on&&data.on.length===NL){for(i=0;i<NL;i++){ON[i]=data.on[i]?1:0;G[i]=ON[i]}BD.manual=!!data.manual}
   i=worldOf(h);if(i>=0)w=i;if(data&&typeof data.w==='number'&&data.w>=0&&data.w<WORLDS.length)w=data.w;
-  railBuild();dotsBuild();layout();ovSize();glInit();glResize();
+  railBuild();layout();ovSize();glInit();glResize();
   go(w,true);swSync();dlInit();audioLoad();setTimeout(synPrepare,900);setTimeout(limCalibrate,1500);
   /* the orbits, the wind, the aurora and the lightning are read once the page has settled, so they are there when a world wants them */
   setTimeout(liveLoad,2600);

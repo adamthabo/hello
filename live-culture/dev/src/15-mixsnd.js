@@ -1,4 +1,5 @@
-/* ---------- the mixer's sounds (13 Nov: "a music dj mixer page with pitch control hundreds of other samples"). Every one is made here
+/* ---------- the mixer's sounds (13 Nov: "a music dj mixer page with pitch control hundreds of other samples"; that evening he asked for
+   fewer options, so the mixer now plays twenty of these loops, and only the kits and instruments they use are ever made). Every one is made here
    from plain arithmetic, like the toys' voices: struck once and dying away, nothing blown, bowed or held, none of them a tone from an
    oscillator, no harp. Sixteen kits of sixteen drums each (256: kicks, snares, claps, rims, hats, toms, congas, bongos, shakers,
    tambourines, cowbells, wood, bells, snaps, each kit a different room, size and grain), and sixteen struck or plucked instruments
@@ -131,14 +132,14 @@ var MIXS=(function(){
     {n:'wood',len:16,h:hits([[13,.7,'x..x..x...x..x..'],[3,.5,'..x.....x....x..']])},
     {n:'bells',len:32,h:hits([[14,.5,'x.......x.......x.......x.......'],[12,.5,'....x.......x.......x.......x...']])}];
   /* note loops: (step, scale degree, octave) turned into notes */
-  function nl(len,a){return {len:len,h:a.map(function(x){return [x[0],pn(x[1],x[2]||0),x[3]||.8]})}}
+  function nl(len,a){return {len:len,h:a.map(function(x){return [x[0],pn(x[1],x[2]||0),x[3]||.8,x[1],x[2]||0]})}}
   var BASSLOOPS=[nl(32,[[0,0],[6,0],[10,3],[16,0],[22,4,-1],[26,3]]),nl(16,[[0,0],[3,0],[6,2],[8,0],[11,4,-1],[14,3]]),nl(32,[[0,0],[12,2],[16,4,-1],[28,3]]),
     nl(16,[[0,0],[2,5,-1],[4,0],[7,1],[10,0],[12,3],[14,4]]),nl(32,[[0,0],[4,0],[8,1],[12,0],[16,3],[20,3],[24,2],[28,1]]),nl(16,[[0,0],[10,0]])];
   var KEYLOOPS=[nl(16,[[0,5],[0,7],[0,9],[6,6],[6,8],[10,5],[10,7]]),nl(16,[[0,5],[2,7],[4,9],[6,7],[8,6],[10,8],[12,10],[14,8]]),nl(32,[[0,5],[0,8],[0,10],[16,6],[16,9],[16,11]]),
     nl(16,[[0,10],[3,9],[6,8],[8,7],[11,6],[14,5]]),nl(16,[[0,5],[1,7],[2,9],[3,10],[8,6],[9,8],[10,10],[11,11]]),nl(32,[[0,7],[8,6],[16,5],[24,4]])];
   var BELLLOOPS=[nl(32,[[0,10],[6,12],[12,11],[16,10],[22,9],[28,8]]),nl(16,[[0,12],[4,11],[8,10],[12,13]]),nl(16,[[2,10],[6,11],[10,12],[14,13]]),
     nl(32,[[0,15],[3,14],[6,13],[16,12],[19,11],[22,10]]),nl(16,[[0,10],[3,12],[6,10],[8,13],[11,12],[14,10]]),nl(32,[[0,12],[24,14]])];
-  return {SR:SR,KITS:KITS,ROLES:ROLES,INSTS:INSTS,drum:drum,note:note,want:want,kitNow:kitNow,instNow:instNow,
+  return {SR:SR,KITS:KITS,ROLES:ROLES,INSTS:INSTS,drum:drum,note:note,want:want,kitNow:kitNow,instNow:instNow,pn:pn,
     DRUMLOOPS:DRUMLOOPS,PERCLOOPS:PERCLOOPS,BASSLOOPS:BASSLOOPS,KEYLOOPS:KEYLOOPS,BELLLOOPS:BELLLOOPS,
     count:function(){return KITS.length*ROLES.length+INSTS.reduce(function(a,x){return a+x[2].length},0)},
     /* for the tests: a drum or a note made straight into an array */

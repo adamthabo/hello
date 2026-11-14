@@ -2,15 +2,16 @@
 var OVC=$('ov'),OV=OVC.getContext('2d'),STAGE=$('stage');
 /* the worlds. (There were more: a culture of glowing organisms that the owner said made no sense, a picture of the band he did not much
    like, a harp he called stupid, a solar system he called meh. The first two are kept in dev/archive in case he asks for them back.)
-   Every world has the whole band: who plays is the visitor's to choose, on the row of circles (dundun, shekere, djembe, talking drum,
-   agogo, bass, balafon, kora, guitar) */
+   Every world has the band. Who plays in it, and what more, is set in Mix, and goes on playing in every world; outside Mix there is
+   only the music button at the top (13 Nov: "Just the audio remains playing. There is always a small music on off button"; until then
+   each world had a row of circles, one for each player) */
 var WORLDS=[
   {id:'smoke',name:'Smoke',o:DRIFT,sc:[1,1,1,1,1,1,1,1,1],photo:true,ic:'<path d="M8 21c-3-3 3-5 0-8s3-5 0-8M15.5 21c-3-3 3-5 0-8s2.2-4 .6-6.6"/>'},
   /* the Earth: the weather, the satellites and (on the site) the live cameras, each a layer of one globe (13 Nov: "Put them all on the
      same globe as satellites and make that just a layer"); Wind, Orbit and Live were three worlds before */
   {id:'earth',name:'Earth',o:WIND,sc:[1,1,1,1,1,1,1,1,1],ic:'<circle cx="12" cy="12" r="6.6"/><path d="M6.2 10.4c2.4-1.3 4.1 1 6.5-.1 1.5-.7 2.4-.8 3.8-.4"/><ellipse cx="12" cy="12" rx="10.6" ry="3.9" transform="rotate(-22 12 12)"/>'},
-  /* the mixer: the band on one deck, a machine of sounds on the other (13 Nov) */
-  {id:'mix',name:'Mix',o:MIX,sc:[1,1,1,1,1,1,1,1,1],ic:'<circle cx="7" cy="10" r="4.4"/><circle cx="17" cy="10" r="4.4"/><circle cx="7" cy="10" r=".9"/><circle cx="17" cy="10" r=".9"/><path d="M3.5 19.5h17M12 17v5"/>'},
+  /* the mixer: a grid of loops, the band's and a machine's (13 Nov) */
+  {id:'mix',name:'Mix',o:MIX,sc:[1,1,1,1,1,1,1,1,1],ic:'<rect x="3.5" y="3.5" width="4.6" height="4.6" rx="1.1"/><rect x="9.7" y="3.5" width="4.6" height="4.6" rx="1.1"/><rect x="15.9" y="3.5" width="4.6" height="4.6" rx="1.1"/><rect x="3.5" y="9.7" width="4.6" height="4.6" rx="1.1"/><rect x="9.7" y="9.7" width="4.6" height="4.6" rx="1.1"/><rect x="15.9" y="9.7" width="4.6" height="4.6" rx="1.1"/><rect x="3.5" y="15.9" width="4.6" height="4.6" rx="1.1"/><rect x="9.7" y="15.9" width="4.6" height="4.6" rx="1.1"/><rect x="15.9" y="15.9" width="4.6" height="4.6" rx="1.1"/>'},
 ];
 var CUR=null,CURI=-1,PT={},PTN=0,GP={},PS=[],HV=null,touched={},lastTouch=-1e9,SAYT=0,SAYX='',SAYC='',swT=0,GOT=0,FDT=.016;
 function safe(f){try{f()}catch(e){if(window.__lc){window.__lc.errs=(window.__lc.errs||[]);window.__lc.errs.push(String(e&&e.stack||e))}}}
@@ -21,15 +22,10 @@ var DATAX='',DATAT=0;
 function dataPaint(force){var n=performance.now();if(!force&&n-DATAT<180)return;DATAT=n;var el=$('data'),tx=n<SAYT?SAYX:(CUR&&CUR.hud?CUR.hud():''),c=n<SAYT?SAYC:'';
   if(tx!==DATAX){DATAX=tx;el.textContent=tx}if(el._c!==c){el._c=c;el.style.setProperty('--c',c||'')}}
 
-/* ---- the worlds along the bottom; above them the music: a note for the whole band, then a circle for each of its nine players ---- */
+/* ---- the worlds along the bottom ---- */
 function railBuild(){var r=$('rail');r.innerHTML='';WORLDS.forEach(function(w,i){var b=document.createElement('button');b.type='button';b.className='wb';b.id='w_'+w.id;
   b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+w.ic+'</svg><span></span>';b.lastChild.textContent=w.name;b.setAttribute('aria-current','false');
   b.addEventListener('click',function(){go(i)});r.appendChild(b)})}
-function dotsBuild(){var d=$('dots');d.innerHTML='';for(var i=0;i<NL;i++)(function(i){var b=document.createElement('button');b.type='button';b.className='dot';b.id='d_'+i;b.style.setProperty('--c',BCOL[i]);
-  b.setAttribute('aria-label',BNAMES[i]);b.setAttribute('aria-pressed',ON[i]?'true':'false');b.appendChild(document.createElement('i'));
-  /* a circle brings its player in or out. With the music off, it turns the music on with that player in it */
-  b.addEventListener('click',function(){if(CUR&&CUR.dot){CUR.dot(i);return}BD.auto=false;BD.manual=true;if(!soundLive()){musicOn();if(!ON[i])setPlayer(i,true)}else setPlayer(i,!ON[i])});d.appendChild(b)})(i)}
-function dotSync(i){var b=$('d_'+i);if(b)b.setAttribute('aria-pressed',ON[i]?'true':'false')}
 function chrome(){
   var w=WORLDS[CURI];if(!w)return;$('wname').textContent=w.name;
   WORLDS.forEach(function(x,i){var b=$('w_'+x.id);if(b)b.setAttribute('aria-current',i===CURI?'true':'false')});
@@ -127,12 +123,11 @@ function tapCue(t){
   else{k=(u-.24)/.76;ringAt(17,.26,1.3);ringAt(17+58*k,.75*(1-k)*(1-k),1.6);if(k>.22){a=(k-.22)/.78;ringAt(17+58*a,.4*(1-a)*(1-a),1.2)}}}
 function ghostDraw(){var c=OV,id;if(GH.on&&GH.mode===2){tapCue(FT);return}for(id in GP){var p=GP[id];c.strokeStyle='rgba(234,249,255,.42)';c.lineWidth=1.2;c.beginPath();c.arc(p.x,p.y,15,0,TAU);c.stroke();c.fillStyle='rgba(234,249,255,.3)';c.beginPath();c.arc(p.x,p.y,3,0,TAU);c.fill()}}
 
-/* ---- the music's own circle (the note at the head of the row). It says what can be heard: lit only while the sound is really
-   running. It never moves by itself (the owner found a switch that twitched while it waited, and one that read On over silence,
-   confusing), and a touch on it always does what it shows: unlit turns the music on. While the music is off the players' circles
-   are dimmed ---- */
-function swSync(){var b=$('bSound');if(!b)return;var on=soundLive();b.setAttribute('aria-pressed',on?'true':'false');b.disabled=!!AU.failed;$('dotrow').classList.toggle('off',!on);
-  b.classList.toggle('wait',on&&!AU.run);b.setAttribute('aria-label',AU.failed?'This browser cannot play the music':(on?'Music is on. Turn it off':(AU.auto?'Music starts with your first touch. Turn it on now':(AU.want?'Music is waiting for a tap. Turn it on now':'Music is off. Turn it on'))))}
+/* ---- the music button: a note at the top, on every world. It says what can be heard: lit only while the sound is really running,
+   struck through while it is not. It never moves by itself (the owner found a switch that twitched while it waited, and one that read
+   On over silence, confusing), and a touch on it always does what it shows: struck through turns the music on ---- */
+function swSync(){var b=$('bSound');if(!b)return;var on=soundLive();b.setAttribute('aria-pressed',on?'true':'false');b.disabled=!!AU.failed;
+  b.classList.toggle('wait',on&&!AU.run&&!MIXON);b.setAttribute('aria-label',AU.failed?'This browser cannot play the music':(on?'Music is on. Turn it off':(AU.auto?'Music starts with your first touch. Turn it on now':(AU.want?'Music is waiting for a tap. Turn it on now':'Music is off. Turn it on'))))}
 $('bSound').addEventListener('click',function(){if(soundLive())musicOff();else musicOn()});
 $('bNow').addEventListener('click',function(){if(ORBIT.toNow)ORBIT.toNow()});
 

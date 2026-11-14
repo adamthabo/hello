@@ -5,6 +5,7 @@
 //   (the fourth argument, once the seconds to run, is unused: a run lasts as long as the level's tank, and a little more)
 //   fast: a coarser ink picture (the water is the same), for a first look only
 //   NODRAW=1 in the environment: the water is worked out but not drawn (the same water, a little quicker here; the pictures stay dark)
+//   MIRROR=1 in the environment: each set-up played as its mirror image (left for right), as the game plays it half the time
 const { launch, open } = require('./lib'); const fs = require('fs'); const sleep = ms => new Promise(r => setTimeout(r, ms));
 const file = process.argv[2], L = JSON.parse(fs.readFileSync(file, 'utf8')), first = +(process.argv[3] || 1) - 1, last = +(process.argv[4] || L.length), T = +(process.argv[5] || 14), fast = process.argv[6] === 'fast', only = process.argv[7] || '';
 (async () => {
@@ -13,8 +14,11 @@ const file = process.argv[2], L = JSON.parse(fs.readFileSync(file, 'utf8')), fir
   // the water stepped as a phone at 60 frames a second steps it (a level's water fades by its own time, so any frame rate plays it the same)
   const fix = v => page.evaluate(v => window.__lc.WORLDS[0].o.fixdt(v), v);
   const D = () => page.evaluate(() => window.__lc.WORLDS[0].o.dbg());
-  const run = async (i, pieces, mustWin) => {
-    await page.evaluate(a => { const o = window.__lc.WORLDS[0].o; o.nowin(!a[2]); o.level(-1); o.level(a[0]); for (const b of a[1]) o.put(b[0], b[1]); o.release(); }, [i, pieces, mustWin]);
+  const MIR = process.env.MIRROR === '1';
+  // a build as it stands in the mirror image: every across-place u becomes 1-u, and a fan's across-push turns round
+  const mirror = ps => ps.map(([k, a]) => { a = a.slice(); a[0] = 1 - a[0]; if (k === 'wall' || k === 'tunnel') a[2] = 1 - a[2]; else if (k === 'fan') a[2] = -a[2]; return [k, a]; });
+  const run = async (i, pieces, mustWin, sol) => {
+    await page.evaluate(a => { const o = window.__lc.WORLDS[0].o; o.nowin(!a[2]); o.level(-1); o.level(a[0], a[3]); for (const b of (a[4] ? o.sol() : a[1])) o.put(b[0], b[1]); o.release(); }, [i, MIR ? mirror(pieces) : pieces, mustWin, MIR, !!sol]);
     const t0 = (await D()).simT, w0 = Date.now(), lim = (L[i].tank || 6) + 4; let d, best = [];
     for (;;) { await sleep(800); d = await D(); d.cups.forEach((c, j) => best[j] = Math.max(best[j] || 0, c.fill));
       if (d.won || d.pz !== i || !d.run || d.simT - t0 > lim || Date.now() - w0 > 400000) break; }
@@ -22,13 +26,13 @@ const file = process.argv[2], L = JSON.parse(fs.readFileSync(file, 'utf8')), fir
   };
   let bad = 0;
   for (let i = first; i < Math.min(L.length, last); i++) {
-    const lv = L[i], name = 'L' + (i + 1) + (lv.name ? ' ' + lv.name : '');
+    const lv = L[i], name = 'L' + (i + 1) + (MIR ? 'm' : '') + (lv.name ? ' ' + lv.name : '');
     let r;
     if (only !== 'sol') { await fix(1 / 60); r = await run(i, [], false); await page.screenshot({ path: `shots/design_${i + 1}_nothing.png` });
     let okN = !r.won && r.best.every(b => b < 50); if (!okN) bad++;
     console.log((okN ? 'ok   ' : 'FAIL ') + name.padEnd(26) + ' nothing   ' + r.best.join(' ') + '%  sim ' + r.t + 's [' + r.w + 's]'); }
     if (only === 'none') continue;
-    await fix(1 / 60); r = await run(i, lv.sol, true); await page.screenshot({ path: `shots/design_${i + 1}_solved.png` });
+    await fix(1 / 60); r = await run(i, lv.sol, true, true); await page.screenshot({ path: `shots/design_${i + 1}_solved.png` });
     if (!r.won) bad++;
     console.log((r.won ? (r.left >= 33 ? 'ok   ' : 'ok?  ') : 'FAIL ') + name.padEnd(26) + ' solution  ' + (r.won ? 'won in ' + r.t + 's, ' + r.left + '% smoke left' + (r.left >= 33 ? '' : ' (three stars out of reach)') : r.best.join(' ') + '%  sim ' + r.t + 's') + ' [' + r.w + 's]');
     await fix(1 / 60); for (const [lab, pieces] of lv.bad || []) { r = await run(i, pieces, false); const okB = !r.won && r.best.some(b => b < 100);

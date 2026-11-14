@@ -74,11 +74,10 @@ body.dropping::after{content:"";position:fixed;inset:10px;z-index:30;border:1px 
 .ic:hover,.ic[aria-pressed=true]{border-color:var(--lume);color:var(--lume);box-shadow:0 0 16px -4px var(--lume)}
 .chip{height:32px;padding:0 11px;border-radius:999px;border:1px solid var(--warm);background:rgba(1,4,10,.55);color:var(--warm);
   font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
-/* ---------- bottom: the music as small circles (a note for the whole band, then one circle a player), then the worlds.
-   No switch: the owner asked for little track circles instead of a toggle ---------- */
+/* ---------- bottom: a world's own row (Smoke's tools, the Earth's layers), then the worlds. (There was a row of circles here, one for
+   each player; on 13 Nov the owner asked for just a small music on/off button, which is at the top) ---------- */
 .foot{position:fixed;z-index:6;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;gap:4px;
   padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));pointer-events:none}
-.dots{display:flex;justify-content:center;align-items:center;gap:2px;pointer-events:auto;width:100%;max-width:400px}
 /* Smoke's tools: a labelled row along the bottom, like Wind's layers */
 .tools{display:flex;justify-content:center;gap:4px;flex-wrap:wrap;pointer-events:auto;padding:0 4px}
 .tb{display:flex;align-items:center;gap:4px;height:28px;padding:0 8px 0 6px;border-radius:14px;border:1px solid rgba(234,249,255,.14);color:var(--dim);background:rgba(1,4,10,.45);
@@ -98,15 +97,13 @@ body.dropping::after{content:"";position:fixed;inset:10px;z-index:30;border:1px 
   font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;transition:color .25s,border-color .25s,background .25s}
 .lb svg{width:13px;height:13px;display:block;fill:none;stroke:currentColor;stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round}
 .lb[aria-pressed=true]{color:var(--ink);border-color:rgba(62,240,255,.42);background:rgba(62,240,255,.08)}
-.dots9{display:flex;flex:1 1 auto;min-width:0;justify-content:center;transition:opacity .3s}
-.dots.off .dots9{opacity:.38}
-.dot{flex:1 1 0;min-width:0;max-width:36px;height:32px;display:grid;place-items:center;border-radius:10px}
-.dot i{width:11px;height:11px;border-radius:50%;border:1.4px solid var(--c);background:transparent;transition:background .25s,box-shadow .25s,transform .12s;transform:scale(var(--lv,1))}
-.dot[aria-pressed=true] i{background:var(--c);box-shadow:0 0 12px -1px var(--c)}
-.mst{flex:0 0 40px;max-width:40px;color:var(--dim);transition:color .3s}
-.mst svg{width:17px;height:17px;display:block;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;transition:filter .3s}
-.mst[aria-pressed=true]{color:var(--warm)}
-.mst[aria-pressed=true] svg{filter:drop-shadow(0 0 5px var(--warm))}
+/* the music button: a note, warm and lit while the music can be heard, struck through while it cannot */
+.mst{color:var(--dim)}
+.mst .sl{stroke-width:1.6}
+.mst[aria-pressed=true]{color:var(--warm);border-color:var(--warm);box-shadow:0 0 16px -4px var(--warm)}
+.mst[aria-pressed=true] svg{filter:drop-shadow(0 0 4px var(--warm))}
+.mst[aria-pressed=true] .sl{display:none}
+.mst:disabled{opacity:.35}
 /* what is on record about a satellite: plain facts in small type, over the lower part of the world */
 .card{position:fixed;z-index:6;left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));bottom:calc(var(--foot,112px) + 6px);max-width:430px;margin:0 auto;
   padding:11px 13px 9px;border-radius:14px;background:rgba(1,4,10,.74);border:1px solid rgba(234,249,255,.16);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
@@ -153,10 +150,10 @@ body.dropping::after{content:"";position:fixed;inset:10px;z-index:30;border:1px 
   .data{top:calc(78px + env(safe-area-inset-top,0px));font-size:10.5px}
 }
 @media (prefers-reduced-motion:reduce){
-  #gl,#ov,.ic,.wb,.dot i,.mst,.dots9,.vid,.vid .vb{transition:none}
+  #gl,#ov,.ic,.wb,.vid,.vid .vb{transition:none}
 }
 
-/* ---- the mixer (16-mix.js): tabs, the two grids of loops, the pads, the effects pad, and the decks along the bottom ---- */
+/* ---- the mixer (16-mix.js): two tabs, and under them a grid of loops ---- */
 #mix{position:fixed;left:0;right:0;z-index:5;display:flex;flex-direction:column;gap:8px;padding:0 max(10px,env(safe-area-inset-right,0px)) 0 max(10px,env(safe-area-inset-left,0px));
   font-family:var(--mono);color:var(--ink);touch-action:none}
 #mix[hidden]{display:none}
@@ -165,8 +162,9 @@ body.dropping::after{content:"";position:fixed;inset:10px;z-index:30;border:1px 
 .mxt[aria-pressed=true]{color:var(--ink);border-color:rgba(62,240,255,.5);background:rgba(62,240,255,.1)}
 .mxv{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;touch-action:pan-y;scrollbar-width:none}
 .mxv::-webkit-scrollbar{display:none}
-.mxg{display:grid;gap:3px;min-height:100%;grid-template-rows:auto repeat(6,minmax(34px,1fr)) auto}
-.mxg[hidden],.mxp[hidden],.mxf[hidden]{display:none}
+.mxg{display:grid;gap:4px;min-height:100%;grid-template-rows:auto repeat(4,minmax(44px,1fr)) auto}
+.mxg[hidden]{display:none}
+@media (max-height:520px){.mxg{grid-template-rows:auto repeat(4,minmax(28px,1fr)) auto;gap:3px}.mxc,.mxr{min-height:28px}.mxx,.mxsc{height:20px;min-height:20px}}
 .mxh{font:500 7px/1.1 var(--mono);letter-spacing:.04em;text-transform:uppercase;color:var(--c,var(--dim));text-align:center;overflow:hidden;white-space:nowrap;padding:2px 0 3px}
 .mxr{min-height:34px;border-radius:6px;border:1px solid rgba(234,249,255,.16);color:var(--dim);font:500 10px var(--mono)}
 .mxx{height:24px;min-height:24px;font-size:7px;letter-spacing:.04em;text-transform:uppercase}
@@ -175,43 +173,8 @@ body.dropping::after{content:"";position:fixed;inset:10px;z-index:30;border:1px 
 .mxc.on{color:#01040a;background:var(--c);border-color:var(--c);box-shadow:0 0 12px var(--c)}
 .mxc.wait{border-color:var(--c);color:var(--c);animation:mxblink .5s steps(2) infinite}
 .mxc.stopping{background:var(--c);color:#01040a;opacity:.5}
-.mxc.empty{opacity:.4}
 .mxsc{height:24px;min-height:24px;font-size:8px}
 @keyframes mxblink{50%{opacity:.25}}
-.mxp,.mxf{display:flex;flex-direction:column;gap:8px}
-.mxkr{display:flex;align-items:center;justify-content:center;gap:10px}
-.mxkn{font:500 9px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink);min-width:180px;text-align:center}
-.mxa{width:36px;height:28px;border-radius:14px;border:1px solid rgba(234,249,255,.18);color:var(--dim);font-size:10px}
-.mxpg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
-.mxpad{height:clamp(44px,8.6vh,72px);border-radius:8px;border:1px solid rgba(180,107,255,.35);background:rgba(180,107,255,.06);color:var(--dim);
-  font:500 7.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;transition:background .14s,box-shadow .14s,color .14s;touch-action:none}
-.mxpad.hit{background:rgba(180,107,255,.55);box-shadow:0 0 16px rgba(180,107,255,.8);color:#01040a;transition:none}
-.mxrr{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;align-items:center}
-.mxb{height:28px;padding:0 10px;border-radius:14px;border:1px solid rgba(234,249,255,.16);color:var(--dim);font:500 8px var(--mono);letter-spacing:.08em;text-transform:uppercase;
-  background:rgba(1,4,10,.45);touch-action:none}
-.mxb.held,.mxb[aria-pressed=true]{color:var(--ink);border-color:rgba(62,240,255,.5);background:rgba(62,240,255,.12)}
-.mxrec[aria-pressed=true]{color:#fff;border-color:var(--pink);background:rgba(255,45,138,.25)}
-.mxlab{font:500 8px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
-.mxxy{position:relative;height:min(36vh,250px);flex:none;border-radius:10px;border:1px solid rgba(234,249,255,.2);touch-action:none;
-  background:repeating-linear-gradient(0deg,transparent 0 23px,rgba(234,249,255,.05) 23px 24px),repeating-linear-gradient(90deg,transparent 0 23px,rgba(234,249,255,.05) 23px 24px)}
-.mxxy.held{border-color:rgba(62,240,255,.6)}
-.mxxl{position:absolute;left:10px;bottom:8px;font:500 8px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
-.mxxy i{position:absolute;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;border:1.5px solid var(--lume);left:50%;top:50%;box-shadow:0 0 14px var(--lume);pointer-events:none}
-.mxd{flex:none;display:flex;flex-direction:column;gap:6px;padding-bottom:2px}
-.mxdr{display:flex;gap:8px}
-.mxdk{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;border:1px solid rgba(234,249,255,.12);border-radius:10px;padding:6px 8px;background:rgba(1,4,10,.4)}
-.mxdt{display:flex;align-items:baseline;gap:6px;font:500 8px var(--mono);letter-spacing:.06em;color:var(--dim)}
-.mxdn{font:800 15px/1 var(--display);color:var(--ink)}
-.mxbt{margin-left:auto;letter-spacing:.1em;color:var(--lume)}
-.mxbr{display:flex;gap:4px}
-.mxbr .mxb{flex:1;padding:0 3px;min-width:0}
-.mxs{display:grid;grid-template-columns:auto 1fr;grid-template-areas:"l v" "t t";gap:1px 6px;align-items:center}
-.mxsl{grid-area:l;font:500 7px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
-.mxsv{grid-area:v;justify-self:end;font:500 7px var(--mono);color:var(--ink)}
-.mxst{grid-area:t;position:relative;height:22px;touch-action:none;cursor:pointer}
-.mxst::before{content:"";position:absolute;left:0;right:0;top:10px;height:2px;border-radius:1px;background:rgba(234,249,255,.18)}
-.mxst::after{content:"";position:absolute;left:50%;top:6px;height:10px;width:1px;background:rgba(234,249,255,.3)}
-.mxst i{position:absolute;top:4px;width:14px;height:14px;margin-left:-7px;border-radius:50%;background:var(--abyss);border:1.5px solid var(--lume);box-shadow:0 0 8px rgba(62,240,255,.5)}
 </style>
 
 <canvas id="gl" aria-hidden="true"></canvas>
@@ -226,6 +189,7 @@ body.dropping::after{content:"";position:fixed;inset:10px;z-index:30;border:1px 
     <button class="ic" id="bPhoto" type="button" aria-label="Use a photo of your own. It stays on this device"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="4" width="13" height="9.5" rx="2"/><circle cx="8" cy="8.8" r="2.6"/><path d="M5.5 4l1-1.8h3l1 1.8"/></svg></button>
     <button class="ic" id="bClear" type="button" hidden aria-label="Take the photo away"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
     <button class="ic" id="bSave" type="button" hidden aria-label="Save a picture of what is on the screen now"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8M4.8 7.2L8 10.4l3.2-3.2M2.5 13.5h11"/></svg></button>
+    <button class="ic mst" id="bSound" type="button" aria-pressed="false" aria-label="Music starts with your first touch. Turn it on now"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6.2 11.6V3.4l6-1.2v8.2"/><circle cx="4.6" cy="11.7" r="1.7"/><circle cx="10.6" cy="10.5" r="1.7"/><path class="sl" d="M2.2 2.2l11.6 11.6"/></svg></button>
   </div>
 </header>
 <p class="data" id="data" aria-live="off"></p>
@@ -236,10 +200,6 @@ body.dropping::after{content:"";position:fixed;inset:10px;z-index:30;border:1px 
   <div class="lyr scr" id="themes" hidden role="group" aria-label="Kinds of camera"></div>
   <div class="lyr scr" id="lyr" hidden role="group" aria-label="Layers of the Earth"></div>
   <div class="tools" id="tools" hidden role="toolbar" aria-label="Build in the water"></div>
-  <div class="dots" id="dotrow" role="group" aria-label="The music: the whole band, then each of its nine players">
-    <button class="dot mst" id="bSound" type="button" aria-pressed="false" aria-label="Music starts with your first touch. Turn it on now"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6.2 11.6V3.4l6-1.2v8.2"/><circle cx="4.6" cy="11.7" r="1.7"/><circle cx="10.6" cy="10.5" r="1.7"/></svg></button>
-    <span class="dots9" id="dots"></span>
-  </div>
   <nav class="rail" id="rail" aria-label="Worlds"></nav>
 </footer>
 <input class="sr" type="file" id="file" accept="image/*" tabindex="-1" aria-hidden="true">
@@ -419,7 +379,7 @@ var ON=[1,0,0,0,0,1,0,0,0],SC=[1,1,1,1,1,1,1,1,1],G=new Float32Array(NL),E=new F
 function bandGain(i){return ON[i]*SC[i]*SG[i]}
 function bandApply(i,slow){if(AU.c&&AU.L[i]){var n=AU.c.currentTime,v=bandGain(i);AU.L[i].gain.cancelScheduledValues(n);AU.L[i].gain.setTargetAtTime(v,n,slow?.35:(v>0?.03:.12))}}
 function setPlayer(i,on,quiet){
-  on=on?1:0;if(ON[i]===on)return;ON[i]=on;bandApply(i);dotSync(i);
+  on=on?1:0;if(ON[i]===on)return;ON[i]=on;bandApply(i);if(MIXON)MIX.player(i,on);
   if(!quiet)say(BNAMES[i]+(on?' in':' out'),BCOL[i])}
 /* a world's arrangement of the band: crossfaded over a moment */
 function sceneSet(sc){for(var i=0;i<NL;i++){SC[i]=sc?sc[i]:1;bandApply(i,true)}}
@@ -473,7 +433,8 @@ var CLK={w0:performance.now()};
 /* where we are in the music, in seconds, never wrapping. While the sound runs its own clock leads; otherwise the wall clock keeps the picture moving */
 function loopT(){if(AU.live)return AU.c.currentTime-AU.t0-AU.lat;return (performance.now()-CLK.w0)/1000}
 function clockSync(){
-  var live=!!(AU.c&&AU.run&&AU.c.state==='running');
+  /* (once the mixer has the band, its loops are the sound, on the same clock: 16-mix.js) */
+  var live=!!(AU.c&&(AU.run||MIXON)&&AU.c.state==='running');
   if(live&&performance.now()-AU.latAt>1500){AU.latAt=performance.now();var l=Math.min(.35,AU.c.outputLatency||AU.c.baseLatency||0);if(Math.abs(l-AU.lat)>.04)AU.lat=l}
   if(live===AU.live)return;
   if(!live){var lt=loopT();AU.live=false;CLK.w0=performance.now()-lt*1000}else AU.live=true}
@@ -588,7 +549,7 @@ function audioUnlock(){
     var pr=AU.unl.play();if(pr&&pr.catch)pr.catch(function(){})}catch(e){}}
 
 function stemsStart(){
-  /* (in the mixer the decks play the band instead: 16-mix.js) */
+  /* (once the mixer has the band, it plays it from then on: 16-mix.js) */
   if(AU.run||!AU.want||!AU.ready||!AU.c||MIXON)return;var c=AU.c;
   /* the very first time, the band comes in on the one */
   var lt=AU.first?-.06:loopT();AU.first=false;
@@ -651,7 +612,7 @@ function toyPlay(buf,rate,gain,pan,when){
 function doorDip(){if(!AU.door||!AU.c||AU.c.state!=='running')return;var n=AU.c.currentTime,f=AU.door.frequency;f.cancelScheduledValues(n);f.setTargetAtTime(520,n,.05);f.setTargetAtTime(19800,n+.2,.22)}
 /* worlds that play on the band's grid are told about each sixteenth a little ahead of time, on the sound's own clock, so their notes sit on the beat */
 function seqPump(){
-  var c=AU.c;if(!c||!AU.run)return;var now=c.currentTime,cur=Math.floor((now-AU.t0)/SD),ahead=document.hidden?1.2:.14;
+  var c=AU.c;if(!c||!(AU.run||MIXON))return;var now=c.currentTime,cur=Math.floor((now-AU.t0)/SD),ahead=document.hidden?1.2:.14;
   if(AU.sq<cur)AU.sq=cur;
   while(AU.t0+(AU.sq+1)*SD<now+ahead){AU.sq++;var s=AU.sq;if(CUR&&CUR.seq){try{CUR.seq(s,AU.t0+s*SD+((s&1)?SD*SWING:0))}catch(e){}}}}
 
@@ -1111,27 +1072,29 @@ var GLOBE=(function(){
    drop; a finger that stays is a spring. The screen is nine notes high, and the ink is the colour of the note it was drawn on.
    The bass rolls the water from below, the balafon and kora drip their notes into it as a score.
    Given a photo, the photo is the ink: smear it, and it slowly remembers itself.
-   It is also a machine to build in, and a game of 24 levels. Smoke rises (warm ink is light). Walls stop the water and the ink; a fan
+   It is also a machine to build in, and a game. Smoke rises (warm ink is light). Walls stop the water and the ink; a fan
    pushes the water one way for as long as it stands (and breathes ink, outside the levels); a prism gives the smoke that passes
    through it its own colour; a drain swallows ink and draws the water in; a tunnel takes the smoke that goes into one end out of the
    other. Two fingers turning make a whirlpool; two fingers closing pull the water in, opening throw it out.
-   In a level, fixed sources breathe ink of their own colours inside a tank of fixed shape (so a level plays the same on any screen),
-   and each ring wants its colour (or, for a white ring, cyan and amber together): build a few pieces to bring the right smoke into
-   every ring. The fewer pieces, the more stars. Six chapters of four levels, each chapter bringing a new piece; each level open once
-   the one before it is solved; every third level solved brings one more player into the band, the electric guitar last.
-   (The owner, 12 Nov: "The smoke game needs to be better", and he chose: lots of levels, harder as they go, stars for using fewer
-   pieces, new parts unlocked as you go.) ---------- */
+   The game is rounds. In a round, fixed sources breathe ink of their own colours inside a tank of fixed shape (so it plays the same
+   on any screen), and each ring wants its colour (or, for a white ring, cyan and amber together): place a few pieces to bring the
+   right smoke into every ring, then let the smoke go. Each round is one of 24 set-ups, in six chapters of four, each chapter
+   bringing a new piece; which one comes next is chosen here (roundNext), harder as rounds are won, and it is mirrored half the time.
+   (The owner, 12 Nov: "The smoke game needs to be better": he chose lots of levels, harder as they go, stars, new parts unlocked as
+   you go. 13 Nov, evening: "Don't understand, explain the game ... It's too complicated and you shouldn't see the levels, you should
+   just change the levels so each time it's a different set up": so no map, no numbers and no stars any more, and every piece is
+   there from the start.) ---------- */
 var DRIFT=(function(){
   var P=null,gen=-1,vel=null,dye=null,prs=null,div=null,curl=null,sw=0,sh=0,dw=0,dh=0,type=0,filt=0,simple=false,ql=-1,szKey='',
     q=[],last={},rows={},photoVer=-1,ink=0,t0=0,
     /* the machine: walls (segments, in fractions of the screen), fans, prisms, drains, tunnels; in a level also its fixed sources,
        walls, winds, prisms and drains, and its rings. obs is the walls drawn into the water's own grid: 1 where there is wall */
     obs=null,obsDirty=true,WB=null,WN=0,TOOL='ink',WALLS=[],FANS=[],DRAINS=[],PRISMS=[],TUNNELS=[],CUPS=[],FIX={walls:[],fans:[],drains:[],prisms:[]},
-    PZ=-1,pzWon=0,pzSaved=null,winStars=0,PATH=false,pathT=0,FIXDT=0,
+    PZ=-1,pzWon=0,FIXDT=0,MIR=false,WINS=0,ROUND=0,LASTL=-1,
     /* a level is built first, then its smoke is let go: RUN while it flows, TANK the seconds of smoke left (TANK0 when full), RT the
        water's time since it was let go (the moving parts keep it), EMPTYT when the tank ran dry, OUTT when a run ended without a win */
     RUN=0,TANK=0,TANK0=6,RT=0,EMPTYT=-1,OUTT=0,
-    rb=null,rbBuf=null,rbW=0,rbH=0,rbT=0,rbS=0,rbOk=false,simT=0,NOWIN=false,TRACE=null,REC=null,NODRAW=false,want=0,bdrag={},VQ=[],STARS=[],FASTDYE=false;
+    rb=null,rbBuf=null,rbW=0,rbH=0,rbT=0,rbS=0,rbOk=false,simT=0,NOWIN=false,TRACE=null,REC=null,NODRAW=false,want=0,bdrag={},VQ=[],FASTDYE=false;
   /* the five notes of the scale as five inks: E cyan, G green, A amber, B rose, D violet */
   var INK=[[.12,.86,1],[.30,1,.62],[1,.62,.20],[1,.14,.50],[.56,.36,1]];
   var VSB='attribute vec2 a_p;varying vec2 vUv;varying vec2 vL;varying vec2 vR;varying vec2 vT;varying vec2 vB;uniform vec2 uTexel;\n'+
@@ -1230,7 +1193,9 @@ var DRIFT=(function(){
   /* the level's tank: a fixed shape (a little narrower than a phone held upright) fitted into the stage. A level's places are in
      fractions of the tank, and its jets and pieces are as strong, for the tank's size, on any screen */
   var BA=.64,B={x0:0,y0:0,w:1,h:1};
-  function boardFit(){var h=Math.max(80,STG.h-6),w=Math.min(STG.w-14,h*BA);h=Math.min(h,w/BA);B.w=w;B.h=h;B.x0=STG.x0+(STG.w-w)/2;B.y0=STG.y0+(STG.h-h)/2}
+  /* the tank sits under the round's three lines of words, whatever they say at the moment */
+  function boardFit(){var y0=STG.y0,d=$('data');try{var r=d.getBoundingClientRect(),lh=parseFloat(getComputedStyle(d).lineHeight)||15.5;if(r.top>0)y0=Math.max(y0,Math.round(r.top+lh*3+8))}catch(e){}
+    var h=Math.max(80,STG.y1-y0-6),w=Math.min(STG.w-14,h*BA);h=Math.min(h,w/BA);B.w=w;B.h=h;B.x0=STG.x0+(STG.w-w)/2;B.y0=y0+(STG.y1-y0-h)/2}
   function bx(u){return (B.x0+u*B.w)/VW}function by(v){return (B.y0+v*B.h)/VH}
   /* how strong, for the tank: speeds (pixels a second) and areas (pixels squared) scale with it; splat sizes are in screen heights */
   function KS(){return PZ>=0?B.h/580:1}function KP(){var k=KS();return k*k}function KR(){if(PZ<0)return 1;var f=B.h/VH/.69;return f*f}
@@ -1243,7 +1208,7 @@ var DRIFT=(function(){
      src: a source breathing ink: x, y, direction, colour (0 cyan, 1 green, 2 amber, 3 rose, 4 violet); wind: a fixed fan that only
      pushes the water; cups: the rings, and the colour each wants ('mix': cyan and amber together); walls, prisms, drains: fixed ones;
      give: how many of each piece may be built (w walls, f fans, p the prisms' colours, d drains, t tunnels); par: the fewest pieces
-     known to solve it (three stars, with a third of the tank left); tip: the clue; sol: one way to solve it, which tools/t_design.js
+     known to solve it (it gave the stars, which are gone); tip: the clue (no longer shown: the round's words are made by hud()); sol: one way to solve it, which tools/t_design.js
      builds and checks (every ring fills before the smoke is gone; and with nothing built, none does). tank: seconds of smoke (6).
      The moving parts: a source may sweep (src[5] degrees each way, src[6] seconds a sweep), a ring may drift (cups[3], cups[4]: how
      far, cups[5] seconds there and back), a fixed fan may blow by turns (wind[4] seconds on, wind[5] off). Every level is carried by
@@ -1255,7 +1220,7 @@ var DRIFT=(function(){
     {name:'two lids',src:[[0.1,0.45,1,0,3],[0.38,0.74,0,-1,0],[0.7,0.74,0,-1,2]],cups:[[0.844,0.46,3]],give:{w:3},par:2,tank:6.0,tip:'two jets from below push the rose aside: hold both down',sol:[['wall',[0.29,0.64,0.47,0.64]],['wall',[0.61,0.64,0.79,0.64]]]},
     {name:'sweeper',src:[[0.1,0.45,1,0,0],[0.5,0.72,0,-1,2,30,3]],cups:[[0.844,0.5,0]],give:{w:2},par:1,tank:4.5,tip:'a jet that sweeps: a wall long enough holds it wherever it points',sol:[['wall',[0.22,0.62,0.78,0.62]]]},
     {name:'push',src:[[0.5,0.88,0,-1,2]],cups:[[0.219,0.42,2]],give:{f:1,w:1},par:1,tank:5.0,tip:'new: the fan. drag the way it should blow. a fan pushes the water, and the smoke with it',sol:[['fan',[0.56,0.66,-1,0]]]},
-    {name:'down',src:[[0.1,0.4,1,0,3]],walls:[[0.86,0.56,1,0.56]],cups:[[0.844,0.78,3]],give:{f:1,w:1},par:1,tank:5.0,tip:'smoke never sinks by itself',sol:[['fan',[0.45,0.32,0,1]]]},
+    {name:'down',nomir:1,src:[[0.1,0.4,1,0,3]],walls:[[0.86,0.56,1,0.56]],cups:[[0.844,0.78,3]],give:{f:1,w:1},par:1,tank:5.0,tip:'smoke never sinks by itself',sol:[['fan',[0.45,0.32,0,1]]]},
     {name:'the other way',src:[[0.5,0.88,0,-1,4]],cups:[[0.781,0.5,4,0.0,-0.1,4.0]],give:{f:1,w:1},par:1,tank:5.0,tip:'a fan can blow any way you drag it, and this ring drifts',sol:[['fan',[0.44,0.66,1,0]]]},
     {name:'drifting down',src:[[0.1,0.4,1,0,3]],walls:[[0.86,0.56,1,0.56]],cups:[[0.844,0.66,3,-0.2,0.0,4.0]],give:{f:1,w:1},par:1,tank:5.5,tip:'the ring drifts to and fro: push the smoke down where it goes',sol:[['fan',[0.45,0.32,0,1]]]},
     {name:'new colour',src:[[0.1,0.55,1,0,0]],cups:[[0.844,0.58,2]],give:{p:[2]},par:1,tank:4.5,tip:'new: the prism. tap to place one. smoke that passes through it takes its colour',sol:[['prism',[0.4,0.55,2]]]},
@@ -1264,7 +1229,7 @@ var DRIFT=(function(){
     {name:'white from cyan',src:[[0.36,0.9,0.4,-1,0],[0.64,0.9,-0.4,-1,0]],cups:[[0.531,0.66,'mix']],give:{p:[2]},par:1,tank:4.5,tip:'two cyan jets meet: the white ring needs amber in it too',sol:[['prism',[0.57,0.78,2]]]},
     {name:'swallow',src:[[0.1,0.5,1,0,3],[0.5,0.1,0,1,1]],cups:[[0.844,0.58,3]],give:{d:1},par:1,tank:6.0,tip:'new: the drain. tap to place one. a jet that runs into it is swallowed',sol:[['drain',[0.5,0.3]]]},
     {name:'two intruders',src:[[0.1,0.5,1,0,0],[0.35,0.08,0,1,2],[0.65,0.08,0,1,3]],cups:[[0.844,0.5,0,-0.2,0.0,4.0]],give:{d:2},par:2,tank:5.0,tip:'two jets fall across the cyan: swallow them both',sol:[['drain',[0.35,0.28]],['drain',[0.65,0.28]]]},
-    {name:'moving target',src:[[0.1,0.5,1,0,3],[0.5,0.1,0,1,1]],cups:[[0.844,0.62,3,0.0,-0.16,4.0]],give:{d:1},par:1,tank:5.0,tip:'swallow the green, and keep the rose on the ring as it drifts',sol:[['drain',[0.5,0.3]]]},
+    {name:'moving target',nomir:1,src:[[0.1,0.5,1,0,3],[0.5,0.1,0,1,1]],cups:[[0.844,0.62,3,0.0,-0.16,4.0]],give:{d:1},par:1,tank:5.0,tip:'swallow the green, and keep the rose on the ring as it drifts',sol:[['drain',[0.5,0.3]]]},
     {name:'fan and drain',src:[[0.1,0.4,1,0,1],[0.84,0.97,0,-1,3]],walls:[[0.86,0.56,1,0.56]],cups:[[0.719,0.66,1]],give:{d:1,f:1},par:2,tank:5.5,tip:'push the green down into the ring, and swallow the rose rising into it',sol:[['fan',[0.45,0.32,0,1]],['drain',[0.84,0.93]]]},
     {name:'out of the box',src:[[0.2,0.82,1,0,0]],walls:[[0.0,0.65,0.45,0.65],[0.45,0.65,0.45,1.0]],cups:[[0.844,0.26,0]],give:{t:1},par:1,tank:4.5,tip:'new: the tunnel. drag from where the smoke goes in to where it comes out',sol:[['tunnel',[0.35,0.82,0.6,0.55]]]},
     {name:'box and prism',src:[[0.2,0.82,1,0,2]],walls:[[0.0,0.65,0.45,0.65],[0.45,0.65,0.45,1.0]],cups:[[0.844,0.34,4,-0.2,0.0,4.0]],give:{t:1,p:[4]},par:2,tank:7.5,tip:'out of the box, another colour, and a ring that drifts',sol:[['tunnel',[0.35,0.82,0.6,0.55]],['prism',[0.68,0.47,4]]]},
@@ -1278,40 +1243,40 @@ var DRIFT=(function(){
   ];
   /* who joins the band when a level is solved: every third level one more player (the shekere, the djembe, the talking drum, the
      agogo, the balafon, the kora), and the electric guitar when the last level is solved */
-  var JOIN={2:[1],5:[2],8:[3],11:[4],14:[6],17:[7],23:[8]},MIXC=[.506,.668,.542];
-  function joined(i){var a=[];for(var k in JOIN)if(+k<i)a=a.concat(JOIN[k]);return a}
-  function joinAt(i){return JOIN[i]||[]}
-  /* the stars won on each level, kept in the viewer's own browser */
-  function lsGet(){try{var a=JSON.parse(localStorage.getItem('lc.smoke.stars')||'[]');if(Array.isArray(a))return a.map(function(v){return clamp(Math.round(+v)||0,0,3)})}catch(e){}return []}
-  function lsSet(){try{localStorage.setItem('lc.smoke.stars',JSON.stringify(STARS))}catch(e){}}
-  function isOpen(i){return i===0||(STARS[i-1]||0)>0||(STARS[i]||0)>0}
-  function reach(){var r=0;for(var i=0;i<LEVELS.length;i++)if(isOpen(i))r=i;return r}
-  function firstUnsolved(){for(var i=0;i<LEVELS.length;i++)if(!(STARS[i]>0))return i;return 0}
-  function starTotal(){var t=0;for(var i=0;i<LEVELS.length;i++)t+=STARS[i]||0;return t}
-  /* free play has the wall, the fan and the drain from the start (they were there before the levels); the prism and the tunnel come
-     once their chapter is reached */
-  function unlocked(k){if(k!=='prism'&&k!=='tunnel')return true;for(var c=0;c<CH.length;c++)if(CH[c].k===k)return CH[c].i<=reach();return true}
+  var MIXC=[.506,.668,.542];
+  /* the rounds won, kept in this browser: each set-up is picked from those this many wins have reached */
+  function winsGet(){try{return Math.max(0,Math.round(+localStorage.getItem('lc.smoke.wins')||0))}catch(e){return 0}}
+  function winsSet(){try{localStorage.setItem('lc.smoke.wins',String(WINS))}catch(e){}}
   function give(L){var g=L.give||{};return {w:g.w||0,f:g.f||0,p:(g.p||[]).slice(),d:g.d||0,t:g.t||0}}
   function given(){if(PZ<0)return {w:MAXW,f:MAXF,p:null,d:MAXD,t:MAXT};return give(LEVELS[PZ])}
   function used(){return WALLS.length+FANS.length+PRISMS.length+DRAINS.length+TUNNELS.length}
-  /* three stars: no more pieces than the fewest known, and a third of the tank still to spare; two: one piece more, or less smoke left */
-  function starsFor(n,par,left){return n<=par&&!(left<1/3)?3:n<=par+1?2:1}
   /* the prism colours still to place in a level (in the order given), or, outside the levels, the colour of the row it is put on */
   function prismsLeft(){var g=given();if(!g.p)return null;var a=g.p.slice();PRISMS.forEach(function(p){var k=a.indexOf(p.c);if(k>=0)a.splice(k,1)});return a}
+  /* a set-up may be played as its mirror image (left for right): the water knows no left from right, so it plays the same. (Not quite:
+     its grid is not the same either side of the tank, and two set-ups whose answer is a close thing, 'down' and 'moving target',
+     failed now and then mirrored, so they are only played as drawn: nomir) */
+  function mx(u){return MIR?1-u:u}function mdx(d){return MIR?-d:d}
   function placeFix(){var L=LEVELS[PZ];
-    FIX.walls=tank().concat((L.walls||[]).map(function(w){return [bx(w[0]),by(w[1]),bx(w[2]),by(w[3]),1]}));
-    FIX.fans=L.src.map(function(f){var m=Math.hypot(f[2],f[3])||1;return {x:bx(f[0]),y:by(f[1]),dx:f[2]/m,dy:f[3]/m,c:f[4],fixed:1,ph:0,
-        a0:Math.atan2(f[3],f[2]),sa:(f[5]||0)*Math.PI/180,sp:f[6]||4}}).concat(
-      (L.wind||[]).map(function(f){var m=Math.hypot(f[2],f[3])||1;return {x:bx(f[0]),y:by(f[1]),dx:f[2]/m,dy:f[3]/m,c:-1,fixed:1,wind:1,ph:0,on:f[4]||0,off:f[5]||0}}));
-    FIX.drains=(L.drains||[]).map(function(d){return {x:bx(d[0]),y:by(d[1]),fixed:1,ph:0}});
-    FIX.prisms=(L.prisms||[]).map(function(p){return {x:bx(p[0]),y:by(p[1]),c:p[2],fixed:1}});obsDirty=true}
+    FIX.walls=tank().concat((L.walls||[]).map(function(w){return [bx(mx(w[0])),by(w[1]),bx(mx(w[2])),by(w[3]),1]}));
+    FIX.fans=L.src.map(function(f){var m=Math.hypot(f[2],f[3])||1,dx=mdx(f[2]);return {x:bx(mx(f[0])),y:by(f[1]),dx:dx/m,dy:f[3]/m,c:f[4],fixed:1,ph:0,
+        a0:Math.atan2(f[3],dx),sa:(MIR?-1:1)*(f[5]||0)*Math.PI/180,sp:f[6]||4}}).concat(
+      (L.wind||[]).map(function(f){var m=Math.hypot(f[2],f[3])||1;return {x:bx(mx(f[0])),y:by(f[1]),dx:mdx(f[2])/m,dy:f[3]/m,c:-1,fixed:1,wind:1,ph:0,on:f[4]||0,off:f[5]||0}}));
+    FIX.drains=(L.drains||[]).map(function(d){return {x:bx(mx(d[0])),y:by(d[1]),fixed:1,ph:0}});
+    FIX.prisms=(L.prisms||[]).map(function(p){return {x:bx(mx(p[0])),y:by(p[1]),c:p[2],fixed:1}});obsDirty=true}
+  /* a set-up's solution as it stands on the screen (mirrored with it) */
+  function solNow(){var L=LEVELS[PZ];if(!L)return [];return (L.sol||[]).map(function(b){var a=b[1].slice();
+    if(b[0]==='wall'||b[0]==='tunnel'){a[0]=mx(a[0]);a[2]=mx(a[2])}else if(b[0]==='fan'){a[0]=mx(a[0]);a[2]=mdx(a[2])}else a[0]=mx(a[0]);return [b[0],a]})}
+  /* the next round: a set-up not just played, from those the rounds won have reached (walls first, then fans, prisms, drains,
+     tunnels, then everything; one chapter more for every two wins), the newest chapter likeliest, and mirrored half the time */
+  function roundNext(){var tier=Math.min(CH.length-1,Math.floor(WINS/2)),pool=[],i;
+    for(i=0;i<LEVELS.length;i++){var c=chapterOf(i);if(c>tier||i===LASTL)continue;pool.push(i);if(c===tier){pool.push(i);pool.push(i)}}
+    /* (the very first round, before any is won, is the simplest: one jet, one ring, a wall to place) */
+    i=!WINS&&!ROUND?0:pool.length?pool[Math.floor(Math.random()*pool.length)]:0;LASTL=i;MIR=!LEVELS[i].nomir&&Math.random()<.5;ROUND++;pzLoad(i)}
   function pzLoad(i){
-    var L=LEVELS[i];if(!L)return;PZ=i;PATH=false;pzWon=0;winStars=0;rbS=simT;WALLS=[];FANS=[];DRAINS=[];PRISMS=[];TUNNELS=[];boardFit();placeFix();
-    CUPS=L.cups.map(function(c){return {x:bx(c[0]),y:by(c[1]),x0:c[0],y0:c[1],mx:c[3]||0,my:c[4]||0,mp:c[5]||5,c:c[2],fill:0,match:0,done:false}});clearInk=true;
+    var L=LEVELS[i];if(!L)return;PZ=i;pzWon=0;rbS=simT;WALLS=[];FANS=[];DRAINS=[];PRISMS=[];TUNNELS=[];boardFit();placeFix();
+    CUPS=L.cups.map(function(c){return {x:bx(mx(c[0])),y:by(c[1]),x0:mx(c[0]),y0:c[1],mx:mdx(c[3]||0),my:c[4]||0,mp:c[5]||5,c:c[2],fill:0,match:0,done:false}});clearInk=true;
     RUN=0;TANK0=L.tank||6;TANK=TANK0;RT=0;EMPTYT=-1;OUTT=0;moveParts();
-    var g=give(L);TOOL=g.w?'wall':g.f?'fan':g.p.length?'prism':g.d?'drain':g.t?'tunnel':'ink';
-    /* the band: the low drum and the bass, and one more player for every third level before this one */
-    if(!pzSaved)pzSaved=ON.slice();var J=joined(i);for(var k=0;k<NL;k++){var on=k===0||k===5||J.indexOf(k)>=0;if(!!ON[k]!==on)setPlayer(k,on,true)}}
+    var g=give(L);TOOL=g.w?'wall':g.f?'fan':g.p.length?'prism':g.d?'drain':g.t?'tunnel':'ink'}
   /* the screen changed size: the tank is fitted again and everything in it, built or fixed, keeps its place in the tank */
   function pzRelayout(){if(PZ<0)return;var o={x0:B.x0,y0:B.y0,w:B.w,h:B.h};boardFit();if(o.w===B.w&&o.h===B.h&&o.x0===B.x0&&o.y0===B.y0)return;
     function X(u){return (B.x0+(u*VW-o.x0)/o.w*B.w)/VW}function Y(v){return (B.y0+(v*VH-o.y0)/o.h*B.h)/VH}
@@ -1319,8 +1284,7 @@ var DRIFT=(function(){
     TUNNELS.forEach(function(t){t.ax=X(t.ax);t.ay=Y(t.ay);t.bx=X(t.bx);t.by=Y(t.by)});
     placeFix();moveParts()}
   function pzOff(){PZ=-1;CUPS=[];FIX={walls:[],fans:[],drains:[],prisms:[]};WALLS=[];FANS=[];DRAINS=[];PRISMS=[];TUNNELS=[];obsDirty=true;pzWon=0;
-    if(TOOL!=='ink'&&!unlocked(TOOL))TOOL='ink';
-    if(pzSaved){for(var k=0;k<NL;k++)if(!!ON[k]!==!!pzSaved[k])setPlayer(k,!!pzSaved[k],true);pzSaved=null}}
+    TOOL='ink'}
   var clearInk=false;
   /* the moving parts, where they are at the water's time RT: a sweeping jet's direction, a drifting ring's place */
   function moveParts(){if(PZ<0)return;
@@ -1335,9 +1299,8 @@ var DRIFT=(function(){
   function stopRun(out){if(PZ<0)return;RUN=0;RT=0;EMPTYT=-1;TANK=TANK0;OUTT=out?FT:0;CUPS.forEach(function(c){c.fill=0;c.done=false;c.match=0});moveParts();
     if(out)hit('tok',.32,0);else clearInk=true;toolsSync()}
   function pzWin(){
-    var L=LEVELS[PZ];pzWon=FT;winStars=starsFor(used(),L.par,TANK/TANK0);STARS[PZ]=Math.max(STARS[PZ]||0,winStars);lsSet();
-    joinAt(PZ).forEach(function(k){if(!ON[k])setPlayer(k,true)});
-    tone('bowl',pent(0,52),.42,0);for(var k=0;k<winStars;k++)tone('glass',pent(7+k*2,52),.3,(k-1)*.4,AC()+.14+k*.16);
+    pzWon=FT;WINS++;winsSet();
+    tone('bowl',pent(0,52),.42,0);for(var k=0;k<3;k++)tone('glass',pent(7+k*2,52),.3,(k-1)*.4,AC()+.14+k*.16);
     CUPS.forEach(function(c){for(var k=0;k<14;k++){var a=k/14*TAU,col=c.c==='mix'?[.9,.95,1]:INK[c.c];push(WX(c.x)+Math.cos(a)*8,WY(c.y)+Math.sin(a)*8,Math.cos(a)*700*KS(),Math.sin(a)*700*KS(),col,.4,.0007*KR())}})}
   function AC(){return AU&&AU.c?AU.c.currentTime:0}
   /* the pieces under a point (pixels) */
@@ -1407,63 +1370,35 @@ var DRIFT=(function(){
     ['drain','drain','<circle cx="9.2" cy="9.2" r="6.4"/><path d="M9.2 5.4a3.8 3.8 0 1 1-3.6 2.6M9.2 7.8a1.4 1.4 0 1 1-1.3 1.9"/>'],
     ['tunnel','tunnel','<circle cx="4.2" cy="13.8" r="2.3"/><circle cx="14.2" cy="4.6" r="2.3"/><path d="M5.6 11.9C6.6 7.6 9.4 5.6 11.9 5"/>'],
     ['go','release',GOI[0]],
-    ['puz','levels','<circle cx="3.6" cy="14.6" r="1.7"/><circle cx="9.2" cy="9.2" r="1.7"/><circle cx="14.8" cy="3.8" r="1.7"/><path d="M4.9 13.4l3.1-3M10.5 8l3.1-3"/>'],
-    ['undo','again','<path d="M4.6 7.2A5.6 5.6 0 1 1 4 11.6M4.4 3.6v3.8h3.8"/>']];
+    ['puz','play','<path d="M5.4 3.6l9.4 5.6-9.4 5.6z"/>'],
+    ['undo','free','<path d="M3.4 14.8c2-3.6 4.2-.2 6.2-3.6s4.2-.6 5.8-3.6M4.2 6.6c1.6-2.4 3.4-.4 5-2.6"/>']];
+  var PLAYI=['<path d="M5.4 3.6l9.4 5.6-9.4 5.6z"/>','<path d="M14.6 7.4A5.8 5.8 0 1 0 15 11.6M15 3.6v3.8h-3.8"/>'];
   function toolsBuild(){
     var r=$('tools');if(!r||r.childNodes.length)return;
     TOOLS.forEach(function(t){var b=document.createElement('button');b.type='button';b.className='tb';b.id='t_'+t[0];
       b.innerHTML='<span></span><svg viewBox="0 0 18.4 18.4" aria-hidden="true">'+t[2]+'</svg>';b.firstChild.textContent=t[1];
       b.addEventListener('click',function(){
-        if(t[0]==='puz'){PATH=!PATH;pathT=FT;if(PATH){STARS=lsGet()}toolsSync();if(AU.auto)musicOn();return}
-        if(t[0]==='undo'){if(PZ>=0)pzLoad(PZ);toolsSync();return}
+        if(t[0]==='puz'){roundNext();toolsSync();if(AU.auto)musicOn();return}
+        if(t[0]==='undo'){pzOff();toolsSync();return}
         if(t[0]==='go'){if(PZ<0)return;if(RUN)stopRun(false);else release();return}
-        PATH=false;TOOL=t[0];toolsSync()});r.appendChild(b)})}
+        TOOL=t[0];toolsSync()});r.appendChild(b)})}
   function have(k,g){return k==='wall'?g.w:k==='fan'?g.f:k==='prism'?(g.p?g.p.length:MAXP):k==='drain'?g.d:k==='tunnel'?g.t:1}
   function toolsSync(){var g=given(),r=$('tools'),h0=r?r.offsetHeight:0;TOOLS.forEach(function(t){var b=$('t_'+t[0]);if(!b)return;
-      if(t[0]==='puz'){b.setAttribute('aria-pressed',PATH?'true':'false');return}
+      if(t[0]==='puz'){var pl=PZ<0?'play':'new';if(b.firstChild.textContent!==pl){b.firstChild.textContent=pl;b.lastChild.innerHTML=PLAYI[PZ<0?0:1]}b.setAttribute('aria-pressed','false');return}
       if(t[0]==='undo'){b.hidden=PZ<0;return}
       if(t[0]==='go'){b.hidden=PZ<0;var lb=RUN?'stop':'release';if(b.firstChild.textContent!==lb){b.firstChild.textContent=lb;b.lastChild.innerHTML=GOI[RUN?1:0]}
         b.setAttribute('aria-pressed',RUN?'true':'false');return}
-      b.setAttribute('aria-pressed',TOOL===t[0]&&!PATH?'true':'false');
-      b.hidden=t[0]==='ink'?PZ>=0:(PZ>=0?!have(t[0],g):!unlocked(t[0]))});
+      b.setAttribute('aria-pressed',TOOL===t[0]?'true':'false');
+      b.hidden=t[0]==='ink'?PZ>=0:(PZ>=0?!have(t[0],g):false)});
     if(r&&!r.hidden&&r.offsetHeight!==h0){layout();pzRelayout()}}
-  function enter(){if(GLX.ok&&gen!==GLX.gen)glSetup();size();t0=FT;lastT=0;STARS=lsGet();toolsBuild();var r=$('tools');if(r)r.hidden=false;toolsSync()}
-  function leave(){last={};rows={};q.length=0;bdrag={};PATH=false;var r=$('tools');if(r)r.hidden=true}
-  /* ---- the map of the levels: six rows, a chapter each, four levels to a row, one line running through them all ---- */
-  function pathNodes(){var n=LEVELS.length,rws=Math.ceil(n/4),top=STG.y0+Math.max(54,STG.h*.15),bot=STG.y1-Math.max(26,STG.h*.06),rh=rws>1?(bot-top)/(rws-1):0,
-      w=Math.min(STG.w*.8,380),x0=STG.cx-w/2,out=[];
-    for(var i=0;i<n;i++){var r=Math.floor(i/4),c=i%4;if(r%2)c=3-c;out.push({i:i,x:x0+w*(c+.5)/4,y:top+r*rh,r:r})}
-    return out}
-  function freeBtn(){return {x:STG.cx,y:STG.y0+Math.max(20,STG.h*.05),w:118,h:28}}
-  function star(c,x,y,R,fill){c.beginPath();for(var k=0;k<10;k++){var a=-Math.PI/2+k*Math.PI/5,rr=k%2?R*.45:R;c.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr)}c.closePath();if(fill)c.fill();else c.stroke()}
-  function pathDraw(t){
-    var c=OV,ns=pathNodes(),i,k=smooth((FT-pathT)/260),hi=firstUnsolved();
-    c.fillStyle='rgba(1,4,10,'+(.72*k).toFixed(3)+')';c.fillRect(0,0,VW,VH);if(k<.05)return;c.globalAlpha=k;
-    c.lineWidth=1.2;c.strokeStyle='rgba(62,240,255,.28)';c.beginPath();ns.forEach(function(n,j){if(j)c.lineTo(n.x,n.y);else c.moveTo(n.x,n.y)});c.stroke();
-    c.textAlign='left';c.textBaseline='alphabetic';c.font='600 9px '+MONO;
-    CH.forEach(function(h,j){var n=ns[h.i];if(!n)return;c.fillStyle='rgba(234,249,255,.55)';c.fillText((j+1)+' · '+h.n.toUpperCase(),Math.min(ns[h.i].x,ns[Math.min(h.i+3,ns.length-1)].x)-16,n.y-26)});
-    c.textAlign='center';c.textBaseline='middle';
-    ns.forEach(function(n){var open=isOpen(n.i),s=STARS[n.i]||0,cur=n.i===PZ,next=open&&!s&&n.i===hi,R=15;
-      c.fillStyle='rgba(1,4,10,.9)';c.beginPath();c.arc(n.x,n.y,R,0,TAU);c.fill();
-      c.lineWidth=cur||next?2:1.3;c.strokeStyle=!open?'rgba(120,140,160,.35)':s?'rgba(62,240,255,.9)':'rgba(234,249,255,'+(next?(.6+.35*Math.sin(t*.006)).toFixed(3):'.8')+')';
-      c.beginPath();c.arc(n.x,n.y,R,0,TAU);c.stroke();if(cur){c.strokeStyle='rgba(62,240,255,.45)';c.beginPath();c.arc(n.x,n.y,R+5,0,TAU);c.stroke()}
-      c.font='600 11px '+MONO;c.fillStyle=open?'rgba(234,249,255,.95)':'rgba(120,140,160,.5)';c.fillText(String(n.i+1),n.x,n.y+.5);
-      if(open)for(var j=0;j<3;j++){c.fillStyle=j<s?'rgba(255,214,120,.95)':'rgba(234,249,255,.22)';c.strokeStyle=c.fillStyle;c.lineWidth=.8;star(c,n.x-9+j*9,n.y+R+8,3.6,j<s)}});
-    var f=freeBtn();c.lineWidth=1.2;c.strokeStyle=PZ<0?'rgba(62,240,255,.7)':'rgba(234,249,255,.4)';c.beginPath();
-    if(c.roundRect)c.roundRect(f.x-f.w/2,f.y-f.h/2,f.w,f.h,14);else c.rect(f.x-f.w/2,f.y-f.h/2,f.w,f.h);c.stroke();
-    c.font='600 9.5px '+MONO;c.fillStyle='rgba(234,249,255,.85)';c.fillText('PLAY FREELY',f.x,f.y+.5);
-    c.globalAlpha=1;c.textAlign='left';c.textBaseline='alphabetic'}
-  function pathTap(x,y){
-    var ns=pathNodes(),i;for(i=0;i<ns.length;i++){if(Math.hypot(ns[i].x-x,ns[i].y-y)<22){if(isOpen(i)){pzLoad(i);toolsSync();hit('tok',.3,pan(x))}else hit('tok',.12,pan(x));return}}
-    var f=freeBtn();if(Math.abs(x-f.x)<f.w/2+6&&Math.abs(y-f.y)<f.h/2+6){if(PZ>=0)pzOff();PATH=false;TOOL='ink';toolsSync();return}
-    PATH=false;toolsSync()}
+  function enter(){if(GLX.ok&&gen!==GLX.gen)glSetup();size();t0=FT;lastT=0;WINS=winsGet();toolsBuild();var r=$('tools');if(r)r.hidden=false;toolsSync()}
+  function leave(){last={};rows={};q.length=0;bdrag={};var r=$('tools');if(r)r.hidden=true}
   /* (the stage is measured again by the world switch once the row is shown or put away) */
   function down(p){
-    if(PATH){bdrag[p.id]={kind:'path'};return}
     if(!p.ghost&&TOOL!=='ink'&&p.n<2){bdrag[p.id]={kind:TOOL,x0:p.x,y0:p.y};return}
     last[p.id]={x:p.x,y:p.y};rows[p.id]=rowOf(p.y);note(p,.5)}
   function up(p){
-    var b=bdrag[p.id];if(b){delete bdrag[p.id];if(b.kind==='path'){if(p.moved<14&&!p.ghost)pathTap(p.x,p.y);return}buildUp(p,b);toolsSync();return}
+    var b=bdrag[p.id];if(b){delete bdrag[p.id];buildUp(p,b);toolsSync();return}
     var l=last[p.id];delete last[p.id];delete rows[p.id];if(!l||PZ>=0)return;
     /* a tap is a drop: the ink bursts outward */
     if(FT-p.t0<260&&p.moved<14){var c=inkOf(p.y);for(var k=0;k<8;k++){var a=k/8*TAU+.3;push(p.x+Math.cos(a)*10,p.y+Math.sin(a)*10,Math.cos(a)*520,Math.sin(a)*520,c,.55,.0007)}}}
@@ -1496,7 +1431,8 @@ var DRIFT=(function(){
     PRISMS.forEach(function(p){p.ph=(p.ph||0)+dt});
     /* the rings are measured a few times a second, and fill by the water's own time (a slow phone fills them no faster than the smoke moves) */
     if(CUPS.length&&FT-rbT>280){var dtc=simT-rbS;rbS=simT;rbT=FT;want=1;cupsCheck(clamp(dtc,0,.6))}
-    if(pzWon&&FT-pzWon>3200){pzWon=0;if(PZ+1<LEVELS.length)pzLoad(PZ+1);else{pzSaved=[1,1,1,1,1,1,1,1,1];pzOff();TOOL='ink';PATH=true;pathT=FT}toolsSync()}
+    /* a round won: the next set-up, a moment later */
+    if(pzWon&&FT-pzWon>3000){pzWon=0;roundNext();toolsSync()}
     /* the band in the water. With a photo in it, the band only moves the water (and more gently): the photo stays the only ink */
     var pk=PHOTO.has?0:1,pv=PHOTO.has?.4:1;
     for(i=0;PZ<0&&i<BD.flow.length;i++){var h=BD.flow[i],s=h.s,x=STG.x0+STG.w*(.06+.88*BD.ph);
@@ -1508,7 +1444,7 @@ var DRIFT=(function(){
       else if(h.i===1)push(VW*r(),STG.y0+STG.h*r(),(r()-.5)*70,(r()-.5)*70,[0,0,0],0,.0009)}
     ink+=((q.length?1:0)-ink)*Math.min(1,dt*2)}
   /* two fingers: turning makes a whirlpool where they are, closing pulls the water in, opening throws it out */
-  function gesture(e){if(e.ghost||PATH||bdrag[Object.keys(bdrag)[0]])return;
+  function gesture(e){if(e.ghost||bdrag[Object.keys(bdrag)[0]])return;
     if(Math.abs(e.rot)>.004)VQ.push([e.cx,e.cy,-e.rot/e.dt*95,2,3600]);
     if(Math.abs(e.scale-1)>.004)VQ.push([e.cx,e.cy,(1-e.scale)/e.dt*700,1,5200])}
   function step(dtr){
@@ -1561,8 +1497,11 @@ var DRIFT=(function(){
     if(REC&&!REC.done)recStep();
     if(NODRAW)return;
     var u=run(P.show,null,[1/dw,1/dh]);glBind(0,dye.r.tex,u.uT);gl.uniform3f(u.uBg,ABYSS[0],ABYSS[1],ABYSS[2]);gl.uniform1f(u.uZ,.55);glQuad(P.show);
-    pieces(t);if(PATH)pathDraw(t)}
-  function cs(col,a){return 'rgba('+Math.round(col[0]*255)+','+Math.round(col[1]*255)+','+Math.round(col[2]*255)+','+a+')'}
+    pieces(t)}
+  function cs(col,a){return cpre(col)+a+')'}
+  /* the colour without its alpha, to finish with one: cpre(col)+'.5)'. (Until 13 Nov the rings and the jets were built as cs(col,'')+'.75)',
+     which no browser can read, so they kept the grey of the line drawn before them and never showed their colour) */
+  function cpre(col){return 'rgba('+Math.round(col[0]*255)+','+Math.round(col[1]*255)+','+Math.round(col[2]*255)+','}
   /* the machine drawn over the water: walls as lit tubes, fans turning, prisms, drains swirling, tunnels, the level's rings filling */
   function pieces(t){
     var c=OV,i,k,cr=cupR();
@@ -1575,7 +1514,7 @@ var DRIFT=(function(){
       else if(b.kind==='fan'||b.kind==='tunnel'){c.strokeStyle='rgba(234,249,255,.7)';c.lineWidth=1.5;c.setLineDash(b.kind==='tunnel'?[3,5]:[]);c.beginPath();c.moveTo(b.x0,b.y0);c.lineTo(p.x,p.y);c.stroke();c.setLineDash([]);
         if(b.kind==='tunnel'){c.beginPath();c.arc(b.x0,b.y0,cr*.75,0,TAU);c.stroke();c.beginPath();c.arc(p.x,p.y,cr*.75,0,TAU);c.stroke()}}}
     /* a level's own sources wear their colour; a fan built in a level breathes no ink and is drawn plain; a level's winds are fixed fans */
-    function fan(f,fixed){var x=WX(f.x),y=WY(f.y),col=f.c<0?[.86,.93,1]:INK[f.c],s=cs(col,'');
+    function fan(f,fixed){var x=WX(f.x),y=WY(f.y),col=f.c<0?[.86,.93,1]:INK[f.c],s=cpre(col);
       c.strokeStyle=s+'.95)';c.lineWidth=1.4;c.beginPath();c.arc(x,y,fixed&&!f.wind?9:11,0,TAU);c.stroke();if(f.wind){c.strokeStyle='rgba(200,215,225,.8)';c.beginPath();c.arc(x,y,15,0,TAU);c.stroke();c.strokeStyle=s+'.95)'}
       for(k=0;k<3;k++){var a=f.ph+k*TAU/3;c.beginPath();c.moveTo(x,y);c.lineTo(x+Math.cos(a)*(fixed&&!f.wind?7:9),y+Math.sin(a)*(fixed&&!f.wind?7:9));c.stroke()}
       if(fixed&&!f.wind){c.fillStyle=s+'.9)';c.beginPath();c.arc(x,y,3,0,TAU);c.fill();
@@ -1603,46 +1542,51 @@ var DRIFT=(function(){
     /* a ring that drifts: the way it goes, faintly */
     CUPS.forEach(function(cp){if(!cp.mx&&!cp.my)return;var col=cp.c==='mix'?[.92,.96,1]:INK[cp.c];c.save();c.setLineDash([2,6]);c.strokeStyle=cs(col,.35);c.lineWidth=1.2;
       c.beginPath();c.moveTo(B.x0+cp.x0*B.w,B.y0+cp.y0*B.h);c.lineTo(B.x0+(cp.x0+cp.mx)*B.w,B.y0+(cp.y0+cp.my)*B.h);c.stroke();c.restore()});
-    CUPS.forEach(function(cp){var x=WX(cp.x),y=WY(cp.y),col=cp.c==='mix'?[.92,.96,1]:INK[cp.c],s=cs(col,'');
+    CUPS.forEach(function(cp){var x=WX(cp.x),y=WY(cp.y),col=cp.c==='mix'?[.92,.96,1]:INK[cp.c],s=cpre(col);
       c.strokeStyle=s+(cp.done?'1)':'.75)');c.lineWidth=cp.done?2.4:1.5;c.setLineDash(cp.c==='mix'?[3,4]:[]);c.beginPath();c.arc(x,y,cr,0,TAU);c.stroke();c.setLineDash([]);
       c.lineWidth=3;c.strokeStyle=s+'.95)';c.beginPath();c.arc(x,y,cr+6,-Math.PI/2,-Math.PI/2+TAU*cp.fill);c.stroke();
       if(cp.done){c.fillStyle=s+(.18+.1*Math.sin(t*.006)).toFixed(3)+')';c.beginPath();c.arc(x,y,cr,0,TAU);c.fill()}});
     /* the tank's smoke: a line along the foot of the tank that shortens as the smoke is spent (along the foot, clear of the words at the
-       top); the mark a third along is where three stars end */
-    if(PZ>=0&&!PATH){var fr2=clamp(TANK/TANK0,0,1),col0=(FIX.fans[0]&&FIX.fans[0].c>=0)?INK[FIX.fans[0].c]:[.9,.95,1],gy=B.y0+B.h-4;
+       top) */
+    if(PZ>=0){var fr2=clamp(TANK/TANK0,0,1),col0=(FIX.fans[0]&&FIX.fans[0].c>=0)?INK[FIX.fans[0].c]:[.9,.95,1],gy=B.y0+B.h-4;
       c.strokeStyle='rgba(234,249,255,.14)';c.lineWidth=3;c.beginPath();c.moveTo(B.x0+4,gy);c.lineTo(B.x0+B.w-4,gy);c.stroke();
-      c.strokeStyle=cs(col0,RUN&&fr2<1/3?(.55+.4*Math.sin(t*.012)).toFixed(3):.9);c.beginPath();c.moveTo(B.x0+4,gy);c.lineTo(B.x0+4+(B.w-8)*fr2,gy);c.stroke();
-      c.fillStyle='rgba(255,214,120,.9)';star(c,B.x0+4+(B.w-8)/3,gy-8,4,true)}
-    /* a level solved: its stars, one after another, in the middle of the tank */
-    if(pzWon&&PZ>=0){var e=(FT-pzWon)/1000,cx=B.x0+B.w/2,cy=B.y0+B.h*.5;c.fillStyle='rgba(1,4,10,'+(.5*smooth(e/.4)).toFixed(3)+')';c.fillRect(B.x0,B.y0,B.w,B.h);
-      for(k=0;k<3;k++){var g2=smooth((e-.15-k*.18)/.3),R2=26*(k===1?1.25:1)*(.6+.4*g2);if(g2<=0)continue;var on=k<winStars;c.globalAlpha=g2;c.fillStyle=on?'rgba(255,214,120,.98)':'rgba(234,249,255,.25)';c.strokeStyle=c.fillStyle;c.lineWidth=1.4;
-        star(c,cx+(k-1)*66,cy-(k===1?10:0),R2,on)}c.globalAlpha=1}
+      c.strokeStyle=cs(col0,RUN&&fr2<1/3?(.55+.4*Math.sin(t*.012)).toFixed(3):.9);c.beginPath();c.moveTo(B.x0+4,gy);c.lineTo(B.x0+4+(B.w-8)*fr2,gy);c.stroke()}
+    /* a round won: the tank dims and a ring of light opens out from the middle */
+    if(pzWon&&PZ>=0){var e=(FT-pzWon)/1000,cx=B.x0+B.w/2,cy=B.y0+B.h*.5;c.fillStyle='rgba(1,4,10,'+(.45*smooth(e/.4)).toFixed(3)+')';c.fillRect(B.x0,B.y0,B.w,B.h);
+      for(k=0;k<3;k++){var g2=smooth((e-k*.22)/.9);if(g2<=0||g2>=1)continue;c.strokeStyle='rgba(234,249,255,'+(.7*(1-g2)).toFixed(3)+')';c.lineWidth=2;c.beginPath();c.arc(cx,cy,20+g2*B.w*.42,0,TAU);c.stroke()}}
     c.lineCap='butt'}
   function resize(){if(GLX.ok&&P)size()}
   var CN=['cyan','green','amber','rose','violet'];
   function left(n,one,many){return n+' '+(n===1?one:many)}
-  function starText(n){var s='';for(var k=0;k<3;k++)s+=k<n?'★':'☆';return s}
+  /* the words, three lines at most: what to do; how it is going; what the piece in hand does */
+  var HINT={wall:'drag to draw a wall: smoke slides along it',fan:'drag to set a fan, the way it should blow',
+    prism:'tap to set a prism: it dyes the smoke in it',drain:'tap to set a drain: it swallows smoke',
+    tunnel:'drag a tunnel from its way in to its way out',ink:'push the smoke with a finger, tap for a drop'};
+  function ringName(c){return c==='mix'?'white':CN[c]}
+  /* what a round asks, in a line (a ring fills only with its own colour, so where other smoke is about, it says "only") */
+  function goal(){var want=[],other=0;CUPS.forEach(function(c){if(c.c==='mix')want.push(0,2);else want.push(c.c)});
+    FIX.fans.forEach(function(f){if(f.c>=0&&want.indexOf(f.c)<0)other++});
+    if(CUPS.length>1)return CUPS.map(function(c){return ringName(c.c)}).join(' and ')+', each into its own ring';
+    var c=CUPS[0].c;if(c==='mix')return (other?'only cyan and amber':'cyan and amber together')+' into the white ring';
+    return (other?'only ':'get the ')+CN[c]+' smoke into the '+CN[c]+' ring'}
   function hud(){
-    if(PATH)return 'levels · '+starTotal()+' of '+LEVELS.length*3+' stars\npick a level: each solved opens the next, and the band grows\nthe fewer pieces you build, the more stars';
-    if(PZ>=0){var L=LEVELS[PZ],g=given(),J=joinAt(PZ),n=used();
-      if(pzWon)return 'level '+(PZ+1)+' solved '+starText(winStars)+' · '+left(n,'piece','pieces')+', '+Math.round(TANK/TANK0*100)+'% of the smoke left'+
-        (winStars<3?'\nthree stars: '+left(L.par,'piece','pieces')+' and a third of the smoke left':'')+
-        (J.length?'\n'+J.map(function(k){return 'the '+BNAMES[k].toLowerCase()}).join(' and ')+(J.length>1?' join':' joins')+' the band':'');
-      var l2=CUPS.map(function(c){return (c.c==='mix'?'white':CN[c.c])+' ring '+(c.done?'full':Math.round(c.fill*100)+'%')}).join(' · '),
-        b=[],w=g.w-WALLS.length,f=g.f-FANS.length,pl=prismsLeft()||[],d=g.d-DRAINS.length,tt=g.t-TUNNELS.length;
-      if(w>0)b.push(left(w,'wall','walls'));if(f>0)b.push(left(f,'fan','fans'));if(pl.length)b.push(pl.length===1?'1 '+CN[pl[0]]+' prism':pl.length+' prisms ('+pl.map(function(k){return CN[k]}).join(', ')+')');
-      if(d>0)b.push(left(d,'drain','drains'));if(tt>0)b.push(left(tt,'tunnel','tunnels'));
-      var st=OUTT&&FT-OUTT<6000?'out of smoke: change something, then release it again':RUN?(TANK>0?'smoke left: '+TANK.toFixed(1)+' s':'the tank is dry'):'build, then release the smoke';
-      if(!RUN)l2='fill every ring with smoke of its colour before the tank runs dry';
-      return 'level '+(PZ+1)+' of '+LEVELS.length+' · '+CH[chapterOf(PZ)].n+' · '+st+(L.tip?'\n'+L.tip:'')+'\n'+l2+'\n'+
-        (b.length?'to build: '+b.join(', '):'all built')+' · ★★★: '+left(L.par,'piece','pieces')+', a third of the smoke left'}
+    if(PZ>=0){var g=given(),b=[];
+      if(pzWon)return 'in! here comes another · rounds won: '+WINS;
+      var w=g.w-WALLS.length,f=g.f-FANS.length,pl=prismsLeft()||[],d=g.d-DRAINS.length,tt=g.t-TUNNELS.length;
+      function one(n,a,k,ks){if(n>0)b.push(n===1?a+' '+k:n+' '+ks)}
+      one(w,'a','wall','walls');one(f,'a','fan','fans');if(pl.length)b.push(pl.length===1?(CN[pl[0]]==='amber'?'an ':'a ')+CN[pl[0]]+' prism':pl.length+' prisms');one(d,'a','drain','drains');one(tt,'a','tunnel','tunnels');
+      /* (a round gives what its answer needs, sometimes a piece more: what is left is offered, not asked for) */
+      var pl2='you can place '+b.join(', ');
+      var st=RUN?(TANK>0?'smoke left '+TANK.toFixed(1)+' s':'the smoke has run out')+' · '+CUPS.map(function(c){return ringName(c.c)+' '+(c.done?'full':Math.round(c.fill*100)+'%')}).join(' · ')
+        :OUTT&&FT-OUTT<6000?'not quite: move a piece, then release again'
+        :b.length?(pl2.length<29?pl2+', then press release':pl2):'press release · tap a piece to take it away';
+      return goal()+'\n'+st+(RUN?'':'\n'+(HINT[TOOL]||''))}
     var bt=[[WALLS.length,'wall','walls'],[FANS.length,'fan','fans'],[PRISMS.length,'prism','prisms'],[DRAINS.length,'drain','drains'],[TUNNELS.length,'tunnel','tunnels']].filter(function(a){return a[0]}).map(function(a){return left(a[0],a[1],a[2])}).join(' · ');
     if(PHOTO.has)return 'your photo is the ink: smear it and it remembers itself'+(bt?'\nbuilt: '+bt:'');
-    var st=starTotal();
-    return 'real smoke, worked out as it moves: push it with a finger, tap for a drop\nbuild with the tools below, or play the '+LEVELS.length+' levels'+(bt?'\nbuilt: '+bt:st?'\nlevels: '+st+' of '+LEVELS.length*3+' stars':'')}
+    return 'real smoke, worked out as it moves: push it with a finger, tap for a drop\nplay: a game of getting the smoke into a ring'+(bt?'\nbuilt: '+bt:'')}
   /* the hint: a tap (a drop of ink bursts), then one finger drawn across. The tap comes first on purpose: this is the world the page
      opens on, and a tap is the one touch an iPhone will start the sound on */
-  function ghost(t){if(PZ>=0||PATH||TOOL!=='ink')return [null];var u=(t*.21)%1,k=Math.floor(t*.21)%2;
+  function ghost(t){if(PZ>=0||TOOL!=='ink')return [null];var u=(t*.21)%1,k=Math.floor(t*.21)%2;
     if(u>.05&&u<.1)return [{x:STG.x0+STG.w*(k?.7:.3),y:STG.cy+STG.h*(k?.16:-.14)}];
     if(u>.2&&u<.84){var e=smooth((u-.2)/.64);return [{x:STG.x0+STG.w*(k?.82-.64*e:.18+.64*e),y:STG.cy+STG.h*(.22*Math.sin(e*5.2+k*2)+(k?-.12:.12))}]}
     return [null]}
@@ -1654,7 +1598,7 @@ var DRIFT=(function(){
   function U(x){return PZ>=0?bx(x):(STG.x0+x*STG.w)/VW}function V(y){return PZ>=0?by(y):(STG.y0+y*STG.h)/VH}
   return {enter:enter,leave:leave,resize:function(){resize();pzRelayout();obsDirty=true},down:down,up:up,gesture:gesture,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
     dbg:function(){return {ok:!!(P&&dye),simT:simT,simple:simple,sw:sw,sh:sh,dw:dw,dh:dh,lin:GLX.hfLin,tool:TOOL,pz:PZ,won:!!pzWon,walls:WALLS.length,fans:FANS.length,drains:DRAINS.length,prisms:PRISMS.length,tunnels:TUNNELS.length,wn:WN,
-      stars:STARS.slice(),winStars:winStars,path:PATH,board:{x0:B.x0,y0:B.y0,w:B.w,h:B.h},run:RUN,tank:TANK,tank0:TANK0,rt:RT,out:OUTT>0,
+      wins:WINS,round:ROUND,mir:MIR,board:{x0:B.x0,y0:B.y0,w:B.w,h:B.h},run:RUN,tank:TANK,tank0:TANK0,rt:RT,out:OUTT>0,
       cups:CUPS.map(function(c){return {c:c.c,fill:c.fill,match:c.match,done:c.done,x:WX(c.x),y:WY(c.y)}}),fix:{walls:FIX.walls.length,fans:FIX.fans.length,drains:FIX.drains.length,prisms:FIX.prisms.length},rb:rbOk}},
     /* for the tests: how much ink there is around a point (pixels), from the last copy read back; and a level by number */
     sample:function(x,y,r){want=1;return sample(x,y,r,null,false)},
@@ -1666,13 +1610,13 @@ var DRIFT=(function(){
     nodraw:function(b){NODRAW=!!b},
     recGet:function(){return REC?{done:REC.done,n:REC.T.length,T:REC.done?REC.T:null,S:REC.done?REC.S:null}:null},
     mid:function(){want=1;if(!rbOk)return null;var w=0,y=0,i,j;for(j=0;j<rbH;j++)for(i=0;i<rbW;i++){var o=(j*rbW+i)*4,d=Math.max(rbBuf[o],rbBuf[o+1],rbBuf[o+2])/255;w+=d;y+=d*(1-(j+.5)/rbH)}return w?y/w:null},
-    level:function(i){if(i<0)pzOff();else pzLoad(i);toolsSync()},release:function(){release()},stop:function(){stopRun(false)},tool:function(k){TOOL=k;PATH=false;toolsSync()},
-    /* for the tests: the levels themselves (and new ones to try), pieces put in by hand, the map's places, the stars */
+    level:function(i,mir){if(i<0)pzOff();else{MIR=!!mir;pzLoad(i)}toolsSync()},round:function(){roundNext();toolsSync()},sol:function(){return solNow()},
+    wins:function(n){if(n!==undefined){WINS=n;winsSet()}return WINS},release:function(){release()},stop:function(){stopRun(false)},tool:function(k){TOOL=k;toolsSync()},
+    /* for the tests: the set-ups themselves (and new ones to try), pieces put in by hand */
     levels:LEVELS,setLevels:function(a){LEVELS.length=0;a.forEach(function(l){LEVELS.push(l)})},nowin:function(b){NOWIN=!!b},trace:function(on){var t=TRACE;TRACE=on?[]:null;return t},
     fastdye:function(b){FASTDYE=!!b;szKey=''},
     /* for the tests: the water stepped as a phone at a given frame rate steps it (1/60, or 1/30 for one saving power), whatever this machine's pace */
-    fixdt:function(v){FIXDT=+v||0},phys:function(o){if(o)for(var k in o)LP[k]=o[k];return JSON.parse(JSON.stringify(LP))},path:function(b){PATH=!!b;pathT=FT-1000;toolsSync()},pathNodes:function(){return {nodes:pathNodes(),free:freeBtn()}},
-    stars:function(a){if(a){STARS=a.slice();lsSet()}return STARS.slice()},
+    fixdt:function(v){FIXDT=+v||0},phys:function(o){if(o)for(var k in o)LP[k]=o[k];return JSON.parse(JSON.stringify(LP))},
     put:function(k,a){if(k==='wall')WALLS.push([U(a[0]),V(a[1]),U(a[2]),V(a[3]),0]);else if(k==='fan'){var m=Math.hypot(a[2],a[3])||1;FANS.push({x:U(a[0]),y:V(a[1]),dx:a[2]/m,dy:a[3]/m,c:PZ>=0?-1:a[4]||0,ph:0})}
       else if(k==='drain')DRAINS.push({x:U(a[0]),y:V(a[1]),ph:0});else if(k==='prism')PRISMS.push({x:U(a[0]),y:V(a[1]),c:a[2],ph:0});
       else if(k==='tunnel')TUNNELS.push({ax:U(a[0]),ay:V(a[1]),bx:U(a[2]),by:V(a[3]),ph:0});obsDirty=true},
@@ -2477,7 +2421,8 @@ var LIVEW=(function(){
     go:function(id){for(var i=0;i<CAMS.length;i++)if(CAMS[i].id===id){show(i);return i}return -1},theme:themeSet,close:winClose}
 })();
 
-/* ---------- the mixer's sounds (13 Nov: "a music dj mixer page with pitch control hundreds of other samples"). Every one is made here
+/* ---------- the mixer's sounds (13 Nov: "a music dj mixer page with pitch control hundreds of other samples"; that evening he asked for
+   fewer options, so the mixer now plays twenty of these loops, and only the kits and instruments they use are ever made). Every one is made here
    from plain arithmetic, like the toys' voices: struck once and dying away, nothing blown, bowed or held, none of them a tone from an
    oscillator, no harp. Sixteen kits of sixteen drums each (256: kicks, snares, claps, rims, hats, toms, congas, bongos, shakers,
    tambourines, cowbells, wood, bells, snaps, each kit a different room, size and grain), and sixteen struck or plucked instruments
@@ -2610,253 +2555,183 @@ var MIXS=(function(){
     {n:'wood',len:16,h:hits([[13,.7,'x..x..x...x..x..'],[3,.5,'..x.....x....x..']])},
     {n:'bells',len:32,h:hits([[14,.5,'x.......x.......x.......x.......'],[12,.5,'....x.......x.......x.......x...']])}];
   /* note loops: (step, scale degree, octave) turned into notes */
-  function nl(len,a){return {len:len,h:a.map(function(x){return [x[0],pn(x[1],x[2]||0),x[3]||.8]})}}
+  function nl(len,a){return {len:len,h:a.map(function(x){return [x[0],pn(x[1],x[2]||0),x[3]||.8,x[1],x[2]||0]})}}
   var BASSLOOPS=[nl(32,[[0,0],[6,0],[10,3],[16,0],[22,4,-1],[26,3]]),nl(16,[[0,0],[3,0],[6,2],[8,0],[11,4,-1],[14,3]]),nl(32,[[0,0],[12,2],[16,4,-1],[28,3]]),
     nl(16,[[0,0],[2,5,-1],[4,0],[7,1],[10,0],[12,3],[14,4]]),nl(32,[[0,0],[4,0],[8,1],[12,0],[16,3],[20,3],[24,2],[28,1]]),nl(16,[[0,0],[10,0]])];
   var KEYLOOPS=[nl(16,[[0,5],[0,7],[0,9],[6,6],[6,8],[10,5],[10,7]]),nl(16,[[0,5],[2,7],[4,9],[6,7],[8,6],[10,8],[12,10],[14,8]]),nl(32,[[0,5],[0,8],[0,10],[16,6],[16,9],[16,11]]),
     nl(16,[[0,10],[3,9],[6,8],[8,7],[11,6],[14,5]]),nl(16,[[0,5],[1,7],[2,9],[3,10],[8,6],[9,8],[10,10],[11,11]]),nl(32,[[0,7],[8,6],[16,5],[24,4]])];
   var BELLLOOPS=[nl(32,[[0,10],[6,12],[12,11],[16,10],[22,9],[28,8]]),nl(16,[[0,12],[4,11],[8,10],[12,13]]),nl(16,[[2,10],[6,11],[10,12],[14,13]]),
     nl(32,[[0,15],[3,14],[6,13],[16,12],[19,11],[22,10]]),nl(16,[[0,10],[3,12],[6,10],[8,13],[11,12],[14,10]]),nl(32,[[0,12],[24,14]])];
-  return {SR:SR,KITS:KITS,ROLES:ROLES,INSTS:INSTS,drum:drum,note:note,want:want,kitNow:kitNow,instNow:instNow,
+  return {SR:SR,KITS:KITS,ROLES:ROLES,INSTS:INSTS,drum:drum,note:note,want:want,kitNow:kitNow,instNow:instNow,pn:pn,
     DRUMLOOPS:DRUMLOOPS,PERCLOOPS:PERCLOOPS,BASSLOOPS:BASSLOOPS,KEYLOOPS:KEYLOOPS,BELLLOOPS:BELLLOOPS,
     count:function(){return KITS.length*ROLES.length+INSTS.reduce(function(a,x){return a+x[2].length},0)},
     /* for the tests: a drum or a note made straight into an array */
     raw:function(kind,i,j){if(kind==='k'){var P=kitParams(i);return V[P[j][0]](P[j][1],rng(31*(i+1)))}var D=INSTS[i];return I[D[1]](mf(D[2][j||0]))}};
 })();
 
-/* ---------- MIX: a DJ's mixer for the band and a machine of sounds (13 Nov: "Make a music dj mixer page with pitch control hundreds
-   of other samples and ability to abeloton live the music and make it way more fun and interactive"; asked which parts, he chose all
-   four: a clip grid like Ableton, two decks and a crossfader, drum pads, effects to sweep).
-   Deck A is the band: its nine players, each a column of six loops cut from its own recording (the whole four bars, the first two,
-   the last two, one bar, one beat, and the whole at half speed). Deck B is the machine: drums, percussion, bass, keys and bells, six
-   loops each, played from the sounds made in 15-mixsnd.js, and a column of loops of your own, recorded from the pads.
-   A loop starts on the next bar of its deck and keeps time with it (Ableton's way); a row's number starts the whole row.
-   Each deck has its own clock: its pitch fader makes it faster and higher, or slower and lower, as a record does (up to 16% either
-   way); the arrows nudge it while held; sync matches it to the other. The crossfader goes from the band to the machine. Each deck
-   has a filter (left darker, right thinner). The effects pad: a finger across it sweeps a filter over both decks, up it adds echo;
-   stutter repeats the last beat, half or quarter while held; brake stops a deck as a record stops.
-   The band keeps its own levels and its own room; the machine and the pads go through the toys' bus, under its ceiling, so nothing
-   here comes out louder than the band (tools/t_levels.js measures it). ---------- */
+/* ---------- MIX: the band and a machine of sounds as a grid of loops, the way Ableton's clip grid plays.
+   13 Nov, afternoon: "Make a music dj mixer page with pitch control hundreds of other samples and ability to abeloton live the music
+   and make it way more fun and interactive". 13 Nov, evening: "The mixer is Brice but make it less options and more like ly to result in
+   good sounds, like abelton . Player. And make it extend into the glove and game screens"; asked what to keep, he kept the clip grid
+   alone; asked what plays in the other worlds, "Just the audio remains playing. There is always a small music on off button".
+   So there are no knobs. Two grids: the band and the machine.
+   The band: its nine players, each a column of four ways to play its own recording: the whole of it, every other bar (the first and
+   third, or the second and fourth), or only the first beat of each bar. All four play the recording where it is, so a player always
+   meets the others on the same chord (two bars of E, then two of A), and changing between them never restarts it.
+   The machine: drums, percussion, bass, keys and bells, four loops each, made in 15-mixsnd.js and all in the band's scale (E minor
+   pentatonic); its bass follows the band's two chords, and the band's bass and the machine's never play at once.
+   A loop comes in on the next bar, one loop a column; a row's number starts that row in every column of its grid; tapping what plays
+   stops it on the next bar.
+   The first time Mix is opened it takes the band over from the usual loops where they are, without a gap, and keeps it from then on:
+   what is set here goes on playing in Smoke and on the Earth, and the music button at the top pauses it and brings it back.
+   The band keeps its own levels and its own room; the machine goes through the toys' bus, under its ceiling, so nothing here comes out
+   louder than the band (tools/t_levels.js measures it). Nothing here changes a level. ---------- */
+/* MIXON: the mixer has the band (its clock leads the music from then on, in every world) */
 var MIXON=false;
 var MIX=(function(){
-  var BPS=16/STEML,SPB=STEML/16,SC=6,on=false,built=false,gr=null,iv=0,started=false,view='a',PK=0,REC=false,RECK=0,XF=.5,FXP=null,STUT=null,lastUi=0,
-    DK=[{n:'A',rate:1,fader:1,nudge:0,ne:0,tRef:0,bRef:0,last:-1,filt:0,brake:0},{n:'B',rate:1,fader:1,nudge:0,ne:0,tRef:0,bRef:0,last:-1,filt:0,brake:0}],
-    TR=[],UI={};
-  var BANDCLIPS=[{n:'whole',b0:0,len:16},{n:'bars 1-2',b0:0,len:8},{n:'bars 3-4',b0:8,len:8},{n:'one bar',b0:0,len:4},{n:'one beat',b0:0,len:1},{n:'slow',b0:0,len:16,slow:1}];
+  var BPS=16/STEML,SPB=STEML/16,ROWS=4,on=false,want=false,built=false,gr=null,iv=0,view='a',lastUi=0,
+    CK={tRef:0,bRef:0,last:-1},TR=[],UI={};
+  /* the band's four ways: g says, for each sixteenth, whether the player is heard (none: always) */
+  function bar(s){return Math.floor(s/16)}
+  var BANDCLIPS=[{n:'whole',g:null},{n:'bars 1+3',g:function(s){return bar(s)%2?0:1}},{n:'bars 2+4',g:function(s){return bar(s)%2?1:0}},
+    {n:'beat one',g:function(s){return ((s%16)+16)%16<4?1:0}}];
   var SHORT=['dundun','shekere','djembe','talking','agogo','bass','balafon','kora','guitar'];
-  /* the machine's columns: what each plays, and with which kit or instrument in each of its six loops */
-  var MACH=[{n:'drums',k:'drum',L:MIXS.DRUMLOOPS,src:[0,1,8,9,10,14],col:'#3ef0ff'},{n:'perc',k:'drum',L:MIXS.PERCLOOPS,src:[2,11,2,2,4,5],col:'#7dffb2'},
-    {n:'bass',k:'note',L:MIXS.BASSLOOPS,src:[12,12,12,12,12,12],col:'#c6ff6b'},{n:'keys',k:'note',L:MIXS.KEYLOOPS,src:[6,7,0,5,10,13],col:'#ffb347'},
-    {n:'bells',k:'note',L:MIXS.BELLLOOPS,src:[2,1,8,9,11,15],col:'#ff2d8a'},{n:'pads',k:'pads',L:null,src:null,col:'#b46bff'}];
-  (function(){var i;for(i=0;i<NL;i++)TR.push({d:0,i:i,n:SHORT[i],col:BCOL[i],k:'stem',clips:BANDCLIPS.map(function(c){return c}),play:-1,next:-1,src:null,g:null});
-    MACH.forEach(function(m,j){TR.push({d:1,i:j,n:m.n,col:m.col,k:m.k,clips:m.k==='pads'?[0,1,2,3,4,5].map(function(){return {n:'empty',len:16,h:[],kit:0}}):m.L.map(function(l,k){return {n:l.n||((m.k==='note'?MIXS.INSTS[m.src[k]][0]:MIXS.KITS[m.src[k]][0])),len:l.len,h:l.h,kit:m.k==='drum'?m.src[k]:-1,inst:m.k==='note'?m.src[k]:-1}}),
-      play:-1,next:-1,src:null,g:null})})})();
-  /* ---- each deck's clock: beats(t) = bRef + (t - tRef) * beats a second; changed only by re-anchoring it where it is ---- */
-  function eff(d){return BPS*Math.max(.02,d.rate*(1+d.nudge))}
-  /* a deck's beat at a time, and the time of a beat. A sync's nudge ends at a set time (ne): after it the deck runs at its own speed again
-     (the players' speeds are switched at that moment by the sound itself, so the beat is exact however late the page gets round to it) */
-  function plain(d){return BPS*Math.max(.02,d.rate)}
-  function beatAt(d,t){if(d.ne&&t>d.ne)return d.bRef+(d.ne-d.tRef)*eff(d)+(t-d.ne)*plain(d);return d.bRef+(t-d.tRef)*eff(d)}
-  function timeOf(d,b){if(d.ne){var be=d.bRef+(d.ne-d.tRef)*eff(d);if(b>be)return d.ne+(b-be)/plain(d)}return d.tRef+(b-d.bRef)/eff(d)}
-  function rateAt(d,t){return d.ne&&t>=d.ne?d.rate:d.rate*(1+d.nudge)}
-  /* a nudge that has run its time is closed at exactly its end; one still running, when the deck is touched again, is stopped now */
-  function settle(k,t){var d=DK[k];if(!d.ne)return;if(t>=d.ne){d.bRef=d.bRef+(d.ne-d.tRef)*eff(d);d.tRef=d.ne;d.nudge=0;d.ne=0;return}
-    anchor(d,t);d.ne=0;d.nudge=0;TR.forEach(function(tr){if(tr.d!==k||!tr.src)return;try{tr.src.playbackRate.cancelScheduledValues(t)}catch(e){}});stemRates(k,t)}
-  function anchor(d,t){d.bRef=beatAt(d,t);d.tRef=t}
+  /* the machine's columns: which four of each list of loops, the kit or instrument each plays (src, one for each loop used), and the
+     column's level (g). Measured one loop at a time (t_levels.js), the loud kits (808 room, dust, deep, lo-fi, thunder: long, low,
+     driven kicks) came out as loud as the whole band even turned down a quarter, because the toys' ceiling lets a lone hit through
+     before it closes; so the drums play the softer kits, and the keys and bells play at half */
+  var MACH=[{n:'drums',k:'drum',L:MIXS.DRUMLOOPS,use:[0,1,3,5],src:[11,4,13,12],g:.9,nm:['four','afro','half','sparse'],col:'#3ef0ff'},
+    {n:'perc',k:'drum',L:MIXS.PERCLOOPS,use:[0,2,3,4],src:[2,2,2,4],g:.9,nm:['congas','shakers','bongos','wood'],col:'#7dffb2'},
+    {n:'bass',k:'note',L:MIXS.BASSLOOPS,use:[0,1,2,5],src:[12,12,12,12],g:.6,nm:['steady','busy','long','sparse'],col:'#c6ff6b'},
+    {n:'keys',k:'note',L:MIXS.KEYLOOPS,use:[0,2,3,5],src:[6,0,5,13],g:.45,nm:['piano','marimba','steel pan','clavinet'],col:'#ffb347'},
+    {n:'bells',k:'note',L:MIXS.BELLLOOPS,use:[0,1,3,5],src:[2,1,9,15],g:.45,nm:['glock','vibes','gamelan','bells'],col:'#ff2d8a'}];
+  (function(){var i;for(i=0;i<NL;i++)TR.push({d:0,i:i,n:SHORT[i],col:BCOL[i],k:'stem',clips:BANDCLIPS,play:-1,next:-1,src:null,gate:null,gv:0});
+    MACH.forEach(function(m,j){TR.push({d:1,i:j,n:m.n,col:m.col,k:m.k,g:m.g,play:-1,next:-1,
+      clips:m.use.map(function(u,r){var l=m.L[u];return {n:m.nm[r],len:l.len,h:l.h,kit:m.k==='drum'?m.src[r]:-1,inst:m.k==='note'?m.src[r]:-1}})})})})();
+  /* the two basses: never at once */
+  var BASS=[5,NL+2];
+  function rival(j){return j===BASS[0]?BASS[1]:j===BASS[1]?BASS[0]:-1}
+  /* ---- the clock: the beat (counted from the start of the band's loop) at a time, and the time of a beat ---- */
+  function beatAt(t){return CK.bRef+(t-CK.tRef)*BPS}
+  function timeOf(b){return CK.tRef+(b-CK.bRef)/BPS}
   function ctx(){return AU.c}
-  /* ---- the signal path: each deck a filter (low then high) and the crossfader, then deck A into the band's room and deck B into the
-     toys' bus with its ceiling; an echo fed by both, coming back under the same ceiling ---- */
+  /* ---- the signal path: the band's columns into the band's room, at the band's own levels (as its usual loops are); the machine's
+     into the toys' bus with its ceiling ---- */
   function graphOn(c,dst){
-    var G={c:c,d:[],t:[]},k;
-    for(k=0;k<2;k++){var inp=c.createGain(),lp=c.createBiquadFilter(),hp=c.createBiquadFilter(),xf=c.createGain(),es=c.createGain();
-      lp.type='lowpass';lp.frequency.value=20000;lp.Q.value=.75;hp.type='highpass';hp.frequency.value=10;hp.Q.value=.75;es.gain.value=0;
-      inp.connect(lp);lp.connect(hp);hp.connect(xf);xf.connect(k?dst.toy:dst.bus);xf.connect(es);G.d.push({inp:inp,lp:lp,hp:hp,xf:xf,es:es})}
-    var dl=c.createDelay(2),fb=c.createGain(),elp=c.createBiquadFilter(),ret=c.createGain();dl.delayTime.value=SPB*.75;fb.gain.value=.42;elp.type='lowpass';elp.frequency.value=3000;ret.gain.value=.9;
-    G.d[0].es.connect(dl);G.d[1].es.connect(dl);dl.connect(elp);elp.connect(fb);fb.connect(dl);elp.connect(ret);ret.connect(dst.toy);G.dl=dl;G.fb=fb;
-    TR.forEach(function(t,j){var g=c.createGain();g.gain.value=t.d===0?SG[t.i]:.9;
-      if(t.d===0&&(t.i===1||t.i===4)){var hs=c.createBiquadFilter();hs.type='highshelf';hs.frequency.value=4500;hs.gain.value=-6;g.connect(hs);hs.connect(G.d[0].inp)}else g.connect(G.d[t.d].inp);G.t[j]=g});
+    var G={c:c,t:[]};
+    TR.forEach(function(t,j){var g=c.createGain();g.gain.value=t.d===0?SG[t.i]:t.g;
+      if(t.d===0&&(t.i===1||t.i===4)){var hs=c.createBiquadFilter();hs.type='highshelf';hs.frequency.value=4500;hs.gain.value=-6;g.connect(hs);hs.connect(dst.bus)}
+      else g.connect(t.d===0?dst.bus:dst.toy);G.t[j]=g});
     return G}
-  function ensure(){var c=ctx();if(!c)return null;if(!gr||gr.c!==c){gr=graphOn(c,{bus:AU.bus,toy:AU.toy});xfApply();DK.forEach(function(d,k){filtApply(k)})}return gr}
-  function xfApply(){if(!gr)return;var c=gr.c,n=c.currentTime,a=Math.cos(XF*Math.PI/2),b=Math.sin(XF*Math.PI/2);gr.d[0].xf.gain.setTargetAtTime(a,n,.02);gr.d[1].xf.gain.setTargetAtTime(b,n,.02)}
-  /* a filter: -1 (only the lows) through 0 (open) to 1 (only the highs) */
-  function filtApply(k,v){if(!gr)return;var f=v===undefined?DK[k].filt:v,c=gr.c,n=c.currentTime,D=gr.d[k];
-    var lpF=f<0?80*Math.pow(250,1+f):20000,hpF=f>0?10*Math.pow(400,f):10;D.lp.frequency.setTargetAtTime(lpF,n,.03);D.hp.frequency.setTargetAtTime(hpF,n,.03)}
-  /* ---- the band's loops: a recording looped over part of itself, at the deck's speed, lined up with the deck's beats ---- */
-  function stemSrc(tr,clip,beat,when){var c=ctx(),b=AU.bufs[tr.i];if(!c||!b||!gr)return null;var d=DK[0],s=c.createBufferSource(),sl=clip.slow?.5:1,span=clip.len/sl;
-    s.buffer=b;s.loop=true;s.loopStart=STEMP+clip.b0*SPB;s.loopEnd=STEMP+(clip.b0+clip.len)*SPB;s.playbackRate.value=rateAt(d,when)*sl;if(d.ne&&when<d.ne)s.playbackRate.setValueAtTime(d.rate*sl,d.ne);
-    var ph=(((beat%span)+span)%span)*sl;s.connect(gr.t[TR.indexOf(tr)]);s.start(Math.max(when,c.currentTime),s.loopStart+ph*SPB);s._sl=sl;return s}
-  function stemStop(tr,when){if(tr.src){try{tr.src.stop(Math.max(when||0,ctx()?ctx().currentTime:0))}catch(e){}tr.src=null}}
-  /* ---- the machine's sounds, on deck B: a drum or a note, at the deck's speed (a faster deck plays them higher, as a record does) ---- */
+  function ensure(){var c=ctx();if(!c||!AU.bus)return null;if(!gr||gr.c!==c)gr=graphOn(c,{bus:AU.bus,toy:AU.toy});return gr}
+  /* ---- a band player: its recording looped whole, lined up with the clock, through a gate that the way it plays opens and closes ---- */
+  function stemSrc(tr,beat,when,open){var c=ctx(),b=AU.bufs[tr.i];if(!c||!b||!gr)return false;var s=c.createBufferSource(),g=c.createGain(),at=Math.max(when,c.currentTime),
+      off=(((beat%16)+16)%16)*SPB+(at-when);off=((off%STEML)+STEML)%STEML;
+    s.buffer=b;s.loop=true;s.loopStart=STEMP;s.loopEnd=STEMP+STEML;g.gain.value=open?1:0;s.connect(g);g.connect(gr.t[TR.indexOf(tr)]);s.start(at,STEMP+off);
+    tr.src=s;tr.gate=g;tr.gv=open?1:0;return true}
+  /* a player leaving: its gate closes on the bar (a short fade, so nothing clicks) and the recording stops just after */
+  function stemOff(tr,when){if(!tr.src)return;try{tr.gate.gain.cancelScheduledValues(when);tr.gate.gain.setTargetAtTime(0,when,.03);tr.src.stop(when+.3)}catch(e){}tr.src=null;tr.gate=null;tr.gv=0}
+  /* ---- the machine's sounds: a drum, or a note of an instrument ---- */
   var VOXM=0;
   function sound(j,b,rate,gain,when,pan){var c=ctx();if(!c||!gr||!b||VOXM>40)return;var s=c.createBufferSource(),g=c.createGain(),o=g;s.buffer=b;s.playbackRate.value=clamp(rate,.25,4);g.gain.value=gain;s.connect(g);
     if(c.createStereoPanner){var p=c.createStereoPanner();p.pan.value=clamp(pan||0,-1,1);g.connect(p);o=p}o.connect(gr.t[j]);VOXM++;s.onended=function(){VOXM--;try{o.disconnect()}catch(e){}};s.start(Math.max(when,c.currentTime))}
-  function trigger(j,tr,clip,h,when){var c=ctx(),d=DK[tr.d],r=rateAt(d,when),v=clamp(h[2],0,1);
-    if(tr.k==='drum'||tr.k==='pads'){var kit=tr.k==='pads'?clip.kit:clip.kit,b=MIXS.drum(c,kit,h[1]);sound(j,b,r,v*.62,when,((h[1]%4)-1.5)*.25)}
-    else{var nt=MIXS.note(c,clip.inst,h[1]);if(nt)sound(j,nt.b,nt.rate*r,v*.5*nt.g*tilt(h[1]),when,((h[1]%7)-3)*.12)}}
-  /* ---- the clock's work, a little ahead of time: each sixteenth of each deck, what starts and stops on it and what plays on it ---- */
+  /* the note a loop's step plays: the machine's bass moves with the band, up two steps of the scale (E to A) in the third and fourth bars */
+  function noteOf(tr,h,s){var m=h[1];if(tr.n==='bass'&&h.length>4&&((bar(s)%4)+4)%4>=2)m=MIXS.pn(h[3]+2,h[4]);return m}
+  function trigger(j,tr,clip,h,when,s){var c=ctx(),v=clamp(h[2],0,1);
+    if(tr.k==='drum'){var b=MIXS.drum(c,clip.kit,h[1]);sound(j,b,1,v*.62,when,((h[1]%4)-1.5)*.25)}
+    else{var m=noteOf(tr,h,s),nt=MIXS.note(c,clip.inst,m);if(nt)sound(j,nt.b,nt.rate,v*.5*nt.g*tilt(m),when,((m%7)-3)*.12)}}
+  /* ---- the clock's work, a little ahead of time: each sixteenth, what starts and stops on it and what plays on it ---- */
   function pump(){
-    var c=ctx();if(!c||!on||c.state!=='running'||!ensure())return;var now=c.currentTime,la=document.hidden?1.2:.16;
-    DK.forEach(function(d,k){if(d.ne&&now>=d.ne)settle(k,now);
-      if(d.brake){var bk=clamp((now-d.brake.t)/.9,0,1);anchor(d,now);d.rate=Math.max(.04,d.brake.r*(1-bk));stemRates(k,now);if(bk>=1){d.brake=null;TR.forEach(function(tr){if(tr.d===k){tr.next=-1;off(tr,now)}});anchor(d,now);d.rate=d.fader;stemRates(k,now)}}
-      var s1=Math.floor(beatAt(d,now+la)*4);if(d.last<0||d.last<Math.floor(beatAt(d,now)*4)-8)d.last=Math.floor(beatAt(d,now)*4);
-      while(d.last<s1){d.last++;var s=d.last,t=timeOf(d,s/4)+((s&1)?SPB/4*SWING/Math.max(.2,d.rate):0);step(k,s,t)}})}
-  function off(tr,when){if(tr.k==='stem')stemStop(tr,when);tr.play=-1;if(tr.d===0&&ON[tr.i]){ON[tr.i]=0;dotSync(tr.i)}}
-  function step(k,s,t){
-    var d=DK[k];
+    var c=ctx();if(!want||!c||c.state!=='running'||!ensure())return;
+    /* the band is taken over as soon as its usual loops are playing */
+    if(!MIXON){if(!AU.run||!AU.ready)return;take()}
+    var now=c.currentTime,la=document.hidden?1.2:.16,s0=Math.floor(beatAt(now)*4),s1=Math.floor(beatAt(now+la)*4);
+    if(CK.last<s0-8)CK.last=s0;
+    while(CK.last<s1){CK.last++;var s=CK.last;step(s,timeOf(s/4)+((s&1)?SPB/4*SWING:0))}
+    /* the worlds that play on the band's grid keep doing so (03-audio.js) */
+    seqPump()}
+  /* the hand-over: the usual loops stop a moment from now and the band's players carry on from exactly there, on the same clock */
+  function take(){var c=AU.c,n=c.currentTime+.06;
+    AU.src.forEach(function(x){try{x&&x.stop(n)}catch(e){}});AU.src=[];AU.run=false;clearInterval(AU.iv);
+    CK.tRef=n;CK.bRef=(n-AU.t0)*BPS;CK.last=Math.ceil(CK.bRef*4)-1;MIXON=true;
+    TR.forEach(function(tr){if(tr.d===0&&ON[tr.i]&&stemSrc(tr,CK.bRef,n,true))tr.play=0})}
+  function off(tr,when){if(tr.k==='stem')stemOff(tr,when);tr.play=-1;if(tr.d===0)ON[tr.i]=0}
+  function step(s,t){
     /* on the bar: what was asked to start or stop does so now */
-    if(s%16===0)TR.forEach(function(tr){if(tr.d!==k||tr.next===-1)return;var nx=tr.next;tr.next=-1;
+    if(((s%16)+16)%16===0)TR.forEach(function(tr){if(tr.next===-1)return;var nx=tr.next;tr.next=-1;
       if(nx===-2){off(tr,t);return}
-      if(tr.k==='stem'){if(!AU.ready){tr.next=nx;return}stemStop(tr,t);tr.src=stemSrc(tr,tr.clips[nx],s/4,t);if(!tr.src){tr.next=nx;return}tr.play=nx;if(!ON[tr.i]){ON[tr.i]=1;dotSync(tr.i)}}
-      else tr.play=nx});
-    /* what plays on this sixteenth: the machine's loops (a stutter holds them to the same few sixteenths) */
-    var ss=STUT&&STUT.s0[k]!==undefined&&s>=STUT.s0[k]?STUT.s0[k]+((s-STUT.s0[k])%STUT.L):s;
-    TR.forEach(function(tr,j){if(tr.d!==k||tr.play<0||tr.k==='stem')return;var clip=tr.clips[tr.play],L=clip.len||16,q=((ss%L)+L)%L;
-      for(var i=0;i<clip.h.length;i++)if(clip.h[i][0]===q)trigger(j,tr,clip,clip.h[i],t)})}
-  /* the deck's speed has changed: every loop of the band on it plays at the new speed from now */
-  function stemRates(k,t){var d=DK[k],r=d.rate*(1+d.nudge);TR.forEach(function(tr){if(tr.d!==k||!tr.src)return;try{tr.src.playbackRate.setValueAtTime(r*(tr.src._sl||1),t)}catch(e){}})}
-  function setRate(k,r,nudge){var c=ctx(),d=DK[k];if(c){settle(k,c.currentTime);anchor(d,c.currentTime)}if(r!==undefined){d.fader=r;if(!d.brake)d.rate=r}if(nudge!==undefined)d.nudge=nudge;if(c)stemRates(k,c.currentTime)}
-  /* sync: the other deck's speed, and its beat caught up by a nudge (a second for a small gap, never more than 12% faster or slower) */
-  function sync(k){var c=ctx(),o=DK[1-k],d=DK[k];settle(1-k,c?c.currentTime:0);setRate(k,o.fader);if(!c)return;var n=c.currentTime,e=(beatAt(o,n)%1)-(beatAt(d,n)%1);if(e>.5)e-=1;if(e<-.5)e+=1;
-    hit('tok',.2,k?.4:-.4);if(Math.abs(e)<.003)return;var nd=clamp(e/plain(d),-.12,.12),T=e/(plain(d)*nd);setRate(k,undefined,nd);d.ne=n+T;
-    TR.forEach(function(tr){if(tr.d!==k||!tr.src)return;try{tr.src.playbackRate.setValueAtTime(d.rate*(tr.src._sl||1),d.ne)}catch(x){}})}
-  function brake(k){var c=ctx();if(!c)return;var d=DK[k];settle(k,c.currentTime);anchor(d,c.currentTime);d.brake={t:c.currentTime,r:d.rate}}
-  /* ---- stutter: from the next sixteenth, the last beat (or half, or quarter) of everything again and again while held ---- */
-  function stutOn(L){var c=ctx();if(!c||!gr||STUT)return;var n=c.currentTime;settle(0,n);settle(1,n);STUT={L:L,s0:{},src:[]};
-    DK.forEach(function(d,k){var s=Math.ceil(beatAt(d,n)*4),t=timeOf(d,s/4);STUT.s0[k]=s-L;
-      TR.forEach(function(tr){if(tr.d!==k||!tr.src||tr.play<0)return;var clip=tr.clips[tr.play],sl=clip.slow?.5:1,span=clip.len/sl,b=(s-L)/4,ph=(((b%span)+span)%span)*sl,
-        st=STEMP+(clip.b0+ph)*SPB,x=c.createBufferSource();x.buffer=tr.src.buffer;x.loop=true;x.loopStart=st;x.loopEnd=st+L/4*SPB*sl;x.playbackRate.value=d.rate*(1+d.nudge)*sl;
-        x.connect(gr.t[TR.indexOf(tr)]);try{tr.src.stop(t)}catch(e){}x.start(t,st);STUT.src.push({tr:tr,x:x,was:tr.src})})})}
-  function stutOff(){var c=ctx();if(!STUT||!c){STUT=null;return}var n=c.currentTime,S=STUT;STUT=null;
-    S.src.forEach(function(o){var tr=o.tr,d=DK[tr.d],s=Math.ceil(beatAt(d,n)*4),t=timeOf(d,s/4);try{o.x.stop(t)}catch(e){}if(tr.play>=0&&tr.src===o.was)tr.src=stemSrc(tr,tr.clips[tr.play],s/4,t)})}
-  /* ---- launching: on the next bar of the deck ---- */
-  function launch(j,k){var tr=TR[j];if(!tr)return;wake();var clip=tr.clips[k];if(!clip)return;if(tr.k==='pads'&&!clip.h.length&&!(REC&&tr.k==='pads'))return;
-    if(tr.play===k&&tr.next===-1){tr.next=-2;return}tr.next=k}
+      if(tr.k==='stem'&&!tr.src&&!stemSrc(tr,s/4,t,false)){tr.next=nx;return}
+      tr.play=nx;if(tr.d===0)ON[tr.i]=1});
+    /* what plays on this sixteenth: the band's gates, the machine's loops */
+    TR.forEach(function(tr,j){if(tr.play<0)return;var clip=tr.clips[tr.play];
+      if(tr.k==='stem'){var v=clip.g?clip.g(s):1;if(v!==tr.gv&&tr.gate){tr.gate.gain.setTargetAtTime(v,t,v?.004:.05);tr.gv=v}return}
+      var L=clip.len||16,q=((s%L)+L)%L;for(var i=0;i<clip.h.length;i++)if(clip.h[i][0]===q)trigger(j,tr,clip,clip.h[i],t,s)})}
+  /* ---- the hand's part: a loop, a row, a column's stop ---- */
+  function hand(){wake();BD.auto=false;BD.manual=true}
+  function launch(j,k){var tr=TR[j];if(!tr||!tr.clips[k])return;hand();
+    if(tr.play===k&&tr.next===-1){tr.next=-2;return}
+    tr.next=k;var r=rival(j);if(r>=0&&(TR[r].play>=0||TR[r].next>=0))TR[r].next=-2}
   function stopT(j){var tr=TR[j];if(tr&&(tr.play>=0||tr.next>=0))tr.next=-2}
-  function scene(k){wake();TR.forEach(function(tr,j){var clip=tr.clips[k];if(clip&&!(tr.k==='pads'&&!clip.h.length))tr.next=k;else if(tr.play>=0)tr.next=-2})}
-  function stopAll(){TR.forEach(function(tr){if(tr.play>=0||tr.next>=0)tr.next=-2})}
-  /* the sound wakes with the first touch here, as everywhere (and the band's usual loops stand aside for the decks) */
+  function scene(k,d){hand();TR.forEach(function(tr,j){if(tr.d!==d)return;tr.next=k;var r=rival(j);if(r>=0&&TR[r].d!==d&&(TR[r].play>=0||TR[r].next>=0))TR[r].next=-2})}
+  function stopAll(d){TR.forEach(function(tr,j){if(d===undefined||tr.d===d)stopT(j)})}
+  /* the sound wakes with a touch here, as everywhere */
   function wake(){if(!AU.want||!AU.c||AU.c.state!=='running')musicOn();ensure()}
-  /* ---- the pads: sixteen drums of a kit, played now on deck B; while recording, each hit is laid into the loop on its sixteenth ---- */
-  function pad(j,v){wake();var c=ctx();if(!c||!gr)return;var b=MIXS.drum(c,PK,j),pt=TR.length-1;sound(pt,b,DK[1].rate*(1+DK[1].nudge),(v||.9)*.62,c.currentTime,((j%4)-1.5)*.25);
-    if(REC){var tr=TR[pt],clip=tr.clips[RECK],d=DK[1],s=Math.round(beatAt(d,c.currentTime+.01)*4),L=clip.len,q=((s%L)+L)%L;
-      if(!clip.h.length)clip.kit=PK;if(clip.kit!==PK){clip.h=[];clip.kit=PK}clip.h=clip.h.filter(function(h){return !(h[0]===q&&h[1]===j)});clip.h.push([q,j,v||.9]);clip.n='mine';if(tr.play!==RECK&&tr.next!==RECK)tr.next=RECK;padsSave()}
-    var el=UI.pads&&UI.pads[j];if(el){el.classList.add('hit');setTimeout(function(){el.classList.remove('hit')},90)}}
-  function recSet(v){REC=!!v;wake();var tr=TR[TR.length-1];if(REC&&tr.play!==RECK)tr.next=RECK;uiSync(true)}
-  function padsSave(){try{localStorage.setItem('lc.mix.pads',JSON.stringify(TR[TR.length-1].clips.map(function(c){return {len:c.len,kit:c.kit,h:c.h.slice(0,256)}})))}catch(e){}}
-  function padsLoad(){try{var a=JSON.parse(localStorage.getItem('lc.mix.pads')||'null');if(!Array.isArray(a))return;var tr=TR[TR.length-1];
-    a.slice(0,6).forEach(function(x,k){if(!x||!Array.isArray(x.h))return;var c=tr.clips[k];c.len=x.len===32?32:16;c.kit=clamp(x.kit|0,0,15);c.h=x.h.filter(function(h){return Array.isArray(h)&&h.length===3}).map(function(h){return [clamp(h[0]|0,0,31),clamp(h[1]|0,0,15),clamp(+h[2]||.9,.1,1)]});if(c.h.length)c.n='mine'})}catch(e){}}
-  /* ---- the effects pad: across, a filter over both decks; up, the echo; let go and they ease off ---- */
-  function fxSet(x,y){FXP={x:x,y:y};if(!gr)return;var c=gr.c,n=c.currentTime,f=x*2-1;filtApply(0,f);filtApply(1,f);
-    var e=clamp(y,0,1);gr.d[0].es.gain.setTargetAtTime(e*.55,n,.03);gr.d[1].es.gain.setTargetAtTime(e*.55,n,.03);gr.fb.gain.setTargetAtTime(.3+e*.3,n,.05)}
-  function fxOff(){FXP=null;if(!gr)return;var n=gr.c.currentTime;filtApply(0);filtApply(1);gr.d[0].es.gain.setTargetAtTime(0,n,.15);gr.d[1].es.gain.setTargetAtTime(0,n,.15)}
   /* ===================== the screen ===================== */
   function E(tag,cls,txt,par){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined&&txt!==null)e.textContent=txt;if(par)par.appendChild(e);return e}
   function btn(cls,txt,par,fn){var b=E('button',cls,txt,par);b.type='button';if(fn)b.addEventListener('click',fn);return b}
-  function hold(b,dn,up){var on2=false;b.addEventListener('pointerdown',function(e){e.preventDefault();on2=true;try{b.setPointerCapture(e.pointerId)}catch(x){}dn();b.classList.add('held')});
-    ['pointerup','pointercancel','lostpointercapture'].forEach(function(ev){b.addEventListener(ev,function(){if(!on2)return;on2=false;up();b.classList.remove('held')})})}
-  /* a slider: drag along it; a double tap puts it back to its middle */
-  function slider(par,name,val,fn,fmt){var w=E('div','mxs',null,par),lab=E('span','mxsl',name,w),tr=E('div','mxst',null,w),th=E('i',null,null,tr),out=E('span','mxsv','',w),v=val,lt=0;
-    function show(){th.style.left=(v*100).toFixed(2)+'%';out.textContent=fmt?fmt(v):''}
-    function at(e){var r=tr.getBoundingClientRect();v=clamp((e.clientX-r.left)/Math.max(1,r.width),0,1);show();fn(v)}
-    var dn=false;tr.addEventListener('pointerdown',function(e){e.preventDefault();dn=true;try{tr.setPointerCapture(e.pointerId)}catch(x){}var n=performance.now();if(n-lt<320){v=.5;show();fn(v);dn=false}else at(e);lt=n;wake()});
-    tr.addEventListener('pointermove',function(e){if(dn)at(e)});['pointerup','pointercancel'].forEach(function(ev){tr.addEventListener(ev,function(){dn=false})});
-    show();return {set:function(x){v=x;show()},get:function(){return v}}}
   function build(){
-    if(built)return;built=true;padsLoad();
+    if(built)return;built=true;
     var R=E('div','mx',null,document.body);R.id='mix';R.hidden=true;UI.root=R;
     var tabs=E('div','mxtabs',null,R);UI.tabs={};
-    [['a','band'],['b','machine'],['pads','pads'],['fx','effects']].forEach(function(t){UI.tabs[t[0]]=btn('mxt',t[1],tabs,function(){view=t[0];uiSync(true);wake()})});
-    var V=E('div','mxv',null,R);UI.v=V;
-    /* the two grids */
-    UI.grid={};['a','b'].forEach(function(dk){var k=dk==='a'?0:1,cols=TR.filter(function(t){return t.d===k}),g=E('div','mxg',null,V);g.style.gridTemplateColumns='30px repeat('+cols.length+',minmax(0,1fr))';UI.grid[dk]={el:g,cells:[]};
+    [['a','band'],['b','machine']].forEach(function(t){UI.tabs[t[0]]=btn('mxt',t[1],tabs,function(){view=t[0];uiSync(true)})});
+    var V=E('div','mxv',null,R);UI.v=V;UI.grid={};
+    ['a','b'].forEach(function(dk){var k=dk==='a'?0:1,cols=TR.filter(function(t){return t.d===k}),g=E('div','mxg',null,V);g.style.gridTemplateColumns='30px repeat('+cols.length+',minmax(0,1fr))';UI.grid[dk]={el:g,cells:[]};
       E('span','mxh','',g);cols.forEach(function(t){var h=E('span','mxh',t.n,g);h.style.setProperty('--c',t.col)});
-      for(var r=0;r<SC;r++)(function(r){var sb=btn('mxr',String(r+1),g,function(){scene(r)});sb.title='start row '+(r+1);
-        cols.forEach(function(t){var j=TR.indexOf(t),c=btn('mxc','',g,function(){launch(j,r)});c.style.setProperty('--c',t.col);UI.grid[dk].cells.push({el:c,j:j,r:r})})})(r);
-      btn('mxr mxx','stop',g,function(){TR.forEach(function(t,j){if(t.d===k)stopT(j)})});cols.forEach(function(t){var j=TR.indexOf(t),s=btn('mxc mxsc','■',g,function(){stopT(j)});s.style.setProperty('--c',t.col)})});
-    /* the pads */
-    var P=E('div','mxp',null,V);UI.padv=P;var kr=E('div','mxkr',null,P);btn('mxa','◀',kr,function(){PK=(PK+15)%16;padLabels();MIXS.want(ctx(),'k',PK)});UI.kit=E('span','mxkn','',kr);btn('mxa','▶',kr,function(){PK=(PK+1)%16;padLabels();MIXS.want(ctx(),'k',PK)});
-    var pg=E('div','mxpg',null,P);UI.pads=[];for(var j=0;j<16;j++)(function(j){var b=E('button','mxpad','',pg);b.type='button';b.addEventListener('pointerdown',function(e){e.preventDefault();pad(j,.9)});UI.pads.push(b)})(j);
-    var rr=E('div','mxrr',null,P);UI.rec=btn('mxb mxrec','rec',rr,function(){recSet(!REC)});UI.recInto=btn('mxb','into loop 1',rr,function(){RECK=(RECK+1)%SC;uiSync(true)});
-    UI.len=btn('mxb','1 bar',rr,function(){var c=TR[TR.length-1].clips[RECK];c.len=c.len===16?32:16;uiSync(true)});btn('mxb','clear',rr,function(){var tr=TR[TR.length-1],c=tr.clips[RECK];c.h=[];c.n='empty';if(tr.play===RECK)tr.next=-2;padsSave();uiSync(true)});
-    /* the effects */
-    var F=E('div','mxf',null,V);UI.fxv=F;var xy=E('div','mxxy',null,F);UI.xy=xy;E('span','mxxl','filter: darker ← → thinner · echo ↑',xy);UI.dot=E('i',null,null,xy);
-    var xyAt=function(e){var r=xy.getBoundingClientRect();fxSet(clamp((e.clientX-r.left)/r.width,0,1),clamp(1-(e.clientY-r.top)/r.height,0,1));UI.dot.style.left=(FXP.x*100)+'%';UI.dot.style.top=((1-FXP.y)*100)+'%'},xyDn=false;
-    xy.addEventListener('pointerdown',function(e){e.preventDefault();xyDn=true;wake();try{xy.setPointerCapture(e.pointerId)}catch(x){}xyAt(e);xy.classList.add('held')});xy.addEventListener('pointermove',function(e){if(xyDn)xyAt(e)});
-    ['pointerup','pointercancel'].forEach(function(ev){xy.addEventListener(ev,function(){xyDn=false;fxOff();xy.classList.remove('held')})});
-    var fr=E('div','mxrr',null,F);E('span','mxlab','stutter',fr);[['1 beat',4],['1/2',2],['1/4',1]].forEach(function(s){var b=btn('mxb',s[0],fr);hold(b,function(){wake();stutOn(s[1])},stutOff)});
-    var fr2=E('div','mxrr',null,F);btn('mxb','brake A',fr2,function(){brake(0)});btn('mxb','brake B',fr2,function(){brake(1)});btn('mxb','stop all',fr2,stopAll);
-    /* the decks along the bottom: each its speed, nudges, sync and filter; between them the crossfader */
-    var D=E('div','mxd',null,R);UI.dk=[];
-    var row=E('div','mxdr',null,D);
-    [0,1].forEach(function(k){var d=DK[k],w=E('div','mxdk',null,row),top=E('div','mxdt',null,w),u={};u.name=E('span','mxdn',d.n,top);u.bpm=E('span','mxbpm','',top);u.beat=E('span','mxbt','',top);
-      u.pitch=slider(w,'pitch',.5,function(v){setRate(k,1+(v-.5)*.32)},function(v){var p=(v-.5)*32;return (p>=0?'+':'')+p.toFixed(1)+'%'});
-      var br=E('div','mxbr',null,w);var nm=btn('mxb','◀',br),np=btn('mxb','▶',br);hold(nm,function(){wake();setRate(k,undefined,-.05)},function(){setRate(k,undefined,0)});hold(np,function(){wake();setRate(k,undefined,.05)},function(){setRate(k,undefined,0)});
-      btn('mxb','sync',br,function(){wake();sync(k)});
-      u.filt=slider(w,'filter',.5,function(v){d.filt=v*2-1;if(!FXP)filtApply(k)},function(v){var f=v*2-1;return Math.abs(f)<.03?'open':f<0?'darker':'thinner'});
-      UI.dk.push(u)});
-    UI.xf=slider(D,'A · crossfader · B',.5,function(v){XF=v;xfApply()},function(v){return v<.03?'band':v>.97?'machine':''});
-    padLabels();uiSync(true)}
-  function padLabels(){if(!UI.kit)return;UI.kit.textContent='kit '+(PK+1)+' of 16 · '+MIXS.KITS[PK][0];UI.pads.forEach(function(b,j){b.textContent=MIXS.ROLES[j]})}
-  /* the screen follows the sound: what plays (lit), what waits for the bar (blinking), the decks' speeds and beats */
+      for(var r=0;r<ROWS;r++)(function(r){var sb=btn('mxr',String(r+1),g,function(){scene(r,k)});sb.setAttribute('aria-label','start row '+(r+1));
+        cols.forEach(function(t){var j=TR.indexOf(t),c=btn('mxc','',g,function(){launch(j,r)});c.style.setProperty('--c',t.col);c.setAttribute('aria-label',t.n+': '+t.clips[r].n);
+          UI.grid[dk].cells.push({el:c,j:j,r:r})})})(r);
+      btn('mxr mxx','stop',g,function(){hand();stopAll(k)}).setAttribute('aria-label','stop every column');
+      cols.forEach(function(t){var j=TR.indexOf(t),s=btn('mxc mxsc','■',g,function(){hand();stopT(j)});s.style.setProperty('--c',t.col);s.setAttribute('aria-label','stop '+t.n)})});
+    uiSync(true)}
+  /* the screen follows the sound: what plays (lit), what waits for the bar (blinking), what stops on it (dimmed) */
   function uiSync(force){
     if(!built)return;var n=performance.now();if(!force&&n-lastUi<90)return;lastUi=n;
     for(var t in UI.tabs)UI.tabs[t].setAttribute('aria-pressed',view===t?'true':'false');
-    UI.grid.a.el.hidden=view!=='a';UI.grid.b.el.hidden=view!=='b';UI.padv.hidden=view!=='pads';UI.fxv.hidden=view!=='fx';
-    ['a','b'].forEach(function(dk){if(UI.grid[dk].el.hidden)return;UI.grid[dk].cells.forEach(function(c){var tr=TR[c.j],cl=tr.clips[c.r],st=tr.play===c.r?(tr.next===-2?'stopping':'on'):tr.next===c.r?'wait':'';
-      var lab=tr.k==='pads'?(cl.h.length?'mine':'·'):tr.k==='stem'?cl.n:cl.n;if(c.el._l!==lab){c.el._l=lab;c.el.textContent=lab}if(c.el._s!==st){c.el._s=st;c.el.className='mxc'+(st?' '+st:'')+(tr.k==='pads'&&!cl.h.length?' empty':'')}})});
-    if(view==='pads'){UI.rec.setAttribute('aria-pressed',REC?'true':'false');UI.recInto.textContent='into loop '+(RECK+1);UI.len.textContent=TR[TR.length-1].clips[RECK].len===32?'2 bars':'1 bar'}
-    var c=ctx();UI.dk.forEach(function(u,k){var d=DK[k],bp=(BPS*60*d.rate*(1+d.nudge)).toFixed(1);if(u.bpm._v!==bp){u.bpm._v=bp;u.bpm.textContent=bp+' bpm'}
-      var b=c&&c.state==='running'?beatAt(d,c.currentTime):0,bt=Math.floor(((b%4)+4)%4),s='';for(var q=0;q<4;q++)s+=q===bt?'●':'○';if(u.beat._v!==s){u.beat._v=s;u.beat.textContent=s}})}
+    UI.grid.a.el.hidden=view!=='a';UI.grid.b.el.hidden=view!=='b';
+    UI.grid[view].cells.forEach(function(c){var tr=TR[c.j],cl=tr.clips[c.r],st=tr.play===c.r?(tr.next===-1||tr.next===c.r?'on':'stopping'):tr.next===c.r?'wait':'';
+      if(c.el._l!==cl.n){c.el._l=cl.n;c.el.textContent=cl.n}
+      if(c.el._s!==st){c.el._s=st;c.el.className='mxc'+(st?' '+st:'');c.el.setAttribute('aria-pressed',st==='on'?'true':'false')}})}
   function place(){if(!UI.root)return;var r=UI.root,d=$('data'),y=STG.y0;if(d){var b=d.getBoundingClientRect();if(b.height)y=Math.max(y,Math.round(b.bottom+8))}
     if(y===UI.py&&STG.y1===UI.py1)return;UI.py=y;UI.py1=STG.y1;r.style.top=y+'px';r.style.height=Math.max(160,STG.y1-y)+'px'}
   /* ===================== the world ===================== */
-  function enter(){build();on=true;MIXON=true;UI.root.hidden=false;UI.py=-1;place();started=false;DK.forEach(function(d){d.last=-1});
-    /* the band's usual loops hand over to deck A where they are, without a gap: the same players, the same beat */
-    if(AU.run&&AU.c&&AU.ready&&ensure()){var c=AU.c,n=c.currentTime+.06,b=(loopT()+.06)*BPS;
-      AU.src.forEach(function(x){try{x&&x.stop(n)}catch(e){}});AU.src=[];AU.run=false;clearInterval(AU.iv);if(AU.live){AU.live=false;CLK.w0=performance.now()-(loopT())*1000}
-      DK.forEach(function(d){d.tRef=n;d.bRef=b;d.last=-1;d.rate=d.fader});
-      TR.forEach(function(tr){if(tr.d===0&&ON[tr.i]){tr.src=stemSrc(tr,tr.clips[0],b,n);if(tr.src)tr.play=0}});started=true}
-    else if(AU.run)stemsStop();
-    clearInterval(iv);iv=setInterval(pump,25);uiSync(true)}
-  function leave(){on=false;var c=ctx(),n=c?c.currentTime:0;stutOff();fxOff();
-    /* whoever plays in the band on deck A stays in it after: the usual loops take over */
-    TR.forEach(function(tr){var was=tr.play>=0;off(tr,n);tr.next=-1;if(tr.d===0&&was){ON[tr.i]=1;dotSync(tr.i)}});
-    clearInterval(iv);iv=0;MIXON=false;if(UI.root)UI.root.hidden=true;for(var i=0;i<NL;i++)bandApply(i,true);
-    /* and back: the usual loops pick up from deck A's beat */
-    if(c&&started){AU.live=false;CLK.w0=performance.now()-beatAt(DK[0],n)/BPS*1000}if(AU.want)stemsStart()}
-  function tick(dt,t){
-    /* the music has come on (the first touch, or the note): the players who were in the band come in on deck A, on the next bar */
-    if(soundLive()&&!started&&AU.ready){started=true;ensure();var c=ctx(),n=c.currentTime;DK.forEach(function(d){d.tRef=n;d.bRef=0;d.last=-1});TR.forEach(function(tr){if(tr.d===0&&ON[tr.i]&&tr.play<0)tr.next=0})}
-    if(!soundLive())started=false;
-    place();uiSync(false)}
-  function draw(t){
+  function enter(){build();on=true;want=true;UI.root.hidden=false;UI.py=-1;place();if(!iv)iv=setInterval(pump,25);pump();uiSync(true)}
+  /* leaving changes nothing that plays: the loops go on in the other worlds */
+  function leave(){on=false;if(UI.root)UI.root.hidden=true}
+  function tick(){place();uiSync(false)}
+  function draw(){
     if(GLX.ok&&!GLX.lost)glClear(ABYSS[0],ABYSS[1],ABYSS[2]);
-    /* behind the controls, each deck's beat as a ring that swells and fades: the band's in cyan, the machine's in amber */
-    var c=ctx(),o=OV;if(!c||c.state!=='running')return;
-    DK.forEach(function(d,k){var b=beatAt(d,c.currentTime),f=b-Math.floor(b),busy=TR.some(function(tr){return tr.d===k&&tr.play>=0});if(!busy)return;
+    /* behind the grid, the beat as a ring that swells and fades: the band's in cyan, the machine's in amber */
+    var c=ctx(),o=OV;if(!c||c.state!=='running'||!MIXON)return;var b=beatAt(c.currentTime),f=b-Math.floor(b);
+    [0,1].forEach(function(k){if(!TR.some(function(tr){return tr.d===k&&tr.play>=0}))return;
       var R=Math.min(STG.w,STG.h)*(.32+.06*(1-f)),x=STG.x0+STG.w*(k?.72:.28),y=STG.cy;o.strokeStyle=(k?'rgba(255,179,71,':'rgba(62,240,255,')+(.22*(1-f)).toFixed(3)+')';o.lineWidth=1.2;o.beginPath();o.arc(x,y,R,0,TAU);o.stroke()})}
   function hud(){
-    var c=ctx(),a=TR.some(function(t){return t.d===0&&t.play>=0}),b=TR.some(function(t){return t.d===1&&t.play>=0}),e=0,l2='';
-    if(c&&c.state==='running'){var n=c.currentTime;e=(beatAt(DK[1],n)%1)-(beatAt(DK[0],n)%1);if(e>.5)e-=1;if(e<-.5)e+=1}
-    var ra=BPS*60*DK[0].rate*(1+DK[0].nudge),rb=BPS*60*DK[1].rate*(1+DK[1].nudge);
-    if(a&&b)l2=Math.abs(rb-ra)<.05&&Math.abs(e)<.06?'the two decks are in time':'B is '+(Math.abs(rb-ra)>=.05?(rb>ra?'faster':'slower')+' than A':Math.abs(e).toFixed(2)+' of a beat '+(e>0?'ahead':'behind'))+': sync it, or nudge it by ear';
-    if(REC)l2=(l2?l2+' · ':'')+'recording the pads into loop '+(RECK+1);
-    return 'the band and '+MIXS.count()+' more sounds: tap a loop, it comes in on the next bar'+(l2?'\n'+l2:'')}
+    var a=TR.filter(function(t){return t.d===0&&t.play>=0}).length,b=TR.filter(function(t){return t.d===1&&t.play>=0}).length;
+    return 'tap a loop: in on the next bar, in time and key\n'+(a||b?'playing: '+a+' of the band'+(b?', '+b+' of the machine':'')+'\nit keeps playing in Smoke and Earth'
+      :'nothing playing: tap a loop, or a row\'s number')}
   return {enter:enter,leave:leave,tick:tick,draw:draw,hud:hud,resize:function(){if(UI.root)UI.py=-1;place()},
-    /* the band's circles here bring a player in or out on deck A (its whole loop) */
-    dot:function(i){var j=i;var tr=TR[j];if(!tr)return;wake();if(tr.play>=0||tr.next>=0)tr.next=-2;else tr.next=0;BD.auto=false;BD.manual=true},
-    dbg:function(){var c=ctx(),n=c?c.currentTime:0;return {on:on,ctx:c?c.state:'none',graph:!!gr,view:view,xf:XF,kit:PK,rec:REC,recInto:RECK,count:MIXS.count(),
-      decks:DK.map(function(d){return {rate:d.rate,fader:d.fader,nudge:d.nudge,ne:d.ne?+(d.ne-n).toFixed(3):0,filt:d.filt,beat:c?beatAt(d,n):0,brake:!!d.brake}}),
-      tracks:TR.map(function(t){return {n:t.n,d:t.d,play:t.play,next:t.next,src:!!t.src}}),pads:TR[TR.length-1].clips.map(function(c){return c.h.length}),stut:!!STUT,fx:FXP}},
-    launch:launch,stop:stopT,scene:scene,stopAll:stopAll,rate:function(k,r){setRate(k,r)},sync:sync,xf:function(v){XF=v;xfApply();if(UI.xf)UI.xf.set(v)},pad:pad,rec:recSet,kit:function(k){PK=k;padLabels()},
-    view:function(v){view=v;uiSync(true)},brake:brake,stut:function(L){if(L)stutOn(L);else stutOff()},fx:function(x,y){if(x===null)fxOff();else fxSet(x,y)},
-    /* for the loudness test: the decks built on another context (an offline one), and what deck B plays laid out on it */
-    offline:function(c,dst,secs,busy){var G=graphOn(c,dst),b=G.d[1].xf.gain,a=G.d[0].xf.gain;a.value=0;b.value=1;
-      var t0=.05,hitsAt=function(j,tr,clip,from,to){var spb=SPB/4;for(var s=0;t0+s*spb<to;s++){var t=t0+s*spb;if(t<from)continue;var q=s%clip.len;clip.h.forEach(function(h){if(h[0]!==q)return;
-        var r=1,v=clamp(h[2],0,1);if(tr.k==='note'){var D=MIXS.INSTS[clip.inst],bb=MIXS.instNow(c,clip.inst),best=bb[0];bb.forEach(function(x){if(Math.abs(x.m-h[1])<Math.abs(best.m-h[1]))best=x});
-          var s2=c.createBufferSource(),g=c.createGain();s2.buffer=best.b;s2.playbackRate.value=Math.pow(2,(h[1]-best.m)/12);g.gain.value=v*.5*D[3]*tilt(h[1]);s2.connect(g);g.connect(G.t[j]);s2.start(t)}
-        else{var kb=MIXS.kitNow(c,clip.kit)[h[1]],s3=c.createBufferSource(),g3=c.createGain();s3.buffer=kb;g3.gain.value=v*.62;s3.connect(g3);g3.connect(G.t[j]);s3.start(t)}})}};
-      TR.forEach(function(tr,j){if(tr.d!==1||tr.k==='pads')return;var k=busy?{drums:4,perc:0,bass:3,keys:4,bells:4}[tr.n]:0;hitsAt(j,tr,tr.clips[k],0,secs)});
+    /* the band left to itself (04-band.js) brings a player in, or takes one out, while the mixer has it: the whole loop, on the next bar */
+    player:function(i,v){var tr=TR[i];if(!tr)return;if(v){if(tr.play<0&&tr.next<0){tr.next=0;var r=rival(i);if(r>=0&&(TR[r].play>=0||TR[r].next>=0))TR[r].next=-2}}else stopT(i)},
+    dbg:function(){var c=ctx(),n=c?c.currentTime:0;return {on:on,want:want,mixon:MIXON,ctx:c?c.state:'none',graph:!!gr,view:view,beat:c&&MIXON?beatAt(n):0,
+      loops:TR.reduce(function(a,t){return a+t.clips.length},0),tracks:TR.map(function(t){return {n:t.n,d:t.d,play:t.play,next:t.next,src:!!t.src,gv:t.gv}})}},
+    launch:launch,stop:stopT,scene:scene,stopAll:stopAll,view:function(v){view=v;uiSync(true)},
+    /* for the loudness test: the machine built on another context (an offline one), every column on its busiest loop, or (pick)
+       only the columns named, each on the loop given */
+    offline:function(c,dst,secs,pick){var G=graphOn(c,dst),t0=.05,spb=SPB/4,BUSY=pick||{drums:1,perc:0,bass:1,keys:0,bells:1};
+      TR.forEach(function(tr,j){if(tr.d!==1||BUSY[tr.n]===undefined)return;var clip=tr.clips[BUSY[tr.n]];
+        for(var s=0;t0+s*spb<secs;s++){var t=t0+s*spb+((s&1)?spb*SWING:0),q=s%clip.len;clip.h.forEach(function(h){if(h[0]!==q)return;var v=clamp(h[2],0,1);
+          if(tr.k==='note'){var m=noteOf(tr,h,s),D=MIXS.INSTS[clip.inst],bb=MIXS.instNow(c,clip.inst),best=bb[0];bb.forEach(function(x){if(Math.abs(x.m-m)<Math.abs(best.m-m))best=x});
+            var s2=c.createBufferSource(),g=c.createGain();s2.buffer=best.b;s2.playbackRate.value=Math.pow(2,(m-best.m)/12);g.gain.value=v*.5*D[3]*tilt(m);s2.connect(g);g.connect(G.t[j]);s2.start(t)}
+          else{var kb=MIXS.kitNow(c,clip.kit)[h[1]],s3=c.createBufferSource(),g3=c.createGain();s3.buffer=kb;g3.gain.value=v*.62;s3.connect(g3);g3.connect(G.t[j]);s3.start(t)}})}});
       return G}};
 })();
 
@@ -2864,15 +2739,16 @@ var MIX=(function(){
 var OVC=$('ov'),OV=OVC.getContext('2d'),STAGE=$('stage');
 /* the worlds. (There were more: a culture of glowing organisms that the owner said made no sense, a picture of the band he did not much
    like, a harp he called stupid, a solar system he called meh. The first two are kept in dev/archive in case he asks for them back.)
-   Every world has the whole band: who plays is the visitor's to choose, on the row of circles (dundun, shekere, djembe, talking drum,
-   agogo, bass, balafon, kora, guitar) */
+   Every world has the band. Who plays in it, and what more, is set in Mix, and goes on playing in every world; outside Mix there is
+   only the music button at the top (13 Nov: "Just the audio remains playing. There is always a small music on off button"; until then
+   each world had a row of circles, one for each player) */
 var WORLDS=[
   {id:'smoke',name:'Smoke',o:DRIFT,sc:[1,1,1,1,1,1,1,1,1],photo:true,ic:'<path d="M8 21c-3-3 3-5 0-8s3-5 0-8M15.5 21c-3-3 3-5 0-8s2.2-4 .6-6.6"/>'},
   /* the Earth: the weather, the satellites and (on the site) the live cameras, each a layer of one globe (13 Nov: "Put them all on the
      same globe as satellites and make that just a layer"); Wind, Orbit and Live were three worlds before */
   {id:'earth',name:'Earth',o:WIND,sc:[1,1,1,1,1,1,1,1,1],ic:'<circle cx="12" cy="12" r="6.6"/><path d="M6.2 10.4c2.4-1.3 4.1 1 6.5-.1 1.5-.7 2.4-.8 3.8-.4"/><ellipse cx="12" cy="12" rx="10.6" ry="3.9" transform="rotate(-22 12 12)"/>'},
-  /* the mixer: the band on one deck, a machine of sounds on the other (13 Nov) */
-  {id:'mix',name:'Mix',o:MIX,sc:[1,1,1,1,1,1,1,1,1],ic:'<circle cx="7" cy="10" r="4.4"/><circle cx="17" cy="10" r="4.4"/><circle cx="7" cy="10" r=".9"/><circle cx="17" cy="10" r=".9"/><path d="M3.5 19.5h17M12 17v5"/>'},
+  /* the mixer: a grid of loops, the band's and a machine's (13 Nov) */
+  {id:'mix',name:'Mix',o:MIX,sc:[1,1,1,1,1,1,1,1,1],ic:'<rect x="3.5" y="3.5" width="4.6" height="4.6" rx="1.1"/><rect x="9.7" y="3.5" width="4.6" height="4.6" rx="1.1"/><rect x="15.9" y="3.5" width="4.6" height="4.6" rx="1.1"/><rect x="3.5" y="9.7" width="4.6" height="4.6" rx="1.1"/><rect x="9.7" y="9.7" width="4.6" height="4.6" rx="1.1"/><rect x="15.9" y="9.7" width="4.6" height="4.6" rx="1.1"/><rect x="3.5" y="15.9" width="4.6" height="4.6" rx="1.1"/><rect x="9.7" y="15.9" width="4.6" height="4.6" rx="1.1"/><rect x="15.9" y="15.9" width="4.6" height="4.6" rx="1.1"/>'},
 ];
 var CUR=null,CURI=-1,PT={},PTN=0,GP={},PS=[],HV=null,touched={},lastTouch=-1e9,SAYT=0,SAYX='',SAYC='',swT=0,GOT=0,FDT=.016;
 function safe(f){try{f()}catch(e){if(window.__lc){window.__lc.errs=(window.__lc.errs||[]);window.__lc.errs.push(String(e&&e.stack||e))}}}
@@ -2883,15 +2759,10 @@ var DATAX='',DATAT=0;
 function dataPaint(force){var n=performance.now();if(!force&&n-DATAT<180)return;DATAT=n;var el=$('data'),tx=n<SAYT?SAYX:(CUR&&CUR.hud?CUR.hud():''),c=n<SAYT?SAYC:'';
   if(tx!==DATAX){DATAX=tx;el.textContent=tx}if(el._c!==c){el._c=c;el.style.setProperty('--c',c||'')}}
 
-/* ---- the worlds along the bottom; above them the music: a note for the whole band, then a circle for each of its nine players ---- */
+/* ---- the worlds along the bottom ---- */
 function railBuild(){var r=$('rail');r.innerHTML='';WORLDS.forEach(function(w,i){var b=document.createElement('button');b.type='button';b.className='wb';b.id='w_'+w.id;
   b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+w.ic+'</svg><span></span>';b.lastChild.textContent=w.name;b.setAttribute('aria-current','false');
   b.addEventListener('click',function(){go(i)});r.appendChild(b)})}
-function dotsBuild(){var d=$('dots');d.innerHTML='';for(var i=0;i<NL;i++)(function(i){var b=document.createElement('button');b.type='button';b.className='dot';b.id='d_'+i;b.style.setProperty('--c',BCOL[i]);
-  b.setAttribute('aria-label',BNAMES[i]);b.setAttribute('aria-pressed',ON[i]?'true':'false');b.appendChild(document.createElement('i'));
-  /* a circle brings its player in or out. With the music off, it turns the music on with that player in it */
-  b.addEventListener('click',function(){if(CUR&&CUR.dot){CUR.dot(i);return}BD.auto=false;BD.manual=true;if(!soundLive()){musicOn();if(!ON[i])setPlayer(i,true)}else setPlayer(i,!ON[i])});d.appendChild(b)})(i)}
-function dotSync(i){var b=$('d_'+i);if(b)b.setAttribute('aria-pressed',ON[i]?'true':'false')}
 function chrome(){
   var w=WORLDS[CURI];if(!w)return;$('wname').textContent=w.name;
   WORLDS.forEach(function(x,i){var b=$('w_'+x.id);if(b)b.setAttribute('aria-current',i===CURI?'true':'false')});
@@ -2989,12 +2860,11 @@ function tapCue(t){
   else{k=(u-.24)/.76;ringAt(17,.26,1.3);ringAt(17+58*k,.75*(1-k)*(1-k),1.6);if(k>.22){a=(k-.22)/.78;ringAt(17+58*a,.4*(1-a)*(1-a),1.2)}}}
 function ghostDraw(){var c=OV,id;if(GH.on&&GH.mode===2){tapCue(FT);return}for(id in GP){var p=GP[id];c.strokeStyle='rgba(234,249,255,.42)';c.lineWidth=1.2;c.beginPath();c.arc(p.x,p.y,15,0,TAU);c.stroke();c.fillStyle='rgba(234,249,255,.3)';c.beginPath();c.arc(p.x,p.y,3,0,TAU);c.fill()}}
 
-/* ---- the music's own circle (the note at the head of the row). It says what can be heard: lit only while the sound is really
-   running. It never moves by itself (the owner found a switch that twitched while it waited, and one that read On over silence,
-   confusing), and a touch on it always does what it shows: unlit turns the music on. While the music is off the players' circles
-   are dimmed ---- */
-function swSync(){var b=$('bSound');if(!b)return;var on=soundLive();b.setAttribute('aria-pressed',on?'true':'false');b.disabled=!!AU.failed;$('dotrow').classList.toggle('off',!on);
-  b.classList.toggle('wait',on&&!AU.run);b.setAttribute('aria-label',AU.failed?'This browser cannot play the music':(on?'Music is on. Turn it off':(AU.auto?'Music starts with your first touch. Turn it on now':(AU.want?'Music is waiting for a tap. Turn it on now':'Music is off. Turn it on'))))}
+/* ---- the music button: a note at the top, on every world. It says what can be heard: lit only while the sound is really running,
+   struck through while it is not. It never moves by itself (the owner found a switch that twitched while it waited, and one that read
+   On over silence, confusing), and a touch on it always does what it shows: struck through turns the music on ---- */
+function swSync(){var b=$('bSound');if(!b)return;var on=soundLive();b.setAttribute('aria-pressed',on?'true':'false');b.disabled=!!AU.failed;
+  b.classList.toggle('wait',on&&!AU.run&&!MIXON);b.setAttribute('aria-label',AU.failed?'This browser cannot play the music':(on?'Music is on. Turn it off':(AU.auto?'Music starts with your first touch. Turn it on now':(AU.want?'Music is waiting for a tap. Turn it on now':'Music is off. Turn it on'))))}
 $('bSound').addEventListener('click',function(){if(soundLive())musicOff();else musicOn()});
 $('bNow').addEventListener('click',function(){if(ORBIT.toNow)ORBIT.toNow()});
 
@@ -3058,14 +2928,13 @@ function frame(t){
     if(CUR){if(CUR.tick)CUR.tick(dt,t);if(CUR.draw)CUR.draw(t);ghostDraw()}
     if(SAVE)doSave();
     dataPaint(false);
-    for(var i=0;i<NL;i++){var b=$('d_'+i);if(b)b.style.setProperty('--lv',(1+.45*E[i]*G[i]).toFixed(3))}
   }catch(e){if(window.__lc){window.__lc.errs=(window.__lc.errs||[]);if(window.__lc.errs.length<20)window.__lc.errs.push('frame: '+String(e&&e.stack||e))}}
   finally{requestAnimationFrame(frame)}}
 function start(data){
   var i,w=0,h=(location.hash||'').slice(1);
   if(data&&data.on&&data.on.length===NL){for(i=0;i<NL;i++){ON[i]=data.on[i]?1:0;G[i]=ON[i]}BD.manual=!!data.manual}
   i=worldOf(h);if(i>=0)w=i;if(data&&typeof data.w==='number'&&data.w>=0&&data.w<WORLDS.length)w=data.w;
-  railBuild();dotsBuild();layout();ovSize();glInit();glResize();
+  railBuild();layout();ovSize();glInit();glResize();
   go(w,true);swSync();dlInit();audioLoad();setTimeout(synPrepare,900);setTimeout(limCalibrate,1500);
   /* the orbits, the wind, the aurora and the lightning are read once the page has settled, so they are there when a world wants them */
   setTimeout(liveLoad,2600);

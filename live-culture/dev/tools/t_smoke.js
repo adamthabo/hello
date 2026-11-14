@@ -1,6 +1,6 @@
-// Smoke as a machine and a game of levels, played with real touches: the tools, a wall that stops the smoke, a fan, a drain, smoke
-// rising, a whirlpool; the map of the levels, the first level solved by building (its stars), the levels in order and their rewards
-// (more of the band, new pieces), leaving them.
+// Smoke as a machine and a game, played with real touches: the tools, a wall that stops the smoke, a fan, a drain, a whirlpool; then
+// the game: play starts a round (no map, no levels to pick: a set-up of its own each time, harder as rounds are won, mirrored half the
+// time), the first round solved by building, the next one coming by itself, new, every set-up both ways, and back to playing freely.
 // usage: node tools/t_smoke.js [size]
 const { launch, open } = require('./lib'); const sleep = ms => new Promise(r => setTimeout(r, ms));
 const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') + m); if (!c) fail.push(m); };
@@ -21,8 +21,8 @@ const size = process.argv[2] || 'phone';
   let s = await D();
   { const r = await page.evaluate(() => { const t = document.getElementById('tools').getBoundingClientRect(), f = document.getElementById('foot').getBoundingClientRect(); return { t: t.top, b: t.bottom, ft: f.top, fb: f.bottom, h: innerHeight }; });
     ok(r.t >= r.ft && r.b <= r.fb && r.t > r.h * .7, 'the tools sit in the footer, under the water (' + Math.round(r.t) + '-' + Math.round(r.b) + ' of ' + r.h + ')'); }
-  await page.evaluate(() => { try { localStorage.removeItem('lc.smoke.stars'); } catch (e) {} window.__lc.WORLDS[0].o.stars([]); window.__lc.WORLDS[0].o.tool('ink'); }); s = await D();
-  ok(s.tools === 'ink*,wall,fan,drain,puz', 'the tools are in a row along the bottom, moving the water first (the prism and the tunnel wait to be reached): ' + s.tools);
+  await page.evaluate(() => window.__lc.WORLDS[0].o.tool('ink')); s = await D();
+  ok(s.tools === 'ink*,wall,fan,prism,drain,tunnel,puz', 'the tools are in a row along the bottom, moving the water first, then every piece, then play: ' + s.tools);
   const mid = () => page.evaluate(() => window.__lc.WORLDS[0].o.mid());
   const simT = () => page.evaluate(() => window.__lc.WORLDS[0].o.dbg().simT);
   // a wall: drawn, and taken away with a tap
@@ -48,55 +48,54 @@ const size = process.argv[2] || 'phone';
   await click('t_ink'); const cx = X(s, .5), cy = Y(s, .5);
   await touch([[cx + 60, cy], [cx - 60, cy]], 'touchStart'); for (let k = 1; k <= 16; k++) { const a = k * .12; await touch([[cx + 60 * Math.cos(a), cy + 60 * Math.sin(a)], [cx - 60 * Math.cos(a), cy - 60 * Math.sin(a)]], 'touchMove'); await sleep(16); }
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await sleep(500); s = await D(); ok(!s.errs.length && s.d.ok, 'two fingers turning make a whirlpool, without fault');
-  // the levels: the map, then the first level; the band thins to two
-  await page.evaluate(() => { try { localStorage.removeItem('lc.smoke.stars'); } catch (e) {} window.__lc.WORLDS[0].o.stars([]); });
-  await click('t_puz'); await sleep(600); s = await D();
+  // the game: no map and no levels to pick; play starts a round, a set-up of its own each time (the first, before any is won, the simplest)
+  const ON0 = await page.evaluate(() => window.__lc.ON.join(''));
+  await page.evaluate(() => { try { localStorage.removeItem('lc.smoke.wins'); } catch (e) {} window.__lc.WORLDS[0].o.wins(0); });
+  ok(await page.evaluate(() => document.getElementById('t_puz').firstChild.textContent) === 'play', 'out of a round the game\'s button reads play');
+  await click('t_puz'); await sleep(900); s = await D();
   const NP = await page.evaluate(() => window.__lc.WORLDS[0].o.levels.length);
-  ok(s.d.path && /^levels · 0 of \d+ stars/.test(s.data), 'the levels button opens the map of the levels: ' + s.data.replace(/\n/g, ' | '));
-  await page.screenshot({ path: `shots/smoke_${size}_map.png` });
-  const nodes = await page.evaluate(() => window.__lc.WORLDS[0].o.pathNodes());
-  ok(nodes.nodes.length === NP && NP >= 20, 'the map shows every level: ' + nodes.nodes.length);
-  await tap(nodes.nodes[3].x, nodes.nodes[3].y); await sleep(500); s = await D(); ok(s.d.path && s.d.pz < 0, 'a level not reached yet does not open');
-  await tap(nodes.nodes[0].x, nodes.nodes[0].y); await sleep(2600); s = await D();
-  ok(s.d.pz === 0 && !s.d.path && s.d.cups.length === 1 && s.d.fix.fans === 1 && s.on === '100001000', 'level 1: one source, one ring, and the band is the low drum and the bass: ' + s.on);
-  ok(/^level 1 of \d+ · walls · build, then release the smoke/.test(s.data) && /fill every ring with smoke of its colour before the tank runs dry/.test(s.data) && /to build: 2 walls · ★★★: 1 piece, a third of the smoke left/.test(s.data) && s.tools === 'wall*,go,puz,undo', 'the readout and the tools say what may be built, and that the smoke waits to be let go: ' + s.data.replace(/\n/g, ' | ') + ' / ' + s.tools);
-  ok(await page.evaluate(() => [...document.querySelectorAll('#tools .tb span')].map(e => e.textContent).join()) === 'hand,wall,fan,prism,drain,tunnel,release,levels,again', 'each tool carries its name');
+  ok(s.d.pz === 0 && s.d.round === 1 && s.d.cups.length === 1 && s.d.fix.fans === 1, 'play: the first round is the simplest set-up, one jet and one ring (round ' + s.d.round + ', set-up ' + (s.d.pz + 1) + (s.d.mir ? ', mirrored' : '') + ')');
+  ok(/^get the cyan smoke into the cyan ring\nyou can place 2 walls, then press release\ndrag to draw a wall: smoke slides along it$/.test(s.data) && s.tools === 'wall*,go,puz,undo', 'three plain lines say what to do, what there is to place and what the piece in hand does: ' + s.data.replace(/\n/g, ' | ') + ' · tools ' + s.tools);
+  ok(await page.evaluate(() => [...document.querySelectorAll('#tools .tb span')].map(e => e.textContent).join()) === 'hand,wall,fan,prism,drain,tunnel,release,new,free', 'each tool carries its name; in a round the game\'s button reads new, and free goes back to playing freely');
+  ok(await page.evaluate(() => { const d = document.getElementById('data').getBoundingClientRect(); return d.bottom; }) < s.d.board.y0, 'the words sit above the tank, clear of it');
+  ok(s.on === ON0, 'a round leaves the music as it is: ' + s.on);
   // nothing built and the smoke let go: the tank runs dry, the ring is not filled, and the page says so
-  await click('t_go'); await sleep(400); s = await D(); ok(s.d.run && /smoke left: \d/.test(s.data) && /cyan ring \d+%/.test(s.data) && await page.evaluate(() => document.getElementById('t_go').firstChild.textContent) === 'stop', 'release lets the smoke go, and the button becomes stop: ' + s.data.split('\n')[0]);
+  await click('t_go'); await sleep(400); s = await D(); ok(s.d.run && /smoke left \d/.test(s.data) && /cyan \d+%/.test(s.data) && await page.evaluate(() => document.getElementById('t_go').firstChild.textContent) === 'stop', 'release lets the smoke go, and the button becomes stop: ' + s.data.split('\n').join(' | '));
   for (let k = 0; k < 160; k++) { await sleep(1000); s = await D(); if (!s.d.run) break; }
-  ok(!s.d.run && !s.d.won && s.d.out && /out of smoke: change something, then release it again/.test(s.data), 'with nothing built the tank runs dry and the ring stays short: ' + s.data.split('\n')[0]);
-  ok(s.d.board.w / s.d.board.h > .6 && s.d.board.w / s.d.board.h < .68 && s.d.fix.walls === 4, 'a level is played in a tank of fixed shape: ' + Math.round(s.d.board.w) + ' x ' + Math.round(s.d.board.h));
-  await page.screenshot({ path: `shots/smoke_${size}_level1.png` });
-  // the level's own solution, drawn with real touches: walls dragged, fans dragged the way they blow, prisms and drains tapped
-  const L0 = await page.evaluate(() => JSON.parse(JSON.stringify(window.__lc.WORLDS[0].o.levels[0])));
+  await sleep(500); s = await D();
+  ok(!s.d.run && !s.d.won && s.d.out && /not quite: move a piece, then release again/.test(s.data), 'with nothing built the tank runs dry and the ring stays short: ' + s.data.split('\n')[1]);
+  ok(s.d.board.w / s.d.board.h > .6 && s.d.board.w / s.d.board.h < .68 && s.d.fix.walls === 4, 'a round is played in a tank of fixed shape: ' + Math.round(s.d.board.w) + ' x ' + Math.round(s.d.board.h));
+  await page.screenshot({ path: `shots/smoke_${size}_round1.png` });
+  // the set-up's own answer, as it stands on the screen (mirrored with it), drawn with real touches
+  const sol = await page.evaluate(() => window.__lc.WORLDS[0].o.sol());
   const BX = u => s.d.board.x0 + s.d.board.w * u, BY = v => s.d.board.y0 + s.d.board.h * v;
-  for (const b of L0.sol) { const a = b[1];
+  for (const b of sol) { const a = b[1];
     if (b[0] === 'wall') { await click('t_wall'); await drag(BX(a[0]), BY(a[1]), BX(a[2]), BY(a[3]), 14); }
     else if (b[0] === 'fan') { await click('t_fan'); const m = Math.hypot(a[2], a[3]) || 1; await drag(BX(a[0]), BY(a[1]), BX(a[0]) + a[2] / m * 44, BY(a[1]) + a[3] / m * 44, 6); }
     else if (b[0] === 'prism') { await click('t_prism'); await tap(BX(a[0]), BY(a[1])); }
     else if (b[0] === 'drain') { await click('t_drain'); await tap(BX(a[0]), BY(a[1])); }
     else if (b[0] === 'tunnel') { await click('t_tunnel'); await drag(BX(a[0]), BY(a[1]), BX(a[2]), BY(a[3]), 12); } }
-  s = await D(); ok(s.d.walls + s.d.fans + s.d.drains + s.d.prisms + s.d.tunnels === L0.sol.length && !s.d.run, 'level 1\'s solution built with touches, the smoke still held: ' + L0.sol.map(b => b[0]).join(', '));
+  s = await D(); ok(s.d.walls + s.d.fans + s.d.drains + s.d.prisms + s.d.tunnels === sol.length && !s.d.run, 'the answer built with touches, the smoke still held: ' + sol.map(b => b[0]).join(', ') + ' · ' + s.data.split('\n')[1]);
   await click('t_go');
-  let best = 0; for (let k = 0; k < 150; k++) { await sleep(1000); s = await D(); if (s.d.cups[0]) best = Math.max(best, s.d.cups[0].fill); if (s.d.won || s.d.pz > 0) break; }
-  ok(s.d.won || s.d.pz > 0, 'with it the ring fills: ' + Math.round(best * 100) + '% (match ' + (s.d.cups[0] ? s.d.cups[0].match.toFixed(3) : '-') + ')');
-  if (s.d.won) { ok(s.d.winStars === 3 && /^level 1 solved ★★★ · 1 piece/.test(s.data), 'solved with the fewest pieces: three stars: ' + s.data.replace(/\n/g, ' | ')); await page.screenshot({ path: `shots/smoke_${size}_level1_won.png` }); }
-  if (s.d.pz === 0 && !s.d.won) await page.evaluate(() => window.__lc.WORLDS[0].o.win());
-  for (let k = 0; k < 14; k++) { await sleep(500); s = await D(); if (s.d.pz === 1) break; }
-  ok(s.d.pz === 1 && s.d.stars[0] >= 1 && s.on === '100001000', 'solved: on to level 2, its stars kept: ' + JSON.stringify(s.d.stars.slice(0, 3)));
-  // every level sets up; every third one solved brings in a player; new pieces come with their chapters
-  for (let i = 1; i < NP; i++) { await page.evaluate(i => window.__lc.WORLDS[0].o.level(i), i); await sleep(700); s = await D(); await page.screenshot({ path: `shots/smoke_${size}_level${i + 1}.png` });
-    ok(s.d.pz === i && s.d.cups.length >= 1 && !s.errs.length, 'level ' + (i + 1) + ' sets up: ' + s.d.cups.length + ' rings, ' + s.d.fix.fans + ' sources, ' + (s.d.fix.walls - 4) + ' walls, ' + s.d.fix.prisms + ' prisms; tools ' + s.tools); }
-  await page.evaluate(i => window.__lc.WORLDS[0].o.level(i), 3); await sleep(500); s = await D(); ok(s.on === '110001000', 'from level 4 the shekere plays too: ' + s.on);
-  await page.evaluate(i => window.__lc.WORLDS[0].o.level(i), NP - 1); await sleep(500);
-  await page.evaluate(() => window.__lc.WORLDS[0].o.win()); for (let k = 0; k < 14; k++) { await sleep(500); s = await D(); if (s.d.pz < 0) break; }
-  ok(s.d.pz < 0 && s.d.path && s.on === '111111111', 'the last level solved: the whole band plays, the guitar last in, and the map shows: ' + s.on);
-  // the map's own button back to playing freely; pieces reached so far are there to build with
-  await page.evaluate(() => window.__lc.WORLDS[0].o.stars(new Array(24).fill(1))); await click('t_puz'); await sleep(300); await click('t_puz'); await sleep(500);
-  s = await D(); const fr = await page.evaluate(() => window.__lc.WORLDS[0].o.pathNodes().free);
-  if (!s.d.path) { await click('t_puz'); await sleep(500); }
-  await tap(fr.x, fr.y); await sleep(500); s = await D();
-  ok(s.d.pz < 0 && !s.d.path && s.d.walls === 0 && s.tools === 'ink*,wall,fan,prism,drain,tunnel,puz', 'play freely: every piece reached is there: ' + s.tools);
+  let best = 0; for (let k = 0; k < 150; k++) { await sleep(1000); s = await D(); if (s.d.cups[0]) best = Math.max(best, s.d.cups[0].fill); if (s.d.won || s.d.round > 1) break; }
+  ok(s.d.won || s.d.round > 1, 'with it the ring fills: ' + Math.round(best * 100) + '% (match ' + (s.d.cups[0] ? s.d.cups[0].match.toFixed(3) : '-') + ')');
+  if (s.d.won) { ok(/^in! here comes another · rounds won: 1$/.test(s.data), 'won: the page says so, and counts it: ' + s.data); await page.screenshot({ path: `shots/smoke_${size}_round1_won.png` }); }
+  if (s.d.round === 1 && !s.d.won) await page.evaluate(() => window.__lc.WORLDS[0].o.win());
+  for (let k = 0; k < 14; k++) { await sleep(500); s = await D(); if (s.d.round === 2) break; }
+  ok(s.d.round === 2 && s.d.pz !== 0 && !s.d.won && s.d.wins === 1 && await page.evaluate(() => { try { return localStorage.getItem('lc.smoke.wins'); } catch (e) { return '1'; } }) === '1', 'a moment later the next round sets itself up, a different one, and the win is kept: set-up ' + (s.d.pz + 1) + (s.d.mir ? ' (mirrored)' : ''));
+  // new: another set-up at once, never the same one twice running
+  let prev = s.d.pz, same = 0, mir = 0; for (let k = 0; k < 12; k++) { await click('t_puz'); await sleep(250); s = await D(); if (s.d.pz === prev) same++; if (s.d.mir) mir++; prev = s.d.pz; }
+  ok(!same && mir > 0 && mir < 12, 'new gives another set-up each time, never the one just played, mirrored about half the time (' + mir + ' of 12)');
+  // harder as rounds are won: with none won only the walls' set-ups come up; with ten, every kind
+  const pool = await page.evaluate(() => { const o = window.__lc.WORLDS[0].o, r = {}; for (const w of [0, 10]) { o.wins(w); const seen = new Set(); for (let k = 0; k < 80; k++) { o.round(); seen.add(o.dbg().pz); } r[w] = [...seen].sort((a, b) => a - b); } o.wins(1); return r; });
+  ok(pool[0].every(i => i < 4) && pool[10].some(i => i >= 20) && pool[10].length >= 12, 'harder as rounds are won: none won, set-ups ' + pool[0].map(i => i + 1).join(',') + '; ten won, ' + pool[10].length + ' kinds, up to ' + (Math.max(...pool[10]) + 1));
+  // every set-up, as it is and mirrored, sets up without fault
+  let bad = []; for (let i = 0; i < NP; i++) for (const m of [false, true]) { await page.evaluate(a => window.__lc.WORLDS[0].o.level(a[0], a[1]), [i, m]); await sleep(m ? 120 : 260); s = await D();
+    if (!(s.d.pz === i && s.d.mir === m && s.d.cups.length >= 1 && !s.errs.length && s.data.split('\n').length === 3)) bad.push((i + 1) + (m ? 'm' : '')); if (!m && i % 6 === 0) await page.screenshot({ path: `shots/smoke_${size}_setup${i + 1}.png` }); }
+  ok(!bad.length, 'all ' + NP + ' set-ups, as they are and mirrored, set up with three lines of words' + (bad.length ? ': failing ' + bad.join(' ') : ''));
+  // free: back to playing freely, every piece there to build with
+  await click('t_undo'); await sleep(500); s = await D();
+  ok(s.d.pz < 0 && s.d.walls === 0 && s.tools === 'ink*,wall,fan,prism,drain,tunnel,puz' && await page.evaluate(() => document.getElementById('t_puz').firstChild.textContent) === 'play', 'free: back to playing freely, with every piece: ' + s.tools);
   await click('t_prism'); await tap(X(s, .3), Y(s, .4)); await click('t_tunnel'); await drag(X(s, .2), Y(s, .7), X(s, .7), Y(s, .3), 10); s = await D();
   ok(s.d.prisms === 1 && s.d.tunnels === 1, 'a prism (a tap) and a tunnel (a drag from one end to the other) are built');
   await sleep(1500); await page.screenshot({ path: `shots/smoke_${size}_free_pieces.png` });

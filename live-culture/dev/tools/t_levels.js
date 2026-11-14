@@ -41,15 +41,14 @@ const { launch, open } = require('./lib');
     out['orbit: glass bells four times a second'] = await render(null, note => { for (let t = a0; t < dur; t += .25) note('glass', [71, 69, 67, 64, 62][Math.floor(t * 4) % 5], .45, t); });
     out['ten fingers hammering everything at once'] = await render(null, note => { let k = 0; for (let t = a0; t < dur; t += .03) { const nm = ['glass', 'kal', 'mal', 'glass', 'bowl'][k % 5]; note(nm, P[(k * 7) % P.length] + (nm === 'kal' ? 12 : 0), 1, t); if (k % 3 === 0) note(['thump', 'tok', 'tick'][(k / 3) % 3 | 0], 0, 1, t); k++; } });
     out['band, all nine, WITH ten fingers hammering'] = await render(all, note => { let k = 0; for (let t = a0; t < dur; t += .03) { const nm = ['glass', 'kal', 'mal', 'glass', 'bowl'][k % 5]; note(nm, P[(k * 7) % P.length] + (nm === 'kal' ? 12 : 0), 1, t); if (k % 3 === 0) note(['thump', 'tok', 'tick'][(k / 3) % 3 | 0], 0, 1, t); k++; } });
-    // the mixer: deck B, the machine of sounds, plays into the bus everything a hand plays goes into (limited); its loops at their busiest,
-    // the echo all the way up, and the pads hit as hard and as fast as ten fingers can, with every kit
-    const deckB = (echo) => (O, g) => { const G = L.MIX.offline(O, { bus: g.bus, toy: g.toy }, dur, true); if (echo) { G.d[1].es.gain.value = .55; G.fb.gain.value = .6; } return G; };
-    const pads = (G, O) => { let k = 0; const pt = G.t.length - 1; for (let t = a0 - 1; t < dur; t += .03) { const b = L.MIXS.kitNow(O, k % 16)[(k * 5) % 16], s = O.createBufferSource(), gn = O.createGain(); s.buffer = b; gn.gain.value = .62; s.connect(gn); gn.connect(G.t[pt]); s.start(t); k++; } };
-    out['mix: deck B at its busiest (drums, bass, keys, bells)'] = await render(null, null, deckB(false));
-    out['mix: deck B at its busiest, the echo all the way up'] = await render(null, null, deckB(true));
-    out['mix: ten fingers on the pads, every kit, as hard as they go'] = await render(null, null, (O, g) => pads(L.MIX.offline(O, { bus: g.bus, toy: g.toy }, dur, false), O));
-    out['mix: all of that at once'] = await render(null, null, (O, g) => pads(deckB(true)(O, g), O));
-    out['band, all nine, WITH deck B, the echo and the pads'] = await render(all, null, (O, g) => pads(deckB(true)(O, g), O));
+    // the mixer: the machine of sounds plays into the bus everything a hand plays goes into (limited); every column on its busiest loop
+    const machine = (O, g) => L.MIX.offline(O, { bus: g.bus, toy: g.toy }, dur);
+    out['mix: the machine, every column on its busiest loop'] = await render(null, null, machine);
+    out['mix: the machine WITH ten fingers hammering everything'] = await render(null, note => { let k = 0; for (let t = a0; t < dur; t += .03) { const nm = ['glass', 'kal', 'mal', 'glass', 'bowl'][k % 5]; note(nm, P[(k * 7) % P.length] + (nm === 'kal' ? 12 : 0), 1, t); if (k % 3 === 0) note(['thump', 'tok', 'tick'][(k / 3) % 3 | 0], 0, 1, t); k++; } }, machine);
+    out['band, all nine, WITH the machine at its busiest'] = await render(all, null, machine);
+    // and each of its twenty loops alone (a lone loop is not held by the ceiling as a full one is): the loudest of them
+    let lone = null; for (const col of ['drums', 'perc', 'bass', 'keys', 'bells']) for (let k = 0; k < 4; k++) { const r = await render(null, null, (O, g) => L.MIX.offline(O, { bus: g.bus, toy: g.toy }, dur, { [col]: k })); r.which = col + ' ' + (k + 1); if (!lone || r.loudest > lone.loudest) lone = r; }
+    out['mix: the loudest of its twenty loops alone (' + lone.which + ')'] = lone;
     return out;
   });
   const band = res['band, all nine'];

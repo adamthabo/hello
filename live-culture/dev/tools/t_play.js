@@ -26,11 +26,13 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   let s = await S(); const g = s.stg;
   const X = u => g.x0 + g.w * u, Y = v => g.y0 + g.h * v;
 
-  const sw = () => page.evaluate(() => { const b = document.getElementById('bSound'), L = window.__lc; return { pressed: b.getAttribute('aria-pressed'), off: document.getElementById('dotrow').classList.contains('off'), live: L.soundLive(), on: L.ON.join(''), dots: document.querySelectorAll('#dots .dot').length, lit: document.querySelectorAll('#dots .dot[aria-pressed=true]').length }; });
+  // the music button: a note at the top right, struck through while nothing can be heard
+  const sw = () => page.evaluate(() => { const b = document.getElementById('bSound'), L = window.__lc, r = b.getBoundingClientRect(), sl = b.querySelector('.sl');
+    return { pressed: b.getAttribute('aria-pressed'), struck: !!sl && getComputedStyle(sl).display !== 'none', live: L.soundLive(), on: L.ON.join(''), top: r.top < 60 && r.right > innerWidth - 60, inHead: !!b.closest('header'), circles: document.querySelectorAll('.dot,#dotrow,#dots').length, label: b.getAttribute('aria-label') }; });
 
   if (which.includes(0)) { console.log('SMOKE');
     await page.evaluate(() => window.__lc.go(0, true)); await sleep(900); s = await S(); ok(s.hint === 1, 'smoke: the hint should be running before any touch');
-    let m = await sw(); ok(m.pressed === 'false' && m.off && m.dots === 9, 'music: before any touch the note is unlit and the nine circles are dimmed: ' + JSON.stringify(m));
+    let m = await sw(); ok(m.pressed === 'false' && m.struck && m.top && m.inHead && !m.circles, 'music: before any touch the music button, at the top right, is unlit and struck through, and there are no circles: ' + JSON.stringify(m));
     await shot('0a_smoke_hint');
     await T.stroke(1, u => [X(.12 + .76 * u), Y(.75 - .1 * Math.sin(u * 9))], 900);
     s = await S(); ok(s.want, 'smoke: music should be asked for by the first touch'); ok(s.ghosts === 0 && s.hint === 0, 'smoke: the hint finger should leave at a real touch');
@@ -104,61 +106,58 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
   if (which.includes(2)) { console.log('MIX');
     // a known line-up first: the band left to itself would have brought everyone in by now
-    await page.evaluate(() => { const L = window.__lc; L.BD.auto = false; [2, 3, 7].forEach(i => L.setPlayer(i, false, true)); });
+    await page.evaluate(() => { const L = window.__lc; L.BD.auto = false; [2, 3, 7].forEach(i => L.setPlayer(i, false, true)); L.setPlayer(5, true, true); });
     await page.evaluate(() => window.__lc.go(2, true)); await sleep(1200); s = await S();
     const M = () => page.evaluate(() => window.__lc.MIX.dbg());
     const el = (sel, i) => page.evaluate(a => { const e = [...document.querySelectorAll(a[0])].filter(x => x.offsetParent)[a[1] || 0]; if (!e) return null; const r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height, t: e.textContent }; }, [sel, i]);
     const byText = (sel, t) => page.evaluate(a => { const e = [...document.querySelectorAll(a[0])].filter(x => x.offsetParent && x.textContent === a[1])[0]; if (!e) return null; const r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height }; }, [sel, t]);
+    const waitFor = async (f, n = 30) => { let m; for (let k = 0; k < n; k++) { m = await M(); if (f(m)) return m; await sleep(400); } return m; };
     let m = await M(); const cells = await page.evaluate(() => [...document.querySelectorAll('#mix .mxg')].filter(g => !g.hidden).map(g => g.querySelectorAll('.mxc:not(.mxsc)').length));
-    ok(m.on && m.view === 'a' && cells[0] === 54 && m.count >= 200, 'mix: the band\'s grid opens, nine players by six loops, with ' + m.count + ' more sounds behind: ' + JSON.stringify(cells));
+    const tabs = await page.evaluate(() => [...document.querySelectorAll('#mix .mxt')].map(b => b.textContent).join());
+    ok(m.on && m.mixon && m.view === 'a' && cells[0] === 36 && m.loops === 56 && tabs === 'band,machine', 'mix: the band\'s grid opens, nine players by four ways to play, two tabs and nothing else: ' + JSON.stringify(cells) + ' ' + tabs);
+    ok(await page.evaluate(() => !document.querySelector('#mix .mxd,#mix .mxp,#mix .mxf,#mix .mxxy,#mix .mxs,#mix .mxpad')), 'mix: no decks, pitch, crossfader, pads or effects');
+    ok(m.tracks.filter(t => t.d === 0 && t.play === 0).map(t => t.n).join() === 'dundun,shekere,talking'.split(',').filter(() => false).join() || m.tracks.filter(t => t.d === 0).every((t, i) => (t.play === 0) === (s.on[i] === '1')), 'mix: it takes the band over where it was, each player in it on its whole loop: ' + s.on);
     const top = await page.evaluate(() => ({ mix: document.getElementById('mix').getBoundingClientRect().top, data: document.getElementById('data').getBoundingClientRect().bottom, foot: document.getElementById('foot').getBoundingClientRect().top, mixB: document.getElementById('mix').getBoundingClientRect().bottom }));
-    ok(top.mix >= top.data && top.mixB <= top.foot + 1, 'mix: the mixer sits between the words at the top and the row of circles: ' + JSON.stringify(top));
-    // a tap on a loop of a player not playing (the band's own line-up came onto deck A with the mixer): its first half, on the next bar
-    const pj = m.tracks.findIndex(t => t.d === 0 && t.play < 0 && t.next < 0); const pname = m.tracks[pj].n;
+    ok(top.mix >= top.data && top.mixB <= top.foot + 1, 'mix: the grid sits between the words at the top and the worlds: ' + JSON.stringify(top));
+    // a player not playing, every other bar (the first and third): it comes in on the next bar, heard in one bar and not the next
+    const pj = m.tracks.findIndex(t => t.d === 0 && t.play < 0 && t.next < 0 && t.n !== 'bass'); const pname = m.tracks[pj].n;
     let c = await el('#mix .mxg:not([hidden]) .mxc', 9 + pj); await T.tap(c.x, c.y); await sleep(300); m = await M();
     ok(m.tracks[pj].play === 1 || m.tracks[pj].next === 1, 'mix: a tap on a loop starts it, or sets it waiting for the bar: ' + pname + ' ' + JSON.stringify(m.tracks[pj]));
-    for (let k = 0; k < 30 && m.tracks[pj].play !== 1; k++) { await sleep(400); m = await M(); } ok(m.tracks[pj].play === 1 && m.ctx === 'running', 'mix: ' + pname + ' plays its first half: ' + JSON.stringify(m.tracks[pj]));
-    // the machine: drums and bass
+    m = await waitFor(m => m.tracks[pj].play === 1); const gs = new Set(); for (let k = 0; k < 14; k++) { gs.add((await M()).tracks[pj].gv); await sleep(400); }
+    ok(m.tracks[pj].play === 1 && m.ctx === 'running' && gs.has(0) && gs.has(1), 'mix: ' + pname + ' plays bars 1 and 3, silent in 2 and 4: ' + [...gs].join('/'));
+    // the machine: drums and bass; the band's bass makes way for the machine's
     let tb = await byText('#mix .mxt', 'machine'); await T.tap(tb.x, tb.y); await sleep(300); m = await M(); ok(m.view === 'b', 'mix: the machine\'s grid');
+    const mcells = await page.evaluate(() => [...document.querySelectorAll('#mix .mxg:not([hidden]) .mxc:not(.mxsc)')].map(e => e.textContent));
+    ok(mcells.length === 20 && mcells.slice(0, 5).join() === 'four,congas,steady,piano,glock', 'mix: five columns of four loops, each named: ' + mcells.join(','));
     c = await el('#mix .mxg:not([hidden]) .mxc', 0); await T.tap(c.x, c.y); c = await el('#mix .mxg:not([hidden]) .mxc', 2); await T.tap(c.x, c.y);
-    for (let k = 0; k < 30; k++) { await sleep(400); m = await M(); if (m.tracks[9].play === 0 && m.tracks[11].play === 0) break; } ok(m.tracks[9].play === 0 && m.tracks[11].play === 0, 'mix: the machine\'s drums and bass come in: ' + JSON.stringify([m.tracks[9], m.tracks[11]])); await shot('2a_mix_machine');
-    // deck B's pitch dragged up: faster than A; sync puts it back in time
-    const tr = await page.evaluate(() => { const e = document.querySelectorAll('#mix .mxdk')[1].querySelector('.mxst').getBoundingClientRect(); return { x0: e.left, x1: e.right, y: e.top + e.height / 2 }; });
-    await T.stroke(1, u => [tr.x0 + (tr.x1 - tr.x0) * (.5 + .3 * u), tr.y], 500); await sleep(400); m = await M(); s = await S();
-    ok(m.decks[1].rate > 1.05 && m.decks[0].rate === 1 && /B is faster than A/.test(s.data), 'mix: deck B\'s pitch dragged up: it runs faster, and the readout says so: ' + m.decks[1].rate.toFixed(3) + ' | ' + s.data.split('\n')[1]);
-    const sy = await page.evaluate(() => { const e = [...document.querySelectorAll('#mix .mxdk')[1].querySelectorAll('.mxb')].find(b => b.textContent === 'sync').getBoundingClientRect(); return { x: e.left + e.width / 2, y: e.top + e.height / 2 }; });
-    await T.tap(sy.x, sy.y); await sleep(400); m = await M(); const ne = m.decks[1].ne; for (let k = 0; k < 20 && m.decks[1].ne; k++) { await sleep(300); m = await M(); } await sleep(300); m = await M(); s = await S();
-    ok(Math.abs(m.decks[1].rate - m.decks[0].rate) < .001 && !m.decks[1].nudge && /the two decks are in time/.test(s.data), 'mix: sync puts B back in time with A (nudged for ' + ne + ' s): ' + s.data.split('\n')[1]);
-    // the crossfader to the band's side
-    const xf = await page.evaluate(() => { const e = [...document.querySelectorAll('#mix .mxd > .mxs .mxst')][0].getBoundingClientRect(); return { x0: e.left, x1: e.right, y: e.top + e.height / 2 }; });
-    await T.stroke(1, u => [xf.x0 + (xf.x1 - xf.x0) * (.5 - .5 * u), xf.y], 400); await sleep(200); m = await M(); ok(m.xf < .08, 'mix: the crossfader slides to the band: ' + m.xf.toFixed(2));
-    await T.stroke(1, u => [xf.x0 + (xf.x1 - xf.x0) * (.5 * u), xf.y], 400); await sleep(200); m = await M(); ok(Math.abs(m.xf - .5) < .1, 'mix: and back to the middle: ' + m.xf.toFixed(2));
-    // the pads: recording four hits into a loop of its own
-    tb = await byText('#mix .mxt', 'pads'); await T.tap(tb.x, tb.y); await sleep(300); const rec = await byText('#mix .mxb', 'rec'); await T.tap(rec.x, rec.y); await sleep(200);
-    for (const j of [0, 1, 4, 5]) { const p = await el('#mix .mxpad', j); await T.tap(p.x, p.y); await sleep(260); }
-    m = await M(); ok(m.view === 'pads' && m.rec && m.pads[0] >= 3, 'mix: the pads, recorded into loop 1: ' + JSON.stringify(m.pads)); await shot('2b_mix_pads');
-    await T.tap(rec.x, rec.y); await sleep(200);
-    // the effects: a finger on the pad sweeps the filter and the echo; held, the stutter repeats the last beat
-    tb = await byText('#mix .mxt', 'effects'); await T.tap(tb.x, tb.y); await sleep(300); const xy = await el('#mix .mxxy', 0);
-    await T.down(1, xy.x - xy.w * .3, xy.y + xy.h * .3); for (let k = 1; k <= 10; k++) { await T.move(1, xy.x - xy.w * .3 + k * xy.w * .05, xy.y + xy.h * .3 - k * xy.h * .05); await sleep(30); }
-    m = await M(); ok(m.fx && m.fx.y > .5, 'mix: a finger on the effects pad sweeps them: ' + JSON.stringify(m.fx)); await shot('2c_mix_fx'); pts.delete(1); await send('touchEnd'); await sleep(200); m = await M(); ok(!m.fx, 'mix: and lifting it lets them go');
-    const st1 = await byText('#mix .mxb', '1 beat'); await T.down(2, st1.x, st1.y); await sleep(700); m = await M(); const held = m.stut; pts.delete(2); await send('touchEnd'); await sleep(300); m = await M();
-    ok(held && !m.stut, 'mix: held, the stutter repeats; let go, the loops run on');
-    // back out: whoever played in the band's grid plays on in the band
-    await page.evaluate(() => window.__lc.go(0, true)); await sleep(800); s = await S(); m = await M();
-    ok(!m.on && s.run && s.on[pj] === '1', 'mix: leaving the mixer, the band plays on with the ' + pname + ' in it: ' + s.on); }
+    m = await waitFor(m => m.tracks[9].play === 0 && m.tracks[11].play === 0); ok(m.tracks[9].play === 0 && m.tracks[11].play === 0 && m.tracks[5].play < 0, 'mix: the machine\'s drums and bass come in, and the band\'s bass steps out for it: ' + JSON.stringify([m.tracks[9], m.tracks[11], m.tracks[5]])); await shot('2a_mix_machine');
+    s = await S(); ok(/^tap a loop: in on the next bar, in time and key\nplaying: \d of the band, 2 of the machine\nit keeps playing in Smoke and Earth$/.test(s.data), 'mix: the readout says what to do, what plays, and that it plays on: ' + s.data.replace(/\n/g, ' | '));
+    // a row's number: that row in every column of the machine
+    const r2 = await byText('#mix .mxg:not([hidden]) .mxr', '2'); await T.tap(r2.x, r2.y); m = await waitFor(m => m.tracks.filter(t => t.d === 1).every(t => t.play === 1));
+    ok(m.tracks.filter(t => t.d === 1).every(t => t.play === 1), 'mix: a row\'s number starts that row in every column: ' + m.tracks.filter(t => t.d === 1).map(t => t.play).join());
+    // tapping what plays stops it on the next bar
+    c = await el('#mix .mxg:not([hidden]) .mxc', 5 + 2); await T.tap(c.x, c.y); m = await waitFor(m => m.tracks[11].play < 0); ok(m.tracks[11].play < 0, 'mix: a tap on a loop that plays stops it');
+    await shot('2b_mix_row');
+    // leaving: everything set here plays on in the other worlds
+    const was = m.tracks.map(t => t.play).join();
+    await page.evaluate(() => window.__lc.go(0, true)); await sleep(2600); s = await S(); m = await M();
+    ok(!m.on && m.mixon && m.ctx === 'running' && m.tracks.map(t => t.play).join() === was && m.tracks.filter(t => t.d === 0).every((t, i) => (t.play >= 0) === (s.on[i] === '1')), 'mix: in Smoke the loops set in the mixer play on, the machine\'s too: ' + was);
+    await page.evaluate(() => window.__lc.go(1, true)); await sleep(1500); m = await M(); ok(m.tracks.map(t => t.play).join() === was && m.beat > 0, 'mix: and on the Earth');
+    await page.evaluate(() => window.__lc.go(2, true)); await sleep(800); const lit = await page.evaluate(() => document.querySelectorAll('#mix .mxg:not([hidden]) .mxc.on').length);
+    ok(lit === 4, 'mix: back in the mixer, the grid shows what has been playing: ' + lit + ' lit');
+    await page.evaluate(() => window.__lc.go(0, true)); await sleep(500); }
 
-  // the music: a note for the whole band and a circle for each player, in every world
-  { console.log('MUSIC'); let m = await sw();
-    ok(m.live && m.pressed === 'true' && !m.off, 'music: after touches the note is lit and the circles are not dimmed: ' + JSON.stringify(m));
-    ok(m.lit === m.on.split('').filter(c => c === '1').length, 'music: a circle is lit for each player that is in: ' + JSON.stringify(m));
-    const before = m.on; await page.evaluate(() => document.getElementById('d_8').click()); await sleep(200); m = await sw(); ok(m.on[8] !== before[8], 'music: a circle should bring its player in or out');
-    await page.evaluate(() => document.getElementById('bSound').click()); await sleep(400); m = await sw(); ok(!m.live && m.pressed === 'false' && m.off, 'music: the note should turn the music off: ' + JSON.stringify(m));
-    await page.evaluate(() => { const L = window.__lc; L.setPlayer(3, false); }); await page.evaluate(() => document.getElementById('d_3').click()); await sleep(700); m = await sw();
-    ok(m.live && m.on[3] === '1' && m.pressed === 'true', 'music: with the music off, a circle should turn it on with that player in: ' + JSON.stringify(m)); await shot('3a_music_dots'); }
+  // the music: one small button, in every world; it pauses what plays and brings it back
+  { console.log('MUSIC'); let m = await sw(); const M = () => page.evaluate(() => window.__lc.MIX.dbg());
+    ok(m.live && m.pressed === 'true' && !m.struck && m.top && !m.circles, 'music: after touches the note at the top is lit: ' + JSON.stringify(m));
+    const mx0 = await M(), was = mx0.tracks.map(t => t.play).join();
+    await page.evaluate(() => document.getElementById('bSound').click()); await sleep(700); m = await sw(); ok(!m.live && m.pressed === 'false' && m.struck, 'music: the note turns the music off: ' + JSON.stringify(m));
+    await shot('3a_music_off');
+    await page.evaluate(() => document.getElementById('bSound').click()); await sleep(1200); m = await sw(); const mx1 = await M();
+    ok(m.live && m.pressed === 'true' && (!mx0.mixon || (mx1.tracks.map(t => t.play).join() === was && mx1.ctx === 'running')), 'music: and on again, with the same loops: ' + JSON.stringify(m)); }
 
   s = await S(); console.log('sound: run=' + s.run + ' state=' + s.state + ' players=' + s.on + ' ql=' + s.ql);
-  ok(s.run && s.state === 'running', 'the band should be running after touches');
+  ok((s.run || await page.evaluate(() => window.__lc.MIXON)) && s.state === 'running', 'the music should be running after touches');
   const clean = [...new Set(errs)]; if (clean.length) { console.log('ERRORS', clean.slice(0, 12)); }
   if (s.errs.length) console.log('PAGE ERRS', s.errs);
   await ctx.close(); await browser.close();

@@ -13,7 +13,8 @@ var CLK={w0:performance.now()};
 /* where we are in the music, in seconds, never wrapping. While the sound runs its own clock leads; otherwise the wall clock keeps the picture moving */
 function loopT(){if(AU.live)return AU.c.currentTime-AU.t0-AU.lat;return (performance.now()-CLK.w0)/1000}
 function clockSync(){
-  var live=!!(AU.c&&AU.run&&AU.c.state==='running');
+  /* (once the mixer has the band, its loops are the sound, on the same clock: 16-mix.js) */
+  var live=!!(AU.c&&(AU.run||MIXON)&&AU.c.state==='running');
   if(live&&performance.now()-AU.latAt>1500){AU.latAt=performance.now();var l=Math.min(.35,AU.c.outputLatency||AU.c.baseLatency||0);if(Math.abs(l-AU.lat)>.04)AU.lat=l}
   if(live===AU.live)return;
   if(!live){var lt=loopT();AU.live=false;CLK.w0=performance.now()-lt*1000}else AU.live=true}
@@ -128,7 +129,7 @@ function audioUnlock(){
     var pr=AU.unl.play();if(pr&&pr.catch)pr.catch(function(){})}catch(e){}}
 
 function stemsStart(){
-  /* (in the mixer the decks play the band instead: 16-mix.js) */
+  /* (once the mixer has the band, it plays it from then on: 16-mix.js) */
   if(AU.run||!AU.want||!AU.ready||!AU.c||MIXON)return;var c=AU.c;
   /* the very first time, the band comes in on the one */
   var lt=AU.first?-.06:loopT();AU.first=false;
@@ -191,6 +192,6 @@ function toyPlay(buf,rate,gain,pan,when){
 function doorDip(){if(!AU.door||!AU.c||AU.c.state!=='running')return;var n=AU.c.currentTime,f=AU.door.frequency;f.cancelScheduledValues(n);f.setTargetAtTime(520,n,.05);f.setTargetAtTime(19800,n+.2,.22)}
 /* worlds that play on the band's grid are told about each sixteenth a little ahead of time, on the sound's own clock, so their notes sit on the beat */
 function seqPump(){
-  var c=AU.c;if(!c||!AU.run)return;var now=c.currentTime,cur=Math.floor((now-AU.t0)/SD),ahead=document.hidden?1.2:.14;
+  var c=AU.c;if(!c||!(AU.run||MIXON))return;var now=c.currentTime,cur=Math.floor((now-AU.t0)/SD),ahead=document.hidden?1.2:.14;
   if(AU.sq<cur)AU.sq=cur;
   while(AU.t0+(AU.sq+1)*SD<now+ahead){AU.sq++;var s=AU.sq;if(CUR&&CUR.seq){try{CUR.seq(s,AU.t0+s*SD+((s&1)?SD*SWING:0))}catch(e){}}}}

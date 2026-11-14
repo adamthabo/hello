@@ -42,7 +42,7 @@ The clouds and the rain are moved by the wind on the device, between the picture
 
 The cameras are a layer of the Earth (since 13 Nov; before, a world of their own, called Live): a ring on the globe for each camera of the kind chosen in the row along the bottom, bright when it is on the air. Tap a ring and its stream opens in a window over the globe, and the Earth turns to it; tap the window to make it bigger (and again to make it smaller), swipe across it for the next camera east or west, tap its cross to close it. The readout gives the place's hour by the Sun, the Sun's height, the wind there, the satellites above its horizon. The satellites and every weather layer are on the same globe, each switched along the bottom. The cameras' own sound is never played: the band is the sound. A camera that is off the air, or that YouTube will not let another site play, is passed over; if YouTube's player cannot load at all, the satellites' pictures of the whole Earth are shown instead.
 
-The page's three worlds are Smoke (a game of 24 levels, and a machine to build in), Earth (the weather, the satellites and these cameras as layers of one globe) and Mix (a DJ's mixer for the band and 300 more sounds); they are the same as in the artifact, which has no cameras.
+The page's three worlds are Smoke (a machine to build in, and a game of rounds: a new set-up of the smoke each time), Earth (the weather, the satellites and these cameras as layers of one globe) and Mix (a grid of loops, the band's and a machine's; what is set there plays on in every world, and the only other control of the music is a small on/off button at the top right); they are the same as in the artifact, which has no cameras.
 
 ## What the Worker does and does not do
 

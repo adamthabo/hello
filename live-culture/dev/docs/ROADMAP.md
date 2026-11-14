@@ -8,7 +8,9 @@ changes how the page sounds.
    from a session that can: check every source arrives (the readouts give each one's time), which cameras are on the air, how the
    real clouds and rain look; fix what the stand-ins could not show. Updates go to the `live-culture` repository Cloudflare made for
    him (each push deploys; its check run says whether it went live). Never push into the repository of his trading app for this.
-2. **A level editor, and more levels.** 24 levels since 13 Nov (the second set: the first, of 12 Nov, was made for smoke that never
+2. **More set-ups for Smoke's rounds.** (Since 13 Nov's evening he never sees a level: each round is one of the set-ups, mirrored
+   half the time, harder as rounds are won. A set-up whose answer is a close thing fails mirrored now and then: mark it `nomir`, or
+   give it more smoke and test it both ways, `MIRROR=1`.) 24 levels since 13 Nov (the second set: the first, of 12 Nov, was made for smoke that never
    ran out and walls that ate it), each ring placed by `t_place.js` and `place_rings.py` where the measured smoke goes, each level
    checked by `t_design.js` as a 60-frame phone runs it. Until 13 Nov a wall swallowed the smoke of a jet that met it, so much of
    what follows was learnt with weaker walls than there are now. Learnt on 13 Nov (with the new walls): an intruder jet must start
@@ -39,8 +41,11 @@ changes how the page sounds.
 6. **More on the Earth.** The hundred brightest objects (mostly spent rocket stages, not in the active list); a ring on the ground
    under a chosen satellite; the Moon at its true place far out; passes over a place he names; winding time again (it went with
    Orbit's own world on 13 Nov), if he misses it.
-9. **Mix, next.** Recording a whole set (the decks, the pads and the effects) to play back or save as audio; the band's loops cut on
-   their own onsets rather than by the bar; more kits made from the band's own drums; the pads velocity-sensitive where the phone
-   reports pressure. Ask him what he plays with most before adding controls: the rule is few controls, each named.
+9. **Mix, next.** Since 13 Nov's evening it is a grid of loops alone, by his choice ("less options and more likely to result in good
+   sounds"): do not bring back knobs, decks or pads unless he asks. Worth trying: more ways for the band's players that keep the
+   chords lined up (the second beat, the off-beats, a fill on the last bar), cut on each player's own onsets (`BAND_DATA`) rather than
+   by the bar; the machine's keys and bells following the chords as its bass does; a few more loops a column only if every one of
+   them fits with every other. Learnt on 13 Nov: the band's four bars are two chords (E for two bars, then A), read off the stems;
+   any loop of part of a player's recording that does not keep its place in the four bars puts it on the wrong chord.
 7. **Video as ink.** A clip from his camera roll through the file picker (allowed in the artifact) playing as the ink in Smoke.
 8. **Record a loop.** Save one four-bar loop of a world as video (the `downloads` capability takes mp4 and webm).
