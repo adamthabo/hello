@@ -26,7 +26,10 @@ changes how the page sounds.
    the official forecast tracks and cones of the storms (NHC, JTWC, GDACS), the model's hours ahead (play the next two days), the GOES
    loops of the last hours as videos. For the artifact: nothing of this can reach it unless a copy of the data
    is kept on GitHub by a job in his repository: ask him first (it would run on a schedule on his account).
-5. **Keep the artifact's data fresh.** Only if he asks: a scheduled task that runs the refresh in README.md. The wind changes every
+5. **The modes, next (15 Nov).** Hear each by ear on a phone (the acid filter's bite, the dub echo's tail, the shuffle's feel, the
+   balance of each band; every level was set by measurement only). If he wants more: a sixth mode, a second set of loops a mode moves
+   to every eight bars, the band's own players reworked for a mode (an echo on the talking drum in dub) — ask before touching the band.
+6. **Keep the artifact's data fresh.** Only if he asks: a scheduled task that runs the refresh in README.md. The wind changes every
    6 hours; four runs a day is about what his plan can spare (a night of hourly runs once hit his limit).
 6. **More on the Earth.** The hundred brightest objects (mostly spent rocket stages, not in the active list); a ring on the ground
    under a chosen satellite; the Moon at its true place far out; passes over a place he names; winding time again (it went with

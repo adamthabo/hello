@@ -21,6 +21,8 @@ function start(data){
   i=worldOf(h);if(i>=0)w=i;if(data&&typeof data.w==='number'&&data.w>=0&&data.w<WORLDS.length)w=data.w;
   railBuild();layout();ovSize();glInit();glResize();
   go(w,true);swSync();dlInit();audioLoad();setTimeout(synPrepare,900);setTimeout(limCalibrate,1500);
+  /* a page that opens in a mode of its own (15 Nov: kept on the device) fetches that mode's sounds early, so the first touch has them */
+  if(MODE!=='africa')setTimeout(function(){try{SND.load(MIX.banks(MODE))}catch(e){}},1200);MIX.chip();
   /* the orbits, the wind, the aurora and the lightning are read once the page has settled, so they are there when a world wants them */
   setTimeout(liveLoad,2600);
   /* the layout settles once the typefaces arrive */

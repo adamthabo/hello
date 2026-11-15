@@ -1,6 +1,27 @@
 # Changelog
 
 ## For the owner
+15 Nov 2026, evening, after "put the videos accessible right on the page, if possible. Change their icons on the globe. The mix is
+good! Make it able to also cycle through sounds or modes. another layer to change globally. five modes. funky, African, bluesy,
+acid, dub":
+
+- **Five modes for the music.** Funky, African, bluesy, acid and dub. Pick one in Mix (five buttons at the top), or tap the small
+  button with the mode's name next to the music note at the top of every world to step to the next. It comes in on the next bar and
+  changes everything: the band that plays, its echo and room, and the sound of your touches in Smoke and on the Earth. African is
+  your band exactly as it was. Each of the others is a band of its own made of real recorded instruments, written to the same beat
+  and the same two chords, so your band's players can still join from Mix: funky has a tight kit with ghost notes, slap bass,
+  clavinet through a wah, muted guitar and electric piano; bluesy a shuffle on brushes and ride, walking upright bass, piano and
+  guitar licks that bend up into their notes; acid the drum machine's kick and clap with a picked bass squelching through a filter
+  that opens and closes over the bars; dub the one drop, a deep bass, the guitar's skank with piano under it, and everything thrown
+  into a long echo. "Jam" picks from the mode you are in. Your choice is remembered, and the page opens in it next time.
+  Nothing is louder than your band: every mode was measured under it.
+- **New camera icons.** Each camera is now a small lens of thin light on a stem, with a sign of what it shows: a paw for animals, a
+  volcano, a rocket or the whole Earth, a skyline, waves, the moon, mountains, a plane, a train or a ship. Each is in its kind's
+  colour, and a red dot means it is live. Close up, they carry their place's name.
+- **Videos one tap away.** Turning on "videos" now opens a camera at once. On your site it plays right there on the page. Inside the
+  Claude app the page is not allowed to play outside video at all (the app blocks it), so there it opens the camera's card with the
+  link to watch it live on YouTube.
+
 14 Nov 2026, night, after "On the earth there should be videos, that's the best part!!! And be able to take on and off layers. The
 weather is pretty lame. Make it so much better! Doesn't noa have live weather?!":
 
@@ -142,6 +163,35 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 15 Nov 2026, evening: five modes, new camera icons, videos one tap away (rule 21)
+
+- `16-modes.js` (new): `MODES` (funk, africa, blues, acid, dub; the one chosen kept as `lc-mode`), `MODEROWS` (each mode's instruments
+  and their two loops: lanes with `lv` levels and `send` echo, events with `{sl, bd, fx, ac}`; `tri` shuffle loops; `bars4`, `line16`),
+  `MODESET` (each mode's band line-up, instruments on their loops, room, echo, and touch voices `glass kal tick thump tok`),
+  `MODEBUILD` (the order a mode's band builds in when the page opens in it).
+- `16-mix.js`: every mode's rows after African's in `TR` (African's keep tracks 9 to 18); `graphOn` adds the modes' bus `mb` with its
+  own ceiling (`MODELIM`, its makeup taken back by `MODEPOST`), a little of the band's room (`rs` into `vsend`) and the echo (`ein`, `dl`
+  at the mode's sixteenths, `fb`, `lp`, `hp`, `ret`); `fxSet`; `play` with a slide (`LV`, the string before glides), a bend, the acid
+  filter (`acidF`: closes after each note round a cutoff that opens and shuts over eight bars, `acidBase`) and the clavinet's wah
+  (`wahF`), and a send per note; shuffle timing (`TRIB`); `modeSet`/`next`/`modeApply` (the mode on the bar, waiting for its sounds up to
+  four bars: `pendOK`, `pendBy`; at once when the music has just begun: `asap`, `eager`), `boot` (a page that opens in another mode: the
+  mixer has the music from the first touch, the band out), `bootStep`; `oneBass` (the band's bass and a mode's never at once); `jam`
+  by role; `voice` (a touch in a mode: the mode's instrument, on the next sixteenth, one a sixteenth, into the mode's bus); the screen
+  (`.mxmodes`, `rowsBuild`, `chipSync`); `offline(c, dst, secs, pick, mode)` and `offvoice` for the loudness test.
+- `15-snd.js`: ten new banks (`kit`, `k808`, `fbass`, `slap`, `pbass`, `ubass`, `clav`, `ep`, `mgtr`, `gtr`), made by
+  `tools/snd/build_modes.py` from FluidR3Mono_GM.sf3 (MIT; read by the soundfont reader and `extract.py`, the pitches checked by spectrum).
+- `03-audio.js`: `tone`/`hit` hand a touch to `MIX.voice` outside African; `stemsStart` boots the mixer in another mode; `MODELIM`,
+  `MODEPOST`; `limCalibrate` measures both ceilings (`limOne`). `04-band.js`: `VQ` (a mode's notes waiting for their time), `MG` and
+  `modeHit` (a mode's instruments stand in for the band's players in the pictures).
+- `14-live.js`: `tiles` draws lenses (`sign` for each kind, `THC` colours, names placed clear of each other, `short`); `tileAt` by the
+  lens; the streams' pictures are no longer drawn on the Earth (`/api/thumb` stays in the Worker); `openOne`. `12-wind.js`: the videos
+  button opens one (`lyShow`).
+- `body.html`, `style.css`, `20-ui.js`, `21-main.js`: `#bMode` beside the note; the mode's sounds fetched early when the page opens in it.
+- Tests: `t_levels.js` (each mode: every instrument at once on both loops, with ten fingers on its voices, those voices alone, each loop
+  alone), `t_play.js` (the five buttons, dub on the bar with its echo and list, a touch's voice, the pictures, the name at the top to
+  funky, a jam in funky, two basses, back to African), `t_misc.js` (a page that opens in acid), `t_published.js` and `t_hosted.js`
+  (the lenses, videos on opens one).
 
 ## 14 Nov 2026, night: videos on the Earth, the layers back as a row, NOAA's live view (rule 20)
 

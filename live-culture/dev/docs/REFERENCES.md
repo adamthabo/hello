@@ -59,6 +59,15 @@ Both are used only by `tools/test_astro.js`; neither is in the page.
   claps, claves, a woodblock, a hi-hat, agogo; marimba, vibraphone, soft-mallet xylophone, glockenspiel, tubular chimes; an upright
   piano. Trimmed, levelled and joined into `snd/*.mp3` by `tools/snd/build_bank.py`; each note's pitch measured by
   `tools/snd/pitch2.py`. The loops were written for the band's own chords and swing.
+- **The modes' instruments (since 15 Nov):** a drum kit (kick, snare, cross-stick, hi-hat closed, open and foot, ride, tambourine,
+  cowbell, a brush on the snare), the TR-808's kick, snare, clap, hats and cowbell, fingered, slapped, picked and upright basses, a
+  clavinet, an electric piano (Rhodes), a palm-muted and a clean electric guitar: from **FluidR3Mono_GM.sf3** as MuseScore ships it
+  (github.com/musescore/MuseScore, tag 3.6.2, `share/sound/`), MIT licence. Its notice, which goes with any derivative work:
+  "Fluid (R3) SoundFont, Copyright (c) 2000-2002, 2008 Frank Wen; released under the MIT license. Mono conversion (FluidR3Mono) by
+  Michael Cowgill, Copyright 2014-17." Drawn out note by note from the soundfont (each note's pitch from its root key and tuning, and
+  checked by its spectrum), trimmed, levelled and joined into `snd/*.mp3` by `tools/snd/build_modes.py`. Played with Mix's own piano,
+  shaker and hand drums (VCSL, above). The patterns are written here, after the grooves each style is known for (the one drop and
+  steppers, the funk backbeat with ghost notes, the shuffle, four on the floor with an acid line).
 - **The fluid in Smoke:** Jos Stam, "Stable Fluids" (1999), with vorticity confinement, buoyancy, and obstacles as in GPU Gems
   (Mark Harris, "Fast Fluid Dynamics Simulation on the GPU", 2004, simplified to masking).
 - **The smoke in Wind:** semi-Lagrangian advection (the same paper) in the real wind field; the way of showing wind owes to

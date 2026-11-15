@@ -81,7 +81,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     // the cameras: pictures on the Earth; in the artifact a tap opens a card whose button opens the stream on YouTube
     await page.evaluate(() => window.__lc.WIND.look(30, -80, 1)); await sleep(900);
     let cam = await page.evaluate(() => window.__lc.LIVEW.dbg());
-    ok(cam.on && cam.cams > 80 && cam.tiles.length >= 6 && cam.tiles.every(t => t.w >= 40 && Math.abs(t.h / t.w - 9 / 16) < .05), 'earth: the cameras are pictures on the Earth, sixteen by nine: ' + cam.tiles.length + ' shown, ' + cam.rings + ' as rings');
+    // (15 Nov: "Change their icons on the globe": a lens of thin light on a stem, the sign of its kind drawn in it)
+    ok(cam.on && cam.cams > 80 && cam.tiles.length >= 6 && cam.tiles.every(t => t.r >= 9 && t.w === 2 * t.r && /^(wild|fire|space|city|sea|sky|land|move)$/.test(t.t)), 'earth: the cameras are lenses on the Earth, each with its kind\'s sign: ' + cam.tiles.length + ' shown (' + [...new Set(cam.tiles.map(t => t.t))].join(' ') + '), ' + cam.rings + ' as rings');
     const tl = cam.tiles[0]; for (let k = 0; k < 3; k++) { await T.tap(tl.x + tl.w / 2, tl.y + tl.h / 2); await sleep(600); cam = await page.evaluate(() => window.__lc.LIVEW.dbg()); if (cam.card) break; }
     const cardA = await page.evaluate(() => { const c = document.getElementById('card'), a = c.querySelector('a.cy'); return { shown: !c.hidden, text: c.innerText.replace(/\n+/g, ' | '), href: a ? a.href : '', tgt: a ? a.target : '' }; });
     ok(cam.card === tl.id && cardA.shown && /^https:\/\/www\.(youtube\.com|star\.nesdis\.noaa\.gov)\//.test(cardA.href) && cardA.tgt === '_blank' && /watch it live on youtube|see it on noaa/i.test(cardA.text), 'earth: a camera tapped opens its card, with its stream on YouTube: ' + cardA.text.slice(0, 120) + ' -> ' + cardA.href.slice(0, 70));
@@ -91,7 +92,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     ok(await page.evaluate(() => { const c = document.getElementById('card'); return (c.hidden || c.dataset.k !== 'cam') && !window.__lc.LIVEW.dbg().card; }), 'earth: a tap off the camera puts its card away: ' + JSON.stringify(await page.evaluate(() => ({ card: window.__lc.LIVEW.dbg().card, hidden: document.getElementById('card').hidden, k: document.getElementById('card').dataset.k, txt: document.getElementById('card').innerText.slice(0, 60), probe: window.__lc.WIND.dbg().probe }))));
     // the videos off: no pictures; on again: the Earth turns to one
     await tapEl('#ly_vid'); cam = await page.evaluate(() => window.__lc.LIVEW.dbg()); s = await S(); ok(!cam.on && s.dbg.LY.vid === 0, 'earth: "videos" off takes the cameras away');
-    await tapEl('#ly_vid'); await sleep(1400); cam = await page.evaluate(() => window.__lc.LIVEW.dbg()); ok(cam.on && cam.tiles.length > 0, 'earth: "videos" on brings them back: ' + cam.tiles.length);
+    await tapEl('#ly_vid'); await sleep(1400); cam = await page.evaluate(() => window.__lc.LIVEW.dbg()); ok(cam.on && cam.tiles.length > 0 && !!cam.card && cam.link, 'earth: "videos" on brings them back and opens one at once (15 Nov: "put the videos accessible right on the page"): ' + cam.tiles.length + ' ' + cam.card);
+    for (let k = 0; k < 3; k++) { await T.tap(X(.03), Y(.02)); await sleep(400); if (!(await page.evaluate(() => window.__lc.LIVEW.dbg().card))) break; }
     await page.evaluate(() => window.__lc.WIND.look(15, -40, 1)); await sleep(300); s = await S();
     const R = s.dbg.R, cx = s.dbg.cx, cy = s.dbg.cy, l0 = s.dbg.lon0;
     // one finger turns the globe, and leaves nothing behind
@@ -152,6 +154,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     const el = (sel, i) => page.evaluate(a => { const e = [...document.querySelectorAll(a[0])].filter(x => x.offsetParent)[a[1] || 0]; if (!e) return null; const r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height, t: e.textContent }; }, [sel, i]);
     const byText = (sel, t) => page.evaluate(a => { const e = [...document.querySelectorAll(a[0])].filter(x => x.offsetParent && x.textContent === a[1])[0]; if (!e) return null; const r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height }; }, [sel, t]);
     const waitFor = async (f, n = 30) => { let m; for (let k = 0; k < n; k++) { m = await M(); if (f(m)) return m; await sleep(400); } return m; };
+    const rowsOk = r => r === 'congas,bongos,shaker,cajon,claps,marimba,xylophone,vibes,piano,glock';
     // (13 Nov, night: "impossible to make good sounds with those noises" ... "Real loops, big buttons") the band's nine, then ten
     // recorded instruments (VCSL, CC0) as a list, each with two loops written to the band's beat and chords, big buttons, one stop
     let m = await M();
@@ -160,7 +163,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       secs: [...document.querySelectorAll('#mix .mxsec')].map(e => e.textContent).join(), stop: [...document.querySelectorAll('#mix .mxstop')].map(b => b.textContent).join(),
       small: [...document.querySelectorAll('#mix .mxb')].filter(b => b.getBoundingClientRect().height < 40).length,
       old: !!document.querySelector('#mix .mxg,#mix .mxt,#mix .mxc,#mix .mxd,#mix .mxf,#mix .mxxy,#mix .mxpad,#mix .mxs') }));
-    ok(m.on && m.mixon && ui.band.length === 9 && ui.rows.length === 10 && ui.rows.every(r => r.split('/').length === 2) && m.loops === 20 && ui.secs === 'the band,play along' && ui.stop === 'jam: a new mix,stop the instruments' && !ui.small && !ui.old,
+    ok(m.on && m.mixon && ui.band.length === 9 && ui.rows.length === 10 && ui.rows.every(r => r.split('/').length === 2) && m.loops === 20 && ui.secs === 'mode,the band,play along' && ui.stop === 'jam: a new mix,stop the instruments' && !ui.small && !ui.old,
       'mix: a list: a jam, the band\'s nine, then ten instruments with two loops each, big buttons, one stop, no grid: ' + JSON.stringify(ui));
     ok(ui.rows.map(r => r.split(':')[0]).join() === 'congas,bongos,shaker,cajon,claps,marimba,xylophone,vibes,piano,glock', 'mix: the instruments: ' + ui.rows.join(' · '));
     ok(m.tracks.filter(t => t.k === 'stem').every((t, i) => (t.play >= 0) === (s.on[i] === '1')), 'mix: it takes the band over where it was: ' + s.on);
@@ -202,8 +205,41 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     ok(!m.on && m.mixon && m.ctx === 'running' && m.tracks.map(t => t.play).join() === was && m.tracks.filter(t => t.k === 'stem').every((t, i) => (t.play >= 0) === (s.on[i] === '1')), 'mix: in Smoke the loops set in the mixer play on: ' + was);
     await page.evaluate(() => window.__lc.go(1, true)); await sleep(1500); m = await M(); ok(m.tracks.map(t => t.play).join() === was && m.beat > 0, 'mix: and on the Earth');
     await page.evaluate(() => window.__lc.go(2, true)); await sleep(800);
-    const lit2 = await page.evaluate(() => document.querySelectorAll('#mix .mxb.on').length), nplay = m.tracks.filter(t => t.play >= 0).length;
+    const lit2 = await page.evaluate(() => document.querySelectorAll('#mix .mxband .mxb.on,#mix .mxrow .mxb.on').length), nplay = m.tracks.filter(t => t.play >= 0).length;
     ok(lit2 === nplay, 'mix: back in the mixer, the list shows what has been playing: ' + lit2 + ' lit of ' + nplay);
+    // (15 Nov: "Make it able to also cycle through sounds or modes. another layer to change globally. five modes. funky, African,
+    // bluesy, acid, dub") five buttons at the top of Mix, the mode's name beside the note in every world
+    console.log('MODES');
+    const md = await page.evaluate(() => ({ b: [...document.querySelectorAll('#mix .mxm')].map(b => b.textContent + (b.classList.contains('on') ? '*' : '')).join(), chip: document.getElementById('bMode').textContent }));
+    ok(md.b === 'funky,African*,bluesy,acid,dub' && md.chip === 'African', 'modes: five, African lit, and its name at the top: ' + JSON.stringify(md));
+    const tapText = async (sel, t) => { const r = await page.evaluate(a => { const e = [...document.querySelectorAll(a[0])].filter(x => x.textContent === a[1])[0]; e.scrollIntoView({ block: 'center' }); const q = e.getBoundingClientRect(); return { x: q.left + q.width / 2, y: q.top + q.height / 2 }; }, [sel, t]); await sleep(150); await T.tap(r.x, r.y); await sleep(120); };
+    await tapText('#mix .mxm', 'dub'); m = await M();
+    ok(m.pend === 'dub' && await page.evaluate(() => document.querySelector('#mix .mxm.wait') && document.querySelector('#mix .mxm.wait').textContent === 'dub' && document.getElementById('bMode').classList.contains('wait')), 'modes: dub waits for the bar, its button and the name at the top blinking');
+    m = await waitFor(m => m.mode === 'dub' && !m.pend && m.tracks.filter(t => t.m === 'dub' && t.play >= 0).length >= 4, 40);
+    const dub = m.tracks.filter(t => t.play >= 0).map(t => (t.m || 'band') + ':' + t.n);
+    ok(m.mode === 'dub' && dub.every(x => /^dub:/.test(x)) && ['drums', 'bass', 'skank', 'piano'].every(n => dub.includes('dub:' + n)) && m.fx.fb > .4, 'modes: dub comes in on the bar, its own band (the band\'s players out) and its echo: ' + dub.join(', ') + ' ' + JSON.stringify(m.fx));
+    await sleep(300); let rows = await page.evaluate(() => [...document.querySelectorAll('#mix .mxrow .mxn')].map(e => e.textContent).join());
+    s = await S(); ok(rows === 'drums,bass,skank,piano,keys,perc,echo' && /^tap a loop: in on the next bar, in tune\ndub: drums, bass, skank, piano, echo\n/.test(s.data) && await page.evaluate(() => document.getElementById('bMode').textContent === 'dub'),
+      'modes: the list shows the dub band, the readout what plays: ' + rows + ' | ' + s.data.replace(/\n/g, ' | '));
+    await shot('2d_mix_dub');
+    // a touch elsewhere has the mode's voice; the pictures move with the mode's notes
+    ok(await page.evaluate(() => window.__lc.MIX.voice('glass', 64, .4, 0, 0) && window.__lc.MIX.voice('tick', 0, .4, 0, 0)), 'modes: a touch plays the mode\'s own instrument (dub: the guitar, the hat)');
+    ok(await page.evaluate(() => window.__lc.MG[0] > 0 && window.__lc.MG[5] > 0), 'modes: the mode\'s drums and bass move the pictures as the band\'s players did');
+    // the name at the top: a tap, the next mode (after dub comes funky)
+    const cb = await el('#bMode'); await T.tap(cb.x, cb.y); m = await waitFor(m => m.mode === 'funk' && !m.pend && m.tracks.filter(t => t.m === 'funk' && t.play >= 0).length >= 4, 40);
+    const fk = m.tracks.filter(t => t.play >= 0).map(t => t.n);
+    ok(m.mode === 'funk' && ['drums', 'bass', 'clav', 'guitar'].every(n => fk.includes(n)) && m.tracks.filter(t => t.m === 'dub').every(t => t.play < 0), 'modes: the name at the top goes on to funky, on the bar: ' + fk.join(', '));
+    // a jam in funky: its own instruments, a drum and a tuned one among them
+    await tapB('#mix .mxjam'); m = await waitFor(m => m.tracks.every(t => t.next === -1) && m.tracks.filter(t => t.m === 'funk' && t.play >= 0).length >= 2);
+    const fj = m.tracks.filter(t => t.play >= 0).map(t => (t.m || 'band') + ':' + t.n);
+    ok(fj.every(x => /^funk:/.test(x)) && fj.some(x => /:(drums|perc|congas)$/.test(x)) && fj.some(x => /:(clav|guitar|keys)$/.test(x)), 'modes: a jam in funky draws on its own instruments: ' + fj.join(', '));
+    // the band's bass and a mode's bass never play at once
+    const bj = m.tracks.findIndex(t => t.k === 'stem' && t.n === 'bass'); await tapB('#mix .mxband .mxb', bj); m = await waitFor(m => m.tracks[bj].play === 0);
+    ok(m.tracks[bj].play === 0 && m.tracks.filter(t => t.m === 'funk' && t.n === 'bass').every(t => t.play < 0), 'modes: the band\'s bass comes in and the slap bass goes out (two basses never at once)');
+    // back to African: the band, all nine
+    await tapText('#mix .mxm', 'African'); m = await waitFor(m => m.mode === 'africa' && !m.pend && m.tracks.filter(t => t.k === 'stem' && t.play >= 0).length === 9, 40);
+    ok(m.mode === 'africa' && m.tracks.filter(t => t.k === 'stem').every(t => t.play >= 0) && m.tracks.filter(t => t.m && t.m !== 'africa').every(t => t.play < 0) && rowsOk(await page.evaluate(() => [...document.querySelectorAll('#mix .mxrow .mxn')].map(e => e.textContent).join())),
+      'modes: African brings the band back, all nine, and the ten instruments\' list');
     await page.evaluate(() => window.__lc.go(0, true)); await sleep(500); }
 
   // the music: one small button, in every world; it pauses what plays and brings it back

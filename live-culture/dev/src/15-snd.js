@@ -15,7 +15,19 @@ var SND=(function(){
     xylo:{slot:1.22,notes:[67.12,72.12,79.14,84.15,91.16,96.17]},
     glock:{slot:1.92,notes:[79.08,84.12,91.12,96.15]},
     chimes:{slot:2.72,notes:[76.03,80.03,81.01,84.01,88.04]},
-    piano:{slot:2.32,notes:[45,47,49,51,53,55,57,59,61,63,65,67,69,71,73,75,77,79]}},
+    piano:{slot:2.32,notes:[45,47,49,51,53,55,57,59,61,63,65,67,69,71,73,75,77,79]},
+    /* (15 Nov) the modes' instruments: a drum kit and the TR-808's drums, fingered, slapped, picked and upright basses, a clavinet,
+       an electric piano, a palm-muted and a clean electric guitar, from the Fluid R3 soundfont (MIT; tools/snd/build_modes.py) */
+    kit:{slot:1.02,hits:['kick','snare','xs','hh','hho','hhp','ride','tamb','cow','btap']},
+    k808:{slot:0.92,hits:['k8','s8','c8','h8','o8','b8']},
+    fbass:{slot:1.92,notes:[28,32.04,34,36,38.98,40.99,42.99,48]},
+    slap:{slot:1.52,notes:[27.98,32.04,35,38.98,40.96,42.99,48.02]},
+    pbass:{slot:1.12,notes:[28.08,32.09,34,36,38.99,40.99,43,48.03]},
+    ubass:{slot:1.32,notes:[28,36,41,46,54]},
+    clav:{slot:0.54,notes:[48,55,60,67,72,79]},
+    ep:{slot:2.32,notes:[48,55,60,67,72,79,84]},
+    mgtr:{slot:0.72,notes:[40.15,43.25,45.28,48.32,50.23,54.23,55.22,62.32,65.21]},
+    gtr:{slot:1.72,notes:[50.1,55.06,59.15,64.14,69.14,71.12,76.09,79.08]}},
     PRE=.06,ST={},OK={},HIT={},NOTE={},RR={},dc=null;
   function ctxFor(){if(dc)return dc;var O=window.OfflineAudioContext||window.webkitOfflineAudioContext;try{dc=new O(1,2,44100)}catch(e){dc=AU.c||null}return dc}
   /* the file cut into its sounds: each starts where it rises out of the silence of its slot */

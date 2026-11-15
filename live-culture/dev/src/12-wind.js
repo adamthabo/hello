@@ -183,7 +183,8 @@ var WIND=(function(){
   function lyShow(k){var L=nowList(),f=function(kk){for(var i=0;i<L.length;i++)if(L[i].k===kk)return L[i];return null},it=k==='storm'?f('storm'):k==='fire'?f('fire'):k==='bolt'?f('bolt'):k==='aur'?f('aurora'):null;
     if(it){nowGo(it);return}
     if(k==='orbit'){var s2=f('iss');if(s2)flyTo(s2.lat,s2.lon);return}
-    if(k==='vid'){try{var c=LIVEW.layer.airSpot();if(c)flyTo(c[0],c[1])}catch(e){}return}
+    /* (15 Nov: "put the videos accessible right on the page") videos on: a camera opens at once, the Earth turned to it */
+    if(k==='vid'){try{if(!LIVEW.layer.openOne()){var c=LIVEW.layer.airSpot();if(c)flyTo(c[0],c[1])}}catch(e){}return}
     /* (the live view sees the Americas and the oceans either side: from anywhere else the Earth turns to them) */
     if(k==='sat'&&Math.abs(AS.n180(lon0+106))>70)flyTo(12,-100)}
   /* the layer of colour shown (one at a time) and its scale over the row */

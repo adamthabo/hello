@@ -6,7 +6,7 @@
    here from plain arithmetic, kept on their own bus under a ceiling so they can never be louder than the band.
    Nothing here is blown or bowed or held: every sound is struck once and dies away, and none of them is made by an oscillator.
    (There was a harp, and its plucked string; the owner called it stupid, and both are gone.) ---------- */
-var OUTG=.3,TOYG=1,TOYLIM=[-27,6,14],TOYPOST=.202;
+var OUTG=.3,TOYG=1,TOYLIM=[-27,6,14],TOYPOST=.202,MODELIM=[-21,4,12],MODEPOST=.288;
 var AU={c:null,live:false,run:false,want:false,auto:true,first:true,ready:false,failed:false,loading:null,raw:null,bufs:[],L:[],src:[],
   bus:null,door:null,out:null,comp:null,vsend:null,toy:null,post:null,lat:0,latAt:0,t0:0,iv:0,sq:-1,unl:null};
 var CLK={w0:performance.now()};
@@ -104,11 +104,15 @@ function buildGraph(c){
   var post=c.createGain();post.gain.value=TOYPOST;toy.connect(tlp);tlp.connect(lim);lim.connect(post);post.connect(comp);var ts=c.createGain();ts.gain.value=.45;post.connect(ts);ts.connect(vs);
   return {comp:comp,out:out,bus:bus,door:door,L:L,vsend:vs,toy:toy,post:post}}
 /* how much this browser's compressor turns things up at these settings is measured once, quietly, rather than assumed */
-function limCalibrate(){
+function limCalibrate(){limOne(TOYLIM,.002,.16,function(m){TOYPOST=1/m;if(AU.post&&AU.c)AU.post.gain.setTargetAtTime(TOYPOST,AU.c.currentTime,.05)});
+  /* (and the modes' ceiling: 16-mix.js) */
+  limOne(MODELIM,.003,.14,function(m){MODEPOST=1/m;try{MIX.post(MODEPOST)}catch(e){}})}
+/* (the level is measured with a quiet test tone, far under the threshold, rendered offline: it is never heard) */
+function limOne(L,att,rel,set){
   try{var O=window.OfflineAudioContext||window.webkitOfflineAudioContext;if(!O)return;var sr=44100,oc=new O(1,Math.floor(sr*.6),sr),o=oc.createOscillator(),g=oc.createGain(),k=oc.createDynamicsCompressor();
-    k.threshold.value=TOYLIM[0];k.knee.value=TOYLIM[1];k.ratio.value=TOYLIM[2];k.attack.value=.002;k.release.value=.16;o.frequency.value=440;g.gain.value=.001;o.connect(g);g.connect(k);k.connect(oc.destination);o.start(0);
+    k.threshold.value=L[0];k.knee.value=L[1];k.ratio.value=L[2];k.attack.value=att;k.release.value=rel;o.frequency.value=440;g.gain.value=.001;o.connect(g);g.connect(k);k.connect(oc.destination);o.start(0);
     var done=function(b){try{var d=b.getChannelData(0),pk=0;for(var i=Math.floor(sr*.3);i<d.length;i++){var a=Math.abs(d[i]);if(a>pk)pk=a}var m=pk/.001;
-      if(m>.5&&m<12){TOYPOST=1/m;if(AU.post&&AU.c)AU.post.gain.setTargetAtTime(TOYPOST,AU.c.currentTime,.05)}}catch(e){}};
+      if(m>.5&&m<12)set(m)}catch(e){}};
     var pr=oc.startRendering();if(pr&&pr.then)pr.then(done).catch(function(){});else oc.oncomplete=function(e){done(e.renderedBuffer)}}catch(e){}}
 function audioInit(){
   if(AU.c)return true;var A=window.AudioContext||window.webkitAudioContext;if(!A)return false;
@@ -131,6 +135,8 @@ function audioUnlock(){
 function stemsStart(){
   /* (once the mixer has the band, it plays it from then on: 16-mix.js) */
   if(AU.run||!AU.want||!AU.ready||!AU.c||MIXON)return;var c=AU.c;
+  /* (15 Nov) a page that opens in another mode: the mixer has the music from the first touch (16-mix.js) */
+  if(MODE!=='africa'){MIX.boot();return}
   /* the very first time, the band comes in on the one */
   var lt=AU.first?-.06:loopT();AU.first=false;
   var when=c.currentTime+.06,off=((lt+.06)%STEML+STEML)%STEML;
@@ -177,13 +183,16 @@ document.addEventListener('visibilitychange',function(){
 function toyOk(){return !!(AU.c&&AU.toy&&AU.want&&AU.c.state==='running')}
 /* one note: a voice, a pitch (MIDI number), how hard (0..1), where across the room (-1..1), and when (the sound's own clock; 0 is now) */
 function tone(name,midi,vel,pan,when,gm){
-  if(!toyOk()||VOX>52)return;var I=INST[name];if(!I)return;var c=AU.c,f=mtof(midi),best=I.s[0],bd=1e9,i;
+  if(!toyOk()||VOX>52)return;
+  /* (15 Nov) in a mode other than African a touch plays that mode's own instrument (16-mix.js), where its sounds are in */
+  if(MODE!=='africa'&&MIX.voice(name,midi,vel,pan,when,gm))return;
+  var I=INST[name];if(!I)return;var c=AU.c,f=mtof(midi),best=I.s[0],bd=1e9,i;
   for(i=0;i<I.s.length;i++){var d=Math.abs(Math.log(f/I.s[i].f));if(d<bd){bd=d;best=I.s[i]}}
   toyPlay(best.b,f/best.f,clamp(vel,0,1)*I.g*tilt(midi)*(gm||1),pan,when)}
 /* high notes carry further than low ones, so every voice is played a little softer the higher it goes (3 dB an octave, about middle E) */
 function tilt(midi){return Math.pow(2,clamp((64-midi)/12,-2.5,1.5)*.5)}
 /* one drum stroke; rate bends its pitch a little */
-function hit(name,vel,pan,rate,when){if(!toyOk()||VOX>52)return;var I=INST[name];if(!I)return;toyPlay(I.s[0].b,rate||1,clamp(vel,0,1)*I.g,pan,when)}
+function hit(name,vel,pan,rate,when){if(!toyOk()||VOX>52)return;if(MODE!=='africa'&&MIX.voice(name,0,vel,pan,when,1,rate))return;var I=INST[name];if(!I)return;toyPlay(I.s[0].b,rate||1,clamp(vel,0,1)*I.g,pan,when)}
 function toyPlay(buf,rate,gain,pan,when){
   var c=AU.c,s=c.createBufferSource(),g=c.createGain(),o=g;s.buffer=buf;s.playbackRate.value=clamp(rate,.25,4);g.gain.value=gain;s.connect(g);
   if(c.createStereoPanner){var p=c.createStereoPanner();p.pan.value=clamp(pan||0,-1,1);g.connect(p);o=p}

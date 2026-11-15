@@ -202,6 +202,11 @@ body.camw .zm{display:none}
 .mxb{min-height:46px;min-width:0;padding:0 8px;border-radius:12px;border:1.5px solid color-mix(in srgb,var(--c) 45%,transparent);background:rgba(1,4,10,.55);
   color:var(--ink);font:500 11px/1.15 var(--mono);letter-spacing:.06em;text-transform:uppercase;transition:background .15s,box-shadow .15s,color .15s}
 .mxp{min-height:42px;font-size:10px}
+/* (15 Nov) the five modes, in a row of their own at the top of Mix, and the mode's name beside the note at the top of every world */
+.mxmodes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.mxm{min-height:42px;padding:0 3px;font-size:10px;letter-spacing:.04em}
+.chip.mode{min-width:56px;padding:0 10px;border-color:var(--mc,#ffb347);color:var(--mc,#ffb347);cursor:pointer}
+.chip.mode.wait{animation:mxblink .5s steps(2) infinite}
 .mxb.on{color:#01040a;background:var(--c);border-color:var(--c);box-shadow:0 0 18px -3px var(--c)}
 .mxb.wait{border-color:var(--c);color:var(--c);animation:mxblink .5s steps(2) infinite}
 .mxb.stopping{background:var(--c);color:#01040a;opacity:.45}

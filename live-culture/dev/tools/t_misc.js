@@ -87,6 +87,17 @@ const S = page => page.evaluate(() => { const L = window.__lc, w = L.WORLDS[L.CU
     const chipB = await page.evaluate(() => Math.round(document.querySelector('.acts').getBoundingClientRect().bottom));
     ok(!c.hidden && c.left > c.iw * .3 && c.right <= c.iw - 8 && c.top >= chipB && c.bottom <= c.foot + 1, 'with the phone turned the card stands at the right, under the buttons ' + JSON.stringify(c) + ' buttons ' + chipB);
     all = all.concat(errs.map(e => 'keys: ' + e)); await ctx.close(); }
+  // ---- 7. (15 Nov) a page that opens in a mode kept on the device: the first touch starts that mode's band, not the African one ----
+  { console.log('A SAVED MODE');
+    const { page, errs, ctx } = await open(browser, 'phone', { hash: '#earth', init: () => { try { localStorage.setItem('lc-mode', 'acid'); } catch (e) { } } }); await sleep(2500);
+    const chip = await page.evaluate(() => document.getElementById('bMode').textContent); ok(chip === 'acid', 'the name at the top is the mode kept on the device: ' + chip);
+    await page.tap('#zIn'); let m; for (let k = 0; k < 25; k++) { await sleep(300); m = await page.evaluate(() => window.__lc.MIX.dbg()); if (m.tracks.some(t => t.m === 'acid' && t.play >= 0)) break; }
+    const pl = m.tracks.filter(t => t.play >= 0).map(t => (t.m || 'band') + ':' + t.n);
+    ok(m.mixon && m.mode === 'acid' && pl.length && pl.every(x => /^acid:/.test(x)), 'the first touch starts the acid band at once, and none of the African one: ' + pl.join(', '));
+    await sleep(6500); m = await page.evaluate(() => window.__lc.MIX.dbg()); const pl2 = m.tracks.filter(t => t.play >= 0).map(t => t.n);
+    ok(['drums', 'acid', 'perc'].every(n => pl2.includes(n)), 'and it builds, one more every two bars: ' + pl2.join(', '));
+    const mg = await page.evaluate(() => [...window.__lc.MG].map(x => +x.toFixed(2))); ok(mg[0] > 0 && mg[5] > 0, 'its drums and its acid line move the pictures as the band\'s low drum and bass do: ' + mg.join(' '));
+    all = all.concat(errs.map(e => 'mode: ' + e)); await ctx.close(); }
   await browser.close(); all = [...new Set(all)]; if (all.length) console.log('ERRORS', all.slice(0, 12));
   console.log(fail.length || all.length ? 'MISC FAILED (' + (fail.length + all.length) + ')' : 'MISC OK'); process.exit(fail.length || all.length ? 1 : 0);
 })();

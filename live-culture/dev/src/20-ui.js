@@ -132,6 +132,8 @@ function swSync(){var b=$('bSound');if(!b)return;var on=soundLive();b.setAttribu
   b.classList.toggle('wait',on&&!AU.run&&!MIXON);b.setAttribute('aria-label',AU.failed?'This browser cannot play the music':(on?'Music is on. Turn it off':(AU.auto?'Music starts with your first touch. Turn it on now':(AU.want?'Music is waiting for a tap. Turn it on now':'Music is off. Turn it on'))))}
 $('bSound').addEventListener('click',function(){if(soundLive())musicOff();else musicOn()});
 $('bNow').addEventListener('click',function(){if(ORBIT.toNow)ORBIT.toNow()});
+/* (15 Nov) the mode of the music, beside the note: a tap, the next of the five (funky, African, bluesy, acid, dub), on the next bar */
+$('bMode').addEventListener('click',function(){MIX.next()});MIX.chip();
 
 /* ---- a photo of your own: read here, kept here, never sent anywhere ---- */
 var PHOTO={has:false,ver:0,cv:null,px:null,pw:0,ph:0,ar:1,tex:null,texGen:-1};

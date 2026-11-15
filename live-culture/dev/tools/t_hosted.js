@@ -113,8 +113,8 @@ const clean = errs => [...new Set(errs)].filter(e => !/youtube\.com|requestfaile
     await page.click('#zIn'); await page.click('#zOut');
     await page.evaluate(() => window.__lc.WIND.look(26, -97, 1.1)); await sleep(2500); s = await D();
     // (the cameras on the Earth are pictures: those on the air with the stream's own, through the Worker)
-    for (let k = 0; k < 20; k++) { if (s.d.tiles.some(t => t.pic)) break; await sleep(400); s = await D(); }
-    ok(s.d.tiles.length >= 4 && s.d.tiles.some(t => t.pic), 'the cameras are pictures on the Earth, those on the air with the stream\'s own: ' + s.d.tiles.map(t => t.id + (t.pic ? '*' : '')).join(' '));
+    for (let k = 0; k < 20; k++) { if (s.d.tiles.length >= 4 && s.d.onair.length) break; await sleep(400); s = await D(); }
+    ok(s.d.tiles.length >= 4 && s.d.tiles.every(t => t.r >= 9) && s.d.onair.length > 0, 'the cameras are lenses on the Earth (15 Nov), a red mark on those on the air: ' + s.d.tiles.map(t => t.id + (s.d.onair.includes(t.id) ? '*' : '')).join(' '));
     await page.screenshot({ path: 'shots/hosted_cams_tiles.png' });
     const mt = s.d.tiles.find(t => /starbase|labpadre/.test(t.id)), mi = s.d.ids.indexOf('starbase'), mq = s.d.marks[mi], tx = mt ? [mt.x + mt.w / 2, mt.y + mt.h / 2] : mq && mq[2] > .3 ? [mq[0], mq[1]] : null;
     if (tx) { for (let k = 0; k < 3 && s.d.cur < 0; k++) { await tap(tx[0], tx[1]); await sleep(600); s = await D(); }
@@ -162,7 +162,7 @@ const clean = errs => [...new Set(errs)].filter(e => !/youtube\.com|requestfaile
     ok(s.d.cur < 0 && s.hidden && s.yt[s.yt.length - 1] === 'pause' && await page.evaluate(() => document.getElementById('vidc').hidden), '"close" closes the window and pauses the stream (' + s.yt.slice(-2).join(', ') + ')');
     // the row of layers: "videos" off takes the cameras away; on again, the Earth turns to one on the air
     await page.click('#ly_vid'); await sleep(500); s = await D(); ok(!s.d.on && s.w.LY.vid === 0, '"videos" off takes the cameras away: ' + JSON.stringify([s.d.on, s.w.LY.vid, s.d.tiles.length]));
-    await page.click('#ly_vid'); await sleep(1500); s = await D(); ok(s.d.on && s.w.LY.vid === 1 && s.d.tiles.length > 0, '"videos" on brings them back: ' + s.d.tiles.length);
+    await page.click('#ly_vid'); await sleep(1500); s = await D(); ok(s.d.on && s.w.LY.vid === 1 && s.d.tiles.length > 0 && s.d.cur >= 0, '"videos" on brings them back and one opens at once, to play in its window (15 Nov): ' + s.d.tiles.length + ' ' + s.d.id + ' (' + s.d.stat + ')');
     // leaving the Earth closes the window
     await page.evaluate(() => window.__lc.LIVEW.go('monterey')); await sleep(800); await page.evaluate(() => window.__lc.go(0, true)); await sleep(400); s = await D();
     ok(s.hidden && !s.row, 'leaving the Earth hides the window and the themes');

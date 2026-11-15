@@ -4,7 +4,7 @@ const { launch, open } = require('./lib');
 (async () => {
   const browser = await launch();
   const { page, errs, ctx } = await open(browser, 'desk');
-  await page.waitForTimeout(800);
+  await page.waitForTimeout(2000);  // (after the ceilings have measured their browser: limCalibrate)
   const res = await page.evaluate(async () => {
     const L = window.__lc, sr = 44100, dur = 13, a0 = 3.5;
     const stems = await Promise.all(L.STEMF.map(n => fetch('audio/stem' + n + '.mp3').then(r => r.arrayBuffer())));
@@ -46,12 +46,25 @@ const { launch, open } = require('./lib');
     // full mix is: the compressor lets a hit through before it closes)
     await L.MIX.load();
     const BUSY = { congas: 1, bongos: 1, shaker: 0, cajon: 1, claps: 0, marimba: 1, xylophone: 1, vibes: 0, piano: 0, glock: 1 };
-    const inst = pick => (O, g) => L.MIX.offline(O, { bus: g.bus, toy: g.toy }, dur, pick);
+    const inst = (pick, md) => (O, g) => L.MIX.offline(O, { bus: g.bus, toy: g.toy, comp: g.comp, vs: g.vsend }, dur, pick, md || 'africa');
     out['mix: every instrument at once, each on its busier loop'] = await render(null, null, inst(BUSY));
     out['mix: every instrument WITH ten fingers hammering everything'] = await render(null, note => { let k = 0; for (let t = a0; t < dur; t += .03) { const nm = ['glass', 'kal', 'mal', 'glass', 'bowl'][k % 5]; note(nm, P[(k * 7) % P.length] + (nm === 'kal' ? 12 : 0), 1, t); if (k % 3 === 0) note(['thump', 'tok', 'tick'][(k / 3) % 3 | 0], 0, 1, t); k++; } }, inst(BUSY));
     out['band, all nine, WITH every instrument'] = await render(all, null, inst(BUSY));
     let lone = null, each = {}; for (const r of L.MIX.rows) for (let k = 0; k < r.loops.length; k++) { const x = await render(null, null, inst({ [r.n]: k })); x.which = r.n + ' ' + r.loops[k].n; each[x.which] = x.loudest; if (!lone || x.loudest > lone.loudest) lone = x; }
     out['mix: the loudest of its ' + Object.keys(each).length + ' loops alone (' + lone.which + ')'] = lone;
+    // (15 Nov) the other four modes, each its own band of recordings into a bus of its own, with its echo: every instrument at once on
+    // its busier loops and on its first, the same with ten fingers hammering the mode's own touch voices, those voices alone, and each
+    // of its loops alone
+    for (const md of ['funk', 'blues', 'acid', 'dub']) {
+      await L.SND.load(L.MIX.banks(md)); const rows = L.MODEROWS[md], busy = {}, first = {}; rows.forEach(r => { busy[r.n] = r.loops.length - 1; first[r.n] = 0; });
+      const fingers = (O, g, G) => { let k = 0; for (let t = a0; t < dur; t += .03) { L.MIX.offvoice(O, { toy: g.toy }, G, md, ['glass', 'kal', 'glass', 'tick', 'thump', 'tok'][k % 6], P[(k * 7) % P.length], 1, t); k++; } };
+      out[md + ': every instrument at once, on its second loops'] = await render(null, null, inst(busy, md));
+      out[md + ': every instrument at once, on its first loops'] = await render(null, null, inst(first, md));
+      out[md + ': every instrument WITH ten fingers on its voices'] = await render(null, null, (O, g) => fingers(O, g, inst(busy, md)(O, g)));
+      out[md + ': ten fingers hammering its voices'] = await render(null, null, (O, g) => fingers(O, g, L.MIX.offline(O, { bus: g.bus, toy: g.toy, comp: g.comp, vs: g.vsend }, 1, {}, md)));
+      let lone2 = null; for (const r of rows) for (let k = 0; k < r.loops.length; k++) { const x = await render(null, null, inst({ [r.n]: k }, md)); x.which = md + ' ' + r.n + ' ' + r.loops[k].n; each[x.which] = x.loudest; if (!lone2 || x.loudest > lone2.loudest) lone2 = x; }
+      out[md + ': the loudest of its ' + rows.reduce((a, r) => a + r.loops.length, 0) + ' loops alone (' + lone2.which + ')'] = lone2;
+    }
     out.__each = each;
     return out;
   });

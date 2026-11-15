@@ -11,7 +11,10 @@ var NL=9,STEML=9.23077097505669,STEMP=0.3,SD=STEML/64,SWING=0.16,ENVN=512,
   BUILD=[0,5,1,3,2,4,6,7,8];
 var ON=[1,0,0,0,0,1,0,0,0],SC=[1,1,1,1,1,1,1,1,1],G=new Float32Array(NL),E=new Float32Array(NL),HIT=new Float32Array(NL),KC=new Float32Array(NL),OI=new Int32Array(NL),
   TAUH=[.2,.085,.26,.3,.17,.3,.3,.3,.24],ENV=[],ONS=[],
-  BD={ph:0,lt:0,step:-1,abs:0,hits:[],flow:[],auto:false,manual:false,skip:0,started:false,loops:0,energy:0};
+  BD={ph:0,lt:0,step:-1,abs:0,hits:[],flow:[],auto:false,manual:false,skip:0,started:false,loops:0,energy:0},
+  /* (15 Nov) a mode's instruments move the pictures too: each of their notes waits here for its time (16-mix.js), standing in for one
+     of the band's players (its drums for the low drum, its bass for the bass, ...); MG says how lately each stand-in played */
+  VQ=[],MG=new Float32Array(NL);
 (function(){var d=BAND_DATA,i;for(i=0;i<NL;i++){ENV.push(b64bytes(d.env[i]));ONS.push(d.ons[i]);G[i]=ON[i]}})();
 function bandGain(i){return ON[i]*SC[i]*SG[i]}
 function bandApply(i,slow){if(AU.c&&AU.L[i]){var n=AU.c.currentTime,v=bandGain(i);AU.L[i].gain.cancelScheduledValues(n);AU.L[i].gain.setTargetAtTime(v,n,slow?.35:(v>0?.03:.12))}}
@@ -26,11 +29,12 @@ function fireHit(i,s){
   if(g>0)BD.flow.push({i:i,s:s*g});
   if(s<.62){if(s*.55>HIT[i])HIT[i]=s*.55;return}
   if(s>HIT[i])HIT[i]=s;KC[i]=(KC[i]+1)%997;if(g>0)BD.hits.push({i:i,s:s*g})}
+function modeHit(i,s){MG[i]=1;if(reduce)return;BD.flow.push({i:i,s:s});if(s<.62){if(s*.55>HIT[i])HIT[i]=s*.55;return}if(s>HIT[i])HIT[i]=s;KC[i]=(KC[i]+1)%997;BD.hits.push({i:i,s:s})}
 function bandTick(dt){
   var lt=loopT(),ph=lt/STEML;ph-=Math.floor(ph);var prev=BD.ph,jump=Math.abs(lt-BD.lt)>.6||lt<BD.lt-.02;BD.lt=lt;BD.ph=ph;BD.hits.length=0;BD.flow.length=0;
   var wrapped=prev-ph>.5,k=Math.floor(ph*ENVN)%ENVN,i,en=0;
   for(i=0;i<NL;i++){
-    var on=ON[i]*SC[i];G[i]+=(on-G[i])*(1-Math.exp(-dt/(on>G[i]?.12:.25)));if(Math.abs(on-G[i])<.004)G[i]=on;
+    MG[i]*=Math.exp(-dt/2);var on=Math.max(ON[i]*SC[i],MG[i]>.05?1:0);G[i]+=(on-G[i])*(1-Math.exp(-dt/(on>G[i]?.12:.25)));if(Math.abs(on-G[i])<.004)G[i]=on;
     var e=ENV[i][k]/255;if(reduce)e*=.3;E[i]+=(e-E[i])*(1-Math.exp(-dt/(e>E[i]?.02:.14)));en+=E[i]*G[i];
     HIT[i]*=Math.exp(-dt/TAUH[i]);
     var o=ONS[i];
@@ -39,6 +43,7 @@ function bandTick(dt){
     while(OI[i]<o.length&&o[OI[i]][0]<=ph){fireHit(i,o[OI[i]][1]);OI[i]++}
   }
   BD.energy=en;
+  if(VQ.length){var now=AU.c&&AU.c.state==='running'?AU.c.currentTime-AU.lat:-1;while(VQ.length&&now>=0&&VQ[0].t<=now){var q=VQ.shift();modeHit(q.i,q.s)}if(VQ.length>200)VQ.splice(0,VQ.length-200)}
   if(!jump&&wrapped)BD.loops++;
   /* no step is ever missed, however slow the frames */
   var ab=Math.floor(lt/SD);if(jump||ab-BD.abs>16)BD.abs=ab;

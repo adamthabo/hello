@@ -18,7 +18,10 @@ const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') 
     ok(/^vid\+ wind\+ bolt\+ (storm\+ )?fire\+ orbit\+ aur\+$/.test(dk) && await page.evaluate(() => !document.getElementById('lgd').hidden), 'the Earth has its row of layers, each lit while it shows, and the wind\'s scale over it (14 Nov, night: "be able to take on and off layers"): ' + dk); }
   // the cameras (14 Nov, night: "On the earth there should be videos"): "videos" off and on again turns the Earth to one; its picture, tapped,
   // opens its card, whose button opens the stream on YouTube (the satellites put away meanwhile, so a tap cannot pick one)
-  await page.click('#ly_orbit'); await sleep(300); await page.click('#ly_vid'); await sleep(400); await page.click('#ly_vid'); await sleep(2000);
+  await page.click('#ly_orbit'); await sleep(300); await page.click('#ly_vid'); await sleep(400); await page.click('#ly_vid'); await sleep(1500);
+  { const c0 = await page.evaluate(() => { const c = document.getElementById('card'), a = c.querySelector('a.cy'); return !c.hidden && a ? [c.innerText.replace(/\n+/g, ' | '), a.href] : null; });
+    ok(c0 && /^https:\/\/www\.(youtube\.com|star\.nesdis\.noaa\.gov)\//.test(c0[1]), '"videos" on opens a camera at once (15 Nov: "put the videos accessible right on the page"): ' + (c0 ? c0[0].slice(0, 90) : 'no card'));
+    await page.click('#card .cx').catch(() => { }); await sleep(500); }
   { let cc = null; for (let y = 230; y <= 480 && !cc; y += 12) { await page.mouse.click(195, y); await sleep(420); cc = await page.evaluate(() => { const c = document.getElementById('card'), a = c.querySelector('a.cy'); return !c.hidden && a ? [c.innerText.replace(/\n+/g, ' | '), a.href, a.target] : null; }); }
     ok(cc && /^https:\/\/www\.(youtube\.com|star\.nesdis\.noaa\.gov)\//.test(cc[1]) && cc[2] === '_blank', 'a camera on the Earth, tapped, opens its card with its stream on YouTube: ' + (cc ? cc[0].slice(0, 110) + ' -> ' + cc[1].slice(0, 60) : 'none found')); }
   await page.screenshot({ path: 'shots/published_1_camera.png' });
@@ -43,5 +46,18 @@ const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') 
   await page.click('#t_undo'); await sleep(300);
   await page.click('#w_mix'); await sleep(900); ok(await lit(li), 'back in the mixer, the loop is still playing'); await page.click('#w_smoke'); await sleep(600);
   await page.click('#bSound'); await sleep(500); s = await look(); ok(s.music === 'false', 'the note turns the music off');
+  // (15 Nov) the modes: the name beside the note steps to the next mode on a bar (and the music comes back with the touch); in Mix the five
+  // buttons, dub with its own band
+  { const chip = () => page.evaluate(() => document.getElementById('bMode').textContent);
+    ok(await chip() === 'African', 'the mode\'s name sits beside the note: African');
+    await page.click('#bMode'); let t = ''; for (let k = 0; k < 30 && t !== 'bluesy'; k++) { await sleep(300); t = await chip(); }
+    let cls = ''; for (let k = 0; k < 40; k++) { cls = await page.evaluate(() => document.getElementById('bMode').className); if (!/wait/.test(cls)) break; await sleep(300); }
+    s = await look(); ok(t === 'bluesy' && !/wait/.test(cls) && s.music === 'true', 'a tap on it: bluesy, in on the bar, the music on again');
+    await page.click('#w_mix'); await sleep(900); await page.evaluate(() => [...document.querySelectorAll('#mix .mxm')].find(b => b.textContent === 'dub').scrollIntoView({ block: 'center' })); await sleep(200);
+    await page.evaluate(() => [...document.querySelectorAll('#mix .mxm')].find(b => b.textContent === 'dub').click());
+    let d = ''; for (let k = 0; k < 40; k++) { await sleep(300); d = await page.evaluate(() => document.getElementById('data').textContent); if (/\ndub: drums, bass, skank, piano, echo/.test(d)) break; }
+    const rows = await page.evaluate(() => [...document.querySelectorAll('#mix .mxrow .mxn')].map(e => e.textContent).join());
+    ok(/\ndub: drums, bass, skank, piano, echo/.test(d) && rows === 'drums,bass,skank,piano,keys,perc,echo' && await chip() === 'dub', 'Mix: dub comes in with its own band: ' + d.replace(/\n/g, ' | ') + ' · ' + rows);
+    await page.screenshot({ path: 'shots/published_2_dub.png' }); }
   const clean = [...new Set(errs)]; if (clean.length) console.log('ERRORS', clean.slice(0, 8));
   await ctx.close(); await browser.close(); console.log(fail.length || clean.length ? 'PUBLISHED FAILED' : 'PUBLISHED OK'); process.exit(fail.length || clean.length ? 1 : 0); })();
