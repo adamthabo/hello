@@ -11,7 +11,7 @@ function beamMat(gfx, hex, tall) {
   const key = 'b' + hex + (tall ? 'T' : 's'); if (MATS.has(key)) return MATS.get(key);
   const c = new THREE.Color(hex);
   const m = new THREE.ShaderMaterial({
-    uniforms: { uTime: gfx.U.uTime, uCol: { value: new THREE.Vector3(c.r, c.g, c.b) }, uH: { value: tall ? 260 : 2.4 }, uW: { value: tall ? 2.2 : 0.5 }, uTall: { value: tall ? 1 : 0 } },
+    uniforms: { uTime: gfx.U.uTime, uCol: { value: new THREE.Vector3(c.r, c.g, c.b) }, uH: { value: tall ? 260 : 2.4 }, uW: { value: tall ? 1.6 : 0.5 }, uTall: { value: tall ? 1 : 0 } },
     vertexShader: /* glsl */`
       uniform float uH, uW; varying vec2 vU; varying float vD, vH;
       void main(){
@@ -29,13 +29,15 @@ function beamMat(gfx, hex, tall) {
         vec3 sat = pow( uCol, vec3( 1.7 ) ); sat /= max( 0.001, max( sat.r, max( sat.g, sat.b ) ) );        // rarity colour, saturated
         float core = exp( -x * x * 260.0 ), inner = exp( -x * x * 22.0 ), outer = exp( -x * 3.6 ) * 0.22;
         float fall = uTall > 0.5 ? ( 0.2 + 0.8 * pow( 1.0 - v, 4.0 ) ) * ( 1.0 - smoothstep( 0.5, 1.0, v ) ) : 1.0 - v;
-        float base = uTall > 0.5 ? 1.0 + 3.5 * exp( -vH * 0.55 ) : 1.0;
+        float base = uTall > 0.5 ? 1.0 + 2.2 * exp( -vH * 0.6 ) : 1.0;
         float sh = 0.78 + 0.22 * sin( vH * 0.45 - uTime * 5.0 ) * sin( vH * 0.11 + uTime * 1.7 );
         float far = mix( 1.0, 0.55, smoothstep( 60.0, 420.0, vD ) );
         // a white-hot thread in the middle, the rarity colour around it, and a wide soft glow you can see from blocks away
         vec3 col = mix( sat, vec3( 1.0 ), 0.3 ) * core * 1.6 + sat * ( inner * 1.05 + outer * 1.4 );
         float rise = 0.75 + 0.25 * smoothstep( 0.0, 1.0, fract( vH * 0.035 - uTime * 0.45 ) );   // light climbing the column
-        col *= fall * base * sh * far * ( uTall > 0.5 ? rise : 1.0 );
+        float edge = 1.0 - smoothstep( 0.5, 1.0, x );                 // no hard edge where the quad ends
+        float nearF = uTall > 0.5 ? mix( 0.12, 1.0, smoothstep( 2.5, 9.0, vD ) ) : 1.0;   // standing in it, it fades instead of filling the screen
+        col *= fall * base * sh * far * edge * nearF * ( uTall > 0.5 ? rise : 1.0 );
         if ( max( col.r, max( col.g, col.b ) ) < 0.003 ) discard;
         gl_FragColor = vec4( col * 3.0, 1.0 );
       }`,

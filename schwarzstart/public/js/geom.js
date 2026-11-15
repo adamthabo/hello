@@ -63,7 +63,9 @@ export class MB {
     }
   }
   geometry() {
-    const g = new THREE.BufferGeometry();
+    const g = new THREE.BufferGeometry(), n = this.n;
+    // degenerate faces leave zero-length normals; one such pixel lights up as NaN and the bloom turns it into a white blob
+    for (let i = 0; i < n.length; i += 3) { const l = Math.hypot(n[i], n[i + 1], n[i + 2]); if (!(l > 1e-6)) { n[i] = 0; n[i + 1] = 1; n[i + 2] = 0; } }
     g.setAttribute('position', new THREE.Float32BufferAttribute(this.p, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(this.n, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(this.u, 2));
     if (this.c.length) g.setAttribute('color', new THREE.Float32BufferAttribute(this.c, 3));
     if (this.x.length) g.setAttribute('aFx', new THREE.Float32BufferAttribute(this.x, 4));

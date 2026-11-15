@@ -492,8 +492,9 @@ export class Gfx {
     const mk = (uniforms, frag) => new THREE.ShaderMaterial({ uniforms, vertexShader: FS_VERT, fragmentShader: frag, depthTest: false, depthWrite: false });
     this.mDown = mk({ t: { value: null }, px: { value: new THREE.Vector2() }, first: { value: 0 } }, /* glsl */`
       varying vec2 vUv; uniform sampler2D t; uniform vec2 px; uniform float first;
+      vec3 san( vec3 v ){ return vec3( v.r >= 0.0 && v.r < 6.0 ? v.r : v.r >= 6.0 ? 6.0 : 0.0, v.g >= 0.0 && v.g < 6.0 ? v.g : v.g >= 6.0 ? 6.0 : 0.0, v.b >= 0.0 && v.b < 6.0 ? v.b : v.b >= 6.0 ? 6.0 : 0.0 ); }   // NaN and negatives out, highlights capped
       void main(){ vec3 a = texture2D( t, vUv + px * vec2( -1.0, -1.0 ) ).rgb, b = texture2D( t, vUv + px * vec2( 1.0, -1.0 ) ).rgb, c = texture2D( t, vUv + px * vec2( -1.0, 1.0 ) ).rgb, d = texture2D( t, vUv + px * vec2( 1.0, 1.0 ) ).rgb, e = texture2D( t, vUv ).rgb;
-        if ( first > 0.5 ) { a = min( a, vec3( 6.0 ) ); b = min( b, vec3( 6.0 ) ); c = min( c, vec3( 6.0 ) ); d = min( d, vec3( 6.0 ) ); e = min( e, vec3( 6.0 ) ); }
+        if ( first > 0.5 ) { a = san( a ); b = san( b ); c = san( c ); d = san( d ); e = san( e ); }
         vec3 s = ( a + b + c + d ) * 0.2 + e * 0.2;
         if ( first > 0.5 ) { float l = max( s.r, max( s.g, s.b ) ); s *= smoothstep( 0.8, 2.0, l ) + 0.025; s = min( s, vec3( 24.0 ) ); }
         gl_FragColor = vec4( s, 1.0 ); }`);
