@@ -132,7 +132,7 @@ const FRAG_FX = /* glsl */`
   vec4 pk_ = texture2D( normalMap, vNormalMapUv );
   vec3 mapN = vec3( pk_.xy * 2.0 - 1.0, 0.0 ); mapN.xy *= normalScale; mapN.z = sqrt( max( 0.0, 1.0 - dot( mapN.xy, mapN.xy ) ) );
   normal = normalize( tbn * mapN );
-  roughnessFactor = clamp( roughness * pk_.b, 0.1, 1.0 );
+  roughnessFactor = clamp( roughness * pk_.b, 0.3, 1.0 );
 #else
   vec4 pk_ = vec4( 0.5, 0.5, 1.0, 0.0 );
 #endif
@@ -243,7 +243,7 @@ vec3 wN_ = normalize( vWNrm );
   float ice = smoothstep( 0.50, 0.56, texture2D( uNoise, wp2 * 0.012 + uTime * 0.0006 ).r + ( n2.g - 0.5 ) * 0.12 );
   vec2 rip = ( n1.xy + n2.yz - 1.0 ) * 0.22 * ( 1.0 - ice );
   diffuseColor.rgb = mix( vec3( 0.010, 0.018, 0.024 ), vec3( 0.60, 0.66, 0.72 ) * ( 0.8 + 0.3 * n2.b ), ice );
-  roughnessFactor = mix( 0.13, 0.75, ice ); metalnessFactor = 0.0;
+  roughnessFactor = mix( 0.2, 0.75, ice ); metalnessFactor = 0.0;
   normal = normalize( ( viewMatrix * vec4( normalize( vec3( rip.x, 1.0, rip.y ) ), 0.0 ) ).xyz );
 }
 #endif
@@ -387,7 +387,7 @@ export class Gfx {
       uniforms: { uNight: this.U.uNight, uPower: this.U.uPower, uPx: { value: 1 }, uTime: this.U.uTime, uFogK: { value: 0.004 } },
       vertexShader: `attribute vec3 aG; uniform float uNight, uPx, uTime, uFogK; uniform float uPower[16]; varying vec3 vC; varying float vA; varying float vH;
         void main(){ vec4 mv = modelViewMatrix * vec4( position, 1.0 ); gl_Position = projectionMatrix * mv;
-          float pw = aG.x < 0.0 ? 1.0 : uPower[ int( aG.x + 0.5 ) ]; float on = aG.x < -1.5 ? 1.0 : pw * smoothstep( 0.18, 0.5, uNight );
+          float pw = aG.x < 0.0 ? 1.0 : uPower[ int( aG.x + 0.5 ) ]; float on = aG.x < -1.5 ? mix( 0.05, 1.0, smoothstep( 0.1, 0.5, uNight ) ) : pw * smoothstep( 0.18, 0.5, uNight );
           vA = on * ( 0.9 + 0.1 * sin( uTime * 9.0 + position.x ) ); float pi_ = floor( aG.y - 3.0 + 0.5 ); vC = aG.y > 2.5 ? ( pi_ < 0.5 ? vec3( 1.0, 0.13, 0.08 ) : pi_ < 1.5 ? vec3( 0.18, 1.0, 0.32 ) : pi_ < 2.5 ? vec3( 1.0, 0.72, 0.22 ) : pi_ < 3.5 ? vec3( 0.25, 0.45, 1.0 ) : vec3( 1.0, 0.45, 0.12 ) * ( 0.75 + 0.25 * sin( uTime * 23.0 + position.x * 7.0 ) ) ) * ( 0.65 + 0.35 * sin( uTime * 2.6 + position.x * 1.9 + position.z * 1.3 ) ) : aG.y > 1.5 ? vec3( 1.0, 0.10, 0.06 ) * ( 0.5 + 0.5 * step( 0.0, sin( uTime * 3.0 ) ) ) : mix( vec3( 1.0, 0.70, 0.36 ), vec3( 0.80, 0.90, 1.0 ), aG.y );
           float dd = max( 1.0, -mv.z ), sp = 1.0 + clamp( uFogK * dd * 3.0, 0.0, 2.6 ); vH = clamp( uFogK * dd * 2.0, 0.0, 1.0 ); vA *= exp( -uFogK * dd * 0.6 ) * ( 0.8 + vH * 0.5 );
           gl_PointSize = clamp( aG.z * sp * uPx / dd, 2.0, 260.0 ) * step( 0.01, on ); }`,
@@ -591,6 +591,7 @@ export class Gfx {
     } catch (e) { console.warn('env', e); }
   }
   render(dtMs) {
+    if (this.wantResize) { this.wantResize = false; this.resize(); }   // resize before drawing: resizing a canvas blanks what is on it
     const r = this.renderer, f = this.mFin.uniforms;
     r.info.reset();
     r.setRenderTarget(this.rt); r.render(this.scene, this.camera);
@@ -603,6 +604,6 @@ export class Gfx {
     f.t.value = this.rt.texture; f.b.value = this.bl.length ? this.bl[0].texture : null; f.uBloom.value = this.bloomOn ? 0.085 : 0; f.uExp.value = this.exposure || 1;
     this.fsMesh.material = this.mFin; r.setRenderTarget(null); r.render(this.fsScene, this.fsCam);
     // dynamic resolution: hold frame time on phones
-    if (dtMs) { this.frameMs = lerp(this.frameMs, dtMs, 0.05); this.dynT += dtMs; if (this.fixedScale) this.dynT = 0; if (this.dynT > 2500) { this.dynT = 0; const o = this.scale; if (this.frameMs > 30 && this.scale > 0.6) this.scale -= 0.1; else if (this.frameMs < 19 && this.scale < 1) this.scale += 0.05; if (o !== this.scale) this.resize(); } }
+    if (dtMs) { this.frameMs = lerp(this.frameMs, dtMs, 0.05); this.dynT += dtMs; if (this.fixedScale) this.dynT = 0; if (this.dynT > 2500) { this.dynT = 0; const o = this.scale; if (this.frameMs > 30 && this.scale > 0.6) this.scale -= 0.1; else if (this.frameMs < 19 && this.scale < 1) this.scale += 0.05; if (o !== this.scale) this.wantResize = true; } }
   }
 }

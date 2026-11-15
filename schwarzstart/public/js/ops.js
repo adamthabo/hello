@@ -170,6 +170,8 @@ export function installOps(Game, Enemy) {
     const w = this.curW(); if (SYS.hasPerk(w, 'kill')) this.mags[S.cur] = Math.min(this.magSize(w), this.mags[S.cur] + Math.ceil(this.magSize(w) * 0.2));
     if (R() < 0.58) this.drop(e.x, e.z, 'ammo'); if (R() < 0.14 && S.kits < this.D.kits) this.drop(e.x, e.z, 'kit'); if (R() < 0.45) this.drop(e.x, e.z, 'marken', Math.round((4 + R() * 8) * Math.sqrt(e.lvl) * (1 + e.tier)));
     const ch = [0.22, 0.55, 0.9, 1][e.tier]; if (R() < ch) this.drop(e.x, e.z, 'item', SYS.makeItem(e.lvl, e.tier * 0.07)); if (e.tier === 3) { this.drop(e.x, e.z, 'item', SYS.makeWeapon(e.lvl, 3 + (R() < 0.3 ? 1 : 0))); this.drop(e.x, e.z, 'item', SYS.makeGear(e.lvl, 2 + ((R() * 2) | 0))); }
+    // that was the last one: slow motion, a camera punch, then the loot
+    const h = e.home; if (h && !this.mode && h.active && this.alive(h) === 0 && !(h.wave === 0 && (h.k === 'power' || h.k === 'relay' || (h.k === 'safe' && !S.sites['lib:' + h.d])))) { this.slowT = 0.95; this.cam.kick += 0.035; this.cam.shake = Math.min(0.8, this.cam.shake + 0.25); this.audio.play('lootHi', 0.35, 0.55); }
     void info; void P;
   };
   G.give = function (xp, marken, item) { this.addXP(xp); this.S.marken += marken; if (item) { const P = this.P; this.drop(P.x + Math.sin(this.cam.yaw) * 1.5, P.z + Math.cos(this.cam.yaw) * 1.5, 'item', item); } this.ui.toast(`+${marken} Marken · +${Math.round(xp)} XP`, 'mk'); };
@@ -215,7 +217,7 @@ export function installOps(Game, Enemy) {
     const P = this.P, W = this.world, S = this.S, map = this.map; this.pathN = 2;
     if (!this.mode || this.mode.id === 'frei') {
       this.nextT = Math.max(0, (this.nextT || 0) - dt); this.dirT = (this.dirT || 0) - dt;
-      if (this.dirT <= 0) { this.dirT = 0.5; let w = this.wp; if (w && w.loot && (hyp(w.x - P.x, w.z - P.z) < 2.5 || !this.loot.some((o) => o.chest === w.loot && o.kind === 'item' && !o.full) || this.t - w.t0 > 60)) { this.wp = w = null; this.nextT = Math.max(this.nextT, 2.5); } if ((!w || (w.s && (w.s.done || w.s.locked))) && this.nextT <= 0 && !this.ui.panel) { this.pickTrack(); if (this.wp) { const d = Math.round(hyp(this.wp.x - P.x, this.wp.z - P.z)); this.ui.banner('NÄCHSTER KAMPF', this.wp.n + ' · ' + d + ' m', 'warn'); this.audio.play('alarm', 0.35); } } }
+      if (this.dirT <= 0) { this.dirT = 0.5; let w = this.wp; if (w && w.loot && (hyp(w.x - P.x, w.z - P.z) < 2.5 || !this.loot.some((o) => o.chest === w.loot && o.kind === 'item' && this.canTake(o)) || this.t - w.t0 > 25)) { this.wp = w = null; this.nextT = Math.max(this.nextT, 2.5); } if ((!w || (w.s && (w.s.done || w.s.locked))) && this.nextT <= 0 && !this.ui.panel) { this.pickTrack(); if (this.wp) { const d = Math.round(hyp(this.wp.x - P.x, this.wp.z - P.z)); this.ui.banner('NÄCHSTER KAMPF', this.wp.n + ' · ' + d + ' m', 'warn'); this.audio.play('alarm', 0.35); } } }
     }
     if (this.routeL) this.routeL.update(dt, this);
     const pd = W.district(P.x, P.z); this.inSafe = pd === 0;
@@ -264,7 +266,8 @@ export function installOps(Game, Enemy) {
         if (p && W.district(p[0], p[1]) === pd && !W.los(p[0], 1.6, p[1], P.x, 1.6, P.z)) this.group(p[0], p[1], 3 + ((R() * 2) | 0), D.lv[0] + R() * (D.lv[1] - D.lv[0]), D.fac, { r0: 0, r1: 5, patrol: [P.x + (R() - 0.5) * 30, P.z + (R() - 0.5) * 30] });
       } else if (this.patT <= 0) this.patT = 6;
     }
-    // interaction prompt
+    // interaction prompt: a hostile within reach first (F, or tap, swings the rifle butt)
+    if (this.meleeTgt && !P.dead) { this.prompt = { text: 'SCHLAG', sub: 'Rifle butt · ' + (this.meleeTgt.name || 'hostile'), prog: 0, hot: true }; this.useT = 0; this.inp.was('use'); return; }
     let best = null, bd = 3.3 * 3.3, kind = null;
     if (!P.dead && !this.noPve) {
       for (const s of this.sites) { if (s.done || s.locked || !USE[s.k]) continue; const d2 = (s.ux - P.x) ** 2 + (s.uz - P.z) ** 2; if (d2 < bd) { bd = d2; best = s; kind = 'site'; } }

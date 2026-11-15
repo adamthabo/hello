@@ -1,6 +1,6 @@
 // SCHWARZSTART · core game: player, camera, cover, weapons, effects, loot
 import * as THREE from 'three';
-import { Rig, LOOKS } from './rig.js';
+import { Rig, LOOKS, hasMocap } from './rig.js';
 import { F_LOW, F_WALL } from './geom.js';
 import * as SYS from './systems.js';
 import { WPN, RAR, RARHEX, hasPerk } from './systems.js';
@@ -8,6 +8,7 @@ import { clamp, lerp, damp, dampAng, angDiff, hyp, R, store, IS_TOUCH } from './
 import { Enemy } from './ai.js';
 import { installOps } from './ops.js';
 import { Route } from './route.js';
+import { lootLight } from './beams.js';
 
 const V = new THREE.Vector3(), V2 = new THREE.Vector3(), V3 = new THREE.Vector3();
 const EYE = 1.56, PR = 0.34;
@@ -83,7 +84,10 @@ export class Game {
   // ---------------------------------------------------------------- frame
   playerLook() { const L = this.S.look || {}; return { outfit: L.outfit || LOOKS.player.outfit, pal: { ...LOOKS.player.pal, ...(L.pal || {}) } }; }
   update(dt) {
-    if (this.paused) return; this.t += dt; this.S.stats.t += dt;
+    if (this.paused) return;
+    // the last hostile of a fight goes down in slow motion: a beat to enjoy it before the loot
+    if (this.slowT > 0) { this.slowT -= dt; this.slowA = this.slowT > 0.32 ? 1 : Math.max(0, this.slowT / 0.32); dt *= lerp(1, 0.22, this.slowA); } else this.slowA = 0;
+    this.t += dt; this.S.stats.t += dt;
     const P = this.P;
     this.updPlayer(dt); this.updCamera(dt);
     for (let i = this.en.length - 1; i >= 0; i--) { const e = this.en[i]; e.update(dt); if (e.gone) { this.scene.remove(e.rig.root); e.rig.dispose(); this.en.splice(i, 1); } }
@@ -112,6 +116,10 @@ export class Game {
     if (I.was('swap')) this.swap(this.S.cur === 0 ? 1 : this.S.cur === 1 ? (this.mags[0] + this.mags[1] === 0 ? 2 : 0) : 0);
     if (I.was('reload')) this.reload();
     if (I.was('deploy')) this.deploy(); if (I.was('qequip') && this.better) { const it = this.better; this.better = null; if (this.S.inv.includes(it)) { this.equip(it, this.equipTarget(it)); it.nw = 0; this.ui.toast('Equipped · ' + it.n, 'ok'); } this.ui.dirty = true; }
+    if (P.mel > 0) { const m0 = P.mel; P.mel += dt / 0.56; if (m0 < 0.42 && P.mel >= 0.42) this.meleeHit(); if (P.mel >= 1) P.mel = 0; }
+    this.meleeTgt = null;
+    if (!P.roll && !P.vault && !(P.mel > 0)) { let bd = 2.6; const f = this.fwd(V, true); for (const e of this.en) { if (e.dead || e.isRemote) continue; const ex = e.x - P.x, ez = e.z - P.z, d = hyp(ex, ez); if (d < bd && (ex * f.x + ez * f.z) / (d || 1) > 0.4) { bd = d; this.meleeTgt = e; } } }
+    if (this.meleeTgt && I.was('use')) { const e = this.meleeTgt; P.mel = 1e-4; P.melE = e; if (P.st === 'cover') this.leaveCover(); P.yaw = Math.atan2(e.x - P.x, e.z - P.z); this.audio.play('melee', 0.25, 1.7); }
     if (I.was('kit')) this.useKit(); if (I.was('nade')) this.throwNade(); if (I.was('s1')) this.skillPulse(); if (I.was('s2')) this.skillTurret();
     if (I.was('roll') && !P.roll && !P.vault && P.st !== 'vault') this.startRoll(ml > 0.2 ? mx / (ml || 1) : -fx, ml > 0.2 ? mz / (ml || 1) : -fz);
     const coverKey = I.was('cover');
@@ -153,7 +161,7 @@ export class Game {
     // weapon
     const w = this.curW(), Wd = WPN[w.cls]; P.fireT -= dt; P.bloom = damp(P.bloom, 0, 5, dt);
     if (P.relT > 0) { P.relT -= dt; if (P.relT <= 0) this.finishReload(); }
-    if (wantFire && !P.roll && !P.vault && P.relT <= 0) { if (this.mags[this.S.cur] <= 0) this.reload(); else if (P.fireT <= 0 && (Wd.auto || !P.trig)) { this.fire(); P.trig = true; } } if (!wantFire) P.trig = false;
+    if (wantFire && !P.roll && !P.vault && P.relT <= 0 && !(P.mel > 0)) { if (this.mags[this.S.cur] <= 0) this.reload(); else if (P.fireT <= 0 && (Wd.auto || !P.trig)) { this.fire(); P.trig = true; } } if (!wantFire) P.trig = false;
     this.pickTarget();
     // recovery
     const since = this.noRegen ? -1 : this.t - P.lastHit;
@@ -168,10 +176,12 @@ export class Game {
     for (let i = 0; i < 2; i++) P.sk[i] = Math.max(0, P.sk[i] - dt * D.haste); P.nadeT = Math.max(0, P.nadeT - dt * D.haste); P.kitT = Math.max(0, P.kitT - dt);
     if (this.S.nades < 2 && P.nadeT <= 0) { this.S.nades++; if (this.S.nades < 2) P.nadeT = 20; }
     // steps
-    if (speed > 0.5 && !P.roll) { P.stepT = (P.stepT || 0) - dt * speed; if (P.stepT <= 0) { P.stepT = P.sprint ? 2.5 : 2.1; this.audio.step(P.sprint ? 0.15 : 0.11); if (Math.random() < 0.6) this.fx.puff(P.x, 0.05, P.z, 2, [0.8, 0.84, 0.9], 0.12, 0.6, 0.5, 0.35, -1, 0.5); } }
+    if (hasMocap()) {                           // footsteps land when the captured feet do
+      const ev = P.rig.stepEv || 0; if (ev !== P.stepSeen) { P.stepSeen = ev; if (speed > 0.5 && !P.roll) { this.audio.step(P.sprint ? 0.15 : speed > 3 ? 0.13 : 0.1); if (Math.random() < 0.6) this.fx.puff(P.x, 0.05, P.z, 2, [0.8, 0.84, 0.9], 0.12, 0.6, 0.5, 0.35, -1, 0.5); } }
+    } else if (speed > 0.5 && !P.roll) { P.stepT = (P.stepT || 0) - dt * speed; if (P.stepT <= 0) { P.stepT = P.sprint ? 2.5 : 2.1; this.audio.step(P.sprint ? 0.15 : 0.11); if (Math.random() < 0.6) this.fx.puff(P.x, 0.05, P.z, 2, [0.8, 0.84, 0.9], 0.12, 0.6, 0.5, 0.35, -1, 0.5); } }
     const rig = P.rig; rig.root.position.set(P.x, 0, P.z); rig.root.rotation.y = P.yaw;
     const cyw = Math.cos(P.yaw), syw = Math.sin(P.yaw), vl = hyp(P.vx || 0, P.vz || 0), lvx = P.st === 'free' && vl > 0.3 ? P.vx / vl : 0, lvz = P.st === 'free' && vl > 0.3 ? P.vz / vl : 0, lml = lvx || lvz ? 1 : 0;
-    rig.pose({ speed, mx: lml ? lvx * cyw - lvz * syw : 0, mz: lml ? lvx * syw + lvz * cyw : 1, aim: P.aim || this.t - P.lastShot < 0.5, pitch: c.pitch, crouch: P.crouch, reload: P.relT > 0 ? 1 - P.relT / P.relD : 0, roll: P.roll, lean: P.st === 'cover' && P.peek && !P.cov.low ? (P.covDir || 1) * -0.5 : 0 }, dt);
+    rig.pose({ speed, melee: P.mel, mx: lml ? lvx * cyw - lvz * syw : 0, mz: lml ? lvx * syw + lvz * cyw : 1, aim: !(P.mel > 0) && (P.aim || this.t - P.lastShot < 0.5), pitch: c.pitch, crouch: P.crouch, reload: P.relT > 0 ? 1 - P.relT / P.relD : 0, roll: P.roll, lean: P.st === 'cover' && P.peek && !P.cov.low ? (P.covDir || 1) * -0.5 : 0 }, dt);
     rig.root.updateMatrixWorld(true);
   }
   enterCover(dx, dz, forced) {
@@ -302,11 +312,11 @@ export class Game {
   }
   // ---------------------------------------------------------------- loot
   drop(x, z, kind, data) {
-    const rar = kind === 'item' ? data.rar : kind === 'kit' ? 1 : kind === 'marken' ? 0 : 0, col = kind === 'item' ? RARHEX[rar] : kind === 'kit' ? 0x52e08a : kind === 'marken' ? 0xe8d9a0 : 0xd9d2c0;
+    const rar = kind === 'item' ? data.rar : kind === 'kit' ? 1 : 0, col = kind === 'item' ? RARHEX[rar] : kind === 'kit' ? 0x52e08a : kind === 'marken' ? 0xe8d9a0 : 0xd9d2c0;
     const g = new THREE.Group(), c = new THREE.Color(col);
-    const bx = new THREE.Mesh(this.lootGeo || (this.lootGeo = new THREE.BoxGeometry(0.34, 0.2, 0.24)), new THREE.MeshStandardMaterial({ color: 0x262a2e, roughness: 0.6, emissive: c, emissiveIntensity: 0.35 })); bx.position.y = 0.12; bx.castShadow = true; g.add(bx);
-    const hgt = kind === 'item' ? 3.2 + rar * 0.9 : 1.6, beam = new THREE.Mesh(this.beamGeo || (this.beamGeo = new THREE.CylinderGeometry(0.035, 0.07, 1, 6, 1, true)), new THREE.MeshBasicMaterial({ color: c.clone().multiplyScalar(kind === 'item' ? 2.2 + rar * 0.5 : 1.2), transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false }));
-    beam.scale.y = hgt; beam.position.y = hgt / 2 + 0.2; g.add(beam);
+    const bx = new THREE.Mesh(this.lootGeo || (this.lootGeo = new THREE.BoxGeometry(0.34, 0.2, 0.24)), new THREE.MeshStandardMaterial({ color: 0x262a2e, roughness: 0.6, emissive: c, emissiveIntensity: kind === 'item' ? 0.9 : 0.4 })); bx.position.y = 0.12; bx.castShadow = true; g.add(bx);
+    g.add(lootLight(this.gfx, col, kind === 'item'));            // gear: a pillar of light into the sky; the rest a short glow
+    if (kind === 'item' && rar >= 3) this.audio.playAt('lootHi', x, z, 0.5);
     const p = { x: x + (Math.random() - 0.5) * 1.6, z: z + (Math.random() - 0.5) * 1.6 }; this.world.collide(p, 0.3); g.position.set(p.x, 0, p.z); this.scene.add(g);
     this.loot.push({ g, x: p.x, z: p.z, kind, data, t: 0 });
   }
@@ -314,10 +324,17 @@ export class Game {
     const P = this.P, hot = this.loot.length > 0 && this.en.some((e) => !e.dead && !e.isRemote && e.aware && hyp(e.x - P.x, e.z - P.z) < 50);
     for (let i = this.loot.length - 1; i >= 0; i--) {
       const l = this.loot[i]; l.t += dt; l.g.children[0].rotation.y += dt * 1.2; let d = hyp(l.x - P.x, l.z - P.z);
-      if (!P.dead && l.t > 0.6 && !l.full && d < (hot ? 3.2 : 8) && d > 0.2) { const k = Math.min(1, (dt * (6 + (8 - Math.min(8, d)) * 1.5)) / d); l.x += (P.x - l.x) * k; l.z += (P.z - l.z) * k; l.g.position.set(l.x, 0, l.z); d = hyp(l.x - P.x, l.z - P.z); }   // loot comes to you
-      if (d < 1.7 && !P.dead && l.t > 0.4) { if (this.take(l)) { this.scene.remove(l.g); this.loot.splice(i, 1); if (l.chest && !this.loot.some((o) => o.chest === l.chest && o.kind === 'item')) this.lootOpenT = 0.9; continue; } else l.full = l.kind === 'item'; }
+      if (!P.dead && l.t > 0.6 && d < (hot ? 3.2 : l.chest ? 18 : 10) && d > 0.2 && this.canTake(l)) { const k = Math.min(1, (dt * (6 + (8 - Math.min(8, d)) * 1.5)) / d); l.x += (P.x - l.x) * k; l.z += (P.z - l.z) * k; l.g.position.set(l.x, 0, l.z); d = hyp(l.x - P.x, l.z - P.z); }   // loot comes to you
+      if (d < 1.7 && !P.dead && l.t > 0.4 && this.canTake(l)) { if (this.take(l)) { this.scene.remove(l.g); this.loot.splice(i, 1); if (l.chest && !this.loot.some((o) => o.chest === l.chest && o.kind === 'item')) this.lootOpenT = 0.9; continue; } }
       if (l.t > 240 || d > 260) { this.scene.remove(l.g); this.loot.splice(i, 1); }
     }
+  }
+  // would picking this up do anything? (full ammo, a full kit pouch or a full backpack leave it lying where it is)
+  canTake(l) {
+    const S = this.S; if (this.mode && this.mode.take) return true;
+    if (l.kind === 'kit') return S.kits < this.D.kits; if (l.kind === 'marken') return true; if (l.kind === 'item') return S.inv.length < 40;
+    if (l.kind === 'ammo') { for (const cls of ['ar', 'smg', 'lmg', 'sg', 'dmr']) { const has = S.wpn.some((w) => w.cls === cls), mx = this.resMax(cls); if (!has && (S.res[cls] || 0) >= mx * 0.5) continue; if ((S.res[cls] || 0) < mx) return true; } return false; }
+    return true;
   }
   take(l) {
     const S = this.S; if (this.mode && this.mode.take) { const r = this.mode.take(l); if (r !== undefined) return r; }
@@ -326,6 +343,20 @@ export class Game {
     else if (l.kind === 'marken') { S.marken += l.data; this.ui.toast(`+${l.data} Marken`, 'mk'); this.audio.play('coin', 0.4); }
     else { if (S.inv.length >= 40) { if (this.t - (this.fullT || 0) > 4) { this.fullT = this.t; this.ui.toast('Backpack full'); } return false; } l.data.nw = 1; S.inv.push(l.data); this.ui.pickup(l.data); this.audio.play(l.data.rar >= 3 ? 'lootHi' : 'loot', 0.5); this.offerBetter(l.data); }
     this.ui.dirty = true; return true;
+  }
+  // shoved by a strike: out of cover, stumbling back
+  knock(nx, nz, s) {
+    const P = this.P; if (P.dead) return; if (P.st === 'cover') this.leaveCover(); P.dash = null;
+    P.vx = (P.vx || 0) + nx * s; P.vz = (P.vz || 0) + nz * s; this.cam.shake = Math.min(0.9, this.cam.shake + 0.5); this.cam.kick += 0.05;
+  }
+  // the rifle butt lands: heavy damage, the hostile reels back and cannot shoot for a moment
+  meleeHit() {
+    const P = this.P, e = P.melE; if (!e || e.dead) return;
+    const dx = e.x - P.x, dz = e.z - P.z, d = hyp(dx, dz) || 1; if (d > 3) return;
+    const w = this.curW(), dmg = Math.max(SYS.wpnDmg(w) * 3.5, e.maxHp * 0.42) * this.D.dmgMul * (e.boss ? 0.5 : 1);
+    e.damage(dmg, { x: e.x, y: 1.35 * e.sc, z: e.z, melee: 1 }); e.stun = Math.max(e.stun || 0, e.boss ? 0.45 : 1.0); e.mel = 0; e.kvx = (dx / d) * 6.5; e.kvz = (dz / d) * 6.5; e.rig.hit = 1.6;
+    this.cam.shake = Math.min(0.7, this.cam.shake + 0.3); this.audio.playAt('melee', e.x, e.z, 1); this.ui.hitmark(e.dead); this.combatT = 8;
+    this.fx.puff(e.x, 1.35, e.z, 7, [0.62, 0.62, 0.64], 0.1, 2.4, 0.35, 0.6, -3, 0.6);
   }
   // something better than what you carry: one tap (or Y) puts it on
   offerBetter(it) {
@@ -366,7 +397,7 @@ export class Game {
     const sk = c.shake * this.motion; cam.position.set(px - fx * c.dist + (Math.random() - 0.5) * sk * 0.2, py - fy * c.dist + 0.1 + (Math.random() - 0.5) * sk * 0.2, pz - fz * c.dist + (Math.random() - 0.5) * sk * 0.2);
     if (cam.position.y < 0.25) cam.position.y = 0.25;
     cam.lookAt(px + fx * 20, py + fy * 20 + 0.1, pz + fz * 20);
-    const fov = aim ? this.fovBase * 0.78 : P.sprint ? this.fovBase + 5 : this.fovBase; if (Math.abs(cam.fov - fov) > 0.05) { cam.fov = damp(cam.fov, fov, 9, dt); cam.updateProjectionMatrix(); }
+    const fov = (aim ? this.fovBase * 0.78 : P.sprint ? this.fovBase + 5 : this.fovBase) - (this.slowA || 0) * 7; if (Math.abs(cam.fov - fov) > 0.05) { cam.fov = damp(cam.fov, fov, 9, dt); cam.updateProjectionMatrix(); }
     this.audio.listener(cam.position.x, cam.position.z, c.yaw);
   }
   // world position -> screen px (or null when behind the camera)

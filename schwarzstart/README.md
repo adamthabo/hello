@@ -41,4 +41,4 @@ From a terminal instead: `npm install` then `npx wrangler deploy` in this folder
 
 Local test: `npx wrangler dev`, then open `http://localhost:8787` in two browser windows.
 
-Built with Claude. An original game; the map is hand-drawn from memory, not survey data. Photo-scanned materials from Poly Haven and ambientCG (CC0).
+Built with Claude. An original game; the map is hand-drawn from memory, not survey data. Photo-scanned materials from Poly Haven and ambientCG (CC0). Character locomotion is motion capture from the CMU Graphics Lab Motion Capture Database (mocap.cs.cmu.edu; created with funding from NSF EIA-0196217), retargeted to the game's skeleton.

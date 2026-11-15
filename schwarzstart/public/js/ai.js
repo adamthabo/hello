@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { Rig, FACTION_LOOKS } from './rig.js';
 import * as SYS from './systems.js';
-import { clamp, dampAng, hyp, R } from './util.js';
+import { clamp, dampAng, angDiff, hyp, R } from './util.js';
 import { F_LOW } from './geom.js';
 
 const V = new THREE.Vector3(), V2 = new THREE.Vector3();
@@ -15,7 +15,7 @@ export class Enemy {
     this.maxHp = this.hp = SYS.enemyHP(spec.lvl) * A.hp * T.hp * (G.diffHp || 1); this.maxArm = this.arm = this.maxHp * (T.arm * 0.55 + (A.armor ? 0.35 : 0));
     this.sc = (A.scale || 1) * (T.scale || 1); this.rig = new Rig(G.gfx, FACTION_LOOKS[spec.fac], A.wpn, this.sc, A.bulk || 1); G.scene.add(this.rig.root);
     this.aware = false; this.alertT = 0; this.mode = 'idle'; this.perT = R() * 0.4; this.path = null; this.pi = 0; this.repT = 0; this.cov = null; this.crouch = false; this.fireT = 0; this.burst = 0; this.cd = 1 + R() * 1.5;
-    this.mark = 0; this.dead = false; this.deadT = 0; this.spd = 0; this.tellT = 0; this.seen = false; this.seenT = -99; this.lsx = x; this.lsz = z; this.nadeCd = 5 + R() * 6; this.strafe = R() < 0.5 ? 1 : -1; this.meleeT = 0;
+    this.mark = 0; this.dead = false; this.deadT = 0; this.spd = 0; this.tellT = 0; this.seen = false; this.seenT = -99; this.lsx = x; this.lsz = z; this.nadeCd = 5 + R() * 6; this.strafe = R() < 0.5 ? 1 : -1; this.meleeT = 0; this.mel = 0; this.stun = 0; this.kvx = 0; this.kvz = 0;
     this.patrol = spec.patrol || null; this.covAge = 0; this.shots = 0; this.gx = x; this.gz = z; this.idleYaw = this.yaw; this.pitch = 0; this.firing = false; this.stuckT = 0; this.px = x; this.pz = z;
     this.rig.root.position.set(x, 0, z);
   }
@@ -36,9 +36,16 @@ export class Enemy {
     let shown = amt, armHit = false;
     if (this.arm > 0) { const a = amt * (info.pierce || 1); armHit = true; if (a >= this.arm) { const left = (a - this.arm) / (info.pierce || 1); this.arm = 0; this.hp -= left; G.audio.playAt('armBreak', this.x, this.z, 0.7); G.fx.puff(info.x ?? this.x, info.y ?? 1.2, info.z ?? this.z, 8, [1.5, 2.2, 3], 0.05, 4, 0.3, -1, -6, 1); } else this.arm -= a; shown = a; }
     else this.hp -= amt;
-    this.rig.hit = 1; G.ui.dmg(info.x ?? this.x, (info.y ?? 1.3) + 0.25, info.z ?? this.z, shown, info.head, info.crit, armHit);
+    this.rig.hit = info.melee ? 1.6 : 1; if (info.head) this.rig.hitH = 1; G.ui.dmg(info.x ?? this.x, (info.y ?? 1.3) + 0.25, info.z ?? this.z, shown, info.head, info.crit, armHit);
     G.fx.puff(info.x ?? this.x, info.y ?? 1.2, info.z ?? this.z, 3, armHit ? [0.5, 0.6, 0.7] : [0.36, 0.3, 0.28], 0.07, 1.5, 0.3, 0.6, -3, 0.4);
-    if (this.hp <= 0) { this.dead = true; this.crouch = false; this.rig.setHighlight(false); G.onKill(this, info); }
+    if (this.hp <= 0) {
+      this.dead = true; this.crouch = false; this.rig.setHighlight(false);
+      // fall away from the shot: forward if hit from behind, a twist to the side it came from, a short slide with the impact
+      const P = G.P, sx = this.x - P.x, sz = this.z - P.z, sl = Math.hypot(sx, sz) || 1, fx = Math.sin(this.yaw), fz = Math.cos(this.yaw), along = (sx * fx + sz * fz) / sl;
+      this.rig.deadDir = along > 0.35 ? -1 : 1; this.rig.deadSide = (sx * fz - sz * fx) / sl > 0 ? 1 : -1;
+      const push = info.melee ? 4.2 : info.head ? 2.6 : info.crit ? 2.1 : 1.6; this.kvx = (sx / sl) * push; this.kvz = (sz / sl) * push;
+      G.onKill(this, info);
+    }
   }
   // steer along a path to (tx,tz); returns true when there
   moveTo(tx, tz, speed, dt, stop = 0.7) {
@@ -79,12 +86,14 @@ export class Enemy {
   }
   update(dt) {
     const G = this.G, P = G.P, W = G.world, A = this.A, rig = this.rig;
-    if (this.dead) { this.deadT += dt; if (this.deadT < 1.2) { rig.pose({ dead: 1 }, dt); } if (this.deadT > 14 || hyp(this.x - P.x, this.z - P.z) > 150) this.gone = true; return; }
+    if (this.dead) { this.deadT += dt; if (this.kvx || this.kvz) { this.x += this.kvx * dt; this.z += this.kvz * dt; const k = Math.exp(-5 * dt); this.kvx *= k; this.kvz *= k; if (Math.abs(this.kvx) + Math.abs(this.kvz) < 0.05) this.kvx = this.kvz = 0; G.world.collide(this, 0.3); rig.root.position.set(this.x, 0, this.z); } if (this.deadT < 1.4) { rig.pose({ dead: 1 }, dt); rig.root.updateMatrixWorld(true); } if (this.deadT > 14 || hyp(this.x - P.x, this.z - P.z) > 150) this.gone = true; return; }
     const dx = P.x - this.x, dz = P.z - this.z, d = hyp(dx, dz);
     if (this.despawn && !this.aware && d > 60) { this.gone = true; return; }
     if (d > 240) { this.gone = true; return; }
     if (this.mark > 0) { this.mark -= dt; if (this.mark <= 0) rig.setHighlight(false); }
     this.fireT -= dt; this.meleeT -= dt; this.nadeCd -= dt; this.covAge += dt;
+    if (this.kvx || this.kvz) { this.x += this.kvx * dt; this.z += this.kvz * dt; const k = Math.exp(-7 * dt); this.kvx *= k; this.kvz *= k; if (Math.abs(this.kvx) + Math.abs(this.kvz) < 0.05) this.kvx = this.kvz = 0; W.collide(this, 0.32); }   // shoved
+    if (d < 0.75 && !P.dead) { this.x -= (dx / (d || 1)) * (0.75 - d); this.z -= (dz / (d || 1)) * (0.75 - d); W.collide(this, 0.32); }   // never inside you
     // perception
     this.perT -= dt;
     if (this.perT <= 0) {
@@ -103,10 +112,20 @@ export class Enemy {
     else {
       const los = this.seen, since = G.t - this.seenT, tA = Math.atan2(dx, dz), run = A.spd, inRange = d < A.range;
       if (A.nade && this.nadeCd <= 0 && d > 7 && d < 26 && since < 2.5 && (P.st === 'cover' ? P.covT > 2.2 : P.spd < 0.5) && !G.inSafe) { this.nadeCd = 9 + R() * 6; rig.chestPos(V); G.spawnNade(V.x, V.y + 0.3, V.z, P.x + (R() - 0.5) * 2, P.z + (R() - 0.5) * 2, 1.25, false, SYS.enemyDmg(this.lvl) * 9); G.audio.playAt('throw', this.x, this.z, 0.5); G.ui.toast('Grenade!', 'warn'); }
-      if (this.arch === 'rush') {
+      if (this.stun > 0) { this.stun -= dt; faceT = tA; }
+      else if (this.mel > 0) {                    // a strike: wind up, step in, swing the rifle butt, recover
+        const m0 = this.mel; this.mel += dt / 0.74; faceT = tA;
+        if (this.mel > 0.3 && this.mel < 0.5 && d > 1.15) { this.x += (dx / d) * 2.4 * dt; this.z += (dz / d) * 2.4 * dt; W.collide(this, 0.32); speed = 2.4; }
+        if (m0 < 0.46 && this.mel >= 0.46) {
+          if (!P.dead && d < 2.3 && Math.abs(angDiff(this.yaw, tA)) < 1.1) { G.hurt(SYS.enemyDmg(this.lvl) * 2.6 * (1 + this.tier * 0.25), this.x, this.z); G.knock(dx / d, dz / d, 6); G.audio.playAt('melee', this.x, this.z, 0.9); }
+          else G.audio.playAt('melee', this.x, this.z, 0.25, 1.6);
+        }
+        if (this.mel >= 1) this.mel = 0;
+      } else if (this.seen && !P.dead && this.meleeT <= 0 && d < (this.arch === 'rush' ? 2.2 : 1.9)) {
+        this.mel = 1e-4; this.meleeT = 1.25 + R() * 0.7; faceT = tA; if (R() < 0.5) G.audio.playAt('shout', this.x, this.z, 0.55, 1.1 + R() * 0.2);
+      } else if (this.arch === 'rush') {
         if (d > 1.6) { const sx = P.x + (d < 9 && los ? Math.cos(tA) * this.strafe * 4 : 0), sz = P.z - (d < 9 && los ? Math.sin(tA) * this.strafe * 4 : 0); this.moveTo(sx, sz, run * (d < 6 ? 0.7 : 1), dt, 1.2); speed = this.spd; }
         if (R() < dt * 0.4) this.strafe = -this.strafe;
-        if (d < 1.9 && this.meleeT <= 0) { this.meleeT = 0.95; rig.kick = 1; G.hurt(SYS.enemyDmg(this.lvl) * 2.4 * (1 + this.tier * 0.2), this.x, this.z); G.audio.playAt('melee', this.x, this.z, 0.7); }
         if (los && inRange) { aim = true; faceT = tA; this.fireBurst(dt); } else faceT = Math.atan2(this.mvx || dx, this.mvz || dz);
       } else if (this.arch === 'heavy') {
         if (!los || d > 16) { this.moveTo(los ? P.x : this.lsx, los ? P.z : this.lsz, run, dt, 3); speed = this.spd; }
@@ -136,12 +155,12 @@ export class Enemy {
     this.pitch = aim ? clamp(Math.atan2(P.h * 0.62 - 1.35, Math.max(1, d)), -0.6, 0.6) : 0;
     const far = d > 120; rig.root.position.set(this.x, 0, this.z); rig.root.rotation.y = this.yaw; rig.root.visible = !far || this.aware;
     const vx = (this.x - (this._lx ?? this.x)) / Math.max(dt, 1e-3), vz = (this.z - (this._lz ?? this.z)) / Math.max(dt, 1e-3), vl = Math.hypot(vx, vz), cy = Math.cos(this.yaw), sy = Math.sin(this.yaw); this._lx = this.x; this._lz = this.z;
-    if (!far) rig.pose({ speed, mx: vl > 0.3 ? (vx * cy - vz * sy) / vl : 0, mz: vl > 0.3 ? (vx * sy + vz * cy) / vl : 1, aim: aim && this.aware, pitch: this.pitch, crouch: this.crouch }, dt);
+    if (!far) rig.pose({ speed, mx: vl > 0.3 ? (vx * cy - vz * sy) / vl : 0, mz: vl > 0.3 ? (vx * sy + vz * cy) / vl : 1, aim: aim && this.aware && !(this.mel > 0), pitch: this.pitch, crouch: this.crouch && !(this.mel > 0), melee: this.mel }, dt);
     rig.root.updateMatrixWorld(true);
   }
   // fires the current burst; returns true when the burst is finished
   fireBurst(dt) {
-    const A = this.A, G = this.G;
+    const A = this.A, G = this.G; if (this.stun > 0 || this.mel > 0) return false;
     if (this.burst <= 0) { this.cd -= dt; if (this.cd > 0) return false; this.burst = Math.round(A.burst[0] + R() * (A.burst[1] - A.burst[0])); this.tellT = 0; }
     if (A.tell && this.tellT < A.tell) {              // marksman warning: a visible sight line before the shot
       this.tellT += dt; const m = this.rig.muzzle(V); G.fx.tracer(m, V2.set(G.P.x, G.P.h * 0.62, G.P.z), [2.2, 0.1, 0.1], 0.035, 0.5 + (this.tellT / A.tell) * 1.5); return false;

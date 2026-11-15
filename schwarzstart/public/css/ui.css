@@ -241,3 +241,4 @@ body.inmode #loc b, body.inmode #loc span { display: block; max-width: max(80px,
 @media (max-height: 460px) { .lhead > div:first-child b { font-size: 26px; } .li { height: 32px; margin: 2px 0 0; } .lv b { font-size: 26px; } .lc { padding: 8px 10px 10px; flex-basis: 214px; } .lx { font-size: 11px; } }
 body.touch #bBetter { right: auto; left: calc(var(--sal) + 154px); top: calc(var(--sat) + 140px); }
 @media (max-width: 900px) { body.touch #bBetter { left: calc(var(--sal) + 124px); top: calc(var(--sat) + 132px); } }
+#prompt.hot { border-color: #ff6a3c; background: rgba(60, 14, 8, .82); box-shadow: 0 0 18px rgba(255, 90, 50, .35); } #prompt.hot b { color: #ffb08c; font-size: 22px; letter-spacing: .14em; }

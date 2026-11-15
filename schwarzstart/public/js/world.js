@@ -330,7 +330,7 @@ export class World {
     const mats = { brand: g.surf('brandwand', { vcol: true, snow: 0 }), roof: g.surf('roof', { snow: 1.1 }), trim: g.surf('stone', { vcol: true, snow: 0.9 }), via: g.surf('viaduct', { snow: 0 }), prop: g.vcol({ rough: 0.55, snow: 1 }) };
     this.treeMat = new THREE.MeshStandardMaterial({ map: T.tree, alphaTest: 0.42, side: THREE.DoubleSide, roughness: 1, color: 0xb9b2ac });
     const shed = g.vcol({ rough: 0.28, metal: 0.5, snow: 0.7, side: THREE.DoubleSide });
-    const ex = { copper: g.surf('copper', { vcol: true, snow: 0.8 }), concrete: g.surf('concrete', { vcol: true, snow: 0.6 }), glass: g.vcol({ rough: 0.2, metal: 0.9, snow: 0.35 }), dark: g.vcol({ rough: 0.6, snow: 0 }), gold: g.vcol({ rough: 0.32, metal: 1, snow: 0 }), tile: g.surf('tile', { vcol: true, snow: 1 }), metal: g.surf('metal', { vcol: true, snow: 0.6, metal: 0.6 }) };
+    const ex = { copper: g.surf('copper', { vcol: true, snow: 0.8 }), concrete: g.surf('concrete', { vcol: true, snow: 0.6 }), glass: g.vcol({ rough: 0.34, metal: 0.72, snow: 0.35 }), dark: g.vcol({ rough: 0.6, snow: 0 }), gold: g.vcol({ rough: 0.32, metal: 1, snow: 0 }), tile: g.surf('tile', { vcol: true, snow: 1 }), metal: g.surf('metal', { vcol: true, snow: 0.6, metal: 0.6 }) };
     for (const [key, c] of this.chunks) {
       const grp = new THREE.Group(); grp.name = key;
       for (let i = 0; i < 8; i++) if (!c.fac[i].empty) grp.add(c.fac[i].mesh(g.facade(i)));

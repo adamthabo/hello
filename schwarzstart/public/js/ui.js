@@ -125,7 +125,7 @@ export class UI {
       let nn = 0, br = -1, bu = false; for (const i of G.S.inv) if (i.nw === 1) { nn++; if (i.rar > br) br = i.rar; if (!bu && G.gain(i) > 1) bu = true; }
       set('lootB', nn + '|' + br + '|' + bu, () => { const b = el('bLoot'); b.classList.toggle('hidden', !nn); b.classList.toggle('up', bu); if (nn) { b.style.setProperty('--rc', RAR[br].c); el('bLootN').textContent = nn; } });
     }
-    const pr = G.prompt, pe = el('prompt'); set('pr', pr ? pr.text + pr.sub + (pr.bad ? 1 : 0) : '', () => { pe.classList.toggle('hidden', !pr); if (pr) { el('prT').textContent = pr.text; el('prS').textContent = pr.sub; pe.classList.toggle('bad', !!pr.bad); } }); if (pr) el('prP').style.transform = `scaleX(${clamp(pr.prog, 0, 1)})`;
+    const pr = G.prompt, pe = el('prompt'); set('pr', pr ? pr.text + pr.sub + (pr.bad ? 1 : 0) + (pr.hot ? 'h' : '') : '', () => { pe.classList.toggle('hidden', !pr); pe.classList.toggle('hot', !!(pr && pr.hot)); if (pr) { el('prT').textContent = pr.text; el('prS').textContent = pr.sub; pe.classList.toggle('bad', !!pr.bad); } }); if (pr) el('prP').style.transform = `scaleX(${clamp(pr.prog, 0, 1)})`;
     const sp = 9 + P.bloom * 16 + (P.moving ? 4 : 0) + (G.inp.aim ? -4 : 0); el('cross').style.setProperty('--g', sp + 'px'); set('lock', !!G.aimT, (v) => el('lock').classList.toggle('on', v));
     if (this.hintT > 0) { this.hintT -= dt; if (this.hintT <= 0) el('hint').classList.add('hidden'); }
     this.overlay(dt); this.mmT = (this.mmT || 0) - dt; if (this.mmT <= 0) { this.mmT = 0.05; this.minimap(); }
@@ -327,9 +327,9 @@ export class UI {
       <div class="sec">Shift</div>
       <div class="opt"><span>Time of day</span><button class="pill sm" data-do="time">${this.clock()} · skip 4 h</button></div>
       <div class="opt"><span>Start over<br><small>Erases this Lotse on this device</small></span><button class="pill sm" data-do="wipe">New Lotse</button></div>
-      <p class="note" style="margin-top:14px">${IS_TOUCH ? 'Left thumb moves; push it all the way forward to sprint. Drag the right side to look. FIRE shoots; with auto aim it finds the target. COVER snaps to walls, cars and barriers; press it again while looking at other cover to run there. Hold the prompt to use things.' : 'WASD move · Shift sprint · mouse look · left click fire · right click aim · Space cover · C roll · R reload · Q pulse · E turret · G grenade · H med kit · F use · T drop at the next fight · Y equip the better item · V shoulder · 1 2 3 weapons · M map · I gear · J missions'}</p>
+      <p class="note" style="margin-top:14px">${IS_TOUCH ? 'Left thumb moves; push it all the way forward to sprint. Drag the right side to look. FIRE shoots; with auto aim it finds the target. COVER snaps to walls, cars and barriers; press it again while looking at other cover to run there. Hold the prompt to use things; up close it becomes SCHLAG, a rifle-butt strike.' : 'WASD move · Shift sprint · mouse look · left click fire · right click aim · Space cover · C roll · R reload · Q pulse · E turret · G grenade · H med kit · F use / rifle butt up close · T drop at the next fight · Y equip the better item · V shoulder · 1 2 3 weapons · M map · I gear · J missions'}</p>
       <p class="note">${G.saved === false ? 'This frame does not allow saving on this device: progress lasts until the page is closed.' : 'Progress saves in this browser on this device.'}</p>
-      <p class="note">Photo-scanned materials: Poly Haven and ambientCG (CC0).</p>`;
+      <p class="note">Photo-scanned materials: Poly Haven and ambientCG (CC0). Motion capture: CMU Graphics Lab Motion Capture Database, mocap.cs.cmu.edu (created with funding from NSF EIA-0196217).</p>`;
   }
   click(e) {
     const G = this.G, S = G.S, t = e.target, itb = t.closest('[data-it]'), msb = t.closest('[data-ms]'), dob = t.closest('[data-do]');
