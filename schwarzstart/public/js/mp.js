@@ -6,6 +6,7 @@
 // everyone plus elite Garde units, contaminated loot, drone extraction, rogue status) and Kaltstart (survival).
 import * as THREE from 'three';
 import { Rig } from './rig.js';
+import { MB, C } from './geom.js';
 import { WPN, SLOTS as GEAR, makeWeapon, makeGear, newSave } from './systems.js';
 import { clamp, damp, dampAng, hyp, el, store, rng, IS_TOUCH } from './util.js';
 
@@ -63,19 +64,29 @@ export class MP {
     document.body.classList.add('inmode'); G.noSave = true; G.diff = 1; G.diffHp = 1; if (d.pvp) G.noRegen = true;
     if (d.arena) {
       const c = d.arena.c, r = d.arena.r; W.core = [c[0] - r - 6, c[1] - r - 6, c[0] + r + 6, c[1] + r + 6]; W.coreMargin = [2, 2, 2, 2];
-      G.noPve = true; G.noPatrol = true; for (const s of G.sites) s.locked = true;
+      G.noPve = true; G.noPatrol = true; for (const s of G.sites) s.locked = true; for (let i = 0; i < 12; i++) W.setPower(i, true, true);     // the arenas have their street lights
       const lv = Math.max(5, S.lvl); S.wpn = [makeWeapon(lv, 2, 'ar'), makeWeapon(lv, 2, 'smg'), makeWeapon(lv, 2, 'pst')]; for (const it of S.wpn) { it.q = 1; delete it.perk; delete it.perk2; }
       S.cur = 0; S.res = { ar: 9999, smg: 9999, lmg: 9999, sg: 9999, dmr: 9999 }; S.kits = 3; S.nades = 2; G.mags = S.wpn.map((it) => G.magSize(it)); P.rig.setGun('ar');
-      gx.time = 13.4; gx.timeScale = 0; w.snow = w.tSnow = 0.2; w.fog = w.tFog = 0.08; w.timer = 1e9;
+      gx.time = 16.6; gx.timeScale = 0; w.snow = w.tSnow = 0.25; w.fog = w.tFog = 0.22; w.cloud = w.tCloud = 0.75; w.timer = 1e9;
       this.ring = this._ring(c, r);
     } else if (d.zone) {
       W.core = ZONE.slice(); W.coreMargin = [32, 32, 2.5, 32]; G.noPatrol = true; this.pool0 = Math.max(60, G.D.maxHP + G.D.maxArmor);
-      gx.time = 15.3; w.fog = w.tFog = 0.42; w.snow = w.tSnow = 0.35; w.timer = 1e9;
+      gx.time = 16.75; gx.timeScale = 1 / 400; w.fog = w.tFog = 0.45; w.snow = w.tSnow = 0.35; w.cloud = w.tCloud = 0.85; w.timer = 1e9;
       const pz = (n) => (G.map.plazaNames || []).find((q) => q.n === n), R = rng(77);
       this.extr = ['Platz des 18. März', 'Potsdamer Platz'].map(pz).filter(Boolean).map((q) => ({ x: q.p[0], z: q.p[1], n: q.n, call: 0, here: 0 }));
       this.camps = ['Platz vor dem Reichstag', 'Pariser Platz', 'Leipziger Platz'].map(pz).filter(Boolean).map((q) => ({ x: q.p[0], z: q.p[1], t: 0 }));
       for (let i = 0; this.camps.length < 8 && i < 400; i++) { const x = ZONE[0] + 90 + R() * (ZONE[2] - ZONE[0] - 180), z = ZONE[1] + 90 + R() * (ZONE[3] - ZONE[1] - 180); if (W.walkable(x, z) && !this.camps.some((q) => hyp(q.x - x, q.z - z) < 170) && !this.extr.some((q) => hyp(q.x - x, q.z - z) < 90)) this.camps.push({ x, z, t: 0 }); }
       this.gate = W.findWalk(-585, -250, 0, 60, R, 300) || W.findWalk(-700, -100, 0, 120, R, 300) || [-600, -310];
+      { // Garde camps: generator floodlights and flares in the fog
+        const mb = new MB(), dk = C(0x2a2e33), em = [];
+        for (const c of this.camps) {
+          const p = W.findWalk(c.x, c.z, 5, 12, R, 40); if (!p) continue; const [x, z] = p, ang = Math.atan2(c.x - x, c.z - z), hx = x + Math.sin(ang) * 0.25, hz = z + Math.cos(ang) * 0.25;
+          mb.cyl(x, 0, z, 0.05, 0.04, 3.3, 6, dk, { smooth: true }); mb.box(hx, 3.15, hz, 0.62, 0.42, 0.34, -ang, C(0x3a3e42)); mb.box(x - Math.cos(ang) * 1.3, 0, z + Math.sin(ang) * 1.3, 0.95, 0.62, 0.55, -ang, C(0x4a5040));
+          em.push({ x: hx + Math.sin(ang) * 0.3, y: 3.2, z: hz + Math.cos(ang) * 0.3, type: 1, size: 3.0, pool: 8, pt: 1, pa: 0.28, i: 70, c: 0xe2ecff });
+          const f = W.findWalk(c.x, c.z, 1, 5, R, 20); if (f) { mb.cyl(f[0], 0, f[1], 0.03, 0.03, 0.22, 5, C(0xd02a1a, 1.5)); em.push({ x: f[0], y: 0.3, z: f[1], type: 3, size: 1.1, pool: 4, pt: 3, pa: 0.35, i: 12, c: 0xff3a1e }); }
+        }
+        if (!mb.empty) G.scene.add(mb.mesh(G.gfx.vcol({ rough: 0.7, snow: 0.9 }))); W.addEmitters(em);
+      }
       this.drone = this._drone();
       for (const e of this.extr) {         // a flare column marks each drone point; it burns brighter once a drone is on its way
         const m = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.9, 70, 10, 1, true), new THREE.MeshBasicMaterial({ color: new THREE.Color(3.2, 0.7, 0.25), transparent: true, opacity: 0.22, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false }));

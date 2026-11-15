@@ -89,7 +89,7 @@ export class Game {
     this.fx.update(dt, this.gfx.snowU.uPx.value);
     this.combatT -= dt; this.gfx.cam = this.cam;
     const g = this.gfx; g.muzzle.intensity = damp(g.muzzle.intensity, 0, 30, dt);
-    P.rig.headPos(V); const f = this.fwd(V2); g.head.position.copy(V).addScaledVector(f, 0.15); g.head.target.position.copy(V).addScaledVector(f, 12); g.head.intensity = g.night > 0.25 && !P.dead ? 180 * g.night : 0;
+    P.rig.headPos(V); const f = this.fwd(V2); g.head.position.copy(V).addScaledVector(f, 0.15); g.head.target.position.copy(V).addScaledVector(f, 12); g.head.target.position.y += 0.9; g.head.intensity = g.night > 0.35 && !P.dead ? 95 * g.night : 0;
     g.mFin.uniforms.uHurt.value = damp(g.mFin.uniforms.uHurt.value, P.hp < this.D.maxHP * 0.35 && !P.dead ? 0.55 : 0, 4, dt);
     this.saveT = (this.saveT || 0) + dt; if (this.saveT > 20) { this.saveT = 0; this.save(); }
   }

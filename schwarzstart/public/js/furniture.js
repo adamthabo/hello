@@ -164,5 +164,22 @@ export function buildFurniture(W, im) {
     }
   };
   edge(core[0], core[1], core[0], core[3]); edge(core[0], core[3], core[2], core[3]);
-  return { scaffolds: nScaf, barrier: nb };
+  // ---------- litter: positions only (litter.js draws the pieces around the player) ----------
+  // tiles: 0 leaves, 1 wet leaves, 2 twigs, 3 branch, 4 newspaper, 5 scraps, 6 cardboard, 7 bag, 8 crack, 9 stain, 10 butts, 11 slush, 12 cans, 13 big leaves, 14 flyers, 15 grit
+  const park = (x, z) => sd(m1, 2, x, z), LT = new Map(), cell = 32, LR = rng(777);
+  const add = (x, z, t, sc) => { const k = Math.floor(x / cell) * 4096 + Math.floor(z / cell); let a = LT.get(k); if (!a) LT.set(k, (a = [])); a.push(x, z, LR() * 6.2832, t + 16 * Math.round(sc * 10)); };
+  const WALL = [4, 5, 6, 7, 0, 10, 12, 14, 0, 5, 13], GUT = [0, 1, 2, 5, 11, 10, 13, 1, 0, 2], PAVE = [10, 5, 13, 15, 9, 0, 14], PARK = [2, 3, 0, 1, 13, 2, 0], ROAD = [9, 8, 15, 9, 11];
+  const pick = (a) => a[(LR() * a.length) | 0]; let nl = 0;
+  for (let z = b[1] + 2; z < b[3] - 2; z += 2) for (let x = b[0] + 2; x < b[2] - 2; x += 2) {
+    const jx = x + (LR() - 0.5) * 1.9, jz = z + (LR() - 0.5) * 1.9; if (!W.walkRaw(jx, jz)) continue;
+    const so = solid(jx, jz), rd = road(jx, jz), q = LR(); let t = -1, sc = 1;
+    if (park(jx, jz) > 0.3) { if (q < 0.2) { t = pick(PARK); sc = 1.1 + LR() * 1.0; } }
+    else if (rd > 0.7) { if (q < 0.03) { t = pick(ROAD); sc = 1 + LR() * 1.3; } }
+    else if (rd > -0.25) { if (q < 0.5) { t = pick(GUT); sc = 0.9 + LR() * 0.9; } }
+    else if (so > -1.9 && so < -0.2) { if (q < 0.6) { t = pick(WALL); sc = 0.9 + LR() * 1.0; } }
+    else if (q < 0.14) { t = pick(PAVE); sc = 0.9 + LR() * 0.8; }
+    if (t >= 0) { add(jx, jz, t, sc); nl++; }
+  }
+  W.litter = { cell, map: new Map([...LT].map(([k, a]) => [k, new Float32Array(a)])), n: nl };
+  return { scaffolds: nScaf, barrier: nb, litter: nl };
 }

@@ -44,6 +44,21 @@ export function installOps(Game, Enemy) {
       else if (d.k === 'mission') { pole(0, 0, 7.5); s.bea = beacons.push([x, 7.8, z]) - 1; }
       if (s.ux == null) { s.ux = x; s.uz = z; }
     });
+    // generator floodlights over every hostile site and red flares on the ground: the city's only light in a blacked-out Kiez
+    const em = [];
+    for (const s of this.sites) {
+      if (s.locked || !['cp', 'power', 'mission', 'relay'].includes(s.k)) continue; const r = rng(s.i * 31 + 7), n = s.k === 'cp' || s.k === 'mission' ? 2 : 1;
+      for (let k = 0; k < n; k++) {
+        let p = null; for (let t = 0; t < 14 && !p; t++) { const a = r() * 6.2832, d = 6 + r() * 5, x = s.x + Math.cos(a) * d, z = s.z + Math.sin(a) * d; if (W.walkable(x, z) && W.walkable(x + 0.8, z) && W.walkable(x, z + 0.8)) p = [x, z]; } if (!p) continue;
+        const [x, z] = p, ang = Math.atan2(s.x - x, s.z - z), hx = x + Math.sin(ang) * 0.25, hz = z + Math.cos(ang) * 0.25;
+        for (let l = 0; l < 3; l++) { const la = ang + l * 2.094; mb.box(x + Math.sin(la) * 0.42, 0, z + Math.cos(la) * 0.42, 0.05, 1.6, 0.05, la, dark, { l1: 0.04, w1: 0.04, xo: 0 }); }
+        mb.cyl(x, 0, z, 0.04, 0.035, 3.3, 6, dark, { smooth: true }); mb.box(hx, 3.15, hz, 0.62, 0.42, 0.34, -ang, C(0x3a3e42)); mb.box(hx + Math.sin(ang) * 0.18, 3.18, hz + Math.cos(ang) * 0.18, 0.54, 0.34, 0.02, -ang, C(0xf4f7ff, 2.2));
+        const gx = x - Math.cos(ang) * 1.3, gz = z + Math.sin(ang) * 1.3; mb.box(gx, 0, gz, 0.95, 0.62, 0.55, -ang, C(0x7a2a1a)); mb.box(gx, 0.62, gz, 0.6, 0.1, 0.3, -ang, dark); W.addBox(gx, gz, Math.cos(-ang), -Math.sin(-ang), 0.95, 0.55, 0.62, 1 | 2);
+        em.push({ x: hx + Math.sin(ang) * 0.3, y: 3.2, z: hz + Math.cos(ang) * 0.3, type: 1, size: 3.0, pool: 8, pt: 1, pa: 0.28, i: 70, c: 0xe2ecff });
+      }
+      if (s.k === 'cp' || s.k === 'mission') for (let k = 0; k < 2; k++) { const a = r() * 6.2832, d = 2.5 + r() * 4, x = s.x + Math.cos(a) * d, z = s.z + Math.sin(a) * d; if (!W.walkable(x, z)) continue; mb.cyl(x, 0, z, 0.03, 0.03, 0.22, 5, C(0xd02a1a, 1.5)); em.push({ x, y: 0.3, z, type: 3, size: 1.1, pool: 4, pt: 3, pa: 0.35, i: k ? 0 : 12, c: 0xff3a1e }); }
+    }
+    W.addEmitters(em);
     this._hub(mb, flags, beacons, wood, olive, dark);
     const mesh = mb.mesh(this.gfx.vcol({ rough: 0.7, snow: 0.9 })); this.scene.add(mesh);
     const fg = new THREE.PlaneGeometry(1.5, 0.95); fg.translate(0.78, 0, 0);

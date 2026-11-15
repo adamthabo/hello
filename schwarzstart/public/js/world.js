@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { rng, clamp, hyp, imagePixels } from './util.js';
 import { buildLandmark } from './landmarks.js';
 import { buildFurniture } from './furniture.js';
+import { Litter } from './litter.js';
 import { MB, C, pip, F_COVER, F_LOW, F_WALL, F_SOFT } from './geom.js';
 
 export const CHUNK = 250;
@@ -247,7 +248,8 @@ export class World {
     step(0.42); await tick();
     this._viaduct(); step(0.5); await tick();
     this._props(R); step(0.6); await tick();
-    try { this.furn = buildFurniture(this, this._im); } catch (e) { console.warn('furniture', e); } this._im = null; step(0.64); await tick();
+    try { this.furn = buildFurniture(this, this._im); } catch (e) { console.warn('furniture', e); } this._im = null;
+    try { this.litterField = new Litter(this.gfx, this); } catch (e) { console.warn('litter', e); } step(0.64); await tick();
     // landmarks
     this.lmGroup = new THREE.Group(); this.group.add(this.lmGroup); this.lm = {};
     for (const Lm of map.landmarks) { try { buildLandmark(Lm, this); } catch (e) { console.warn('landmark', Lm.id, e); } }
@@ -341,10 +343,23 @@ export class World {
       this.group.add(grp); c.fac = c.brand = c.roof = c.trim = c.prop = c.tree = c.via = c.pool = c.shed = c.ex = null; c.gp = c.gg = c.pg = null; c.group = grp;
     }
   }
+  // generator floodlights, flares and the like: always on at night whatever the district grid is doing.
+  // e = { x, y, z, type (glow tint), size, pool (radius m), pt (pool tint), pa (pool strength), i (light intensity), c (light colour) }
+  addEmitters(list) {
+    if (!list.length) return; const gp = [], gg = [], pool = new MB(), pg = [];
+    for (const e of list) {
+      gp.push(e.x, e.y, e.z); gg.push(-1, e.type ?? 1, e.size ?? 2.6);
+      if (e.pool) { const s = e.pool; pool.quad([e.x - s, 0.06, e.z - s], [e.x + s, 0.06, e.z - s], [e.x + s, 0.06, e.z + s], [e.x - s, 0.06, e.z + s], [0, 0], [1, 0], [1, 1], [0, 1], null, null, [0, 1, 0]); for (let k = 0; k < 6; k++) pg.push(-1, e.pt ?? e.type ?? 1, e.pa ?? 0.4); }
+      if (e.i) { const L = { x: e.x, y: e.y, z: e.z, did: -1, type: 0, i: e.i, c: e.c ?? 0xdfe8ff }; this.lamps.push(L); const k2 = Math.floor(e.x / 60) * 4096 + Math.floor(e.z / 60); let a = this.lampGrid.get(k2); if (!a) this.lampGrid.set(k2, (a = [])); a.push(L); }
+    }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(gp, 3)); g.setAttribute('aG', new THREE.Float32BufferAttribute(gg, 3)); g.computeBoundingSphere();
+    const pts = new THREE.Points(g, this.gfx.glow()); pts.renderOrder = 15; pts.frustumCulled = false; this.gfx.scene.add(pts);
+    if (!pool.empty) { const pm = pool.geometry(); pm.setAttribute('aG', new THREE.Float32BufferAttribute(pg, 3)); const m = new THREE.Mesh(pm, this.gfx.pools()); m.renderOrder = 5; m.frustumCulled = false; this.gfx.scene.add(m); }
+  }
   // ---------------------------------------------------------------- runtime
   setPower(did, on, instant = false) { this.powerT[did] = on ? 1 : 0; if (instant) this.power[did] = this.powerT[did]; }
   update(dt, px, pz) {
-    this.cullT -= dt;
+    this.cullT -= dt; if (this.litterField) this.litterField.update(px, pz);
     if (this.cullT <= 0) {               // distance culling of whole city chunks
       this.cullT = 0.3; const R = this.drawDist + CHUNK * 0.75; let n = 0;
       for (const [key, c] of this.chunks) { if (!c.group) continue; if (c.cx === undefined) { const [i, j] = key.split(',').map(Number); c.cx = (i + 0.5) * CHUNK; c.cz = (j + 0.5) * CHUNK; } const v = hyp(c.cx - px, c.cz - pz) < R; c.group.visible = v; n += v; }
@@ -356,9 +371,9 @@ export class World {
     // nearest powered street lamps become real lights
     if (this.gfx.U.uNight.value > 0.2) {
       const near = []; const gx = Math.floor(px / 60), gz = Math.floor(pz / 60);
-      for (let ax = -1; ax <= 1; ax++) for (let az = -1; az <= 1; az++) { const a = this.lampGrid.get((gx + ax) * 4096 + gz + az); if (a) for (const l of a) if (this.power[l.did] > 0.5) near.push(l); }
+      for (let ax = -1; ax <= 1; ax++) for (let az = -1; az <= 1; az++) { const a = this.lampGrid.get((gx + ax) * 4096 + gz + az); if (a) for (const l of a) if (l.did < 0 || this.power[l.did] > 0.5) near.push(l); }
       near.sort((a, b) => (a.x - px) ** 2 + (a.z - pz) ** 2 - ((b.x - px) ** 2 + (b.z - pz) ** 2));
-      const k = this.gfx.U.uNight.value; this.gfx.setLamps(near.slice(0, this.gfx.lamps.length).map((l) => ({ x: l.x, y: l.y - 0.3, z: l.z, i: (l.type ? 160 : 70) * k, c: l.type ? 0xffd9a8 : 0xffb060 })));
+      const k = this.gfx.U.uNight.value; this.gfx.setLamps(near.slice(0, this.gfx.lamps.length).map((l) => ({ x: l.x, y: l.y - 0.3, z: l.z, i: (l.i ?? (l.type ? 160 : 70)) * k, c: l.c ?? (l.type ? 0xffd9a8 : 0xffb060) })));
     } else this.gfx.setLamps([]);
   }
 }

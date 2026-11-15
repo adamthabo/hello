@@ -91,10 +91,26 @@ function charMaterial(gfx) {
         float fab_ = texture2D( uNoise, vBind.xy * 3.1 + vBind.zx * 1.7 ).r * 0.6 + texture2D( uNoise, vBind.zy * 9.0 ).g * 0.4;
         diffuseColor.rgb *= vPal * ( 0.9 + 0.2 * fab_ );`)
       .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = clamp( vMatP.x + ( fab_ - 0.5 ) * 0.12, 0.05, 1.0 );')
-      .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor = vMatP.y;');
+      .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor = vMatP.y;')
+      .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+        {
+          float fr_ = pow( 1.0 - clamp( dot( normal, normalize( vViewPosition ) ), 0.0, 1.0 ), 3.0 );
+          #if NUM_HEMI_LIGHTS > 0
+          totalEmissiveRadiance += hemisphereLights[ 0 ].skyColor * fr_ * 0.09;
+          #endif
+        }`);
   };
-  m.customProgramCacheKey = () => 'fx|char';
+  m.customProgramCacheKey = () => 'fx|char3';
   return m;
+}
+let BLOBG = null, BLOBM = null;
+function blobGeo() { if (!BLOBG) { BLOBG = new THREE.PlaneGeometry(1.5, 1.5); BLOBG.rotateX(-Math.PI / 2); } return BLOBG; }
+function blobMat() {
+  if (BLOBM) return BLOBM;
+  const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'), g = x.createRadialGradient(32, 32, 2, 32, 32, 31);
+  g.addColorStop(0, 'rgba(0,0,0,0.62)'); g.addColorStop(0.45, 'rgba(0,0,0,0.34)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.NoColorSpace;
+  return (BLOBM = new THREE.MeshBasicMaterial({ map: t, transparent: true, depthWrite: false, color: 0x000000, fog: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }));
 }
 let GUNMAT = null;
 function gunMaterial(gfx) {
@@ -138,6 +154,7 @@ export class Rig {
     this.mesh = new THREE.SkinnedMesh(charGeo(o), this.mat); this.mesh.castShadow = true; this.mesh.receiveShadow = true; this.mesh.frustumCulled = false;
     this.mesh.add(this.bones[0]); this.mesh.updateMatrixWorld(true); this.mesh.bind(new THREE.Skeleton(this.bones));
     this.root = new THREE.Group(); this.root.add(this.mesh); this.root.scale.setScalar(scale);
+    const bl = new THREE.Mesh(blobGeo(), blobMat()); bl.position.y = 0.03; bl.renderOrder = 4; bl.raycast = () => {}; this.root.add(bl); this.blob = bl;
     this.gunMesh = null; this.gunType = null; this.setGun(gun);
     this.ph = Math.random() * 6; this.aim = 0; this.cr = 0; this.kick = 0; this.hit = 0; this.dead = 0; this.spd = 0; this.rel = 0; this.t = Math.random() * 10; this.lean = 0;
     this.deadSide = Math.random() < 0.5 ? 1 : -1; this.legYaw = 0; this.back = 0; this.mx = 0; this.mz = 1; this.armed = 1; this.bob = 0;
