@@ -55,10 +55,11 @@ export class Enemy {
       if (G.pathN > 0 || !this.path) { G.pathN--; this.path = W.path(this.x, this.z, tx, tz, 3500) || [[tx, tz]]; this.pi = 0; this.gx = tx; this.gz = tz; this.repT = 1.2 + R() * 0.8; }
     }
     let wp = this.path[this.pi] || [tx, tz]; if (hyp(wp[0] - this.x, wp[1] - this.z) < 1.0 && this.pi < this.path.length - 1) wp = this.path[++this.pi];
+    if (this.det) { this.det.t -= dt; if (this.det.t <= 0 || hyp(this.det.x - this.x, this.det.z - this.z) < 0.6) this.det = null; else wp = [this.det.x, this.det.z]; }   // a step aside after getting stuck
     let dx = wp[0] - this.x, dz = wp[1] - this.z; const l = hyp(dx, dz) || 1; dx /= l; dz /= l;
     for (const e of G.en) { if (e === this || e.dead) continue; const ex = this.x - e.x, ez = this.z - e.z, ed = ex * ex + ez * ez; if (ed < 1.3 && ed > 1e-4) { const k = (1.3 - ed) * 0.9; dx += (ex / Math.sqrt(ed)) * k; dz += (ez / Math.sqrt(ed)) * k; } }
-    this.x += dx * speed * dt; this.z += dz * speed * dt; W.collide(this, 0.34); this.spd = speed; this.mvx = dx; this.mvz = dz;
-    this.stuckT += dt; if (this.stuckT > 1.2) { if (hyp(this.x - this.px, this.z - this.pz) < 0.35) { this.path = null; this.repT = 0; this.strafe = -this.strafe; } this.px = this.x; this.pz = this.z; this.stuckT = 0; }
+    W.slide(this, dx * speed * dt, dz * speed * dt, 0.34); this.spd = speed; this.mvx = dx; this.mvz = dz;
+    this.stuckT += dt; if (this.stuckT > 0.9) { if (hyp(this.x - this.px, this.z - this.pz) < 0.3) { this.path = null; this.repT = 0; this.strafe = -this.strafe; const f = W.findWalk(this.x, this.z, 1.5, 4, R, 12); if (f) this.det = { x: f[0], z: f[1], t: 1.1 }; } this.px = this.x; this.pz = this.z; this.stuckT = 0; }
     return false;
   }
   pickCover(ideal, rx = this.x, rz = this.z) {
@@ -115,7 +116,7 @@ export class Enemy {
       if (this.stun > 0) { this.stun -= dt; faceT = tA; }
       else if (this.mel > 0) {                    // a strike: wind up, step in, swing the rifle butt, recover
         const m0 = this.mel; this.mel += dt / 0.74; faceT = tA;
-        if (this.mel > 0.3 && this.mel < 0.5 && d > 1.15) { this.x += (dx / d) * 2.4 * dt; this.z += (dz / d) * 2.4 * dt; W.collide(this, 0.32); speed = 2.4; }
+        if (this.mel > 0.3 && this.mel < 0.5 && d > 1.15) { W.slide(this, (dx / d) * 2.4 * dt, (dz / d) * 2.4 * dt, 0.32); speed = 2.4; }
         if (m0 < 0.46 && this.mel >= 0.46) {
           if (!P.dead && d < 2.3 && Math.abs(angDiff(this.yaw, tA)) < 1.1) { G.hurt(SYS.enemyDmg(this.lvl) * 2.6 * (1 + this.tier * 0.25), this.x, this.z); G.knock(dx / d, dz / d, 6); G.audio.playAt('melee', this.x, this.z, 0.9); }
           else G.audio.playAt('melee', this.x, this.z, 0.25, 1.6);

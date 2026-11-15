@@ -159,7 +159,7 @@ vec3 wN_ = normalize( vWNrm );
   #endif
   metalnessFactor = gls_ * 0.5;
   float fl_ = floor( ( vWPos.y - 4.4 ) / uFac.y );
-  vec2 cell_ = vec2( floor( vMapUv.x * uFac.x ), fl_ ) + vFx.y * 217.0;
+  vec2 cell_ = vec2( floor( vMapUv.x * uFac.x ), fl_ ) + mod( floor( vFx.y * 217.0 + 0.5 ), 997.0 );   // snapped: an interpolated seed must not shimmer
   float pw_ = uPower[ int( vFx.x + 0.5 ) ];
   float h_ = hash21( cell_ );
   float frac_ = mix( 0.04, 0.44, pw_ );

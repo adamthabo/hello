@@ -66,11 +66,11 @@ export class Life {
     const calm = (x, z, d = 30) => !combat.some((p) => hyp(p[0] - x, p[1] - z) < d);
     // fire barrels beside building fronts, with a ring of people
     this.barrels = []; const bm = [];
-    for (let tries = 0; tries < 3000 && this.barrels.length < 90; tries++) {
+    for (let tries = 0; tries < 3000 && this.barrels.length < 26; tries++) {
       const b = map.builds[(r() * map.builds.length) | 0], [x1, z1, x2, z2] = b, L = hyp(x2 - x1, z2 - z1); if (L < 8) continue;
       const t = 0.2 + r() * 0.6, ox = (z2 - z1) / L, oz = -(x2 - x1) / L, x = x1 + (x2 - x1) * t + ox * 3.2, z = z1 + (z2 - z1) * t + oz * 3.2;
       if (!W.walkable(x, z) || !calm(x, z) || this.barrels.some((q) => hyp(q.x - x, q.z - z) < 40)) continue;
-      const n = 2 + ((r() * 3) | 0), ppl = [];
+      const n = 2 + ((r() * 2) | 0), ppl = [];
       for (let k = 0; k < n; k++) { const a = (k / n) * 6.283 + r() * 0.5, d = 1.05 + r() * 0.25; ppl.push({ x: x + Math.cos(a) * d, z: z + Math.sin(a) * d, yaw: Math.atan2(-Math.cos(a), -Math.sin(a)), look: W.district(x, z) === 0 && r() < 0.3 ? 'friend' : 'civ', kind: 'warm' }); }
       this.barrels.push({ x, z, ppl, emit: 0 }); bm.push([x, z]);
     }
@@ -80,22 +80,25 @@ export class Life {
     for (const b of this.barrels) for (const p of b.ppl) this.agents.push({ ...p, home: p, rig: null });
     // queues at the water pumps
     for (const s of map.sites) if (s.k === 'pump' && W.inCore(s.p[0], s.p[1])) {
-      const a = r() * 6.283, n = 3 + ((r() * 3) | 0);
+      const a = r() * 6.283, n = 2 + ((r() * 2) | 0);
       for (let k = 0; k < n; k++) { const x = s.p[0] + Math.cos(a) * (1.6 + k * 0.85), z = s.p[1] + Math.sin(a) * (1.6 + k * 0.85); if (W.walkable(x, z)) this.agents.push({ x, z, yaw: Math.atan2(-Math.cos(a), -Math.sin(a)), look: 'civ', kind: 'queue', rig: null }); }
     }
     // pavement walkers on streets inside the field of play
     this.walks = [];
     for (const st of map.streets) { if (!(st.cw > 0)) continue; for (let i = 0; i < st.p.length - 1; i++) { const a = st.p[i], b = st.p[i + 1]; if (hyp(b[0] - a[0], b[1] - a[1]) > 25 && W.inCore(a[0], a[1]) && W.inCore(b[0], b[1])) this.walks.push({ a, b, off: st.cw / 2 + 1.8 + (st.w - st.cw) * 0.12 }); } }
-    for (let k = 0; k < 42; k++) this.agents.push({ kind: 'walk', look: 'civ', rig: null, seg: null, x: 0, z: 0, yaw: 0, sp: 1.15 + r() * 0.4 });
+    for (let k = 0; k < 7; k++) this.agents.push({ kind: 'walk', look: 'civ', rig: null, seg: null, x: 0, z: 0, yaw: 0, sp: 0.95 + r() * 0.35 });   // a few scavengers, not a crowd
     // people standing and talking in front of the houses
-    for (let tries = 0; tries < 4000 && this.agents.filter((a) => a.kind === 'chat').length < 150; tries++) {
+    for (let tries = 0; tries < 4000 && this.agents.filter((a) => a.kind === 'chat').length < 16; tries++) {
       const b = map.builds[(r() * map.builds.length) | 0], [x1, z1, x2, z2] = b, L = hyp(x2 - x1, z2 - z1); if (L < 6) continue;
       const t = r(), ox = (z2 - z1) / L, oz = -(x2 - x1) / L, x = x1 + (x2 - x1) * t + ox * 2.0, z = z1 + (z2 - z1) * t + oz * 2.0;
       if (!W.walkable(x, z) || !calm(x, z, 25)) continue; const n = 2 + ((r() * 2) | 0), a0 = r() * 6.283;
       for (let k = 0; k < n; k++) { const a = a0 + (k / n) * 6.283, d = 0.55 + r() * 0.2, px = x + Math.cos(a) * d, pz = z + Math.sin(a) * d; this.agents.push({ kind: 'chat', look: 'civ', rig: null, x: px, z: pz, yaw: Math.atan2(x - px, z - pz), home: { x: px, z: pz } }); }
     }
     // Lotsen patrolling the island
-    const hub = map.hub; for (let k = 0; k < 4; k++) this.agents.push({ kind: 'patrol', look: 'friend', rig: null, cx: hub[0], cz: hub[1], rad: 14 + k * 5, ang: k * 1.6, x: hub[0], z: hub[1], yaw: 0, sp: 1.35 });
+    const hub = map.hub; for (let k = 0; k < 4; k++) {
+      const loop = []; for (let q = 0; q < 6; q++) { const an = k * 1.6 + (q / 6) * 6.2832, f = W.findWalk(hub[0] + Math.cos(an) * (14 + k * 5), hub[1] + Math.sin(an) * (14 + k * 5), 0, 4, r, 20); if (f) loop.push(f); }
+      if (loop.length >= 3) this.agents.push({ kind: 'patrol', look: 'friend', rig: null, loop, li: 0, x: loop[0][0], z: loop[0][1], yaw: 0, sp: 1.35 });
+    }
     // skaters on the Spree beside the island, with lanterns
     this.skate = []; for (let tries = 0; tries < 400 && this.skate.length < 2; tries++) { const a = r() * 6.283, d = 70 + r() * 160, x = hub[0] + Math.cos(a) * d, z = hub[1] + Math.sin(a) * d; if (this._water(x, z) && this._water(x + 7, z) && this._water(x - 7, z) && this._water(x, z + 7) && this._water(x, z - 7)) this.skate.push({ x, z }); }
     for (const s of this.skate) for (let k = 0; k < 4; k++) this.agents.push({ kind: 'skate', look: 'civ', rig: null, cx: s.x, cz: s.z, rad: 3 + k * 1.3, ang: k * 1.7, x: s.x, z: s.z, yaw: 0, sp: 2.2 + r() * 0.8, y: -2.15 });
@@ -239,9 +242,16 @@ export class Life {
       }
     }
     for (const a of this.agents) {
-      if (a.flee > 0) { a.flee -= dt; const dx = a.x - P.x, dz = a.z - P.z, l = hyp(dx, dz) || 1; const nx = a.x + (dx / l) * 4.6 * dt, nz = a.z + (dz / l) * 4.6 * dt; if (W.walkable(nx, nz)) { a.x = nx; a.z = nz; } a.yaw = dampAng(a.yaw, Math.atan2(dx, dz), 8, dt); a.spd = 4.6; if (a.flee <= 0 && a.kind !== 'walk') { a.x = a.home ? a.home.x : a.x; a.z = a.home ? a.home.z : a.z; } }
-      else if (a.kind === 'walk' && a.seg) { const s = a.seg, ex = s.tx - a.x, ez = s.tz - a.z, l = hyp(ex, ez); if (l < 1) { a.dir = -a.dir; const t = a.dir > 0 ? s.b : s.a; s.tx = t[0] + s.nx * s.off; s.tz = t[1] + s.nz * s.off; } else { a.x += (ex / l) * a.sp * dt; a.z += (ez / l) * a.sp * dt; a.yaw = dampAng(a.yaw, Math.atan2(ex, ez), 5, dt); } a.spd = a.sp; }
-      else if (a.kind === 'patrol' || a.kind === 'skate') { a.ang += (a.sp / a.rad) * dt * (a.kind === 'skate' ? 1 : 0.6); const nx = a.cx + Math.cos(a.ang) * a.rad, nz = a.cz + Math.sin(a.ang) * a.rad; a.yaw = Math.atan2(nx - a.x, nz - a.z); a.x = nx; a.z = nz; a.spd = a.kind === 'skate' ? a.sp * 0.6 : a.sp; }
+      if (a.flee > 0) { a.flee -= dt; const dx = a.x - P.x, dz = a.z - P.z, l = hyp(dx, dz) || 1; const ox = a.x, oz = a.z; W.slide(a, (dx / l) * 4.6 * dt, (dz / l) * 4.6 * dt, 0.3); if (!W.walkable(a.x, a.z)) { a.x = ox; a.z = oz; } a.yaw = dampAng(a.yaw, Math.atan2(a.x - ox || dx, a.z - oz || dz), 8, dt); a.spd = 4.6; if (a.flee <= 0 && a.kind !== 'walk') { a.x = a.home ? a.home.x : a.x; a.z = a.home ? a.home.z : a.z; } }
+      else if (a.kind === 'walk' && a.seg) {                 // scavengers: walk somewhere, stop and look around, walk on
+        if (!a.path || a.pi >= a.path.length) { a.spd = 0; a.wait = (a.wait ?? 0) - dt; if (a.wait <= 0) { const f = W.findWalk(a.x, a.z, 16, 50, Math.random, 16); a.path = f ? W.path(a.x, a.z, f[0], f[1], 2500) : null; a.pi = 0; a.wait = 2 + Math.random() * 6; } }
+        else { const wp = a.path[a.pi], ex = wp[0] - a.x, ez = wp[1] - a.z, l = hyp(ex, ez); if (l < 0.7) a.pi++; else { W.slide(a, (ex / l) * a.sp * dt, (ez / l) * a.sp * dt, 0.3); a.yaw = dampAng(a.yaw, Math.atan2(ex, ez), 5, dt); a.spd = a.sp; } }
+      }
+      else if (a.kind === 'patrol' && a.loop) {
+        if (!a.path || a.pi >= a.path.length) { a.li = (a.li + 1) % a.loop.length; const t = a.loop[a.li]; a.path = W.path(a.x, a.z, t[0], t[1], 2500) || [t]; a.pi = 0; }
+        const wp = a.path[a.pi], ex = wp[0] - a.x, ez = wp[1] - a.z, l = hyp(ex, ez); if (l < 0.7) a.pi++; else { W.slide(a, (ex / l) * a.sp * dt, (ez / l) * a.sp * dt, 0.3); a.yaw = dampAng(a.yaw, Math.atan2(ex, ez), 5, dt); } a.spd = a.sp;
+      }
+      else if (a.kind === 'skate') { a.ang += (a.sp / a.rad) * dt * (a.kind === 'skate' ? 1 : 0.6); const nx = a.cx + Math.cos(a.ang) * a.rad, nz = a.cz + Math.sin(a.ang) * a.rad; a.yaw = Math.atan2(nx - a.x, nz - a.z); a.x = nx; a.z = nz; a.spd = a.kind === 'skate' ? a.sp * 0.6 : a.sp; }
       else a.spd = 0;
       if (shot && a.kind !== 'patrol' && a.kind !== 'skate' && !a.flee && hyp(a.x - P.x, a.z - P.z) < 45) a.flee = 7 + Math.random() * 3;
       if (!a.rig) continue;
@@ -258,7 +268,7 @@ export class Life {
       const cy = this.G.cam.yaw, fw = ((x0 - P.x) * Math.sin(cy) + (z0 - P.z) * Math.cos(cy)) / d; if (fw < 0.15 && Math.random() < 0.75) continue;
       const L = hyp(s.b[0] - s.a[0], s.b[1] - s.a[1]), nx = -(s.b[1] - s.a[1]) / L, nz = (s.b[0] - s.a[0]) / L, sd = Math.random() < 0.5 ? 1 : -1, x = x0 + nx * s.off * sd, z = z0 + nz * s.off * sd;
       if (!this.W.walkable(x, z)) continue;
-      a.x = x; a.z = z; a.dir = Math.random() < 0.5 ? 1 : -1; const tg = a.dir > 0 ? s.b : s.a; a.seg = { a: s.a, b: s.b, nx: nx * sd, nz: nz * sd, off: s.off, tx: tg[0] + nx * sd * s.off, tz: tg[1] + nz * sd * s.off }; a.yaw = Math.atan2(a.seg.tx - x, a.seg.tz - z); a.flee = 0; return;
+      a.x = x; a.z = z; a.seg = s; a.path = null; a.wait = Math.random() * 3; a.yaw = Math.random() * 6.2832; a.flee = 0; return;
     }
   }
   _rig(a) {

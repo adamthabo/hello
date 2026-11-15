@@ -35,26 +35,21 @@ export class Route {
     if (!this.D || this.D.length !== N) this.D = new Int32Array(N);
     let e = W.gi(tx, tz); if (e < 0) { this.F = null; return; }
     if (!W.walk[e]) { let f = -1; for (let r = 1; r < 8 && f < 0; r++) for (let dz = -r; dz <= r && f < 0; dz++) for (let dx = -r; dx <= r; dx++) { const j = e + dz * gw + dx; if (j >= 0 && j < N && W.walk[j]) { f = j; break; } } if (f < 0) { this.F = null; return; } e = f; }
-    this.D.fill(INF); this.D[e] = 0; const B = []; for (let i = 0; i < 15; i++) B.push([]); B[0].push(e);
+    this.D.fill(INF); this.D[e] = 0; const B = []; for (let i = 0; i < 64; i++) B.push([]); B[0].push(e);
     this.F = { tx, tz, e, B, cur: 0, pend: 1, done: false, x0: Math.max(1, Math.floor((c[0] - b[0]) / 2)), x1: Math.min(gw - 2, Math.floor((c[2] - b[0]) / 2)), z0: Math.max(1, Math.floor((c[1] - b[1]) / 2)), z1: Math.min(gh - 2, Math.floor((c[3] - b[1]) / 2)) };
   }
   step(budget) {
-    const F = this.F; if (!F || F.done) return; const D = this.D, wk = this.W.walk, gw = this.W.gw, B = F.B, x0 = F.x0, x1 = F.x1, z0 = F.z0, z1 = F.z1; let cur = F.cur, pend = F.pend, n = 0;
+    // Dijkstra with a bucket queue; cells blocked only by props (cars, barriers) stay passable at a high price, so the route goes around them
+    const F = this.F; if (!F || F.done) return; const D = this.D, wk = this.W.walk, nv = this.W.nav || wk, gw = this.W.gw, B = F.B, x0 = F.x0, x1 = F.x1, z0 = F.z0, z1 = F.z1; let cur = F.cur, pend = F.pend, n = 0;
+    const rel = (j, w) => { const nd = cur + w + (nv[j] === 1 ? 0 : 40); if (nd < D[j]) { D[j] = nd; B[nd & 63].push(j); pend++; } };
     while (pend > 0 && n < budget) {
-      const bk = B[cur % 15];
+      const bk = B[cur & 63];
       while (bk.length && n < budget) {
         const i = bk.pop(); pend--; if (D[i] !== cur) continue; n++;
         const cx = i % gw, cz = (i - cx) / gw, l = cx > x0 && wk[i - 1] === 1, r = cx < x1 && wk[i + 1] === 1, u = cz > z0 && wk[i - gw] === 1, d = cz < z1 && wk[i + gw] === 1;
-        let j, nd = cur + 10;
-        if (l && nd < D[j = i - 1]) { D[j] = nd; B[nd % 15].push(j); pend++; }
-        if (r && nd < D[j = i + 1]) { D[j] = nd; B[nd % 15].push(j); pend++; }
-        if (u && nd < D[j = i - gw]) { D[j] = nd; B[nd % 15].push(j); pend++; }
-        if (d && nd < D[j = i + gw]) { D[j] = nd; B[nd % 15].push(j); pend++; }
-        nd = cur + 14;
-        if (l && u && wk[j = i - gw - 1] === 1 && nd < D[j]) { D[j] = nd; B[nd % 15].push(j); pend++; }
-        if (r && u && wk[j = i - gw + 1] === 1 && nd < D[j]) { D[j] = nd; B[nd % 15].push(j); pend++; }
-        if (l && d && wk[j = i + gw - 1] === 1 && nd < D[j]) { D[j] = nd; B[nd % 15].push(j); pend++; }
-        if (r && d && wk[j = i + gw + 1] === 1 && nd < D[j]) { D[j] = nd; B[nd % 15].push(j); pend++; }
+        if (l) rel(i - 1, 10); if (r) rel(i + 1, 10); if (u) rel(i - gw, 10); if (d) rel(i + gw, 10);
+        if (l && u && wk[i - gw - 1] === 1) rel(i - gw - 1, 14); if (r && u && wk[i - gw + 1] === 1) rel(i - gw + 1, 14);
+        if (l && d && wk[i + gw - 1] === 1) rel(i + gw - 1, 14); if (r && d && wk[i + gw + 1] === 1) rel(i + gw + 1, 14);
       }
       if (!bk.length) cur++;
     }

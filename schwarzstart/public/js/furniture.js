@@ -2,6 +2,7 @@
 // traffic lights, barricades around hostile sites and the (dark) Christmas markets that light up with the district's power.
 import { rng, hyp, imagePixels } from './util.js';
 import { C, F_COVER, F_LOW } from './geom.js';
+import { vehicle, dressKerbs } from './dress.js';
 
 const POSTER = [0xd7cfb8, 0xb33a2c, 0x2b4a7a, 0xe0b23a, 0x262626, 0xe8e2d5, 0x6a8a5a, 0xc76a3a, 0x8a3060];
 
@@ -15,7 +16,7 @@ export function buildFurniture(W, im) {
   const take = (x, z, r = 1) => { const k = key(x, z); let a = occ.get(k); if (!a) occ.set(k, (a = [])); a.push([x, z, r]); };
   for (const l of map.lamps) take(l[0], l[1], 0.6);
   for (const t of map.trees) take(t[0], t[1], 0.9);
-  for (const c of map.cars) take(c[0], c[1], 2.6);
+  for (const v of W.vehicles || []) take(v.x, v.z, v.r);
   const ok = (x, z, r) => W.walkRaw(x, z) && road(x, z) < -0.35 && solid(x, z) < -1.1 && free(x, z, r);
   const P = (x, z) => W.ch(x, z).prop;
   const dk = C(0x2a2d30), green = C(0x2e3d33), conc = C(0x9a968e, 0.95), steel = C(0x5a6066);
@@ -82,11 +83,12 @@ export function buildFurniture(W, im) {
       }
     }
   }
+  try { W.dressed = dressKerbs(W, { P, ok, take, free, road, solid, park: (x, z) => sd(m1, 2, x, z) }); } catch (e) { console.warn('kerbs', e); }
   // ---------- scaffolding on a few facades ----------
   let nScaf = 0;
   for (const bd of map.builds) {
     const [x1, z1, x2, z2, , h, , , did, seed] = bd, L = hyp(x2 - x1, z2 - z1);
-    if (L < 12 || h < 14 || (seed * 7919) % 100 > 3) continue;
+    if (L < 12 || h < 14 || (seed * 7919) % 100 > (W.inCore(x1, z1) ? 7 : 3)) continue;
     const ox = (z2 - z1) / L, oz = -(x2 - x1) / L, ex = (x2 - x1) / L, ez = (z2 - z1) / L, mx = (x1 + x2) / 2 + ox * 2.2, mz = (z1 + z2) / 2 + oz * 2.2;
     if (!W.walkRaw(mx, mz)) continue;
     const mb = P(mx, mz), top = Math.min(h - 1.5, 22), rot = Math.atan2(-ez, ex), r = rng(seed), net = r() < 0.6, netCol = C([0x2f4a3a, 0x3a4250, 0xd0d4d6][(r() * 3) | 0], 0.9);
@@ -107,12 +109,12 @@ export function buildFurniture(W, im) {
       const a = r() * 6.283, d = 7 + r() * 13, x = s.p[0] + Math.cos(a) * d, z = s.p[1] + Math.sin(a) * d;
       if (!W.walkRaw(x, z) || solid(x, z) > -2 || !free(x, z, 2.2)) continue;
       const rot = a + Math.PI / 2 + (r() - 0.5) * 0.6, cs = Math.cos(rot), sn = -Math.sin(rot), mb = P(x, z), q = r();
-      if (q < 0.45) { mb.box(x, 0, z, 3.0, 0.88, 0.62, rot, C(0x9a968e, 0.8 + r() * 0.3), { w1: 0.24 }); W.addBox(x, z, cs, sn, 3.0, 0.62, 0.88, F_COVER | F_LOW); }
+      if (q < 0.45) { mb.box(x, 0, z, 3.0, 1.06, 0.62, rot, C(0x9a968e, 0.8 + r() * 0.3), { w1: 0.24 }); W.addBox(x, z, cs, sn, 3.0, 0.62, 1.06, F_COVER | F_LOW); }
       else if (q < 0.8) {
         const sb = C(0x8a7a5a, 0.8 + r() * 0.2);
-        for (let row = 0; row < 3; row++) for (let k = 0; k < 5 - row % 2; k++) { const u = (k - (4 - row % 2) / 2) * 0.62, px = x + cs * u, pz = z + sn * u; mb.box(px, row * 0.26, pz, 0.6, 0.27, 0.42, rot + (r() - 0.5) * 0.15, sb, { l1: 0.5, w1: 0.32 }); }
-        W.addBox(x, z, cs, sn, 3.0, 0.45, 0.8, F_COVER | F_LOW);
-      } else { W.car(mb, x, z, rot, 0, (r() * 1000) | 0, { burnt: true }); }
+        for (let row = 0; row < 4; row++) for (let k = 0; k < 5 - row % 2; k++) { const u = (k - (4 - row % 2) / 2) * 0.62, px = x + cs * u, pz = z + sn * u; mb.box(px, row * 0.26, pz, 0.6, 0.27, 0.42, rot + (r() - 0.5) * 0.15, sb, { l1: 0.5, w1: 0.32 }); }
+        W.addBox(x, z, cs, sn, 3.0, 0.45, 1.05, F_COVER | F_LOW);
+      } else { const d = vehicle(mb, x, z, rot, r() < 0.5 ? 'sedan' : 'hatch', (r() * 1000) | 0, { burnt: true }); W.addBox(x, z, cs, sn, d[0], d[1], 1.3, F_COVER | F_LOW); }
       take(x, z, 2.2); i++;
     }
   }

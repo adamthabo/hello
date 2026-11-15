@@ -153,7 +153,7 @@ export class Game {
       const hitWall = W.collide(P, PR); if (dt > 0 && hitWall) { P.vx = (P.x - ox) / dt; P.vz = (P.z - oz) / dt; }
       speed = hyp(P.vx, P.vz);
       if (P.aim) P.yaw = dampAng(P.yaw, c.yaw, 18, dt); else if (speed > 0.5) P.yaw = dampAng(P.yaw, Math.atan2(P.vx, P.vz), P.sprint ? 8 : 11, dt);
-      if (coverKey || (this.autoAim && hitWall && this.combatT > 0 && ml > 0.6 && !P.aim)) this.enterCover(mx || fx, mz || fz, coverKey);
+      if (coverKey) this.enterCover(mx || fx, mz || fz, true); else if (this.autoAim && hitWall && this.combatT > 0 && ml > 0.6 && !P.aim && !P.sprint) this.enterCover(mx, mz, false, true);
     }
     const b = W.core, bm = W.coreMargin; P.x = clamp(P.x, b[0] + bm[0], b[2] - bm[2]); P.z = clamp(P.z, b[1] + bm[1], b[3] - bm[3]);
     P.spd = speed; P.moving = speed > 0.5 ? 1 : 0;
@@ -184,8 +184,11 @@ export class Game {
     rig.pose({ speed, melee: P.mel, mx: lml ? lvx * cyw - lvz * syw : 0, mz: lml ? lvx * syw + lvz * cyw : 1, aim: !(P.mel > 0) && (P.aim || this.t - P.lastShot < 0.5), pitch: c.pitch, crouch: P.crouch, reload: P.relT > 0 ? 1 - P.relT / P.relD : 0, roll: P.roll, lean: P.st === 'cover' && P.peek && !P.cov.low ? (P.covDir || 1) * -0.5 : 0 }, dt);
     rig.root.updateMatrixWorld(true);
   }
-  enterCover(dx, dz, forced) {
-    const P = this.P, l = hyp(dx, dz) || 1, cv = this.world.cover(P.x, P.z, forced ? 2.2 : 0.9, dx / l, dz / l); if (!cv || cv.len < 0.9) return false;
+  // the nearest hostile that knows where you are: cover is picked to put something solid between you and it
+  threat() { let best = null, bd = 60; for (const e of this.en) { if (e.dead || !e.aware || e.isRemote) continue; const d = hyp(e.x - this.P.x, e.z - this.P.z); if (d < bd) { bd = d; best = e; } } return best; }
+  enterCover(dx, dz, forced, auto) {
+    const P = this.P, l = hyp(dx, dz) || 1, th = this.threat(), cv = this.world.cover(P.x, P.z, forced ? 2.2 : 0.9, dx / l, dz / l, th); if (!cv || cv.len < 0.9) return false;
+    if (auto && ((cv.s.f & F_WALL) || !th || cv.nx * (th.x - cv.x) + cv.nz * (th.z - cv.z) > -0.5)) return false;   // bumping into things only takes cover behind real cover from a real threat
     P.st = 'cover'; P.cov = cv; P.covT = 0; P.awayT = 0; P.covDir = 1; this.audio.play('cover', 0.35); return true;
   }
   leaveCover() { const P = this.P; if (P.st === 'cover') { P.st = 'free'; P.cov = null; P.peek = false; } }

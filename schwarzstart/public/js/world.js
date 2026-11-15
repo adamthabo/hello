@@ -4,6 +4,7 @@ import { rng, clamp, hyp, imagePixels } from './util.js';
 import { buildLandmark } from './landmarks.js';
 import { buildFurniture } from './furniture.js';
 import { Litter } from './litter.js';
+import { placeTraffic, dressFacade } from './dress.js';
 import { MB, C, pip, F_COVER, F_LOW, F_WALL, F_SOFT } from './geom.js';
 
 export const CHUNK = 250;
@@ -25,7 +26,7 @@ export class World {
     for (let i = 0; i < this.dist.length; i++) this.dist[i] = di.data[i * 4];
     this.mask1 = gfx.maskTexture(im.mask1); this.mask2 = gfx.maskTexture(im.mask2);
     this.power = new Float32Array(16); this.powerT = new Float32Array(16);
-    this.F = map.frames; this._im = im; this.core = CORE; this.coreMargin = [2.5, 32, 32, 2.5]; this.drawDist = gfx.q.draw || 900; this.cullT = 0;
+    this.F = map.frames; this._im = im; this.core = CORE; this.coreMargin = [2.5, 32, 32, 2.5]; this.drawDist = gfx.q.draw || 900; this.detDist = gfx.tier === 'low' ? 150 : gfx.tier === 'mid' ? 210 : 340; this.cullT = 0;
   }
   fr(name, a, b) { const f = this.F[name]; return [f.o[0] + a * f.u[0] + b * f.v[0], f.o[1] + a * f.u[1] + b * f.v[1]]; }
 
@@ -33,10 +34,11 @@ export class World {
   addSeg(x1, z1, x2, z2, h, flags = 0, y0 = 0, ref = null) {
     const s = { x1, z1, x2, z2, h, y0, f: flags, r: 0, st: 0, ref, off: false }; const i = this.segs.push(s) - 1; this._ins(i, Math.min(x1, x2), Math.min(z1, z2), Math.max(x1, x2), Math.max(z1, z2)); return s;
   }
-  addCircle(x, z, r, h, flags = 0, ref = null) { const s = { x1: x, z1: z, x2: x, z2: z, h, y0: 0, f: flags, r, st: 0, ref, off: false }; const i = this.segs.push(s) - 1; this._ins(i, x - r, z - r, x + r, z + r); return s; }
+  addCircle(x, z, r, h, flags = 0, ref = null) { const s = { x1: x, z1: z, x2: x, z2: z, h, y0: 0, f: flags, r, st: 0, ref, off: false }; const i = this.segs.push(s) - 1; this._ins(i, x - r, z - r, x + r, z + r); (this.circs || (this.circs = [])).push(s); return s; }
   addBox(cx, cz, ax, az, l, w, h, flags = 0, ref = null) {
+    (this.boxes || (this.boxes = [])).push({ cx, cz, ax, az, l, w, h, f: flags });
     const bx = -az, bz = ax, hl = l / 2, hw = w / 2, p = [[-hl, -hw], [hl, -hw], [hl, hw], [-hl, hw]].map(([a, b]) => [cx + a * ax + b * bx, cz + a * az + b * bz]), out = [];
-    for (let i = 0; i < 4; i++) out.push(this.addSeg(p[i][0], p[i][1], p[(i + 1) % 4][0], p[(i + 1) % 4][1], h, flags, 0, ref));
+    for (let i = 0; i < 4; i++) { const sg = this.addSeg(p[i][0], p[i][1], p[(i + 1) % 4][0], p[(i + 1) % 4][1], h, flags, 0, ref); sg.box = 1; out.push(sg); }
     return out;
   }
   _ins(i, x0, z0, x1, z1) {
@@ -56,6 +58,15 @@ export class World {
       }
     }
     return hit;
+  }
+  // move a body by (dx,dz), sliding along whatever it runs into instead of grinding against it
+  slide(p, dx, dz, r) {
+    const ox = p.x, oz = p.z; p.x += dx; p.z += dz; const hx = p.x, hz = p.z;
+    if (!this.collide(p, r)) return false;
+    const want = Math.hypot(dx, dz), px = p.x - hx, pz = p.z - hz, pl = Math.hypot(px, pz); if (want < 1e-5 || pl < 1e-5) return true;
+    const got = ((p.x - ox) * dx + (p.z - oz) * dz) / want, lost = want - Math.max(0, got); if (lost <= want * 0.15) return true;
+    const nx = px / pl, nz = pz / pl, tx = -nz, tz = nx, sg = tx * dx + tz * dz >= 0 ? 1 : -1;
+    p.x += tx * sg * lost * 0.9; p.z += tz * sg * lost * 0.9; this.collide(p, r); return true;
   }
   // 3D ray against the 2.5D world. Returns {t, s, x, y, z, nx, nz} for the nearest hit within maxT, or null.
   ray(ox, oy, oz, dx, dy, dz, maxT, skipLow = false) {
@@ -85,7 +96,7 @@ export class World {
   }
   los(ax, ay, az, bx, by, bz) { const dx = bx - ax, dy = by - ay, dz = bz - az, l = Math.hypot(dx, dy, dz); if (l < 0.01) return true; const h = this.ray(ax, ay, az, dx / l, dy / l, dz / l, l - 0.05); return !h || h.ground; }
   // nearest cover edge to a point: {s, x, z, nx, nz, low, t}
-  cover(x, z, maxD, fx = 0, fz = 0) {
+  cover(x, z, maxD, fx = 0, fz = 0, th = null) {
     const c = this.cell; let best = null, bd = maxD * maxD; const st = ++this.stamp;
     for (let gx = Math.floor((x - maxD) / c); gx <= Math.floor((x + maxD) / c); gx++) for (let gz = Math.floor((z - maxD) / c); gz <= Math.floor((z + maxD) / c); gz++) {
       const a = this.grid.get(gx * 4096 + gz); if (!a) continue;
@@ -95,6 +106,7 @@ export class World {
         const qx = s.x1 + dx * t, qz = s.z1 + dz * t, ex = x - qx, ez = z - qz; let d2 = ex * ex + ez * ez;
         const l = Math.sqrt(l2); let nx = -dz / l, nz = dx / l; if (nx * ex + nz * ez < 0) { nx = -nx; nz = -nz; }
         if (fx || fz) d2 -= (-(nx * fx + nz * fz)) * 0.8;           // prefer cover the character is facing
+        if (th && nx * (th.x - qx) + nz * (th.z - qz) > 0) d2 += 6;   // the threat is on our side of it: useless
         if (d2 < bd) { bd = d2; best = { s, x: qx, z: qz, nx, nz, low: !!(s.f & F_LOW), t, len: l, dx: dx / l, dz: dz / l }; }
       }
     }
@@ -112,7 +124,20 @@ export class World {
   gi(x, z) { const gx = Math.floor((x - this.b[0]) / 2), gz = Math.floor((z - this.b[1]) / 2); return gx < 0 || gz < 0 || gx >= this.gw || gz >= this.gh ? -1 : gz * this.gw + gx; }
   walkRaw(x, z) { const i = this.gi(x, z); return i >= 0 && this.walk[i] === 1; }
   inCore(x, z) { const c = this.core; return x >= c[0] && x <= c[2] && z >= c[1] && z <= c[3]; }
-  walkable(x, z) { return this.inCore(x, z) && this.walkRaw(x, z); }
+  walkable(x, z) { const i = this.gi(x, z); return i >= 0 && this.inCore(x, z) && (this.nav || this.walk)[i] === 1; }
+  // the walk grid with every car, barrier, kiosk and stall cut out of it, so people path around things instead of into them
+  buildNav() {
+    const gw = this.gw, gh = this.gh, b = this.b, nav = new Uint8Array(this.walk), M = 0.45;
+    const cellsIn = (x0, z0, x1, z1, fn) => { const gx0 = Math.max(0, Math.floor((x0 - b[0]) / 2)), gx1 = Math.min(gw - 1, Math.floor((x1 - b[0]) / 2)), gz0 = Math.max(0, Math.floor((z0 - b[1]) / 2)), gz1 = Math.min(gh - 1, Math.floor((z1 - b[1]) / 2)); for (let gz = gz0; gz <= gz1; gz++) for (let gx = gx0; gx <= gx1; gx++) fn(gz * gw + gx, b[0] + gx * 2 + 1, b[1] + gz * 2 + 1); };
+    for (const B of this.boxes || []) {
+      if (B.h < 0.5 || (B.f & F_SOFT)) continue; const hl = B.l / 2 + M, hw = B.w / 2 + M, r = Math.hypot(hl, hw);
+      cellsIn(B.cx - r, B.cz - r, B.cx + r, B.cz + r, (i, x, z) => { const dx = x - B.cx, dz = z - B.cz, u = dx * B.ax + dz * B.az, v = -dx * B.az + dz * B.ax; if (Math.abs(u) <= hl && Math.abs(v) <= hw) nav[i] = 0; });
+    }
+    for (const c of this.circs || []) { if (c.r < 0.45 || c.h < 0.5 || (c.f & F_SOFT)) continue; const rr = c.r + M; cellsIn(c.x1 - rr, c.z1 - rr, c.x1 + rr, c.z1 + rr, (i, x, z) => { if (Math.hypot(x - c.x1, z - c.z1) <= rr) nav[i] = 0; }); }
+    // free-standing walls and fences (not building fronts): a line of blocked cells
+    for (const s of this.segs) { if (s.r > 0 || (s.f & (F_WALL | F_SOFT)) || s.h < 0.5 || s.box) continue; const L = Math.hypot(s.x2 - s.x1, s.z2 - s.z1), n = Math.ceil(L / 0.8); for (let k = 0; k <= n; k++) { const i = this.gi(s.x1 + (s.x2 - s.x1) * (k / n), s.z1 + (s.z2 - s.z1) * (k / n)); if (i >= 0) nav[i] = 0; } }
+    this.nav = nav; let cut = 0; for (let i = 0; i < nav.length; i++) if (this.walk[i] && !nav[i]) cut++; return cut;
+  }
   district(x, z) { const gx = clamp(Math.floor((x - this.b[0]) / 10), 0, this.dw - 1), gz = clamp(Math.floor((z - this.b[1]) / 10), 0, this.dh - 1); return this.dist[gz * this.dw + gx]; }
   street(x, z) {
     let bd = 1e9, bn = '';
@@ -123,11 +148,12 @@ export class World {
   findWalk(x, z, r0, r1, R, tries = 30) { for (let i = 0; i < tries; i++) { const a = R() * 6.2832, d = r0 + (r1 - r0) * R(), px = x + Math.cos(a) * d, pz = z + Math.sin(a) * d; if (this.walkable(px, pz) && this.walkable(px + 1.5, pz) && this.walkable(px - 1.5, pz) && this.walkable(px, pz + 1.5) && this.walkable(px, pz - 1.5)) return [px, pz]; } return null; }
   gridLos(ax, az, bx, bz) { const d = hyp(bx - ax, bz - az), n = Math.ceil(d / 1.5); for (let i = 1; i < n; i++) { const t = i / n; if (!this.walkable(ax + (bx - ax) * t, az + (bz - az) * t)) return false; } return true; }
   // A* over the 2 m walk grid
-  path(ax, az, bx, bz, maxN = 5000) {
+  path(ax, az, bx, bz, maxN = 5000) { return this._path(ax, az, bx, bz, maxN, this.nav || this.walk) || (this.nav ? this._path(ax, az, bx, bz, maxN, this.walk) : null); }
+  _path(ax, az, bx, bz, maxN, WK) {
     if (this.gridLos(ax, az, bx, bz)) return [[bx, bz]];
     const gw = this.gw, gh = this.gh, N = gw * gh; if (!this.pg) { this.pg = new Float32Array(N); this.pf = new Int32Array(N); this.ps = new Uint32Array(N); this.pq = 0; }
     const s = this.gi(ax, az); let e = this.gi(bx, bz); if (s < 0 || e < 0) return null;
-    if (!this.walk[e]) { let f = -1; for (let r = 1; r < 6 && f < 0; r++) for (let dz = -r; dz <= r && f < 0; dz++) for (let dx = -r; dx <= r; dx++) { const j = e + dz * gw + dx; if (j >= 0 && j < N && this.walk[j]) { f = j; break; } } if (f < 0) return null; e = f; }
+    if (!WK[e]) { let f = -1; for (let r = 1; r < 6 && f < 0; r++) for (let dz = -r; dz <= r && f < 0; dz++) for (let dx = -r; dx <= r; dx++) { const j = e + dz * gw + dx; if (j >= 0 && j < N && WK[j]) { f = j; break; } } if (f < 0) return null; e = f; }
     const q = ++this.pq, g = this.pg, from = this.pf, seen = this.ps, ex = e % gw, ez = (e / gw) | 0, heap = [], hf = [];
     const push = (i, f) => { let k = heap.length; heap.push(i); hf.push(f); while (k > 0) { const p = (k - 1) >> 1; if (hf[p] <= f) break; heap[k] = heap[p]; hf[k] = hf[p]; heap[p] = i; hf[p] = f; k = p; } };
     const pop = () => { const top = heap[0], li = heap.pop(), lf = hf.pop(); if (heap.length) { let k = 0; const n = heap.length; for (;;) { let c = k * 2 + 1; if (c >= n) break; if (c + 1 < n && hf[c + 1] < hf[c]) c++; if (hf[c] >= lf) break; heap[k] = heap[c]; hf[k] = hf[c]; k = c; } heap[k] = li; hf[k] = lf; } return top; };
@@ -136,8 +162,8 @@ export class World {
     while (heap.length && n++ < maxN) {
       const cur = pop(); if (cur === e) { found = true; break; } const cx = cur % gw, cz = (cur / gw) | 0;
       for (let k = 0; k < 24; k += 3) {
-        const nx = cx + NB[k], nz = cz + NB[k + 1]; if (nx < 0 || nz < 0 || nx >= gw || nz >= gh) continue; const j = nz * gw + nx; if (!this.walk[j]) continue;
-        if (NB[k + 2] > 1 && (!this.walk[cz * gw + nx] || !this.walk[nz * gw + cx])) continue;
+        const nx = cx + NB[k], nz = cz + NB[k + 1]; if (nx < 0 || nz < 0 || nx >= gw || nz >= gh) continue; const j = nz * gw + nx; if (!WK[j]) continue;
+        if (NB[k + 2] > 1 && (!WK[cz * gw + nx] || !WK[nz * gw + cx])) continue;
         const ng = g[cur] + NB[k + 2]; if (seen[j] === q && ng >= g[j]) continue; g[j] = ng; seen[j] = q; from[j] = cur; push(j, ng + Math.hypot(nx - ex, nz - ez) * 1.02);
       }
     }
@@ -151,14 +177,15 @@ export class World {
   // ---------------------------------------------------------------- construction
   ch(x, z) {
     const k = Math.floor(x / CHUNK) + ',' + Math.floor(z / CHUNK); let c = this.chunks.get(k);
-    if (!c) { c = { fac: [], brand: new MB(), roof: new MB(), trim: new MB(), prop: new MB(), tree: new MB(), via: new MB(), gp: [], gg: [], pool: new MB(), pg: [] }; for (let i = 0; i < 8; i++) c.fac.push(new MB()); c.ex = {}; this.chunks.set(k, c); }
+    if (!c) { c = { fac: [], brand: new MB(), roof: new MB(), trim: new MB(), prop: new MB(), det: new MB(), dec: new MB(), tree: new MB(), via: new MB(), gp: [], gg: [], pool: new MB(), pg: [] }; for (let i = 0; i < 8; i++) c.fac.push(new MB()); c.ex = {}; this.chunks.set(k, c); }
     return c;
   }
-  mb(x, z, name) { const c = this.ch(x, z); if (name === 'roof' || name === 'trim' || name === 'prop') return c[name]; return c.ex[name] || (c.ex[name] = new MB()); }
+  mb(x, z, name) { const c = this.ch(x, z); if (name === 'roof' || name === 'trim' || name === 'prop' || name === 'det' || name === 'dec') return c[name]; return c.ex[name] || (c.ex[name] = new MB()); }
   // facade on a wall running a (left) -> b (right) as seen from outside
-  facadeWall(mb, ax, az, bx, bz, floors, style, col, did, seed) {
+  facadeWall(mb, ax, az, bx, bz, floors, style, col, did, seed, back) {
     const t = this.gfx.tex['f' + style], L = hyp(bx - ax, bz - az), bw = t.mw / t.bays, nb = Math.max(1, Math.round(L / bw)), u0 = (seed % t.bays) / t.bays, u1 = u0 + nb / t.bays, fx = [did, seed / 999, floors, 0];
-    mb.wall(ax, az, bx, bz, 0, 4.4, u0, u1, 0.004, 0.3293, col, fx);
+    if (back) mb.wall(ax, az, bx, bz, 0, 4.4, u0, u1, 0.3373, 0.6667, col, fx);    // courtyard side: windows down to the ground, no shops
+    else mb.wall(ax, az, bx, bz, 0, 4.4, u0, u1, 0.004, 0.3293, col, fx);
     for (let k = 0, y = 4.4; k * 2 < floors; k++) { const two = floors - k * 2 >= 2, y1 = y + (two ? 2 : 1) * t.fh; mb.wall(ax, az, bx, bz, y, y1, u0, u1, 0.3373, two ? 0.997 : 0.6667, col, fx); y = y1; }
     return 4.4 + floors * t.fh;
   }
@@ -197,7 +224,8 @@ export class World {
       const k = 0.8 + r() * 0.36, w = (r() - 0.5) * 0.1, col = [k * (1 + w), k, k * (1 - w)];
       const top = this.facadeWall(c.fac[st], x2, z2, x1, z1, fl, st, col, did, seed);
       const x3 = x2 + ix * dep, z3 = z2 + iz * dep, x4 = x1 + ix * dep, z4 = z1 + iz * dep, bc = [k * 0.9, k * 0.88, k * 0.84];
-      c.brand.wall(x1, z1, x4, z4, 0, top, 0, dep / 8, 0, top / 8, bc); c.brand.wall(x4, z4, x3, z3, 0, top, 0, L / 8, 0, top / 8, bc); c.brand.wall(x3, z3, x2, z2, 0, top, 0, dep / 8, 0, top / 8, bc);
+      c.brand.wall(x1, z1, x4, z4, 0, top, 0, dep / 8, 0, top / 8, bc); c.brand.wall(x3, z3, x2, z2, 0, top, 0, dep / 8, 0, top / 8, bc);
+      if (dep > 2) this.facadeWall(c.fac[st], x4, z4, x3, z3, fl, st, [col[0] * 0.8, col[1] * 0.81, col[2] * 0.83], did, seed + 7, true); else c.brand.wall(x4, z4, x3, z3, 0, top, 0, L / 8, 0, top / 8, bc);   // the back faces a courtyard: plain windows, not a blank wall
       c.roof.quad([x1, top, z1], [x2, top, z2], [x3, top, z3], [x4, top, z4], [x1 / 6, z1 / 6], [x2 / 6, z2 / 6], [x3 / 6, z3 / 6], [x4 / 6, z4 / 6], null, null, [0, 1, 0]);
       const ang = Math.atan2(-ez, ex), mx = (x1 + x2) / 2, mz = (z1 + z2) / 2, tc = TR[st].map((v) => v * k);
       if (st !== 5) c.trim.box(mx - ix * 0.12, top - 0.28, mz - iz * 0.12, L, 0.46, 0.62, ang, tc, { uv: 3 });
@@ -225,6 +253,7 @@ export class World {
         }
         rtop = y1;
       }
+      try { dressFacade(this, c, { x1, z1, x2, z2, L, ex, ez, top, st, fl, did, seed, dep, tex: this.gfx.tex['f' + st], tc }); } catch (e) { if (!this._dfw) { this._dfw = 1; console.warn('facade', e); } }
       const nc = r() < 0.85 ? 1 + ((r() * 3) | 0) : 0;
       for (let q = 0; q < nc; q++) { const a = (r() - 0.5) * (L - 3), d = 2 + r() * (dep - 4); c.trim.box(mx + ex * a + ix * d, rtop, mz + ez * a + iz * d, 0.6 + r() * 1.0, 1.0 + r() * 1.4, 0.5 + r() * 0.5, ang, C(r() < 0.5 ? 0x7a3e30 : 0x5a554e, 0.7 + r() * 0.5), { uv: 3 }); }
     }
@@ -254,6 +283,7 @@ export class World {
     this.lmGroup = new THREE.Group(); this.group.add(this.lmGroup); this.lm = {};
     for (const Lm of map.landmarks) { try { buildLandmark(Lm, this); } catch (e) { console.warn('landmark', Lm.id, e); } }
     step(0.8); await tick();
+    try { this.navCut = this.buildNav(); } catch (e) { console.warn('nav', e); }
     this._flush(); step(1);
   }
 
@@ -323,24 +353,27 @@ export class World {
       this.addCircle(x, z, 0.26 * s, 40);
     }
     for (const l of map.lamps) this.lamp(this.ch(l[0], l[1]), l[0], l[1], l[2], l[3], this.district(l[0], l[1]));
-    for (const cr of map.cars) this.car(this.ch(cr[0], cr[1]).prop, cr[0], cr[1], -cr[2], cr[3], cr[4]);
+    try { this.nVeh = placeTraffic(this); } catch (e) { console.warn('traffic', e); }
   }
   _flush() {
     const g = this.gfx, T = g.tex;
     const mats = { brand: g.surf('brandwand', { vcol: true, snow: 0 }), roof: g.surf('roof', { snow: 1.1 }), trim: g.surf('stone', { vcol: true, snow: 0.9 }), via: g.surf('viaduct', { snow: 0 }), prop: g.vcol({ rough: 0.55, snow: 1 }) };
     this.treeMat = new THREE.MeshStandardMaterial({ map: T.tree, alphaTest: 0.42, side: THREE.DoubleSide, roughness: 1, color: 0xb9b2ac });
+    this.decMat = g.patch(new THREE.MeshStandardMaterial({ map: T.decals, vertexColors: true, transparent: true, depthWrite: false, roughness: 0.92, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }), {});
     const shed = g.vcol({ rough: 0.28, metal: 0.5, snow: 0.7, side: THREE.DoubleSide });
     const ex = { copper: g.surf('copper', { vcol: true, snow: 0.8 }), concrete: g.surf('concrete', { vcol: true, snow: 0.6 }), glass: g.vcol({ rough: 0.34, metal: 0.72, snow: 0.35 }), dark: g.vcol({ rough: 0.6, snow: 0 }), gold: g.vcol({ rough: 0.32, metal: 1, snow: 0 }), tile: g.surf('tile', { vcol: true, snow: 1 }), metal: g.surf('metal', { vcol: true, snow: 0.6, metal: 0.6 }) };
     for (const [key, c] of this.chunks) {
       const grp = new THREE.Group(); grp.name = key;
       for (let i = 0; i < 8; i++) if (!c.fac[i].empty) grp.add(c.fac[i].mesh(g.facade(i)));
       for (const k of ['brand', 'roof', 'trim', 'via', 'prop']) if (!c[k].empty) grp.add(c[k].mesh(mats[k]));
+      if (!c.det.empty) { c.detMesh = c.det.mesh(mats.prop, false); grp.add(c.detMesh); }   // small clutter: only drawn for nearby chunks
+      if (!c.dec.empty) { const m = c.dec.mesh(this.decMat, false, true); m.renderOrder = 3; grp.add(m); }   // spray paint and posters
       if (c.shed) grp.add(c.shed.mesh(shed));
       for (const k in c.ex) if (!c.ex[k].empty) grp.add(c.ex[k].mesh(ex[k] || mats.prop));
       if (!c.tree.empty) { const m = c.tree.mesh(this.treeMat); grp.add(m); }
       if (c.gp.length) { const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.Float32BufferAttribute(c.gp, 3)); pg.setAttribute('aG', new THREE.Float32BufferAttribute(c.gg, 3)); pg.computeBoundingSphere(); const pts = new THREE.Points(pg, g.glow()); pts.renderOrder = 15; grp.add(pts); }
       if (!c.pool.empty) { const pm = c.pool.geometry(); pm.setAttribute('aG', new THREE.Float32BufferAttribute(c.pg, 3)); const m = new THREE.Mesh(pm, g.pools()); m.renderOrder = 5; grp.add(m); }
-      this.group.add(grp); c.fac = c.brand = c.roof = c.trim = c.prop = c.tree = c.via = c.pool = c.shed = c.ex = null; c.gp = c.gg = c.pg = null; c.group = grp;
+      this.group.add(grp); c.fac = c.brand = c.roof = c.trim = c.prop = c.det = c.dec = c.tree = c.via = c.pool = c.shed = c.ex = null; c.gp = c.gg = c.pg = null; c.group = grp;
     }
   }
   // generator floodlights, flares and the like: always on at night whatever the district grid is doing.
@@ -362,7 +395,7 @@ export class World {
     this.cullT -= dt; if (this.litterField) this.litterField.update(px, pz);
     if (this.cullT <= 0) {               // distance culling of whole city chunks
       this.cullT = 0.3; const R = this.drawDist + CHUNK * 0.75; let n = 0;
-      for (const [key, c] of this.chunks) { if (!c.group) continue; if (c.cx === undefined) { const [i, j] = key.split(',').map(Number); c.cx = (i + 0.5) * CHUNK; c.cz = (j + 0.5) * CHUNK; } const v = hyp(c.cx - px, c.cz - pz) < R; c.group.visible = v; n += v; }
+      for (const [key, c] of this.chunks) { if (!c.group) continue; if (c.cx === undefined) { const [i, j] = key.split(',').map(Number); c.cx = (i + 0.5) * CHUNK; c.cz = (j + 0.5) * CHUNK; } const v = hyp(c.cx - px, c.cz - pz) < R; c.group.visible = v; if (c.detMesh) c.detMesh.visible = v && hyp(c.cx - px, c.cz - pz) < (this.detDist || 340); n += v; }
       this.visChunks = n;
     }
     const U = this.gfx.U.uPower.value;

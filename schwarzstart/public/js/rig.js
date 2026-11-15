@@ -320,7 +320,7 @@ export class Rig {
     // sprint: longer strides, lower and leaning; crouch: the pelvis drops, the feet stay put, so the knees bend
     if (g > 1) { const e = g - 1; for (const k of ['la', 'ra', 'lk', 'rk']) MP[k][2] *= g; MP.pel[1] -= e * 0.12; }
     this.sprintLean = damp(this.sprintLean || 0, (g - 1) * 0.55, 6, dt);
-    if (c > 0.01) { MP.pel[1] -= c * 0.36; MP.pel[2] -= c * 0.05; MP.la[2] += c * 0.14; MP.ra[2] -= c * 0.12; MP.la[0] += c * 0.04; MP.ra[0] -= c * 0.04; MP.lk[2] += c * 0.3; MP.rk[2] += c * 0.3; }
+    if (c > 0.01) { const kn = c * wi; MP.pel[1] -= c * 0.36 + kn * 0.15; MP.pel[2] -= c * 0.05; MP.la[2] += c * 0.14 + kn * 0.14; MP.ra[2] -= c * 0.12 + kn * 0.24; MP.la[0] += c * 0.04; MP.ra[0] -= c * 0.04; MP.lk[2] += c * 0.3 + kn * 0.12; MP.rk[2] += c * 0.3; MP.rk[1] -= kn * 0.25; }   // stopped behind low cover: down on one knee
     // the legs turn toward the direction of travel (the spine turns the chest back to the aim)
     if (this.pivot) { const k = this.t * 13; MP.la[1] += 0.05 * Math.max(0, Math.sin(k)); MP.ra[1] += 0.05 * Math.max(0, -Math.sin(k)); }
     const ly = this.legYaw + (this.pivYaw || 0), cy = Math.cos(ly), sy = Math.sin(ly);
