@@ -1,6 +1,6 @@
 <canvas id="gl" aria-hidden="true"></canvas>
 <div class="vid" id="vid" hidden><div class="vb" id="vidbox"><div id="vidp"></div><img id="vidi" alt="" hidden></div></div>
-<div class="vidc" id="vidc" hidden role="group" aria-label="The camera"><button type="button" id="vW" aria-label="The next camera to the west">west</button><button type="button" id="vE" aria-label="The next camera to the east">east</button><button type="button" id="vX" aria-label="Close the camera">close</button></div>
+<div class="vidc" id="vidc" hidden role="group" aria-label="The camera"><button type="button" id="vW" aria-label="The next camera to the west">west</button><button type="button" id="vE" aria-label="The next camera to the east">east</button><a id="vY" target="_blank" rel="noopener noreferrer" hidden>youtube</a><button type="button" id="vX" aria-label="Close the camera">close</button></div>
 <canvas id="ov" aria-hidden="true"></canvas>
 <div id="stage" role="application" aria-label="The world. Touch it, drag through it, use more than one finger"></div>
 
@@ -21,7 +21,8 @@
 
 <footer class="foot" id="foot">
   <div class="lyr scr" id="themes" hidden role="group" aria-label="Kinds of camera"></div>
-  <div class="lyr scr now" id="nowr" hidden role="group" aria-label="What is happening on the Earth now"></div>
+  <div class="lgd" id="lgd" hidden aria-hidden="true"><b id="lgn"></b><span class="lgw"><i id="lgb"></i><span class="lgs" id="lgs"></span></span></div>
+  <div class="lyr scr dock" id="lyd" hidden role="group" aria-label="Layers of the Earth: tap one to switch it on or off"></div>
   <div class="tools" id="tools" hidden role="toolbar" aria-label="Build in the water"></div>
   <nav class="rail" id="rail" aria-label="Worlds"></nav>
 </footer>

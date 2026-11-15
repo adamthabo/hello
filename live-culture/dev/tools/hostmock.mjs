@@ -6,7 +6,7 @@
 import http from 'node:http';
 import fs from 'node:fs';
 // dev/ is the folder above this one; the Worker and public/ are beside dev/. The raw sources come from tools/feed.py (into dev/data/live/);
-// the stand-in pictures (testdata/: clouds.jpg, rain.png, blank.png, goes-east.jpg, goes-west.jpg) must be made by hand, and the weather
+// the stand-in pictures (testdata/: clouds.jpg, rain.png, blank.png, goes-east.jpg, goes-west.jpg, thumb.jpg) must be made by hand, and the weather
 // model's stand-ins (testdata/gfs_atmos.grib2 and gfs_wave.grib2 with their .idx) by tools/mkgfs.py from a sample GFS file.
 const LC = new URL('..', import.meta.url).pathname, ROOT = new URL('../..', import.meta.url).pathname, PUB = ROOT + 'public/', D = LC + 'data/live/', T = LC + 'testdata/';
 const RAW = 'https://raw.githubusercontent.com/';
@@ -60,6 +60,10 @@ globalThis.fetch = async (u, o) => {
   // the radar index (RainViewer): three pictures, their tiles from this stand-in
   if (u === 'https://api.rainviewer.com/public/weather-maps.json') { const n = Math.floor(Date.now() / 600000) * 600;
     return new Response(JSON.stringify({ version: '2.0', generated: n, host: 'https://tilecache.rainviewer.com', radar: { past: [0, 1, 2].map(k => ({ time: n - (2 - k) * 600, path: '/v2/radar/' + (n - (2 - k) * 600) })), nowcast: [] }, satellite: { infrared: [] } })); }
+  // a camera's still (YouTube's picture of a stream): one made-up picture for every video (testdata/thumb.jpg, made by hand)
+  if ((m = /^https:\/\/i\.ytimg\.com\/vi\/([\w-]{11})\/mqdefault(_live)?\.jpg$/.exec(u))) return new Response(fs.readFileSync(T + 'thumb.jpg'), { headers: { 'content-type': 'image/jpeg' } });
+  // the close picture of the ground: the whole Earth's picture stands in for it
+  if (u.startsWith('https://gibs.earthdata.nasa.gov/wms/') && /LAYERS=BlueMarble_NextGeneration/.test(u)) return new Response(fs.readFileSync(PUB + 'img/earth-day.jpg'), { headers: { 'content-type': 'image/jpeg' } });
   if (u.startsWith('https://gibs.earthdata.nasa.gov/wms/')) { const tm = /TIME=([^&]+)/.exec(u); if (tm && /T\d\d:\d\d:00Z/.test(tm[1]) && LOG.filter(x => x.startsWith('https://gibs')).length === 1) return new Response(fs.readFileSync(T + 'blank.png'));
     return new Response(fs.readFileSync(T + 'rain.png')); }
   if ((m = /^https:\/\/www\.youtube\.com\/results\?search_query=([^&]+)/.exec(u))) { const hits = SEARCH[decodeURIComponent(m[1])] || []; return new Response('<html>var ytInitialData = {' + hits.map(h => vr(...h)).join(',') + '};</html>'); }

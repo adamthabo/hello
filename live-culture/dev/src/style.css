@@ -100,11 +100,30 @@ body.dropping::after{content:"";position:fixed;inset:10px;z-index:30;border:1px 
   font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;transition:color .25s,border-color .25s,background .25s}
 .lb svg{width:13px;height:13px;display:block;fill:none;stroke:currentColor;stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round}
 .lb[aria-pressed=true]{color:var(--ink);border-color:rgba(62,240,255,.42);background:rgba(62,240,255,.08)}
-/* the Earth's "now": what is happening, each a name that flies the globe there (bigger than the cameras' kinds: they are the way in) */
-.now .lb{height:32px;padding:0 12px 0 10px;border-radius:16px;color:var(--ink);border-color:rgba(255,179,71,.4);background:rgba(255,179,71,.07);font-size:10px}
-.now .lb svg{width:14px;height:14px}
-.now .lb.go{border-color:var(--warm);background:rgba(255,179,71,.2)}
-.now .lb.lyb{border-color:rgba(62,240,255,.5);background:rgba(62,240,255,.1)}
+/* the Earth's layers (14 Nov, night: "be able to take on and off layers"): a row of buttons, each a picture over a word, lit while its
+   layer shows (the videos in the red of a live stream); the row scrolls sideways when the screen is narrow */
+.dock{gap:6px}
+.dk{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:56px;height:46px;padding:0 7px;border-radius:12px;
+  border:1px solid rgba(234,249,255,.13);background:rgba(1,4,10,.6);color:rgba(234,249,255,.5);font:500 8.5px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.dk svg{width:18px;height:18px;display:block;fill:none;stroke:currentColor;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
+.dk[aria-pressed=true]{color:var(--ink);border-color:rgba(62,240,255,.55);background:rgba(62,240,255,.14)}
+.dk.dk-vid[aria-pressed=true]{border-color:rgba(255,82,82,.75);background:rgba(255,82,82,.16)}
+.dk:active{transform:scale(.96)}
+.dock .dk:first-child{margin-left:auto}.dock .dk:last-child{margin-right:auto}
+/* the scale of the layer of colour shown, over the row */
+.lgd{display:flex;align-items:center;gap:8px;width:min(340px,calc(100% - 32px));font:500 8px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--dim);pointer-events:none}
+.lgd[hidden]{display:none}
+.lgd b{font-weight:500;color:var(--ink);white-space:nowrap}
+.lgw{flex:1;display:flex;flex-direction:column;gap:3px;min-width:0}
+#lgb{display:block;height:6px;border-radius:3px}
+.lgs{display:flex;justify-content:space-between}
+/* the camera's way out to YouTube */
+.vidc a{height:32px;padding:0 13px;border-radius:16px;border:1px solid rgba(255,82,82,.55);background:rgba(1,4,10,.7);color:var(--ink);display:flex;align-items:center;
+  font:500 10px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;text-decoration:none}
+.vidc a[hidden]{display:none}
+.card a.cy{display:inline-flex;align-items:center;margin-top:8px;height:34px;padding:0 14px;border-radius:17px;border:1px solid rgba(255,82,82,.7);background:rgba(255,82,82,.16);
+  color:var(--ink);font:500 10px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;text-decoration:none}
 /* the Earth's zoom: two round buttons at the right of the globe, for a thumb */
 .zm{position:fixed;right:max(12px,env(safe-area-inset-right,0px));z-index:6;display:flex;flex-direction:column;gap:8px}
 .zm[hidden]{display:none}

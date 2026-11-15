@@ -212,21 +212,27 @@ async function feed(name) {
   return m || null;
 }
 
-// ---- the weather model: NOAA's GFS, its newest run's picture of now (the analysis), one field at a time ----
+// ---- the weather model: NOAA's GFS, one field at a time, for the hour nearest now ----
+// (14 Nov, night: "Doesn't noa have live weather?!" Until then the newest run's analysis was sent, its picture of the hour it started:
+// six to ten hours before. Now it is that run's forecast for the three-hourly step nearest the clock, at most an hour and a half off.)
 // From NOAA's copy on Amazon's open data, then NOAA's own server: each run has an index naming where in the file each field lies, so
-// only the field asked for is fetched (a byte range, 100 to 600 KB), as GRIB2; the page reads it itself.
+// only the field asked for is fetched (a byte range, 100 to 600 KB), as GRIB2; the page reads it itself. x-time is the hour it is for.
 const GFSB = ['https://noaa-gfs-bdp-pds.s3.amazonaws.com/', 'https://nomads.ncep.noaa.gov/pub/data/nccf/com/gfs/prod/'];
 const GF = {
-  t2m: { w: 0, m: [':TMP:2 m above ground:anl:'] },            // the temperature two metres up
-  mslp: { w: 0, m: [':PRMSL:mean sea level:anl:'] },          // the air pressure, brought down to sea level
-  jet: { w: 0, m: [':UGRD:250 mb:anl:', ':VGRD:250 mb:anl:'] }, // the wind at 250 hPa, about ten kilometres up: the jet streams
-  wave: { w: 1, m: [':HTSGW:surface:anl:'] },                 // the height of the sea's waves (NOAA's wave model, run with GFS)
+  t2m: { w: 0, m: [':TMP:2 m above ground:'] },                               // the temperature two metres up
+  mslp: { w: 0, m: [':PRMSL:mean sea level:'] },                              // the air pressure, brought down to sea level
+  wind10: { w: 0, m: [':UGRD:10 m above ground:', ':VGRD:10 m above ground:'] }, // the wind ten metres up (the Earth's smoke and colours)
+  jet: { w: 0, m: [':UGRD:250 mb:', ':VGRD:250 mb:'] },                       // the wind at 250 hPa, about ten kilometres up: the jet streams
+  wave: { w: 1, m: [':HTSGW:surface:'] },                                     // the height of the sea's waves (NOAA's wave model, run with GFS)
 };
-function gfsFile(day, cyc, w) { return 'gfs.' + day + '/' + cyc + '/' + (w ? 'wave/gridded/gfswave.t' + cyc + 'z.global.0p25.f000.grib2' : 'atmos/gfs.t' + cyc + 'z.pgrb2.1p00.f000'); }
-// the newest runs first: a run's analysis is out about three and a half hours after its hour
-function gfsRuns() { const out = [], now = Date.now() - 3.4 * 3600000;
-  for (let k = 0; k < 5; k++) { const t = new Date(Math.floor(now / 21600000) * 21600000 - k * 21600000), d = t.toISOString();
-    out.push({ day: d.slice(0, 4) + d.slice(5, 7) + d.slice(8, 10), cyc: d.slice(11, 13), at: t.toISOString().slice(0, 19) + 'Z' }); }
+function gfsFile(day, cyc, w, fh) { const f = String(fh).padStart(3, '0');
+  return 'gfs.' + day + '/' + cyc + '/' + (w ? 'wave/gridded/gfswave.t' + cyc + 'z.global.0p25.f' + f + '.grib2' : 'atmos/gfs.t' + cyc + 'z.pgrb2.1p00.f' + f); }
+// the newest runs first (a run's first day of forecast is out about three and a half hours after its hour), each with the forecast step
+// nearest now and the time it is for
+function gfsRuns() { const out = [], now = Date.now(), ready = now - 3.4 * 3600000;
+  for (let k = 0; k < 5; k++) { const t = new Date(Math.floor(ready / 21600000) * 21600000 - k * 21600000), d = t.toISOString(),
+      fh = Math.max(0, Math.min(24, Math.round((now - t.getTime()) / 10800000) * 3));
+    out.push({ day: d.slice(0, 4) + d.slice(5, 7) + d.slice(8, 10), cyc: d.slice(11, 13), fh, at: new Date(t.getTime() + fh * 3600000).toISOString().slice(0, 19) + 'Z' }); }
   return out; }
 async function gfsField(name) {
   const f = GF[name], key = 'gfs:' + name, m = MEM.get(key), now = Date.now();
@@ -236,12 +242,15 @@ async function gfsField(name) {
   try {
     for (const run of gfsRuns()) for (const base of GFSB) {
       try {
-        const url = base + gfsFile(run.day, run.cyc, f.w), ir = await fetch(url + '.idx', { headers: { 'user-agent': UA } });
+        const url = base + gfsFile(run.day, run.cyc, f.w, run.fh), ir = await fetch(url + '.idx', { headers: { 'user-agent': UA } });
         if (!ir.ok) continue;
         const lines = (await ir.text()).split('\n').filter(Boolean).map(l => { const p = l.split(':'); return { off: +p[1], txt: ':' + p.slice(3).join(':') }; });
         const parts = [];
+        // (the step's own line: "anl" for the analysis, "9 hour fcst" for nine hours on; any line of the field if the index has no such)
+        const when = run.fh ? run.fh + ' hour fcst:' : 'anl:';
         for (const want of f.m) {
-          const k = lines.findIndex(l => l.txt.startsWith(want));
+          let k = lines.findIndex(l => l.txt.startsWith(want + when));
+          if (k < 0) k = lines.findIndex(l => l.txt.startsWith(want));
           if (k < 0) { parts.length = 0; break; }
           let e = k + 1; while (e < lines.length && lines[e].off === lines[k].off) e++;
           const r = [lines[k].off, e < lines.length ? lines[e].off - 1 : null];
@@ -400,6 +409,26 @@ export default {
       } catch (err) { return new Response('Not available just now', { status: 503, headers: { 'retry-after': '60', ...CORS } }); }
     }
     if (p === '/api/cams') return json({ cams: CAMS.map(({ c, s, ...k }) => k), themes: THEMES }, 600);
+    // a camera's picture now (14 Nov, night: "On the earth there should be videos, that's the best part"): YouTube's still of the stream,
+    // which it renews every few minutes while the stream is live, for the page to show on the Earth; from here, so the page's own
+    // canvas can draw it. Kept five minutes
+    if ((m = /^\/api\/thumb\/([\w\-]{11})$/.exec(p))) {
+      const key = 'th:' + m[1], hit = MEM.get(key), hd = { 'content-type': 'image/jpeg', 'cache-control': 'public, max-age=300', ...CORS };
+      if (hit && Date.now() - hit.at < 300000) return new Response(hit.v, { headers: hd });
+      try {
+        let v = null;
+        for (const f of ['mqdefault_live.jpg', 'mqdefault.jpg']) {
+          const r = await fetch('https://i.ytimg.com/vi/' + m[1] + '/' + f, { headers: { 'user-agent': YTUA } });
+          if (!r.ok || !/^image\//.test(r.headers.get('content-type') || '')) continue;
+          const b = await r.arrayBuffer(); if (b.byteLength > 1500) { v = b; break; }
+        }
+        if (!v) throw new Error('no picture');
+        let n = 0; for (const k of MEM.keys()) if (k.startsWith('th:')) n++;
+        if (n >= 120) for (const k of MEM.keys()) if (k.startsWith('th:')) { MEM.delete(k); break; }
+        MEM.set(key, { at: Date.now(), v });
+        return new Response(v, { headers: hd });
+      } catch (e) { return hit ? new Response(hit.v, { headers: hd }) : new Response('Not available just now', { status: 503, headers: { 'retry-after': '120', ...CORS } }); }
+    }
     // several cameras at once (the page asks for a theme's worth as it goes): no more than eight, each as /api/yt/ would answer
     if (p === '/api/live') {
       const ids = (url.searchParams.get('ids') || '').split(',').filter(x => /^[a-z0-9\-]{1,24}$/.test(x)).slice(0, 8), out = {};

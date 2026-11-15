@@ -25,10 +25,14 @@
 - **Clouds (hosted version):** EUMETSAT's world cloud map (infrared, 10.8 µm, from the geostationary satellites), made into a
   greyscale map every three hours by Matt Eason's Live Cloud Maps (clouds.matteason.co.uk, github.com/matteason/live-cloud-maps).
 - **Rain (hosted version):** NASA GPM IMERG precipitation rate, half-hourly, as drawn by NASA GIBS (Global Imagery Browse Services).
-- **The whole Earth (hosted version):** NOAA GOES-19 and GOES-18 ABI full-disk GeoColor, from NOAA NESDIS STAR (cdn.star.nesdis.noaa.gov).
+- **The whole Earth (hosted version):** NOAA GOES-19 and GOES-18 ABI full-disk GeoColor, from NOAA NESDIS STAR (cdn.star.nesdis.noaa.gov);
+  since 14 Nov, night, also laid onto the globe as the "live view", through the ABI fixed grid as NOAA's GOES-R Product User's Guide
+  defines it (the satellite's height, the scan angles, the GRS80 ellipsoid).
 - **Live cameras (hosted version):** YouTube live streams by Sen (the ISS), explore.org with Polar Bears International (Churchill),
   NASASpaceflight (Starbase), Monterey Bay Aquarium, NamibiaCam (Gondwana Collection Namibia), and streams of Sakurajima, Mount Fuji
-  and Shibuya. Their sound is never played.
+  and Shibuya. Their sound is never played. On the Earth each is shown by YouTube's own picture of the stream (i.ytimg.com, through
+  the Worker); in the artifact, which may show no outside picture, each opens on YouTube (the channel's live page, or YouTube's search
+  for it among live streams).
 - **Stars:** the Extended Hipparcos Compilation (XHIP; Anderson and Francis 2012) to magnitude 6, 5,044 stars, as packaged by
   d3-celestial (Olaf Frohn, BSD 3-Clause): `data/stars.6.json` in github.com/ofrohn/d3-celestial. Packed by `tools/gen_data.py` (6 bytes a star).
 - **Sun and Moon:** the Astronomical Almanac's low-precision series. Coded in `src/05-astro.js`.

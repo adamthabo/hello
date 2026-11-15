@@ -69,7 +69,7 @@ function agoWords(ms){var m=Math.max(0,Math.round(ms/60000));return m<90?m+' min
    reads the sources for itself, through the Worker's /api/feed/<name>, every few minutes, and unpacks each into the same shape as the
    published snapshot, which it starts from. Each source is taken only when it is newer than what the page has. ---------- */
 var PULL={at:{},ok:{},err:{},n:0,timer:0};
-var PULLEVERY={wind:1800000,aurora:300000,strikes:300000,fires:900000,storms:1800000,sats:10800000,clouds:3600000,rain:1800000,gfs:3600000};
+var PULLEVERY={wind:1800000,aurora:300000,strikes:300000,fires:900000,storms:1800000,sats:10800000,clouds:3600000,rain:1800000,gfs:3600000,goes:600000};
 function hostGet(name,how){return fetch('/api/feed/'+name).then(function(r){if(!r.ok)throw new Error(name+' '+r.status);
   var mod=Date.parse(r.headers.get('last-modified')||'')||0,tm=Date.parse(r.headers.get('x-time')||'')||0;return (how==='text'?r.text():how==='blob'?r.blob():r.json()).then(function(b){return {b:b,mod:mod,time:tm}})})}
 function titleCase(s){return String(s||'').toLowerCase().replace(/(^|[\s\-])([a-z])/g,function(m,a,b){return a+b.toUpperCase()})}
@@ -138,12 +138,31 @@ function satsMerge(act,deb,fetched){
   LIVE.sats={asOf:base,src:'CelesTrak',n:m,bytes:out.subarray(0,m*20),names:names,ids:new Uint32Array(ids),fresh:fetched||now,live:act.length};LIVE.ver.sats++;return true}
 /* the real clouds, as the geostationary satellites see them (EUMETSAT's world cloud map, every three hours), for the globe */
 var CLOUD={img:null,at:0,ver:0},RAIN={img:null,at:0,ver:0};
-/* the weather model's own fields (NOAA's GFS, its newest run's picture of now), read from GRIB2 on the device: the temperature two
-   metres up, the pressure at sea level and the height of the waves, read out on the Earth where a place is tapped. (Until 14 Nov they
-   were also layers of colour over the globe, with the jet streams; the owner had the layers taken away) */
-var WX={t2m:null,mslp:null,wave:null,at:0,ver:0};
-function wxTake(name,buf,tm){var m=GRIB.msgs(buf);if(!m.length)throw new Error(name+': nothing read');
-  WX[name]=m[0];WX.at=Math.max(WX.at,Date.parse(tm||'')||m[0].time||0);WX.ver++}
+/* the weather model's own fields (NOAA's GFS; since 14 Nov, night, its forecast for the hour nearest now, not the analysis of six to ten
+   hours before), read from GRIB2 on the device: the temperature two metres up, the pressure at sea level (and its highs and lows), the
+   height of the waves. The Earth shows each as a layer it can switch on, and reads them out where a place is tapped. The wind ten
+   metres up comes the same way, and takes the place of the mirrored analysis (6-hourly) whenever it is newer */
+var WX={t2m:null,mslp:null,wave:null,at:0,ver:0,hl:[]};
+function wxTake(name,buf,tm){var m=GRIB.msgs(buf);if(!m.length)throw new Error(name+': nothing read');var at=Date.parse(tm||'')||m[0].time||0;
+  if(name==='wind10'){var u=null,v=null;m.forEach(function(f){if(f.cat===2&&f.par===2&&!u)u=f;if(f.cat===2&&f.par===3&&!v)v=f});if(!u||!v)throw new Error('wind10: no wind');windGrib(u,v,at);return}
+  WX[name]=m[0];WX.at=Math.max(WX.at,at);if(name==='mslp')WX.hl=highsLows(m[0]);WX.ver++}
+/* the model's wind as the page's grid (one value a degree from the north pole down and from 0 E round, as the snapshot has it) */
+function windGrib(U,V,at){if(!(at>LIVE.at.wind))return;var g=new Uint8Array(130320),top=0,i,j;
+  for(j=0;j<181;j++)for(i=0;i<360;i++){var u=GRIB.at(U,90-j,i),v=GRIB.at(V,90-j,i),o=(j*360+i)*2;if(isNaN(u))u=0;if(isNaN(v))v=0;var sp=Math.sqrt(u*u+v*v);if(sp>top)top=sp;
+    g[o]=clamp(Math.round(u/40*127)+128,0,255);g[o+1]=clamp(Math.round(v/40*127)+128,0,255)}
+  LIVE.wind={asOf:at,src:'NOAA GFS',max:Math.round(top*10)/10,grid:g,now:true};LIVE.at.wind=at;LIVE.ver.wind++}
+/* the highs and lows: a point higher (or lower) than everything within ten degrees, and high or low enough to be one */
+function highsLows(m){var out=[],la,lo,k;function P(a,b){var v=GRIB.at(m,a,b);return v/100}
+  for(la=-74;la<=74;la+=2)for(lo=-180;lo<180;lo+=2){var p=P(la,lo);if(!(p>1019||p<1001))continue;var hi=p>1019,best=true;
+    for(var a=-10;a<=10&&best;a+=2)for(var b=-10;b<=10;b+=2){if(!a&&!b)continue;var q=P(clamp(la+a,-89,89),lo+b/Math.max(.3,Math.cos(la*AS.D)));if(hi?q>p:q<p){best=false;break}}
+    if(best){for(k=0;k<out.length;k++)if(out[k].h===hi&&Math.abs(out[k].lat-la)<9&&Math.abs(AS.n180(out[k].lon-lo))<12)break;if(k===out.length&&out.length<60)out.push({lat:la,lon:lo,hpa:Math.round(p),h:hi,v:AS.llv(la,lo)})}}
+  return out}
+/* the Earth as NOAA's two weather satellites over the Americas see it now (GOES-19 over 75.2 W, GOES-18 over 137.2 W; GeoColor: true
+   colour by day, the clouds by their warmth and the cities' lights by night; a new picture every ten minutes), fetched only while the
+   Earth's "live view" is on. Each is made 1024 pixels square on the device before the graphics chip takes it */
+var GEO={want:false,e:{at:0,ver:0},w:{at:0,ver:0}};
+function geoTake(k,b,mod){try{var u=URL.createObjectURL(b),im=new Image();im.onload=function(){try{var S=1024,cv=document.createElement('canvas');cv.width=cv.height=S;cv.getContext('2d').drawImage(im,0,0,S,S);
+    GEO[k].at=mod||Date.now();GEO[k].ver++;GLOBE.geo(k,cv)}catch(e){}URL.revokeObjectURL(u)};im.onerror=function(){URL.revokeObjectURL(u)};im.src=u}catch(e){}}
 function wxGet(name){return fetch('/api/gfs/'+name).then(function(r){if(!r.ok)throw new Error(name+' '+r.status);var tm=r.headers.get('x-time')||'';return r.arrayBuffer().then(function(b){wxTake(name,b,tm)})})}
 function cloudTake(b,mod){try{var u=URL.createObjectURL(b),im=new Image();im.onload=function(){CLOUD.img=im;CLOUD.at=mod||Date.now();CLOUD.ver++;GLOBE.cloud(im)};im.src=u}catch(e){}}
 /* the rain of the last half hour that NASA has finished (IMERG, from the satellites of the GPM constellation; a few hours behind the clock) */
@@ -163,7 +182,8 @@ function livePull(force){
     var t=Date.now(),act=pTLE(a[0].b,t),deb=a.slice(1).map(function(r){return pTLE(r.b,t)});if(!satsMerge(act,deb,a[0].mod||t))throw new Error('short orbit list '+act.length);PULL.ok.sats=Date.now()}).catch(fail('sats'));
   if(due('clouds'))hostGet('clouds','blob').then(function(r){cloudTake(r.b,r.mod);PULL.ok.clouds=Date.now()}).catch(fail('clouds'));
   if(due('rain'))hostGet('rain','blob').then(function(r){rainTake(r.b,r.time);PULL.ok.rain=Date.now()}).catch(fail('rain'));
+  if(GEO.want&&due('goes'))[['e','goes-east'],['w','goes-west']].forEach(function(a){hostGet(a[1],'blob').then(function(r){geoTake(a[0],r.b,r.mod);PULL.ok.goes=Date.now()}).catch(fail('goes'))});
   /* the model's fields one after another (a few hundred kilobytes each), once an hour */
-  if(due('gfs'))['t2m','mslp','wave'].reduce(function(p,k){return p.then(function(){return wxGet(k).catch(function(e){PULL.err['gfs-'+k]=String(e&&e.message||e).slice(0,80)})})},Promise.resolve()).then(function(){if(WX.t2m||WX.mslp)PULL.ok.gfs=Date.now()})}
+  if(due('gfs'))['wind10','t2m','mslp','wave'].reduce(function(p,k){return p.then(function(){return wxGet(k).catch(function(e){PULL.err['gfs-'+k]=String(e&&e.message||e).slice(0,80)})})},Promise.resolve()).then(function(){if(WX.t2m||WX.mslp)PULL.ok.gfs=Date.now()})}
 function liveHosted(){if(!HOSTED||PULL.timer)return;livePull(true);PULL.timer=setInterval(function(){livePull(false)},60000);
   document.addEventListener('visibilitychange',function(){if(!document.hidden)livePull(false)})}

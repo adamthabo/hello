@@ -17,12 +17,14 @@ changes how the page sounds.
 3. **Hear it and hold it.** The two things no machine test covers: every voice by ear, and every world on a real iPhone
    (frame rate in Wind and Orbit above all, the first touch starting the band with the ring switch on silent, whether a first stroke
    leaves the sound waiting for a tap as expected, the card's size).
-4. **Weather, next.** Done on the site (12 Nov): the model's jet streams, temperature, pressure, waves (drawn over the globe until 14
-   Nov, when he had the layers taken away: now the temperature, pressure and waves are read out for a place tapped, and nothing on the
-   Earth is switched on or off; anything new must earn its place always on, without a switch); clouds and rain drifting with
-   the wind; the place card (Open-Meteo, RainViewer); storms up close. Next: the weather fronts (NOAA's coded surface analysis), the
-   official forecast tracks and cones of the storms (NHC, JTWC, GDACS), the geostationary satellites' ten-minute infrared for the
-   clouds, the model's hours ahead (play the next two days). For the artifact: nothing of this can reach it unless a copy of the data
+4. **Weather, next.** Done on the site: the model's temperature, pressure, waves (12 Nov; taken away 14 Nov afternoon, back the same
+   night as layers in a row of buttons, rule 20, and since then the model's forecast for this hour); NOAA's live view (GOES-19 and
+   GOES-18 every ten minutes, laid on the globe, 14 Nov night); the wind's speed in colour; clouds and rain drifting with the wind; the
+   place card (Open-Meteo, RainViewer); storms up close. A new layer is a button in the row and must show itself the moment it is
+   pressed. Next: the rest of the world live too (Himawari over Asia and Australia, Meteosat over Europe, Africa and the Indian Ocean,
+   laid on the same way), NOAA's radar mosaic and warnings over the United States, the weather fronts (NOAA's coded surface analysis),
+   the official forecast tracks and cones of the storms (NHC, JTWC, GDACS), the model's hours ahead (play the next two days), the GOES
+   loops of the last hours as videos. For the artifact: nothing of this can reach it unless a copy of the data
    is kept on GitHub by a job in his repository: ask him first (it would run on a schedule on his account).
 5. **Keep the artifact's data fresh.** Only if he asks: a scheduled task that runs the refresh in README.md. The wind changes every
    6 hours; four runs a day is about what his plan can spare (a night of hourly runs once hit his limit).

@@ -3,7 +3,11 @@
    the sea glints under the Sun, the night is a little less dark where the Moon is up. Two more layers can be laid over it:
    smoke (a picture of the whole Earth unrolled flat, lit where there is smoke) and the aurora (the same, lit where NOAA expects it).
    Where the page is served from the owner's own host it also has the real clouds (GLOBE.cloud: EUMETSAT's world cloud map, white where
-   the geostationary satellites see cold cloud tops), lit by the Sun by day and faintly by the Moon and the night sky.
+   the geostationary satellites see cold cloud tops), lit by the Sun by day and faintly by the Moon and the night sky; and (14 Nov,
+   night: "Doesn't noa have live weather?!") the live view: the Earth as NOAA's GOES-19 and GOES-18 see it now, each full-disk picture
+   laid back onto the ball by the satellites' own fixed grid (GLOBE.geo), wherever either sees the ground squarely enough.
+   And the layers of colour the Earth can switch on (the owner, 10 Nov: "More layers, like Windy"): the wind's speed (from the model's
+   wind, both versions), the temperature, the waves and the isobars (the model's fields, on the site), the coasts drawn over them.
    The eye is far away (no perspective): a place on the Earth is a place on the screen by three plain dot products. ---------- */
 var GLOBE=(function(){
   var P=null,gen=-1,tex={},imgs={},dot1=null,ready=false,asked=false;
@@ -12,6 +16,23 @@ var GLOBE=(function(){
   function fsrc(){return (GLX.deriv?'#extension GL_OES_standard_derivatives : enable\n#define DERIV\n':'')+
     'precision highp float;uniform sampler2D uDet;uniform vec4 uDetR;uniform float uDetK;uniform vec2 uC;uniform float uR;uniform mat3 uM;uniform vec3 uSun;uniform vec3 uSunV;uniform vec3 uMoon;uniform float uMoonK;uniform float uReady;uniform vec3 uBg;\n'+
     'uniform sampler2D uDay;uniform sampler2D uLit;uniform sampler2D uWater;uniform sampler2D uTopo;uniform sampler2D uFlow;uniform sampler2D uAur;uniform float uFlowK;uniform float uAurK;uniform float uDim;uniform float uTime;uniform sampler2D uCld;uniform float uCldK;uniform sampler2D uRain;uniform float uRainK;uniform float uSunK;uniform sampler2D uWindF;uniform float uFlowA;uniform float uFlowT;\n'+
+    'uniform sampler2D uWx;uniform float uHeatK;uniform float uWaveK;uniform float uIsoK;uniform float uWindK;uniform sampler2D uGeoE;uniform sampler2D uGeoW;uniform vec2 uGeoH;uniform float uGeoK;\n'+
+    /* the shader's colours are worked out before a last curve brings them into the screen's range: a colour meant to be seen as it is
+       is first taken back through that curve */
+    'vec3 untone(vec3 c){return -log(max(vec3(1.0)-c*0.985,vec3(0.0001)))/1.55;}\n'+
+    /* the colours of the layers: the temperature (-40 to 45 degrees), the waves (0 to 12 metres), the wind (metres a second) */
+    'vec3 heatCol(float t){vec3 c=mix(vec3(0.24,0.10,0.47),vec3(0.18,0.31,0.85),smoothstep(0.0,0.235,t));c=mix(c,vec3(0.62,0.85,1.0),smoothstep(0.235,0.47,t));c=mix(c,vec3(0.45,0.88,0.62),smoothstep(0.47,0.59,t));\n'+
+    'c=mix(c,vec3(0.96,0.84,0.35),smoothstep(0.59,0.71,t));c=mix(c,vec3(1.0,0.54,0.17),smoothstep(0.71,0.82,t));return mix(c,vec3(0.80,0.12,0.24),smoothstep(0.82,1.0,t));}\n'+
+    'vec3 waveCol(float h){vec3 c=mix(vec3(0.01,0.05,0.16),vec3(0.03,0.30,0.48),smoothstep(0.0,0.17,h));c=mix(c,vec3(0.10,0.72,0.82),smoothstep(0.17,0.36,h));c=mix(c,vec3(0.90,0.97,1.0),smoothstep(0.36,0.62,h));return mix(c,vec3(1.0,0.25,0.72),smoothstep(0.62,0.95,h));}\n'+
+    'vec3 windCol(float s){vec3 c=mix(vec3(0.33,0.40,0.74),vec3(0.20,0.52,0.80),smoothstep(0.0,4.0,s));c=mix(c,vec3(0.16,0.70,0.66),smoothstep(4.0,8.0,s));c=mix(c,vec3(0.36,0.78,0.30),smoothstep(8.0,12.0,s));\n'+
+    'c=mix(c,vec3(0.92,0.84,0.26),smoothstep(12.0,16.0,s));c=mix(c,vec3(1.0,0.52,0.16),smoothstep(16.0,21.0,s));c=mix(c,vec3(0.90,0.18,0.24),smoothstep(21.0,27.0,s));return mix(c,vec3(0.86,0.30,0.86),smoothstep(27.0,36.0,s));}\n'+
+    /* a place as one of the GOES satellites sees it (its fixed grid: the angles it scans across and down, out to 0.151872 radians either
+       way of straight down, the Earth an ellipsoid, the satellite 6.6107 Earth radii from its centre over longitude l0), and how squarely:
+       nothing nearer its edge than about 80 degrees from straight down */
+    'vec4 geo(sampler2D tx,float l0,float lat,float lon){float dl=lon-l0;float pc=atan(0.99330562*tan(lat));float cp=cos(pc);float rc=0.99664719/sqrt(1.0-0.00669438*cp*cp);\n'+
+    'vec3 P=vec3(rc*cp*cos(dl),rc*cp*sin(dl),rc*sin(pc));float sx=6.6107345-P.x;float y=atan(P.z,sx);float x=asin(clamp(P.y/length(vec3(sx,P.y,P.z)),-1.0,1.0));\n'+
+    'float cz=dot(normalize(vec3(6.6107345,0.0,0.0)-P),normalize(P));vec2 q=vec2(0.5+x*3.29224,0.5-y*3.29224);\n'+
+    'float w=smoothstep(0.16,0.42,cz)*step(0.0,q.x)*step(q.x,1.0)*step(0.0,q.y)*step(q.y,1.0);return vec4(texture2D(tx,q).rgb,w);}\n'+
     'void main(){vec2 p=(gl_FragCoord.xy-uC)/uR;float rr=length(p);vec2 pc=rr>0.9995?p*(0.9995/rr):p;vec3 n=vec3(pc,sqrt(max(1.0-dot(pc,pc),0.0)));vec3 e=uM*n;\n'+
     'float lat=asin(clamp(e.z,-1.0,1.0));float lon=atan(e.y,e.x);float ua=lon*0.15915494+0.5;\n'+
     /* a picture wrapped round a ball meets itself along one line; near that line the same place is looked up by a second count that has its join on the other side */
@@ -33,17 +54,28 @@ var GLOBE=(function(){
     'float lit=max(l0-0.05,0.0)*1.05+l1*0.4;col+=vec3(1.0,0.72,0.38)*lit*1.1*night*uReady;\n'+
     /* the Sun on the sea */
     'vec3 hv=normalize(uSunV+vec3(0.0,0.0,1.0));float sd=max(dot(n,hv),0.0);float dayk=smoothstep(0.0,0.2,d)*wat;col+=(vec3(1.0,0.90,0.70)*pow(sd,220.0)*0.3+vec3(0.5,0.62,0.75)*pow(sd,26.0)*0.06)*dayk*uDim;\n'+
+    /* the live view: where either satellite sees the place squarely, the place as it saw it (blended across where both do) */
+    'float wsat=0.0;if(uGeoK>0.0){vec4 gE=uGeoH.x>0.5?geo(uGeoE,-1.3124878,lat,lon):vec4(0.0);vec4 gW=uGeoH.y>0.5?geo(uGeoW,-2.3945966,lat,lon):vec4(0.0);float gs=gE.a+gW.a;\n'+
+    'if(gs>0.0){vec3 gc=(gE.rgb*gE.a+gW.rgb*gW.a)/gs;wsat=max(gE.a,gW.a)*uGeoK;col=mix(col,untone(gc),wsat);}}\n'+
     /* the clouds: thick ones hide the ground and the cities; by day as bright as the Sun makes them, by night a faint grey */
     /* the clouds and the rain drift with the real wind (as a flow, cycling every few seconds: the picture itself is three hours old) */
     'vec2 wf=(texture2D(uWindF,uv).xy-0.50196)*80.315*uFlowA;vec2 du=vec2(wf.x/cl,-wf.y)*0.00045;float f1=fract(uFlowT),f2=fract(uFlowT+0.5),fwa=abs(f1*2.0-1.0);\n'+
     'float cs=mix(texture2D(uCld,uv-du*f1).r,texture2D(uCld,uv-du*f2).r,fwa);\n'+
-    'float cw=smoothstep(0.10,0.80,cs)*uCldK;vec3 cc=vec3(0.93,0.96,1.0)*(sunl*1.32+tw*vec3(0.05,0.07,0.11))*mix(uDim,1.0,0.55)+vec3(0.07,0.09,0.14)*night*(1.0+moonl*4.0);\n'+
+    /* (the cloud map only where the live view has nothing of its own) */
+    'float cw=smoothstep(0.10,0.80,cs)*uCldK*(1.0-wsat);vec3 cc=vec3(0.93,0.96,1.0)*(sunl*1.32+tw*vec3(0.05,0.07,0.11))*mix(uDim,1.0,0.55)+vec3(0.07,0.09,0.14)*night*(1.0+moonl*4.0);\n'+
     'col=mix(col,cc,cw*0.9);\n'+
+    /* the layers of colour (one at a time), the day and night still showing through them, and the coasts over them; then the isobars */
+    'vec4 wx=texture2D(uWx,uv);float shade=0.5+0.5*max(sunl,0.25);float colK=0.0;\n'+
+    'if(uHeatK>0.0){col=mix(col,untone(heatCol(wx.r))*shade,uHeatK*0.78);colK=uHeatK;}\n'+
+    'if(uWaveK>0.0){float sea=smoothstep(0.0,0.012,wx.g);col=mix(col,untone(waveCol((wx.g-0.004)*1.004))*shade,uWaveK*0.74*sea);colK=max(colK,uWaveK);}\n'+
+    'if(uWindK>0.0){vec2 w0=(texture2D(uWindF,uv).xy-0.50196)*80.315;col=mix(col,untone(windCol(length(w0)))*shade,uWindK*0.72);colK=max(colK,uWindK);}\n'+
+    '#ifdef DERIV\nif(colK>0.0){float cst=smoothstep(0.05,0.25,fwidth(wat));col=mix(col,untone(vec3(0.86,0.92,1.0)),cst*colK*0.62);}\n#endif\n'+
+    'if(uIsoK>0.0)col=mix(col,untone(vec3(0.92,0.97,1.0)),wx.b*uIsoK*0.85);\n'+
     /* the rain of the last half hour measured from orbit (NASA IMERG), in its own colours: light blue for a shower to red for a downpour */
     'vec4 rn=mix(texture2D(uRain,uv-du*f1),texture2D(uRain,uv-du*f2),fwa);col=mix(col,rn.rgb*1.05,rn.a*uRainK*0.8);\n'+
     /* the Sun: a warm light where it shines on clear ground, the point it stands straight over, and where dusk is six, twelve and eighteen degrees deep */
-    'if(uSunK>0.0){col+=vec3(1.0,0.74,0.36)*(1.0-cw)*pow(max(d,0.0),1.6)*0.3*uSunK*mix(uDim,1.0,0.5);col+=vec3(1.0,0.86,0.6)*exp(-(1.0-d)*110.0)*0.9*uSunK;\n'+
-    'col+=(vec3(1.0,0.55,0.25)*(1.0-smoothstep(0.0,0.006,abs(d+0.1045)))*0.34+vec3(0.75,0.45,1.0)*(1.0-smoothstep(0.0,0.006,abs(d+0.2079)))*0.22+vec3(0.45,0.40,1.0)*(1.0-smoothstep(0.0,0.006,abs(d+0.3090)))*0.16)*uSunK;}\n'+
+    'float sk=uSunK*(1.0-wsat*0.85)*(1.0-colK*0.6);if(sk>0.0){col+=vec3(1.0,0.74,0.36)*(1.0-cw)*pow(max(d,0.0),1.6)*0.3*sk*mix(uDim,1.0,0.5);col+=vec3(1.0,0.86,0.6)*exp(-(1.0-d)*110.0)*0.9*sk;\n'+
+    'col+=(vec3(1.0,0.55,0.25)*(1.0-smoothstep(0.0,0.006,abs(d+0.1045)))*0.34+vec3(0.75,0.45,1.0)*(1.0-smoothstep(0.0,0.006,abs(d+0.2079)))*0.22+vec3(0.45,0.40,1.0)*(1.0-smoothstep(0.0,0.006,abs(d+0.3090)))*0.16)*sk;}\n'+
     /* the aurora: where it is expected, a green that leans to violet where it is strongest, shimmering along its length; plainest at night */
     'float au=texture2D(uAur,uv).r*2.55;float ak=smoothstep(0.012,0.34,au)*uAurK;\n'+
     'float sh=0.72+0.28*sin(lon*46.0+uTime*1.7+sin(lat*38.0+uTime*0.6)*2.2);col+=mix(vec3(0.08,1.0,0.46),vec3(0.62,0.34,1.0),clamp(au*1.6-0.1,0.0,0.75))*ak*sh*(0.3+0.9*night);\n'+
@@ -88,6 +120,8 @@ var GLOBE=(function(){
     glBind(4,(o.flow||dot1.tex),u.uFlow);glBind(5,(o.aur||dot1.tex),u.uAur);var ck=o.cld&&tex.cld?(o.cldK===undefined?1:o.cldK):0;glBind(6,ck?tex.cld.tex:dot1.tex,u.uCld);gl.uniform1f(u.uCldK,ck);
     var rk=o.rain&&tex.rain?(o.rainK===undefined?1:o.rainK):0;glBind(7,rk?tex.rain.tex:dot1.tex,u.uRain);gl.uniform1f(u.uRainK,rk);gl.uniform1f(u.uSunK,o.sunK||0);
     glBind(9,o.windF||dot1.tex,u.uWindF);gl.uniform1f(u.uFlowA,o.windF&&!reduce?1:0);gl.uniform1f(u.uFlowT,(o.time||0)/7);
+    glBind(8,o.wx||dot1.tex,u.uWx);gl.uniform1f(u.uHeatK,o.wx?o.heatK||0:0);gl.uniform1f(u.uWaveK,o.wx?o.waveK||0:0);gl.uniform1f(u.uIsoK,o.wx?o.isoK||0:0);gl.uniform1f(u.uWindK,o.windF?o.windK||0:0);
+    var gE=o.geoK&&tex.ge,gW=o.geoK&&tex.gw;glBind(11,gE?tex.ge.tex:dot1.tex,u.uGeoE);glBind(12,gW?tex.gw.tex:dot1.tex,u.uGeoW);gl.uniform2f(u.uGeoH,gE?1:0,gW?1:0);gl.uniform1f(u.uGeoK,gE||gW?o.geoK:0);
     var dk=tex.det&&DETR?Math.min(1,(FT-DETR.t)/600):0;glBind(10,dk?tex.det.tex:dot1.tex,u.uDet);gl.uniform1f(u.uDetK,dk);
     if(dk)gl.uniform4f(u.uDetR,DETR.w*AS.D,DETR.n*AS.D,1/((DETR.e-DETR.w)*AS.D),1/((DETR.n-DETR.s)*AS.D));
     /* only the square the globe and its glow fill is worked out */
@@ -99,5 +133,7 @@ var GLOBE=(function(){
   function cloud(im){layer('cld',im)}
   /* a close picture of part of the Earth (south, west, north, east in degrees): it fades in over the whole Earth's picture */
   var DETR=null;function detail(im,r){layer('det',im);DETR={s:r.s,w:r.w,n:r.n,e:r.e,t:DETR&&FT-DETR.t>600?FT-600:FT}}
-  return {load:load,basis:basis,pr:pr,at:at,draw:draw,dot:dot,cloud:cloud,detail:detail,detR:function(){return DETR},rain:function(im){layer('rain',im)},hasCloud:function(){return !!tex.cld},hasRain:function(){return !!tex.rain},ready:function(){return ready},gl:function(){gen=-1}}
+  return {load:load,basis:basis,pr:pr,at:at,draw:draw,dot:dot,cloud:cloud,detail:detail,detR:function(){return DETR},rain:function(im){layer('rain',im)},hasCloud:function(){return !!tex.cld},hasRain:function(){return !!tex.rain},ready:function(){return ready},gl:function(){gen=-1},
+    /* NOAA's live pictures: k 'e' (GOES-19, east) or 'w' (GOES-18, west), a full-disk picture (made square on the device) */
+    geo:function(k,im){layer(k==='e'?'ge':'gw',im)},hasGeo:function(){return (tex.ge?1:0)+(tex.gw?2:0)}}
 })();

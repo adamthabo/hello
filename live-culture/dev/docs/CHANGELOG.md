@@ -1,6 +1,23 @@
 # Changelog
 
 ## For the owner
+14 Nov 2026, night, after "On the earth there should be videos, that's the best part!!! And be able to take on and off layers. The
+weather is pretty lame. Make it so much better! Doesn't noa have live weather?!":
+
+- **Videos on the Earth.** Every camera is now a small picture standing over where it is. On your site it is the stream's own picture,
+  renewed every few minutes, with a red mark on those live now; tap one and it plays in the window, which now also has a "youtube"
+  button in case the player will not start on your phone. In the Claude app the page is not allowed to show outside video or pictures,
+  so there each camera is a play tile, and tapping it gives a card with "watch it live on YouTube".
+- **Layers you can switch.** A row of buttons under the globe, each a picture and a word, lit when on: videos, live view, wind,
+  temperature, rain, clouds, waves, pressure, lightning, storms, fires, satellites, aurora. Each one shows itself straight away: the top
+  line says what it is, the storms, fires, lightning and aurora buttons turn the Earth to the biggest of each, and the colour layers put
+  their scale above the row. Only one colour layer shows at a time. Your choices are remembered.
+- **Live weather from NOAA (on your site).** "Live view" lays the real pictures from NOAA's two weather satellites over the Americas onto
+  the globe, a new one every ten minutes: real clouds, storms and the night side's city lights. The temperature, waves and pressure are
+  now NOAA's forecast for the current hour, not a model run from hours earlier, and the wind is too. The wind can also be shown in colour
+  by speed, the way Windy does it. The Claude app's copy cannot fetch anything live: its weather is the snapshot published with it,
+  refreshed tonight.
+
 14 Nov 2026, afternoon, after "I don't understand the layers. It doesn't make any sense why that's there. They hardly work. Make that
 go away so you can see the whole globe and all the gameplay":
 
@@ -125,6 +142,34 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 14 Nov 2026, night: videos on the Earth, the layers back as a row, NOAA's live view (rule 20)
+
+- `12-wind.js`: `LYS` (13 layers), `LY` (kept as `lc-earth-layers`), `dockSync` (the row `#lyd`, a button for each layer `lyHas` finds
+  something for), `lyTap` (exclusive temperature and waves; clears a hint's ghost reading so the words show), `lyApply` (cameras,
+  satellites, `GEO.want`), `lyShow` (`nowList` targets: storm, fire, bolt, aurora through `nowGo`; the space station, a camera on the air,
+  the Americas by `flyTo`), `colLayer` (temperature > waves > the wind's colours, which give way to the live view), `lgdSync` (`#lgd`, its
+  gradient from `LGD`), `lyLine` (the third line: the switch said for 3.8 s, else the live view's age and the shown field's hour, "now"
+  within 2.2 h). `wxBuild`/`wxStep`/`isobars` back (built only while temperature, waves or pressure is on; the isobars only with the
+  pressure), the highs and lows drawn while the pressure shows; lightning, fires (and their smoke), storms and the satellites drawn,
+  sounded and picked only while their layers are on (`ORBIT.layer.draw(t, hide)` keeps the stars). `geo()` makes room for the camera's
+  card as for the place card. The row of names (`nowr`) is gone.
+- `07-globe.js`: `geo()` in the shader (the ABI fixed grid), `untone`, `heatCol`, `waveCol`, `windCol`; `uWx`, `uHeatK`, `uWaveK`,
+  `uIsoK`, `uWindK`, `uGeoE`, `uGeoW`, `uGeoH`, `uGeoK`; the cloud map and the Sun's marks weighted down under the live view; the coasts
+  over a colour where derivatives exist. `GLOBE.geo`, `GLOBE.hasGeo`.
+- `06-live.js`: `GEO` (pulled every ten minutes while wanted, drawn 1024 square), `wxTake` for `wind10` (`windGrib`, `LIVE.wind.now`),
+  `highsLows` and `WX.hl` back; `PULLEVERY.goes`.
+- `14-live.js`: tiles (`tiles`, `thumb` through `/api/thumb`, `tileAt`), the artifact's card (`camCard`, `camCardOff`), `camsFrom` (the
+  carried `CAMLIST` first, then `/api/cams`; `yt` links kept), `ytLink` (`#vY`), `airSpot`, `onAir` false in the artifact; no asking the
+  Worker there. `10-camlist.js` and `tools/gen_cams.js` new; `build.py` puts both into both builds; the hook gives `GEO`.
+- `worker.js`: `/api/thumb/<video>`; `GF.wind10`; `gfsRuns` with `fh` and the valid time; the index line for the step (`anl` or
+  `N hour fcst`), any line of the field if none.
+- Data: the artifact's snapshot refreshed (wind of the 14 Nov 18Z run, lightning, fires and orbits of 15 Nov 04Z).
+- Tests: `t_play.js` (the row, its scale, a layer off and on, the cameras' pictures and card, the cameras and satellites put away while
+  places are tapped), `t_hosted.js` (the row as it starts, the live view, the wind now, the hour of the fields, a thumbnail, the
+  temperature, the waves in its place, the isobars and highs and lows, a camera's picture tapped, the window's YouTube link, videos off
+  and on; no storm needed), `t_published.js` (the row, a camera's card from the published bytes), `t_misc.js` (words);
+  `hostmock.mjs` (a stand-in picture for every video; the test model index has the 10 m wind).
 
 ## 14 Nov 2026, afternoon: no layers, the whole globe (rule 19)
 

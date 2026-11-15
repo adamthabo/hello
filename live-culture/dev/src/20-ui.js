@@ -102,7 +102,7 @@ function ghostsOff(real){
   var any=false,id;for(id in GP){any=true;var p=GP[id];delete GP[id];p.down=false;if(CUR&&CUR.up)(function(p){safe(function(){CUR.up(p)})})(p)}
   if(GH.on||any){var was=GH.mode;GH.on=false;GH.mode=0;if(real&&was===1&&CUR&&CUR.ghostEnd)safe(function(){CUR.ghostEnd()})}}
 /* a press on a world's own controls beside the picture (the Earth's names, its zoom) is a touch too: the hints stop */
-['nowr','zm'].forEach(function(id){var e=$(id);if(e)e.addEventListener('pointerdown',function(){ghostsOff(true);touched[CURI]=true;lastTouch=performance.now()})});
+['lyd','zm'].forEach(function(id){var e=$(id);if(e)e.addEventListener('pointerdown',function(){ghostsOff(true);touched[CURI]=true;lastTouch=performance.now()})});
 function ghostTick(t){
   var idle=!reduce&&CUR&&PTN===0&&!document.hidden&&t-swT>650,
     mode=!idle?0:(soundHeld()&&t-lastTouch>900?2:(CUR.ghost&&(!touched[CURI]||t-lastTouch>30000)?1:0));

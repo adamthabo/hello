@@ -51,34 +51,55 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await page.evaluate(() => window.__lc.go(1, true)); await sleep(5600); s = await S();
     ok(s.dbg.ready, 'earth: the pictures of the Earth should have loaded'); ok(s.dbg.wind && s.dbg.aurora && s.dbg.strikes > 20, 'earth: the wind, the aurora and the lightning should be there: ' + JSON.stringify([s.dbg.wind, s.dbg.aurora, s.dbg.strikes]));
     ok(s.dbg.fires > 4 && s.dbg.fireGL === s.dbg.fires, 'earth: the fires should be there and feeding the smoke: ' + s.dbg.fires + ', ' + s.dbg.fireGL);
-    // (13 Nov, night: "the map hard to use") three short lines; a row of names of what is happening now that fly the Earth there; two zoom
-    // buttons. (14 Nov, afternoon: "I don't understand the layers ... Make that go away so you can see the whole globe": no layers, and the
-    // globe whole under the words, each of them one line of the phone)
-    ok(/^drag to turn · tap a place or a name\n(\d+ storms? · )?[\d,]+ fires · [\d,]+ lightning flashes\nweather of \d+ \w+ \d\d:\d\d UTC( · aurora \w+)?$/.test(s.data), 'earth: three short lines: what to do, what is happening now, how fresh: ' + s.data.replace(/\n/g, ' | '));
-    const row = await page.evaluate(() => [...document.querySelectorAll('#nowr .lb')].map(b => { const r = b.getBoundingClientRect(); return { id: b.id, t: b.textContent, h: r.height }; }));
-    ok(!(await page.$('#lyB')) && !(await page.$('#lys')) && row[0].t === 'space station' && row.some(b => b.t === 'biggest fire') && row.some(b => b.t === 'lightning') && row.every(b => b.h >= 32), 'earth: no layers; under the globe the names of what is happening now: ' + row.map(b => b.t).join(', '));
-    const whole = () => page.evaluate(() => { const d = window.__lc.WIND.dbg(), e = document.getElementById('data'), t = e.getBoundingClientRect(), r = document.getElementById('nowr').getBoundingClientRect();
+    // (14 Nov, night: "On the earth there should be videos, that's the best part!!! And be able to take on and off layers. The weather is
+    // pretty lame.") Four short lines (what to do; what is happening now; the wind and its hour; the cameras), each one line of the phone;
+    // the globe whole under them; under the globe its scale and the row of layers, each a button lit while it shows; the cameras on the
+    // Earth as pictures
+    ok(/^drag to turn · tap a video or a place\n(\d+ storms? · )?[\d,]+ fires · [\d,]+ lightning flashes\nwind (now|of \d+ \w+ \d\d:\d\d UTC)( · aurora \w+)?\n\d+ cameras · tap one for YouTube$/.test(s.data), 'earth: four short lines: what to do, what is happening now, the wind and its hour, the cameras: ' + s.data.replace(/\n/g, ' | '));
+    const dock = await page.evaluate(() => [...document.querySelectorAll('#lyd .dk')].map(b => { const r = b.getBoundingClientRect(); return { id: b.id, t: b.textContent, on: b.getAttribute('aria-pressed') === 'true', h: r.height }; }));
+    // (a layer with nothing to show has no button: storms when none is turning)
+    ok(dock.map(b => b.id).join() === 'ly_vid,ly_wind,ly_bolt,' + (s.dbg.storms.length ? 'ly_storm,' : '') + 'ly_fire,ly_orbit,ly_aur' && dock.every(b => b.on && b.h >= 40) && dock[0].t === 'videos', 'earth: a row of layers, each named and lit while it shows (here, with the snapshot: videos, wind, lightning, storms if any, fires, satellites, aurora): ' + dock.map(b => b.t + (b.on ? '+' : '-')).join(', '));
+    ok(s.dbg.lgd === 'wind' && await page.evaluate(() => /linear-gradient/.test(document.getElementById('lgb').style.background) && document.getElementById('lgs').childNodes.length === 5), 'earth: the wind\'s speed in colour, its scale over the row');
+    const whole = () => page.evaluate(() => { const d = window.__lc.WIND.dbg(), e = document.getElementById('data'), t = e.getBoundingClientRect(), r = document.getElementById('lgd').hidden ? document.getElementById('lyd').getBoundingClientRect() : document.getElementById('lgd').getBoundingClientRect();
       return { top: Math.round(d.cy - d.R), bottom: Math.round(d.cy + d.R), left: Math.round(d.cx - d.R), right: Math.round(d.cx + d.R), words: Math.round(t.bottom), lines: Math.round(t.height / parseFloat(getComputedStyle(e).lineHeight)), row: Math.round(r.top), w: innerWidth, text: e.textContent.replace(/\n/g, ' | ') }; });
     let gw = await whole();
     // (the hints' ghost finger may have tapped a place by now: its reading is not measured, and may be a line longer)
-    ok((/^drag to turn/.test(gw.text) ? gw.lines === 3 && gw.top >= gw.words : gw.top >= gw.words - 20) && gw.bottom <= gw.row && gw.left >= 0 && gw.right <= gw.w, 'earth: the whole globe shows, under the lines of words (each one line of the phone) and above the row: ' + JSON.stringify(gw));
+    ok((/^drag to turn/.test(gw.text) ? gw.lines === 4 && gw.top >= gw.words : gw.top >= gw.words - 20) && gw.bottom <= gw.row && gw.left >= 0 && gw.right <= gw.w, 'earth: the whole globe shows, under the lines of words (each one line of the phone) and above the scale and the row: ' + JSON.stringify(gw));
     const tapEl = async sel => { const r = await page.evaluate(sel => { const e = document.querySelector(sel); e.scrollIntoView({ block: 'nearest', inline: 'center' }); const q = e.getBoundingClientRect(); return { x: q.left + q.width / 2, y: q.top + q.height / 2 }; }, sel); await sleep(150); await T.tap(r.x, r.y); await sleep(250); };
-    // a name flies the Earth to it, comes close and reads it
-    const bf = row.findIndex(b => b.t === 'biggest fire'); await tapEl('#' + row[bf].id); await sleep(1800); s = await S();
-    ok(s.hint === 0 && s.dbg.probe && s.dbg.probe.r.fire && Math.abs(s.dbg.zoom - 2.6) < .05 && /^fire · [\d,]+ MW · seen by /m.test(s.data), 'earth: "biggest fire" turns the Earth to the fire, comes close and reads it: ' + s.data.replace(/\n/g, ' | '));
+    // a layer switched off: its button goes dark, the words say so and stop counting it, and nothing of it is drawn or read
+    await tapEl('#ly_fire'); s = await S();
+    ok(s.dbg.LY.fire === 0 && !(await page.evaluate(() => document.getElementById('ly_fire').getAttribute('aria-pressed') === 'true')) && /\nfires off\n/.test(s.data) && !/fires ·/.test(s.data), 'earth: "fires" off: dark, said, no longer counted: ' + s.data.replace(/\n/g, ' | '));
+    // and on again: the Earth turns to the biggest fire, comes close and reads it
+    await tapEl('#ly_fire'); await sleep(1800); s = await S();
+    ok(s.dbg.LY.fire === 1 && s.hint === 0 && s.dbg.probe && s.dbg.probe.r.fire && Math.abs(s.dbg.zoom - 2.6) < .05 && /^fire · [\d,]+ MW · seen by /m.test(s.data), 'earth: "fires" on again turns the Earth to the biggest fire, comes close and reads it: ' + s.data.replace(/\n/g, ' | '));
     await shot('1a3_earth_name');
     // the zoom buttons
     const z1 = s.dbg.zoom; await tapEl('#zOut'); s = await S(); const z2 = s.dbg.zoom; await tapEl('#zIn'); s = await S();
     ok(z2 < z1 / 1.3 && Math.abs(s.dbg.zoom - z1) < .02, 'earth: − goes further out, + comes closer: ' + [z1, z2, s.dbg.zoom].map(z => z.toFixed(2)).join(' → '));
     await T.tap(X(.03), Y(.02)); await sleep(300);
     ok(s.dbg.ok, 'earth: the smoke should be running'); await shot('1a_earth_home');
+    // the cameras: pictures on the Earth; in the artifact a tap opens a card whose button opens the stream on YouTube
+    await page.evaluate(() => window.__lc.WIND.look(30, -80, 1)); await sleep(900);
+    let cam = await page.evaluate(() => window.__lc.LIVEW.dbg());
+    ok(cam.on && cam.cams > 80 && cam.tiles.length >= 6 && cam.tiles.every(t => t.w >= 40 && Math.abs(t.h / t.w - 9 / 16) < .05), 'earth: the cameras are pictures on the Earth, sixteen by nine: ' + cam.tiles.length + ' shown, ' + cam.rings + ' as rings');
+    const tl = cam.tiles[0]; for (let k = 0; k < 3; k++) { await T.tap(tl.x + tl.w / 2, tl.y + tl.h / 2); await sleep(600); cam = await page.evaluate(() => window.__lc.LIVEW.dbg()); if (cam.card) break; }
+    const cardA = await page.evaluate(() => { const c = document.getElementById('card'), a = c.querySelector('a.cy'); return { shown: !c.hidden, text: c.innerText.replace(/\n+/g, ' | '), href: a ? a.href : '', tgt: a ? a.target : '' }; });
+    ok(cam.card === tl.id && cardA.shown && /^https:\/\/www\.(youtube\.com|star\.nesdis\.noaa\.gov)\//.test(cardA.href) && cardA.tgt === '_blank' && /watch it live on youtube|see it on noaa/i.test(cardA.text), 'earth: a camera tapped opens its card, with its stream on YouTube: ' + cardA.text.slice(0, 120) + ' -> ' + cardA.href.slice(0, 70));
+    await shot('1a4_earth_camera');
+    for (let k = 0; k < 3; k++) { await T.tap(X(.03), Y(.02)); await sleep(400); if (!(await page.evaluate(() => window.__lc.LIVEW.dbg().card))) break; }
+    // (the tap may land near a satellite, whose card then opens in its place)
+    ok(await page.evaluate(() => { const c = document.getElementById('card'); return (c.hidden || c.dataset.k !== 'cam') && !window.__lc.LIVEW.dbg().card; }), 'earth: a tap off the camera puts its card away: ' + JSON.stringify(await page.evaluate(() => ({ card: window.__lc.LIVEW.dbg().card, hidden: document.getElementById('card').hidden, k: document.getElementById('card').dataset.k, txt: document.getElementById('card').innerText.slice(0, 60), probe: window.__lc.WIND.dbg().probe }))));
+    // the videos off: no pictures; on again: the Earth turns to one
+    await tapEl('#ly_vid'); cam = await page.evaluate(() => window.__lc.LIVEW.dbg()); s = await S(); ok(!cam.on && s.dbg.LY.vid === 0, 'earth: "videos" off takes the cameras away');
+    await tapEl('#ly_vid'); await sleep(1400); cam = await page.evaluate(() => window.__lc.LIVEW.dbg()); ok(cam.on && cam.tiles.length > 0, 'earth: "videos" on brings them back: ' + cam.tiles.length);
     await page.evaluate(() => window.__lc.WIND.look(15, -40, 1)); await sleep(300); s = await S();
     const R = s.dbg.R, cx = s.dbg.cx, cy = s.dbg.cy, l0 = s.dbg.lon0;
     // one finger turns the globe, and leaves nothing behind
     await T.stroke(1, u => [cx + R * .5 - R * 1.0 * u, cy + R * .1], 600); s = await S();
     ok(Math.abs(s.dbg.lon0 - l0) > 15 && s.dbg.turned === 1, 'earth: one finger should turn the globe, moved ' + (s.dbg.lon0 - l0).toFixed(1)); ok(s.want, 'earth: a touch should ask for the music');
-    // a tap on a place reads it (the satellites put away first, so the tap cannot land on one)
-    await page.evaluate(() => window.__lc.WIND.look(15, -40, 1)); await sleep(400);
+    // a tap on a place reads it (the cameras and the satellites put away while places, fires and storms are tapped: a tap on a camera's
+    // picture opens it, and one near a satellite that can be picked picks it)
+    await page.evaluate(() => { window.__lc.WIND.layer('vid', 0); window.__lc.WIND.layer('orbit', 0); window.__lc.WIND.look(15, -40, 1); }); await sleep(400);
     // (a tap is a touch lifted within 600 ms of the frames' clock; a frame of this browser can take a good part of that, so up to four tries;
     // and over the globe a tap can land on one of the satellites that can be picked there, the stations and the notable ones: then another place)
     const tp = [[-.2, .15], [.25, -.1], [-.3, -.3], [.1, .35]];
@@ -97,6 +118,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     if (st) { await sleep(1200); s = await S(); const sp = s.dbg.storms.find(k => k.name === st.name); for (let k = 0; k < 3; k++) { await T.tap(sp.x, sp.y); await sleep(500); s = await S(); if (s.dbg.probe) break; }
       ok(s.dbg.probe && s.dbg.probe.r.storm && s.data.indexOf(st.name) >= 0, 'earth: a tap on a storm should read the storm: ' + s.data.replace(/\n/g, ' | ')); await shot('1d_earth_storm'); console.log('  ', s.data.replace(/\n/g, ' | ')); }
     else console.log('   (no tropical storm today)');
+    // (the satellites back; the cameras stay away until the satellites have been tapped, their pictures could cover one)
+    await page.evaluate(() => window.__lc.WIND.layer('orbit', 1));
     // two fingers spreading: closer (from the whole Earth: a storm tapped has just brought it close)
     await page.evaluate(() => window.__lc.WIND.look(15, -40, 1)); await sleep(400);
     s = await S(); const z0 = s.dbg.zoom, c2 = s.dbg.cx, c3 = s.dbg.cy; await T.down(1, c2 + 40, c3); await T.down(2, c2 - 40, c3); for (let k = 1; k <= 14; k++) { pts.set(1, { x: c2 + 40 + k * 5, y: c3 }); pts.set(2, { x: c2 - 40 - k * 5, y: c3 }); await send('touchMove'); await sleep(18); } pts.clear(); await send('touchEnd');
@@ -104,9 +127,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await page.evaluate(() => window.__lc.WIND.look(10, -80, 1));
     let fl = 0; for (let k = 0; k < 14; k++) { await sleep(250); fl = Math.max(fl, (await S()).dbg.flashes); } ok(fl > 0, 'earth: the lightning should be flashing, most at once ' + fl);
     await page.evaluate(() => window.__lc.WIND.look(68, -40, 1.4)); await sleep(1500); await shot('1f_earth_aurora');
-    // the satellites: always on the Earth, every one where it is this second
+    // the satellites: a layer of the Earth, on, every one where it is this second
     let o = await page.evaluate(() => window.__lc.ORBIT.dbg()); s = await S();
-    ok(o.n > 10000, 'earth: the satellites are on the globe: ' + o.n); ok(o.live && o.want === 1 && Math.abs(o.off) < 1000, 'earth: the satellites are where they are this second (x' + o.spd.toFixed(1) + ')');
+    ok(o.n > 10000 && s.dbg.LY.orbit === 1, 'earth: the satellites are on the globe: ' + o.n); ok(o.live && o.want === 1 && Math.abs(o.off) < 1000, 'earth: the satellites are where they are this second (x' + o.spd.toFixed(1) + ')');
     // a tap on a satellite brings up what is on record about it
     await page.evaluate(() => window.__lc.WIND.look(20, -60, .42)); await sleep(1500); o = await page.evaluate(() => window.__lc.ORBIT.dbg()); const v = o.vis[2] || o.vis[0];
     await T.tap(v[0], v[1]); await sleep(600); o = await page.evaluate(() => window.__lc.ORBIT.dbg()); ok(o.sel >= 0 && o.card && /ORBIT/i.test(o.card) && /NOW OVER/i.test(o.card), 'earth: tapping a satellite should bring up its card: ' + String(o.card).replace(/\n+/g, ' | '));
@@ -116,7 +139,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await page.evaluate(() => window.__lc.ORBIT.pick('ISS (ZARYA)')); await sleep(900); o = await page.evaluate(() => window.__lc.ORBIT.dbg());
     ok(/1998-067A/.test(o.card) && /Baikonur/.test(o.card) && /20 Nov 1998/.test(o.card) && /51\.6°/.test(o.card), 'earth: the space station\'s card should hold its record: ' + String(o.card).replace(/\n+/g, ' | '));
     const age = /MEASURED\s*orbit of [^·]+ · (\d+) (min|h|days) ago/i.exec(o.card); ok(age && (age[2] !== 'days'), 'earth: the space station\'s orbit should have been measured within two days: ' + (age && age[0]));
-    await shot('1h_earth_iss');
+    await shot('1h_earth_iss'); await page.evaluate(() => window.__lc.WIND.layer('vid', 1));
     const box = await page.evaluate(() => { const c = document.getElementById('card').getBoundingClientRect(), f = document.getElementById('foot').getBoundingClientRect(), d = document.getElementById('data').getBoundingClientRect(); return { top: c.top, bottom: c.bottom, left: c.left, right: c.right, foot: f.top, data: d.bottom, vw: innerWidth }; });
     ok(box.bottom <= box.foot + 1 && box.left >= 8 && box.right <= box.vw - 8, 'earth: the card should sit above the bottom row: ' + JSON.stringify(box));
     await page.evaluate(() => window.__lc.go(0, true)); await sleep(300); ok(await page.evaluate(() => document.getElementById('card').hidden), 'earth: the card should leave with its world'); }

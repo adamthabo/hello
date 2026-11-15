@@ -192,7 +192,7 @@ var ORBIT=(function(){
     var gl=GLX.gl,bg=[ABYSS[0]*.6,ABYSS[1]*.6,ABYSS[2]*.7],u,a,i;
     glClear(bg[0],bg[1],bg[2]);GLOBE.draw(g,{sun:sunV,moon:moonV,moonK:moonI?moonI.phase:0,bg:bg,dim:.8,flow:null,aur:null,time:t*.001});
     sky(t)}
-  function sky(t){
+  function sky(t,hide){
     var gl=GLX.gl,u,a,i;
     glAttrOff();gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.viewport(0,0,GLX.w,GLX.h);gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE);
     /* the stars; the shekere makes them shiver */
@@ -200,7 +200,7 @@ var ORBIT=(function(){
     gl.uniform2f(u.uC,g.cx,g.cy);gl.uniform2f(u.uRes,VW,VH);gl.uniform1f(u.uR,g.R);gl.uniform1f(u.uS,Math.hypot(VW,VH)*.56);gl.uniform1f(u.uPt,DPR*(1+.2*HIT[1]*G[1]));
     gl.bindBuffer(gl.ARRAY_BUFFER,starB);gl.enableVertexAttribArray(a.a_p);gl.vertexAttribPointer(a.a_p,3,gl.FLOAT,false,28,0);gl.enableVertexAttribArray(a.a_c);gl.vertexAttribPointer(a.a_c,4,gl.FLOAT,false,28,12);
     gl.drawArrays(gl.POINTS,0,[starN,Math.min(starN,3000),Math.min(starN,1800)][QL]);
-    if(satB&&satH&&satN){
+    if(!hide&&satB&&satH&&satN){
       var n=[satN,Math.min(satN,12500),Math.min(satN,8000)][QL],fast=clamp((Math.abs(spd)-1)/40,0,1);
       glAttrOff();u=P.sat.u;a=P.sat.a;gl.useProgram(P.sat.p);gl.uniform3f(u.uE,RE3[0],RE3[1],RE3[2]);gl.uniform3f(u.uN,RN3[0],RN3[1],RN3[2]);gl.uniform3f(u.uV,RC3[0],RC3[1],RC3[2]);
       gl.uniform2f(u.uC,g.cx,g.cy);gl.uniform2f(u.uRes,VW,VH);gl.uniform1f(u.uR,g.R);gl.uniform1f(u.uT,(simMs-baseT)/60000);gl.uniform1f(u.uTail,lerp(1.2,3.2,fast));
@@ -258,7 +258,8 @@ var ORBIT=(function(){
       off:function(){if(sel<0)return;sel=-1;path=null;selI=null;cardBuild()},
       tick:function(dt,t,gx){if(LIVE.sats&&satV!==LIVE.ver.sats)unpack();g.cx=gx.cx;g.cy=gx.cy;g.R=gx.R;for(var k=0;k<3;k++){g.E[k]=gx.E[k];g.N[k]=gx.N[k];g.C[k]=gx.C[k]}
         zoom=gx.R/Math.max(1,Math.min(STG.w,STG.h)*.3);off=0;want=1;spd=1;ret=false;clock(dt,t)},
-      draw:function(t){if(!GLX.ok||GLX.lost)return;if(gen!==GLX.gen)glSetup();if(!P)return;sky(t)},
+      /* (hide: the Earth's satellites layer is off; the stars are still drawn) */
+      draw:function(t,hide){if(!GLX.ok||GLX.lost)return;if(gen!==GLX.gen)glSetup();if(!P)return;sky(t,hide)},
       /* a tap near a satellite: the nearest within reach is chosen (true), or none is (false). Over the Earth's face a tap is for the
          place under it (the swarm is so thick there that a satellite is within reach of every point), so only the space stations and the
          few satellites the sound follows are taken there; in the dark round the Earth, any satellite */

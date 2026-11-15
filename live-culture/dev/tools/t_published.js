@@ -13,12 +13,16 @@ const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') 
   // the Earth: the weather, the fires and the satellites
   // (a touch on the dark first: the hints' ghost finger may have tapped a place, and its reading stays until the next touch)
   await page.click('#w_earth'); await sleep(6500); await page.mouse.click(8, 200); await sleep(500); s = await look();
-  ok(s.world === 'Earth' && s.hash === '#earth' && s.lit > 8 && /^drag to turn · tap a place or a name \| (\d+ storms? · )?[\d,]+ fires · [\d,]+ lightning flashes \| weather of /.test(s.data), 'Earth: ' + s.data + ' (' + s.lit + ' lit)'); await page.screenshot({ path: 'shots/published_1.png' });
-  ok(await page.evaluate(() => [...document.querySelectorAll('#nowr .lb')].map(b => b.textContent)[0] === 'space station' && !document.getElementById('lys') && !document.getElementById('lyB')),
-    'the Earth has its row of what is happening now, and no layers (14 Nov: "Make that go away so you can see the whole globe")');
-  await page.click('#nowr .lb >> nth=0'); await sleep(1800);
-  ok(await page.evaluate(() => { const c = document.getElementById('card'); return !c.hidden && /ISS \(ZARYA\)/.test(c.innerText); }), '"space station" flies there and shows its card'); await page.screenshot({ path: 'shots/published_1_iss.png' });
-  await page.mouse.click(20, 140); await sleep(400);
+  ok(s.world === 'Earth' && s.hash === '#earth' && s.lit > 8 && /^drag to turn · tap a video or a place \| (\d+ storms? · )?[\d,]+ fires · [\d,]+ lightning flashes \| wind (now|of \d+ \w+ \d\d:\d\d UTC)( · aurora \w+)? \| \d+ cameras · tap one for YouTube$/.test(s.data), 'Earth: ' + s.data + ' (' + s.lit + ' lit)'); await page.screenshot({ path: 'shots/published_1.png' });
+  { const dk = await page.evaluate(() => [...document.querySelectorAll('#lyd .dk')].map(b => b.id.slice(3) + (b.getAttribute('aria-pressed') === 'true' ? '+' : '-')).join(' '));
+    ok(/^vid\+ wind\+ bolt\+ (storm\+ )?fire\+ orbit\+ aur\+$/.test(dk) && await page.evaluate(() => !document.getElementById('lgd').hidden), 'the Earth has its row of layers, each lit while it shows, and the wind\'s scale over it (14 Nov, night: "be able to take on and off layers"): ' + dk); }
+  // the cameras (14 Nov, night: "On the earth there should be videos"): "videos" off and on again turns the Earth to one; its picture, tapped,
+  // opens its card, whose button opens the stream on YouTube (the satellites put away meanwhile, so a tap cannot pick one)
+  await page.click('#ly_orbit'); await sleep(300); await page.click('#ly_vid'); await sleep(400); await page.click('#ly_vid'); await sleep(2000);
+  { let cc = null; for (let y = 230; y <= 480 && !cc; y += 12) { await page.mouse.click(195, y); await sleep(420); cc = await page.evaluate(() => { const c = document.getElementById('card'), a = c.querySelector('a.cy'); return !c.hidden && a ? [c.innerText.replace(/\n+/g, ' | '), a.href, a.target] : null; }); }
+    ok(cc && /^https:\/\/www\.(youtube\.com|star\.nesdis\.noaa\.gov)\//.test(cc[1]) && cc[2] === '_blank', 'a camera on the Earth, tapped, opens its card with its stream on YouTube: ' + (cc ? cc[0].slice(0, 110) + ' -> ' + cc[1].slice(0, 60) : 'none found')); }
+  await page.screenshot({ path: 'shots/published_1_camera.png' });
+  await page.mouse.click(8, 200); await sleep(300); await page.click('#ly_orbit'); await sleep(400);
   // a tap on a satellite brings up its card, filled from the catalogue published beside the page (the Earth pulled back first, so the swarm is round it)
   for (let k = 0; k < 8; k++) { await page.mouse.move(195, 420); await page.mouse.wheel(0, 260); await sleep(120); } await sleep(1500); let card = null;
   for (const [x, y] of [[195, 300], [150, 330], [240, 310], [195, 520], [120, 450], [270, 470], [100, 380], [290, 360], [195, 250], [160, 560]]) { await page.mouse.click(x, y); await sleep(800); card = await page.evaluate(() => { const c = document.getElementById('card'); return c.hidden ? null : c.innerText; }); if (card) break; }
