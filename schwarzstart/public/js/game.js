@@ -7,6 +7,7 @@ import { WPN, RAR, RARHEX, hasPerk } from './systems.js';
 import { clamp, lerp, damp, dampAng, angDiff, hyp, R, store, IS_TOUCH } from './util.js';
 import { Enemy } from './ai.js';
 import { installOps } from './ops.js';
+import { Route } from './route.js';
 
 const V = new THREE.Vector3(), V2 = new THREE.Vector3(), V3 = new THREE.Vector3();
 const EYE = 1.56, PR = 0.34;
@@ -56,11 +57,12 @@ export class Game {
     this.cap = gfx.tier === 'low' ? 12 : 18; this.prompt = null; this.aimT = null; this.combatT = 0; this.wp = null;
     this.autoAim = IS_TOUCH; this.sens = 1; this.invY = false; this.fovBase = 56; this.assist = 1; this.motion = 1; this.diff = 1; this.diffHp = 1; this.haptics = true;
     this.load();
-    const P = this.P = { x: 0, z: 0, yaw: 0, hp: 1, arm: 1, st: 'free', cov: null, peek: false, roll: 0, rdx: 0, rdz: 0, vault: 0, vx0: 0, vz0: 0, vx1: 0, vz1: 0, fireT: 0, relT: 0, relD: 1, bloom: 0, lastHit: -99, lastShot: -99, moving: 0, dead: 0, sprint: false, aim: false, crouch: false, kitT: 0, hotT: 0, sk: [0, 0], nadeT: 0, markT: 0, covT: 0, h: 1.75, spd: 0 };
+    const P = this.P = { x: 0, z: 0, yaw: 0, hp: 1, arm: 1, st: 'free', cov: null, peek: false, roll: 0, rdx: 0, rdz: 0, vault: 0, vx0: 0, vz0: 0, vx1: 0, vz1: 0, fireT: 0, relT: 0, relD: 1, bloom: 0, lastHit: -99, lastShot: -99, moving: 0, vx: 0, vz: 0, dead: 0, sprint: false, aim: false, crouch: false, kitT: 0, hotT: 0, sk: [0, 0], nadeT: 0, markT: 0, covT: 0, h: 1.75, spd: 0 };
     P.rig = new Rig(gfx, this.playerLook(), this.curW().cls); this.scene.add(P.rig.root);
     this.mags = this.S.wpn.map((w) => this.magSize(w));
     const sp = this.S.pos || map.hub; P.x = sp[0]; P.z = sp[1]; P.hp = this.D.maxHP; P.arm = this.D.maxArmor;
     gfx.time = this.S.time ?? 15.75;
+    this.routeL = new Route(gfx, world);
     this.initOps();
   }
   // ---------------------------------------------------------------- save
@@ -109,20 +111,21 @@ export class Game {
     for (let i = 0; i < 3; i++) if (I.was('w' + (i + 1))) this.swap(i);
     if (I.was('swap')) this.swap(this.S.cur === 0 ? 1 : this.S.cur === 1 ? (this.mags[0] + this.mags[1] === 0 ? 2 : 0) : 0);
     if (I.was('reload')) this.reload();
+    if (I.was('deploy')) this.deploy(); if (I.was('qequip') && this.better) { const it = this.better; this.better = null; if (this.S.inv.includes(it)) { this.equip(it, this.equipTarget(it)); it.nw = 0; this.ui.toast('Equipped · ' + it.n, 'ok'); } this.ui.dirty = true; }
     if (I.was('kit')) this.useKit(); if (I.was('nade')) this.throwNade(); if (I.was('s1')) this.skillPulse(); if (I.was('s2')) this.skillTurret();
     if (I.was('roll') && !P.roll && !P.vault && P.st !== 'vault') this.startRoll(ml > 0.2 ? mx / (ml || 1) : -fx, ml > 0.2 ? mz / (ml || 1) : -fz);
     const coverKey = I.was('cover');
     let speed = 0;
     if (P.roll > 0) {
-      P.roll += dt / 0.52; const s = 9.6 * (1 - P.roll * 0.45); P.x += P.rdx * s * dt; P.z += P.rdz * s * dt; W.collide(P, PR); P.yaw = Math.atan2(P.rdx, P.rdz); if (P.roll >= 1) P.roll = 0; speed = 0;
+      P.roll += dt / 0.52; const s = 9.6 * (1 - P.roll * 0.45); P.x += P.rdx * s * dt; P.z += P.rdz * s * dt; W.collide(P, PR); P.yaw = Math.atan2(P.rdx, P.rdz); P.vx = P.rdx * s * 0.6; P.vz = P.rdz * s * 0.6; if (P.roll >= 1) P.roll = 0; speed = 0;
     } else if (P.vault > 0) {
       P.vault += dt / 0.42; const k = Math.min(1, P.vault); P.x = lerp(P.vx0, P.vx1, k); P.z = lerp(P.vz0, P.vz1, k); if (P.vault >= 1) { P.vault = 0; P.st = 'free'; } speed = 4;
     } else if (P.dash) {
       const d = P.dash, ddx = d.x - P.x, ddz = d.z - P.z, l = hyp(ddx, ddz) || 1; d.t += dt;
       if (l < 1.5 || d.t > 3.2) { P.dash = null; this.enterCover(ddx / l, ddz / l, true); }
-      else { P.x += (ddx / l) * 6.8 * dt; P.z += (ddz / l) * 6.8 * dt; W.collide(P, PR); P.yaw = dampAng(P.yaw, Math.atan2(ddx, ddz), 14, dt); speed = 6.8; if (ml > 0.5 && (mx * ddx + mz * ddz) / l < -0.3) P.dash = null; }
+      else { P.x += (ddx / l) * 6.8 * dt; P.z += (ddz / l) * 6.8 * dt; P.vx = (ddx / l) * 6.8; P.vz = (ddz / l) * 6.8; W.collide(P, PR); P.yaw = dampAng(P.yaw, Math.atan2(ddx, ddz), 14, dt); speed = 6.8; if (ml > 0.5 && (mx * ddx + mz * ddz) / l < -0.3) P.dash = null; }
     } else if (P.st === 'cover') {
-      const cv = P.cov, s = cv.s; P.peek = P.aim; P.covT += dt;
+      const cv = P.cov, s = cv.s; P.peek = P.aim; P.covT += dt; P.vx = damp(P.vx || 0, 0, 12, dt); P.vz = damp(P.vz || 0, 0, 12, dt);
       const along = mx * cv.dx + mz * cv.dz, away = mx * cv.nx + mz * cv.nz;
       if (coverKey) { if (cv.low && away < -0.5) this.tryVault(); else if (!this.coverToCover()) this.leaveCover(); }
       else if (away > 0.75 && ml > 0.7) { P.awayT = (P.awayT || 0) + dt; if (P.awayT > 0.22) this.leaveCover(); } else P.awayT = 0;
@@ -134,10 +137,14 @@ export class Game {
         P.yaw = dampAng(P.yaw, P.peek ? c.yaw : Math.atan2(cv.dx * (P.covDir || 1), cv.dz * (P.covDir || 1)), 12, dt);
       }
     } else {
-      const sp = (P.sprint ? 6.5 * D.sprint : P.aim ? 2.5 : 4.3) * (ml > 0.05 ? Math.min(1, ml * 1.15) : 0);
-      P.x += mx * sp * dt; P.z += mz * sp * dt; speed = sp * (ml > 0.05 ? 1 : 0);
-      const hitWall = W.collide(P, PR);
-      if (P.aim) P.yaw = dampAng(P.yaw, c.yaw, 16, dt); else if (ml > 0.1) P.yaw = dampAng(P.yaw, Math.atan2(mx, mz), 11, dt);
+      const sp = (P.sprint ? 6.6 * D.sprint : P.aim ? 2.6 : 4.4) * (ml > 0.05 ? Math.min(1, ml * 1.15) : 0), dir = ml > 0.05 ? 1 / ml : 0;
+      const tvx = mx * dir * sp, tvz = mz * dir * sp, cur = hyp(P.vx || 0, P.vz || 0), rev = (P.vx || 0) * tvx + (P.vz || 0) * tvz < 0;
+      const acc = rev ? 15 : sp > cur + 0.05 ? (P.aim ? 13 : P.sprint ? 7 : 10) : 11;          // quick to start, quicker to stop, sprint builds up
+      P.vx = damp(P.vx || 0, tvx, acc, dt); P.vz = damp(P.vz || 0, tvz, acc, dt);
+      const ox = P.x, oz = P.z; P.x += P.vx * dt; P.z += P.vz * dt;
+      const hitWall = W.collide(P, PR); if (dt > 0 && hitWall) { P.vx = (P.x - ox) / dt; P.vz = (P.z - oz) / dt; }
+      speed = hyp(P.vx, P.vz);
+      if (P.aim) P.yaw = dampAng(P.yaw, c.yaw, 18, dt); else if (speed > 0.5) P.yaw = dampAng(P.yaw, Math.atan2(P.vx, P.vz), P.sprint ? 8 : 11, dt);
       if (coverKey || (this.autoAim && hitWall && this.combatT > 0 && ml > 0.6 && !P.aim)) this.enterCover(mx || fx, mz || fz, coverKey);
     }
     const b = W.core, bm = W.coreMargin; P.x = clamp(P.x, b[0] + bm[0], b[2] - bm[2]); P.z = clamp(P.z, b[1] + bm[1], b[3] - bm[3]);
@@ -153,13 +160,18 @@ export class Game {
     if (since > 7 && P.arm < D.maxArmor) P.arm = Math.min(D.maxArmor, P.arm + D.maxArmor * 0.14 * D.armRegen * dt);
     if (since > 4 && P.hp < D.maxHP) P.hp = Math.min(D.maxHP, P.hp + D.maxHP * 0.045 * D.regen * dt);
     if (P.hotT > 0 && !this.noRegen) { P.hotT -= dt; P.arm = Math.min(D.maxArmor, P.arm + D.maxArmor * 0.06 * dt); }
+    if (this.better) { this.betterT -= dt; if (this.betterT <= 0 || !this.S.inv.includes(this.better)) { this.better = null; this.ui.dirty = true; } }
+    if (this.lootOpenT > 0 && (this.lootOpenT -= dt) <= 0) {          // the chest is empty: show what it gave
+      const near = this.en.some((e) => !e.dead && !e.isRemote && hyp(e.x - this.P.x, e.z - this.P.z) < 45);
+      if (this.mode || this.P.dead || this.ui.panel || !this.S.inv.some((i) => i.nw === 1)) this.lootOpenT = 0; else if (near) this.lootOpenT = 0.5; else this.ui.open('loot');
+    }
     for (let i = 0; i < 2; i++) P.sk[i] = Math.max(0, P.sk[i] - dt * D.haste); P.nadeT = Math.max(0, P.nadeT - dt * D.haste); P.kitT = Math.max(0, P.kitT - dt);
     if (this.S.nades < 2 && P.nadeT <= 0) { this.S.nades++; if (this.S.nades < 2) P.nadeT = 20; }
     // steps
     if (speed > 0.5 && !P.roll) { P.stepT = (P.stepT || 0) - dt * speed; if (P.stepT <= 0) { P.stepT = P.sprint ? 2.5 : 2.1; this.audio.step(P.sprint ? 0.15 : 0.11); if (Math.random() < 0.6) this.fx.puff(P.x, 0.05, P.z, 2, [0.8, 0.84, 0.9], 0.12, 0.6, 0.5, 0.35, -1, 0.5); } }
     const rig = P.rig; rig.root.position.set(P.x, 0, P.z); rig.root.rotation.y = P.yaw;
-    const cyw = Math.cos(P.yaw), syw = Math.sin(P.yaw), lml = ml > 0.05 && P.st !== 'cover' ? 1 / Math.max(ml, 1e-3) : 0;
-    rig.pose({ speed, mx: lml ? (mx * cyw - mz * syw) * lml : 0, mz: lml ? (mx * syw + mz * cyw) * lml : 1, aim: P.aim || this.t - P.lastShot < 0.5, pitch: c.pitch, crouch: P.crouch, reload: P.relT > 0 ? 1 - P.relT / P.relD : 0, roll: P.roll, lean: P.st === 'cover' && P.peek && !P.cov.low ? (P.covDir || 1) * -0.5 : 0 }, dt);
+    const cyw = Math.cos(P.yaw), syw = Math.sin(P.yaw), vl = hyp(P.vx || 0, P.vz || 0), lvx = P.st === 'free' && vl > 0.3 ? P.vx / vl : 0, lvz = P.st === 'free' && vl > 0.3 ? P.vz / vl : 0, lml = lvx || lvz ? 1 : 0;
+    rig.pose({ speed, mx: lml ? lvx * cyw - lvz * syw : 0, mz: lml ? lvx * syw + lvz * cyw : 1, aim: P.aim || this.t - P.lastShot < 0.5, pitch: c.pitch, crouch: P.crouch, reload: P.relT > 0 ? 1 - P.relT / P.relD : 0, roll: P.roll, lean: P.st === 'cover' && P.peek && !P.cov.low ? (P.covDir || 1) * -0.5 : 0 }, dt);
     rig.root.updateMatrixWorld(true);
   }
   enterCover(dx, dz, forced) {
@@ -239,7 +251,7 @@ export class Game {
   }
   respawn() {
     if (this.mode && this.mode.respawn && this.mode.respawn()) return;
-    const P = this.P, sp = this.S.spawn || this.map.hub; P.x = sp[0]; P.z = sp[1]; P.dead = 0; P.hp = this.D.maxHP; P.arm = this.D.maxArmor; P.st = 'free'; P.lastHit = -99; this.S.kits = Math.max(this.S.kits, 2);
+    const P = this.P, sp = this.S.spawn || this.map.hub; P.x = sp[0]; P.z = sp[1]; P.vx = P.vz = 0; P.dead = 0; P.hp = this.D.maxHP; P.arm = this.D.maxArmor; P.st = 'free'; P.lastHit = -99; this.S.kits = Math.max(this.S.kits, 2);
     for (const e of this.en) { e.aware = false; e.home ? (e.despawn = true) : (e.gone = true); } this.ui.fade(); this.ui.dirty = true; this.resetSites();
   }
   useKit() { const P = this.P, D = this.D; if (P.dead || P.kitT > 0) return; if (this.mode && this.mode.kit && this.mode.kit()) return; if (this.S.kits <= 0) { this.ui.toast('No med kits'); return; } if (P.hp >= D.maxHP && P.arm >= D.maxArmor) return; this.S.kits--; P.kitT = 1.2; P.hp = D.maxHP; P.arm = D.maxArmor; if (D.hot) P.hotT = 8; this.audio.play('kit', 0.6); this.fx.puff(P.x, 1.1, P.z, 10, [0.5, 2.2, 1.2], 0.1, 1.2, 0.6, -0.8, 1, 0.5); }
@@ -299,10 +311,11 @@ export class Game {
     this.loot.push({ g, x: p.x, z: p.z, kind, data, t: 0 });
   }
   updLoot(dt) {
-    const P = this.P;
+    const P = this.P, hot = this.loot.length > 0 && this.en.some((e) => !e.dead && !e.isRemote && e.aware && hyp(e.x - P.x, e.z - P.z) < 50);
     for (let i = this.loot.length - 1; i >= 0; i--) {
-      const l = this.loot[i]; l.t += dt; l.g.children[0].rotation.y += dt * 1.2; const d = hyp(l.x - P.x, l.z - P.z);
-      if (d < 1.7 && !P.dead && l.t > 0.4) { if (this.take(l)) { this.scene.remove(l.g); this.loot.splice(i, 1); continue; } }
+      const l = this.loot[i]; l.t += dt; l.g.children[0].rotation.y += dt * 1.2; let d = hyp(l.x - P.x, l.z - P.z);
+      if (!P.dead && l.t > 0.6 && !l.full && d < (hot ? 3.2 : 8) && d > 0.2) { const k = Math.min(1, (dt * (6 + (8 - Math.min(8, d)) * 1.5)) / d); l.x += (P.x - l.x) * k; l.z += (P.z - l.z) * k; l.g.position.set(l.x, 0, l.z); d = hyp(l.x - P.x, l.z - P.z); }   // loot comes to you
+      if (d < 1.7 && !P.dead && l.t > 0.4) { if (this.take(l)) { this.scene.remove(l.g); this.loot.splice(i, 1); if (l.chest && !this.loot.some((o) => o.chest === l.chest && o.kind === 'item')) this.lootOpenT = 0.9; continue; } else l.full = l.kind === 'item'; }
       if (l.t > 240 || d > 260) { this.scene.remove(l.g); this.loot.splice(i, 1); }
     }
   }
@@ -311,14 +324,27 @@ export class Game {
     if (l.kind === 'ammo') { let got = false; for (const cls of ['ar', 'smg', 'lmg', 'sg', 'dmr']) { const has = S.wpn.some((w) => w.cls === cls), mx = this.resMax(cls); if (!has && (S.res[cls] || 0) >= mx * 0.5) continue; const add = Math.round(mx * (has ? 0.22 : 0.08)); if ((S.res[cls] || 0) < mx) { S.res[cls] = Math.min(mx, (S.res[cls] || 0) + add); got = true; } } if (!got) return false; this.ui.toast('Ammo', 'ammo'); this.audio.play('ammo', 0.4); }
     else if (l.kind === 'kit') { if (S.kits >= this.D.kits) return false; S.kits++; this.ui.toast('Med kit', 'kit'); this.audio.play('ammo', 0.4, 1.3); }
     else if (l.kind === 'marken') { S.marken += l.data; this.ui.toast(`+${l.data} Marken`, 'mk'); this.audio.play('coin', 0.4); }
-    else { if (S.inv.length >= 40) { if (this.t - (this.fullT || 0) > 4) { this.fullT = this.t; this.ui.toast('Backpack full'); } return false; } S.inv.push(l.data); this.ui.pickup(l.data); this.audio.play(l.data.rar >= 3 ? 'lootHi' : 'loot', 0.5); }
+    else { if (S.inv.length >= 40) { if (this.t - (this.fullT || 0) > 4) { this.fullT = this.t; this.ui.toast('Backpack full'); } return false; } l.data.nw = 1; S.inv.push(l.data); this.ui.pickup(l.data); this.audio.play(l.data.rar >= 3 ? 'lootHi' : 'loot', 0.5); this.offerBetter(l.data); }
     this.ui.dirty = true; return true;
   }
-  equip(it) {
-    const S = this.S, k = S.inv.indexOf(it); if (k < 0) return;
-    if (it.t === 'g') { const old = S.gear[it.slot]; S.gear[it.slot] = it; S.inv.splice(k, 1); if (old) S.inv.push(old); }
-    else { const slot = it.cls === 'pst' ? 2 : (S.cur < 2 ? S.cur : 0), old = S.wpn[slot]; S.wpn[slot] = it; S.inv.splice(k, 1); S.inv.push(old); this.mags[slot] = Math.min(this.mags[slot], this.magSize(it)); if (slot === S.cur) this.P.rig.setGun(it.cls); this.mags[slot] = this.magSize(it); if (S.res[it.cls] == null || S.res[it.cls] < this.resMax(it.cls) * 0.3) S.res[it.cls] = Math.round(this.resMax(it.cls) * 0.3); }
-    this.recalc(); this.audio.play('swap', 0.4); this.ui.dirty = true; this.save();
+  // something better than what you carry: one tap (or Y) puts it on
+  offerBetter(it) {
+    const cur = this.worn(it), dl = this.gain(it);
+    if (!cur || dl > 1) { this.better = it; this.betterD = dl; this.betterT = 9; this.ui.dirty = true; }
+  }
+  // where an item would go: gear to its slot; a pistol to the holster; a long gun next to the same kind, else over the weaker one
+  equipTarget(it) {
+    const S = this.S; if (it.t === 'g') return it.slot; if (it.cls === 'pst') return 2;
+    const a = S.wpn[0], b = S.wpn[1], sa = a && a.cls === it.cls, sb = b && b.cls === it.cls;
+    if (sa !== sb) return sa ? 0 : 1; return SYS.power(a) <= SYS.power(b) ? 0 : 1;
+  }
+  worn(it) { const t = this.equipTarget(it); return it.t === 'g' ? this.S.gear[t] : this.S.wpn[t]; }
+  gain(it) { const c = SYS.power(this.worn(it)); return c > 0 ? (SYS.power(it) / c - 1) * 100 : 100; }   // % better than what it would replace
+  equip(it, at) {
+    const S = this.S, k = S.inv.indexOf(it); if (k < 0) return null; let old = null;
+    if (it.t === 'g') { old = S.gear[it.slot]; S.gear[it.slot] = it; S.inv.splice(k, 1); if (old) S.inv.push(old); }
+    else { const slot = it.cls === 'pst' ? 2 : (at === 0 || at === 1 ? at : S.cur < 2 ? S.cur : 0); old = S.wpn[slot]; S.wpn[slot] = it; S.inv.splice(k, 1); if (old) S.inv.push(old); this.mags[slot] = Math.min(this.mags[slot], this.magSize(it)); if (slot === S.cur) this.P.rig.setGun(it.cls); this.mags[slot] = this.magSize(it); if (S.res[it.cls] == null || S.res[it.cls] < this.resMax(it.cls) * 0.3) S.res[it.cls] = Math.round(this.resMax(it.cls) * 0.3); }
+    this.recalc(); this.audio.play('swap', 0.4); this.ui.dirty = true; this.save(); return old;
   }
   scrap(it) { const S = this.S, k = S.inv.indexOf(it); if (k < 0) return; S.inv.splice(k, 1); S.marken += SYS.sellValue(it); S.teile += 1 + it.rar; this.audio.play('coin', 0.35); this.ui.dirty = true; }
   addXP(n) {

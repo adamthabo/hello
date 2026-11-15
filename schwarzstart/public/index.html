@@ -19,7 +19,10 @@
     <div id="mm"><canvas id="mmc" width="264" height="264"></canvas><div id="mmN">N</div></div>
     <div id="loc"><b id="locS"></b><span id="locD"></span></div>
     <div id="obj"><i></i><div><b id="objT"></b><span id="objS"></span></div></div>
+    <button id="bDeploy" class="hidden" data-act="deploy"><b>ABSETZEN</b><span id="bDeployD"></span><kbd>T</kbd></button>
+    <button id="bBetter" class="hidden" data-act="qequip"><i id="bBetterU">UPGRADE</i><b id="bBetterN"></b><span>Tap to equip</span><kbd>Y</kbd></button>
     <div id="top">
+      <button id="bLoot" class="hidden" data-open="loot" aria-label="Loot"><b>BEUTE</b><span id="bLootN">0</span><kbd>B</kbd></button>
       <button class="ib" data-open="map" aria-label="Map"><svg viewBox="0 0 24 24"><path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20z M9 4v13.5 M15 6.5V20"/></svg></button>
       <button class="ib" data-open="inv" aria-label="Gear"><svg viewBox="0 0 24 24"><path d="M6 8h12l1.5 12h-15z M9 8V6a3 3 0 0 1 6 0v2 M4.8 13h14.4"/></svg></button>
       <button class="ib" data-open="menu" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M4 7h16 M4 12h16 M4 17h16"/></svg></button>
@@ -58,7 +61,7 @@
       <div class="kick" id="kick">NOTBETRIEB BERLIN · WINTER</div>
       <h1>SCHWARZ<wbr>START</h1>
       <div class="sub">BERLIN</div>
-      <p class="prem" id="prem">Eleven days after the grid went down, Berlin is dark and frozen. What is left of the city government holds Museumsinsel. You are a Lotse, one of the linemen, medics and track walkers who keep the last lights on. Take the city back one Kiez at a time: power, water, heat, signal, rail.</p>
+      <p class="prem" id="prem">Eleven days after the grid went down, gangs, a power cartel and deserters hold Berlin's streets. You are a Lotse, the emergency government's armed lineman. The route on the street always leads to the next fight. Win it, take the loot, keep moving.</p>
       <div id="load"><i></i></div>
       <div id="loadT">Loading the city</div>
       <div class="cta"><button id="btnStart" class="pill hot hidden">Begin the shift</button><button id="btnNew" class="pill hidden">New Lotse</button></div>
@@ -81,6 +84,7 @@
     <div class="pbody" id="pOps"></div>
     <div class="pbody" id="pAgent"></div>
     <div class="pbody" id="pMenu"></div>
+    <div class="pbody" id="pLoot"></div>
   </div>
   <div id="err" class="hidden"></div>
 </div>

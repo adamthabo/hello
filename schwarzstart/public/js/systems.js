@@ -64,6 +64,8 @@ export function makeGear(lvl, rar = rollRar(), slot = null) {
   return it;
 }
 export const makeItem = (lvl, bonus = 0) => (R() < 0.45 ? makeWeapon(lvl, rollRar(bonus)) : makeGear(lvl, rollRar(bonus)));
+// one number per item, the same one the loot screen compares: damage per second for guns, armour plus attribute for gear
+export const power = (it) => (!it ? 0 : it.t === 'w' ? wpnDmg(it) * (it.q || 1) * (WPN[it.cls].pellets || 1) * (WPN[it.cls].rpm / 60) : it.arm + it.av * 6);
 export const itemScore = (it) => Math.round(it.lvl * 10 * RAR[it.rar].m + (it.t === 'w' ? 0 : 0));
 export const sellValue = (it) => Math.round((6 + it.lvl * 3) * (1 + it.rar * 0.9));
 export const hasPerk = (it, k) => it && (it.perk === k || it.perk2 === k);

@@ -15,7 +15,7 @@ const UA = 0.285, FA = 0.25;
 
 // palette slots, defaults and material response [roughness, metalness]
 export const SLOTS = ['skin', 'top', 'pants', 'gear', 'accent', 'hat', 'boots', 'face', 'hw', 'refl', 'fur', 'eye', 'glass'];
-const SLOTMAT = [[0.55, 0], [0.9, 0], [0.92, 0], [0.86, 0], [0.78, 0], [0.9, 0], [0.62, 0], [0.94, 0], [0.42, 0.55], [0.3, 0.1], [1, 0], [0.28, 0], [0.1, 0.65]];
+const SLOTMAT = [[0.55, 0], [0.9, 0], [0.92, 0], [0.86, 0], [0.78, 0], [0.9, 0], [0.62, 0], [0.94, 0], [0.42, 0.55], [0.34, 0.1], [1, 0], [0.3, 0], [0.24, 0.4]];
 const DEFPAL = { skin: 0xb98c6c, top: 0x2b333c, pants: 0x30333a, gear: 0x2c3238, accent: 0xd8d23a, hat: 0x24272c, boots: 0x1c1b1a, face: 0x3a424a, hw: 0x1a1c1e, refl: 0xd8dde0, fur: 0x6d6255, eye: 0x1b1d1f, glass: 0x0b0d10 };
 export const SKINS = [0xe7c3a6, 0xd6a882, 0xbf8d68, 0x9c6b48, 0x7a4f33, 0x5a3a26];
 
@@ -90,7 +90,7 @@ function charMaterial(gfx) {
       .replace('#include <color_fragment>', `#include <color_fragment>
         float fab_ = texture2D( uNoise, vBind.xy * 3.1 + vBind.zx * 1.7 ).r * 0.6 + texture2D( uNoise, vBind.zy * 9.0 ).g * 0.4;
         diffuseColor.rgb *= vPal * ( 0.9 + 0.2 * fab_ );`)
-      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = clamp( vMatP.x + ( fab_ - 0.5 ) * 0.12, 0.05, 1.0 );')
+      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = clamp( vMatP.x + ( fab_ - 0.5 ) * 0.12, 0.2, 1.0 );')
       .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor = vMatP.y;')
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
         {
@@ -132,6 +132,7 @@ const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _S = new THREE.Vector
 const _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _m = new THREE.Matrix4(), DOWN = new THREE.Vector3(0, -1, 0), _pole = new THREE.Vector3(), _hd = new THREE.Vector3();
 const _A = new THREE.Vector3(), _hA = new THREE.Vector3(), _wR = new THREE.Vector3(), _hR = new THREE.Vector3(), _wL = new THREE.Vector3(), _hL = new THREE.Vector3();
 const _iS = new THREE.Vector3(), _iE = new THREE.Vector3(), _iD = new THREE.Vector3(), _iP = new THREE.Vector3(), _iT = new THREE.Vector3(), _iH = new THREE.Vector3();
+const _r0 = new THREE.Vector3(), _r1 = new THREE.Vector3(), _r2 = new THREE.Vector3(), _r3 = new THREE.Vector3(), _r4 = new THREE.Vector3(), _r5 = new THREE.Vector3(), _X = new THREE.Vector3(1, 0, 0), _Y = new THREE.Vector3(0, 1, 0);
 const lerp3 = (o, a, b, t) => o.set(lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t));
 const wrapA = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 
@@ -156,6 +157,7 @@ export class Rig {
     this.root = new THREE.Group(); this.root.add(this.mesh); this.root.scale.setScalar(scale);
     const bl = new THREE.Mesh(blobGeo(), blobMat()); bl.position.y = 0.03; bl.renderOrder = 4; bl.raycast = () => {}; this.root.add(bl); this.blob = bl;
     this.gunMesh = null; this.gunType = null; this.setGun(gun);
+    this.lastP = new THREE.Vector3(); this.vel = new THREE.Vector3(); this.fp = null; this.gph = 0; this.accF = 0; this.accR = 0;
     this.ph = Math.random() * 6; this.aim = 0; this.cr = 0; this.kick = 0; this.hit = 0; this.dead = 0; this.spd = 0; this.rel = 0; this.t = Math.random() * 10; this.lean = 0;
     this.deadSide = Math.random() < 0.5 ? 1 : -1; this.legYaw = 0; this.back = 0; this.mx = 0; this.mz = 1; this.armed = 1; this.bob = 0;
   }
@@ -183,16 +185,19 @@ export class Rig {
     this.kick = damp(this.kick, 0, 16, dt); this.hit = damp(this.hit, 0, 6, dt); this.rel = s.reload || 0; this.lean = damp(this.lean, s.lean || 0, 8, dt);
     if (s.mz !== undefined) { this.mx = damp(this.mx, s.mx, 8, dt); this.mz = damp(this.mz, s.mz, 8, dt); } else { this.mx = damp(this.mx, 0, 8, dt); this.mz = damp(this.mz, 1, 8, dt); }
     const sp = this.spd, run = clamp((sp - 2.6) / 2.8, 0, 1), mv = clamp(sp / 1.1, 0, 1), a = this.aim, c = this.cr;
+    const camD = this.gfx.camera.position.distanceTo(_r0.setFromMatrixPosition(this.root.matrixWorld)), ik = !s.dead && !s.roll && !s.skate && camD < (this.ikRange || 48);
     // legs face the direction of travel (within limits) while the torso keeps facing the aim
     let ang = Math.atan2(this.mx, this.mz); const back = Math.abs(ang) > 1.95 ? 1 : 0; this.back = damp(this.back, back, 6, dt);
     if (back) ang = wrapA(ang - Math.PI); const ly = clamp(ang, -1.15, 1.15) * mv * (1 - run * 0.3); this.legYaw = damp(this.legYaw, ly, 7, dt);
     const stride = lerp(1.3, 2.35, run) * (1 - c * 0.3); this.ph += (dt * sp / stride) * Math.PI * 2 * (back ? -1 : 1);
     for (let i = 0; i < 17; i++) b[i].rotation.set(0, 0, 0);
     b[B.uaL].position.z = b[B.uaR].position.z = 0;
-    const ph = this.ph, A = lerp(0.44, 0.74, run) * mv, br = Math.sin(this.t * 1.7);
+    // with planted feet the body rhythm follows the real footfalls: lowest at mid-stance when running, highest when walking
+    const ph = ik && this.fp && mv > 0.05 ? (this.gph - lerp(0.6, 0.36, run) * 0.5) * Math.PI * 2 + run * Math.PI * 0.5 : this.ph, A = lerp(0.44, 0.74, run) * mv, br = Math.sin(this.t * 1.7);
     // pelvis
-    const bob = lerp(0.022, 0.05, run) * mv * Math.pow(Math.sin(ph), 2);
-    b[0].position.set(this.lean * 0.12 + Math.sin(this.t * 0.37) * 0.012 * (1 - mv), 0.98 - c * 0.4 - bob, -c * 0.05);
+    const bob = lerp(0.026, 0.055, run) * mv * Math.pow(Math.sin(ph), 2);
+    const acf = ik ? this.accF : 0, acr = ik ? this.accR : 0;
+    b[0].position.set(this.lean * 0.12 + Math.sin(this.t * 0.37) * 0.012 * (1 - mv), 0.98 - c * 0.4 - bob - (ik ? 0.012 + mv * 0.018 + run * 0.022 : 0), -c * 0.05 + (ik ? run * 0.03 : 0));
     R('hips').y = this.legYaw + Math.sin(ph) * 0.11 * A; R('hips').z = Math.cos(ph) * 0.045 * A + Math.sin(this.t * 0.37) * 0.02 * (1 - mv);
     // legs
     for (const [th, sh, ft, off, sd] of [['thL', 'shL', 'ftL', 0, 1], ['thR', 'shR', 'ftR', Math.PI, -1]]) {
@@ -206,7 +211,7 @@ export class Rig {
     R('spine').x = 0.03 + run * 0.2 * mv * (1 - a * 0.6) + c * 0.28 - pit * 0.25 * a + br * 0.008;
     R('spine').y = -this.legYaw * 0.55 - Math.sin(ph) * 0.08 * A * (1 - a) - 0.16 * a;
     R('chest').x = -pit * 0.42 * a - this.kick * 0.12 + br * 0.012 - this.hit * 0.3; R('chest').y = -this.legYaw * 0.45 - 0.24 * a + this.hit * 0.2;
-    R('spine').z = this.lean * 0.26; R('chest').z = this.lean * 0.1;
+    R('spine').z = this.lean * 0.26 - clamp(acr * 0.018, -0.12, 0.12); R('chest').z = this.lean * 0.1; R('spine').x += clamp(acf * 0.022, -0.14, 0.2) * (1 - a * 0.6);
     R('neck').x = -pit * 0.18 * (1 - a) + c * -0.1; R('head').x = -pit * 0.35 * (1 - a) - pit * 0.12 * a - c * 0.12;
     R('head').y = 0.36 * a + (1 - a) * (1 - mv) * Math.sin(this.t * 0.31) * 0.3; R('neck').y = 0.06 * a;
     if (s.roll) { const r = s.roll; R('hips').x = r * Math.PI * 2; b[0].position.y = 0.5 + Math.sin(r * Math.PI) * 0.15; R('thL').x = R('thR').x = -1.7; R('shL').x = R('shR').x = 2.1; R('spine').x = 0.8; R('chest').x = 0.4; R('head').x = 0.5; }
@@ -218,6 +223,7 @@ export class Rig {
       R('spine').x = -0.12 * e; R('chest').x = -0.1 * e; R('chest').y = 0; R('spine').y = 0; R('head').x = -0.3 * e; R('head').y = sd * 0.6 * e;
     } else this.dead = 0;
     this.root.updateMatrixWorld(true);
+    if (ik) this._legs(dt, c, run); else { this.fp = null; this.accF = this.accR = 0; }
     // arms
     if (s.warm && !dead) {
       const w = Math.sin(this.t * 0.9 + this.ph) * 0.06;
@@ -248,6 +254,52 @@ export class Rig {
     this._ik(b[B.uaR], b[B.faR], b[B.hdR], wr, _pole.set(-0.9, -0.7, -0.35).applyQuaternion(rq), hr, sc);
     this._ik(b[B.uaL], b[B.faL], b[B.hdL], wl, _pole.set(0.5, -1, -0.15).applyQuaternion(rq), hl, sc);
   }
+  // feet stay planted on the street while the body passes over them, swing to where the body will be, and step when it turns
+  _legs(dt, c, run) {
+    const b = this.bones, sc = this.scale, rp = _r0.setFromMatrixPosition(this.root.matrixWorld), yaw = this.root.rotation.y;
+    if (!this.fp || this.lastP.distanceToSquared(rp) > 9) {
+      this.fp = [0, 1].map((i) => { const h = this._home(i, rp, yaw, c, sc, new THREE.Vector3()); return { p: h.clone(), cur: h.clone(), lift: h.clone(), land: h.clone(), st: true, stepT: 0 }; });
+      this.vel.set(0, 0, 0); this.gph = 0; this.lastP.copy(rp); this.accF = this.accR = 0;
+    }
+    const iv = 1 / Math.max(dt, 1e-3); _r1.subVectors(rp, this.lastP).multiplyScalar(iv); _r1.y = 0; this.lastP.copy(rp);
+    _r2.copy(this.vel); this.vel.lerp(_r1, 1 - Math.exp(-12 * dt)); _r2.subVectors(this.vel, _r2).multiplyScalar(iv);
+    const fx = Math.sin(yaw), fz = Math.cos(yaw); this.accF = damp(this.accF, clamp(_r2.x * fx + _r2.z * fz, -20, 20), 6, dt); this.accR = damp(this.accR, clamp(_r2.x * fz - _r2.z * fx, -20, 20), 6, dt);
+    const v = this.vel, spd = Math.hypot(v.x, v.z), moving = spd > 0.35, duty = lerp(0.6, 0.36, run), stride = lerp(1.2, 2.3, run) * (1 - c * 0.3) * sc, arc = lerp(0.09, 0.24, run) * sc;
+    this.gph = (this.gph + (dt * spd) / stride) % 1;
+    const hy = yaw + this.legYaw, hfx = Math.sin(hy), hfz = Math.cos(hy), ank = 0.075 * sc;
+    const homes = [this._home(0, rp, yaw, c, sc, _r3), this._home(1, rp, yaw, c, sc, _r5)];
+    if (!moving && this.fp[0].stepT <= 0 && this.fp[1].stepT <= 0) {          // standing: the foot left furthest behind steps back under the body
+      const d0 = this.fp[0].p.distanceToSquared(homes[0]), d1 = this.fp[1].p.distanceToSquared(homes[1]), lim = (0.17 * sc) ** 2, i = d0 >= d1 ? 0 : 1;
+      if (Math.max(d0, d1) > lim) { const f = this.fp[i]; f.stepT = 1; f.lift.copy(f.cur); f.land.copy(homes[i]); }
+    }
+    for (let i = 0; i < 2; i++) {
+      const f = this.fp[i], home = homes[i], tgt = _r4; let sw2 = 0;
+      if (moving) {
+        f.stepT = 0; const u = (this.gph + i * 0.5) % 1;
+        if (u < duty) { if (!f.st) { f.st = true; f.p.copy(f.land); } tgt.copy(f.p); }
+        else {
+          const sw = (u - duty) / (1 - duty); if (f.st) { f.st = false; f.lift.copy(f.cur); }
+          const T = stride / Math.max(spd, 0.4), remain = (1 - sw) * (1 - duty) * T, ahead = (duty * stride * 0.5) / Math.max(spd, 1e-3);
+          f.land.set(home.x + v.x * (remain + ahead), 0, home.z + v.z * (remain + ahead));
+          const e = sw * sw * (3 - 2 * sw); tgt.lerpVectors(f.lift, f.land, e); tgt.y = Math.sin(Math.PI * sw) * arc; sw2 = Math.sin(Math.PI * sw);
+        }
+      } else if (f.stepT > 0) {
+        f.stepT = Math.max(0, f.stepT - dt / 0.22); const s2 = 1 - f.stepT, e = s2 * s2 * (3 - 2 * s2); tgt.lerpVectors(f.lift, f.land, e); tgt.y = Math.sin(Math.PI * s2) * 0.07 * sc;
+        if (f.stepT <= 0) { f.p.copy(f.land); f.st = true; }
+      } else { if (!f.st) { f.st = true; f.p.copy(f.cur); f.p.y = 0; } tgt.copy(f.p); }
+      f.cur.copy(tgt); tgt.y += ank;
+      const th = b[i ? B.thR : B.thL], sh = b[i ? B.shR : B.shL], ft = b[i ? B.ftR : B.ftL], side = i ? -1 : 1;
+      _pole.set(hfx + hfz * 0.12 * side, 0.1, hfz - hfx * 0.12 * side);
+      this._ik(th, sh, null, tgt, _pole, null, sc, 0.44, 0.415);
+      // the foot stays level with the street and points where the hips point; the toe dips while it swings
+      _q2.setFromAxisAngle(_Y, hy); _q.setFromAxisAngle(_X, sw2 * lerp(0.2, 0.45, run)); _q2.multiply(_q);
+      sh.getWorldQuaternion(_q); _q.invert(); ft.quaternion.copy(_q).multiply(_q2); ft.updateMatrixWorld(true);
+    }
+  }
+  _home(i, rp, yaw, c, sc, out) {
+    const side = i ? -1 : 1, rx = Math.cos(yaw), rz = -Math.sin(yaw), fx = Math.sin(yaw), fz = Math.cos(yaw), fwd = c * (i ? -0.2 : 0.18);
+    return out.set(rp.x + (rx * 0.11 * side + fx * fwd) * sc, 0, rp.z + (rz * 0.11 * side + fz * fwd) * sc);
+  }
   _gun(a, pit, run, mv) {
     const g = this.bones[B.gun], H = this.hold, r = this.rel > 0 ? Math.sin(Math.min(1, this.rel) * Math.PI) : 0;
     const lowW = 1 - a, A = H.aim, L = H.low, Rl = H.rel;
@@ -259,8 +311,8 @@ export class Rig {
     // shoulders roll forward a little when aiming
     this.bones[B.uaL].position.z = 0.05 * a; this.bones[B.uaR].position.z = 0.02 * a;
   }
-  _ik(ua, fa, hd, target, pole, handPt, sc) {
-    _iS.setFromMatrixPosition(ua.matrixWorld); const a = UA * sc, bb = FA * sc;
+  _ik(ua, fa, hd, target, pole, handPt, sc, la = UA, lb = FA) {
+    _iS.setFromMatrixPosition(ua.matrixWorld); const a = la * sc, bb = lb * sc;
     _iD.subVectors(target, _iS); let L = _iD.length(); L = clamp(L, 0.05, (a + bb) * 0.999); _iD.normalize();
     const ca = clamp((a * a + L * L - bb * bb) / (2 * a * L), -1, 1), sa = Math.sqrt(1 - ca * ca);
     _iP.copy(pole).addScaledVector(_iD, -pole.dot(_iD)); if (_iP.lengthSq() < 1e-6) _iP.set(0, -1, 0); _iP.normalize();
@@ -268,7 +320,7 @@ export class Rig {
     _iT.copy(_iS).addScaledVector(_iD, L);
     this._aimBone(ua, _iH.subVectors(_iE, _iS)); ua.updateMatrixWorld(true);
     this._aimBone(fa, _iH.subVectors(_iT, _iE)); fa.updateMatrixWorld(true);
-    _iH.subVectors(handPt, _iT); if (_iH.lengthSq() > 1e-8) { this._aimBone(hd, _iH); hd.updateMatrixWorld(true); }
+    if (hd) { _iH.subVectors(handPt, _iT); if (_iH.lengthSq() > 1e-8) { this._aimBone(hd, _iH); hd.updateMatrixWorld(true); } }
   }
   _aimBone(bone, dirW) {
     bone.parent.getWorldQuaternion(_q); _q.invert(); dirW.applyQuaternion(_q).normalize();

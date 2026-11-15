@@ -4,8 +4,23 @@ import * as SYS from './systems.js';
 import { WPN, RAR, NETS, FACTIONS, SLOTS, ATTR, PERKS } from './systems.js';
 import { renderOptions, cycleOpt, setOpt, renderAgent, outfitName } from './settings.js';
 
-const KEYS = { Space: 'cover', KeyC: 'roll', ControlLeft: 'roll', KeyR: 'reload', KeyQ: 's1', KeyE: 's2', KeyG: 'nade', KeyH: 'kit', KeyF: 'use', KeyV: 'shoulder', Digit1: 'w1', Digit2: 'w2', Digit3: 'w3', KeyX: 'swap' };
-const OPEN = { KeyM: 'map', KeyI: 'inv', Tab: 'inv', KeyN: 'net', KeyJ: 'ops' };
+const KEYS = { KeyT: 'deploy', KeyY: 'qequip', Space: 'cover', KeyC: 'roll', ControlLeft: 'roll', KeyR: 'reload', KeyQ: 's1', KeyE: 's2', KeyG: 'nade', KeyH: 'kit', KeyF: 'use', KeyV: 'shoulder', Digit1: 'w1', Digit2: 'w2', Digit3: 'w3', KeyX: 'swap' };
+// loot icons: plain silhouettes so you can tell a shotgun from a vest at a glance
+const ICO = {
+  ar: 'M2 8h11v6l-9 3H2zM13 7h27v6H13zM40 8h12v4H40zM52 9h10v2H52zM22 5h9v2h-9zM17 13h4l-1 6h-4zM27 13h5l2 8h-5z',
+  smg: 'M3 9h10v5H5zM13 7h22v7H13zM35 9h12v3H35zM16 14h4l-1 6h-4zM25 14h4v9h-4zM20 5h6v2h-6z',
+  lmg: 'M1 8h12v7l-10 2H1zM13 6h26v8H13zM39 8h14v4H39zM53 9h9v2h-9zM22 14h11v6H22zM15 14h4l-1 6h-4zM24 3h8v3h-8zM46 12h2l-4 10h-2zM49 12h2l4 10h-2z',
+  sg: 'M1 9h14v5l-12 3H1zM15 8h14v6H15zM29 8h33v3H29zM29 12h24v2H29zM36 11h11v5H36zM18 14h4l-1 5h-4z',
+  dmr: 'M1 8h13v6l-11 3H1zM14 8h22v5H14zM36 9h27v2H36zM17 3h17v4H17zM21 7h2v1h-2zM28 7h2v1h-2zM26 13h5v5h-5zM17 13h4l-1 6h-4z',
+  pst: 'M18 5h28v6H18zM20 11h22v2H20zM19 11h9l-2 11h-8zM28 13h6v2h-6z',
+  kopf: 'M5 21a11 11 0 0 1 22 0zM2 21h28v3H2z',
+  weste: 'M9 3h4l3 5 3-5h4l4 7v19H5V10z',
+  rucksack: 'M11 7a5 5 0 0 1 10 0h3a2 2 0 0 1 2 2v18a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3V9a2 2 0 0 1 2-2zM13 7h6a3 3 0 0 0-6 0z',
+  handschuhe: 'M9 30V15L5 10l2-2 4 3V4h3v9V2h3v11V4h3v10V7h3v14l-3 9z',
+  stiefel: 'M9 2h10v16l9 4v8H6v-8l3-2z',
+};
+const icon = (it) => { const k = it.t === 'w' ? it.cls : it.slot, w = it.t === 'w'; return `<svg viewBox="${w ? '0 0 64 24' : '0 0 32 32'}" aria-hidden="true"><path d="${ICO[k] || ''}"/></svg>`; };
+const OPEN = { KeyM: 'map', KeyI: 'inv', Tab: 'inv', KeyN: 'net', KeyJ: 'ops', KeyB: 'loot' };
 
 export class Input {
   constructor(app, canvas, ui) {
@@ -71,7 +86,7 @@ export class UI {
     document.querySelectorAll('[data-open]').forEach((b) => b.addEventListener('click', () => this.open(b.dataset.open)));
     el('pClose').addEventListener('click', () => this.close());
     el('tabs').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) this.open(b.dataset.t); });
-    for (const id of ['pInv', 'pNet', 'pOps', 'pMenu', 'pAgent', 'mapCard']) el(id).addEventListener('click', (e) => this.click(e));
+    for (const id of ['pInv', 'pNet', 'pOps', 'pMenu', 'pAgent', 'pLoot', 'mapCard']) el(id).addEventListener('click', (e) => this.click(e));
     el('pMenu').addEventListener('input', (e) => { const k = e.target.dataset && e.target.dataset.opt; if (!k) return; setOpt(this.ctx, this.G.S.opt, k, e.target.value); const o = e.target.nextElementSibling; if (o) o.textContent = this.optLabel(k); });
     this.dmgOn = true; this.hintsOn = true; this.northUp = false; this.hiContrast = false; this.fpsT = 0; this.fpsN = 0;
     this.bindMap(); addEventListener('resize', () => this.resize()); this.resize();
@@ -102,7 +117,14 @@ export class UI {
     const cd = (id, t, max, n) => { const b = el(id); set(id, Math.ceil(t * 4), () => { b.lastElementChild.style.height = clamp((t / max) * 100, 0, 100) + '%'; b.classList.toggle('cd', t > 0 && (n == null || n <= 0)); }); if (n != null) set(id + 'n', n, (v) => (b.querySelector('b').textContent = v)); };
     cd('bS1', P.sk[0], 24); cd('bS2', P.sk[1], 48); cd('bNade', S.nades < 2 ? P.nadeT : 0, 20, S.nades); cd('bKit', P.kitT, 1.2, S.kits);
     set('street', G.loc.street || G.loc.dist.name, (v) => (el('locS').textContent = v)); set('dist', G.loc.dist.name + ' · ' + this.clock(), (v) => (el('locD').textContent = v));
-    const wp = G.wp; set('obj', wp ? wp.n + '|' + Math.round(hyp(wp.x - P.x, wp.z - P.z) / 5) : '', () => { el('obj').style.visibility = wp ? 'visible' : 'hidden'; if (wp) { el('objT').textContent = wp.n; const s = wp.s; el('objS').textContent = (s && s.k === 'mission' ? s.def.loc + ' · ' : '') + Math.round(hyp(wp.x - P.x, wp.z - P.z) / 5) * 5 + ' m'; } });
+    const wp = G.wp; set('obj', wp ? wp.n + '|' + Math.round(hyp(wp.x - P.x, wp.z - P.z) / 5) : '', () => { el('obj').style.visibility = wp ? 'visible' : 'hidden'; if (wp) { el('objT').textContent = wp.n; const s = wp.s; el('objS').textContent = (wp.loot ? 'Your loot · ' : wp.auto ? 'Nächster Kampf · ' : '') + (s && s.k === 'mission' ? s.def.loc + ' · ' : '') + Math.round(hyp(wp.x - P.x, wp.z - P.z) / 5) * 5 + ' m'; } });
+    { // the next fight is one tap away; something better is one tap from being worn
+      const dir = !G.mode || G.mode.id === 'frei', wpd = G.wp ? hyp(G.wp.x - P.x, G.wp.z - P.z) : 0, dep = dir && G.wp && !G.wp.loot && wpd > 140 && !P.dead && !(G.combatT > 0 && G.alive() > 0);
+      set('dep', dep ? Math.round(wpd / 10) * 10 : -1, (v) => { el('bDeploy').classList.toggle('hidden', v < 0); if (v >= 0) el('bDeployD').textContent = v + ' m'; });
+      const bt = G.better; set('bet', bt ? bt.id : -1, () => { el('bBetter').classList.toggle('hidden', !bt); if (bt) { el('bBetterU').textContent = 'UPGRADE ' + (G.betterD > 0 && G.betterD < 999 ? '+' + Math.round(G.betterD) + '%' : ''); el('bBetterN').innerHTML = `<span style="color:${RAR[bt.rar].c}">${bt.n}</span> · Stufe ${bt.lvl}`; } });
+      let nn = 0, br = -1, bu = false; for (const i of G.S.inv) if (i.nw === 1) { nn++; if (i.rar > br) br = i.rar; if (!bu && G.gain(i) > 1) bu = true; }
+      set('lootB', nn + '|' + br + '|' + bu, () => { const b = el('bLoot'); b.classList.toggle('hidden', !nn); b.classList.toggle('up', bu); if (nn) { b.style.setProperty('--rc', RAR[br].c); el('bLootN').textContent = nn; } });
+    }
     const pr = G.prompt, pe = el('prompt'); set('pr', pr ? pr.text + pr.sub + (pr.bad ? 1 : 0) : '', () => { pe.classList.toggle('hidden', !pr); if (pr) { el('prT').textContent = pr.text; el('prS').textContent = pr.sub; pe.classList.toggle('bad', !!pr.bad); } }); if (pr) el('prP').style.transform = `scaleX(${clamp(pr.prog, 0, 1)})`;
     const sp = 9 + P.bloom * 16 + (P.moving ? 4 : 0) + (G.inp.aim ? -4 : 0); el('cross').style.setProperty('--g', sp + 'px'); set('lock', !!G.aimT, (v) => el('lock').classList.toggle('on', v));
     if (this.hintT > 0) { this.hintT -= dt; if (this.hintT <= 0) el('hint').classList.add('hidden'); }
@@ -154,6 +176,7 @@ export class UI {
     x.setTransform(1, 0, 0, 1, 0, 0); x.fillStyle = '#0b0f14'; x.fillRect(0, 0, S, S); x.translate(r, r); x.rotate(this.northUp ? 0 : yaw - Math.PI); x.scale(z, z); x.translate(-P.x, -P.z);
     { const R0 = 130, s = this.bs, sx = clamp((P.x - R0 - b[0]) * s, 0, this.base.width - 2), sy = clamp((P.z - R0 - b[1]) * s, 0, this.base.height - 2), sw = Math.min(R0 * 2 * s, this.base.width - sx), sh = Math.min(R0 * 2 * s, this.base.height - sy); x.drawImage(this.base, sx, sy, sw, sh, b[0] + sx / s, b[1] + sy / s, sw / s, sh / s); }
     for (const s of G.sites) { if (s.locked) continue; const dd = hyp(s.x - P.x, s.z - P.z); if (dd > 95 || (s.done && s.k !== 'safe' && s.k !== 'hub')) continue; if ((s.k === 'pump' || s.k === 'cache') && !(G.S.seen[s.d] || G.D.intel)) continue; x.fillStyle = ICON[s.k]; x.save(); x.translate(s.x, s.z); x.rotate(Math.PI / 4 - (yaw - Math.PI)); x.fillRect(-3, -3, 6, 6); x.restore(); }
+    { const rp = G.routeL && G.routeL.mesh.visible && G.routeL.pts; if (rp && rp.length > 1) { x.lineJoin = 'round'; x.lineCap = 'round'; x.beginPath(); x.moveTo(rp[0][0], rp[0][1]); for (let k = 1; k < rp.length; k++) x.lineTo(rp[k][0], rp[k][1]); x.strokeStyle = 'rgba(0,0,0,.55)'; x.lineWidth = 5.5 / z; x.stroke(); x.strokeStyle = '#ff8a1e'; x.lineWidth = 3 / z; x.stroke(); } }   // the route
     for (const l of G.loot) { x.fillStyle = l.kind === 'item' ? RAR[l.data.rar].c : '#cfd6dd'; x.fillRect(l.x - 1.2, l.z - 1.2, 2.4, 2.4); }
     for (const e of G.en) { if (e.dead) continue; const dd = hyp(e.x - P.x, e.z - P.z); if (dd > 90) continue; if (!(e.mark > 0 || e.firing || (G.D.radar && e.aware) || (e.aware && dd < 30))) continue; x.fillStyle = '#ff5a3c'; x.beginPath(); x.arc(e.x, e.z, e.boss ? 3.4 : 2.2, 0, 6.3); x.fill(); }
     if (G.turret) { x.fillStyle = '#8fd8ff'; x.fillRect(G.turret.x - 1.5, G.turret.z - 1.5, 3, 3); }
@@ -224,13 +247,15 @@ export class UI {
     const G = this.G; if (!this.panel) { G.paused = true; G.inp.on = false; G.inp.reset(); if (document.pointerLockElement) document.exitPointerLock(); this.audio.play('ui', 0.3); }
     this.panel = name; el('panel').classList.remove('hidden'); el('hud').classList.add('hidden');
     el('tabs').innerHTML = [['map', 'Karte'], ['inv', 'Ausrüstung'], ['net', 'Netze'], ['ops', 'Einsätze'], ['agent', 'Agent'], ['menu', 'Menü']].map(([k, n]) => `<button data-t="${k}" class="${k === name ? 'on' : ''}">${n}</button>`).join('');
-    for (const [k, id] of [['map', 'pMap'], ['inv', 'pInv'], ['net', 'pNet'], ['ops', 'pOps'], ['agent', 'pAgent'], ['menu', 'pMenu']]) el(id).classList.toggle('on', k === name);
+    for (const [k, id] of [['map', 'pMap'], ['inv', 'pInv'], ['net', 'pNet'], ['ops', 'pOps'], ['agent', 'pAgent'], ['menu', 'pMenu'], ['loot', 'pLoot']]) el(id).classList.toggle('on', k === name);
+    el('panel').classList.toggle('lootmode', name === 'loot'); if (name === 'loot') { if (!this.lootList) this.lootList = G.S.inv.filter((i) => i.nw).sort((a, b) => b.rar - a.rar); this.audio.play('lootHi', 0.4); } else this.endLoot();
     el('panel').classList.toggle('agentmode', name === 'agent'); if (name === 'agent') this.agentT = 0;
     if (name === 'map') { this.mcx = G.P.x; this.mcz = G.P.z; this.mSel = null; this.mapCard(); el('mapLeg').innerHTML = Object.keys(ICON).map((k) => `<div><i style="background:${ICON[k]}"></i>${KIND[k].split(' · ')[0]}</div>`).join(''); requestAnimationFrame(() => this.drawMap()); }
     else this.render();
   }
-  close() { if (!this.panel) return; this.panel = null; el('panel').classList.add('hidden'); el('hud').classList.remove('hidden'); const G = this.G; G.paused = false; G.inp.on = true; G.inp.reset(); G.save(); this.last = {}; }
-  render() { const n = this.panel; if (n === 'inv') this.renderInv(); else if (n === 'net') this.renderNet(); else if (n === 'ops') this.renderOps(); else if (n === 'menu') this.renderMenu(); else if (n === 'agent') el('pAgent').innerHTML = renderAgent(this.G.S.look || { outfit: this.G.P.rig.outfit, pal: this.G.playerLook().pal }); }
+  endLoot() { if (!this.lootList) return; for (const i of this.lootList) i.nw = 0; this.lootList = null; this.G.better = null; this.dirty = true; }
+  close() { if (!this.panel) return; this.endLoot(); this.panel = null; el('panel').classList.add('hidden'); el('hud').classList.remove('hidden'); const G = this.G; G.paused = false; G.inp.on = true; G.inp.reset(); G.save(); this.last = {}; }
+  render() { const n = this.panel; if (n === 'loot') this.renderLoot(); else if (n === 'inv') this.renderInv(); else if (n === 'net') this.renderNet(); else if (n === 'ops') this.renderOps(); else if (n === 'menu') this.renderMenu(); else if (n === 'agent') el('pAgent').innerHTML = renderAgent(this.G.S.look || { outfit: this.G.P.rig.outfit, pal: this.G.playerLook().pal }); }
   optLabel(k) { const o = this.optDefs.find((q) => q.k === k); return o ? o.lbl(this.G.S.opt[k]) : ''; }
   // agent creator preview: the camera circles the agent while the panel is open
   agentFrame(dt) {
@@ -243,9 +268,36 @@ export class UI {
     if (it.t === 'w') { const W = WPN[it.cls], d = SYS.wpnDmg(it) * it.q, mg = Math.round(W.mag * (SYS.hasPerk(it, 'mag') ? 1.25 : 1)); return `${Math.round(d)}${W.pellets ? '×' + W.pellets : ''} dmg · ${W.rpm} rpm · ${mg} mag${it.perk ? ' · ' + PERKS[it.perk][0] : ''}${it.perk2 ? ' · ' + PERKS[it.perk2][0] : ''}`; }
     return `${it.arm} armour · +${it.av}% ${ATTR[it.at][0]}${it.sub ? ' · +' + it.sv + '% ' + { crit: 'crit', hs: 'headshot', hp: 'health' }[it.sub] : ''}`;
   }
-  power(it) { if (it.t === 'w') { const W = WPN[it.cls]; return SYS.wpnDmg(it) * it.q * (W.pellets || 1) * (W.rpm / 60); } return it.arm + it.av * 6; }
+  power(it) { return SYS.power(it); }
+  // ---- the loot screen: everything new, big, each judged against what it would replace
+  renderLoot() {
+    const G = this.G, S = G.S, list = (this.lootList || []).filter((it) => S.inv.includes(it) || this.isWorn(it)); this.lootList = list;
+    const rows = list.map((it) => ({ it, worn: this.isWorn(it), dl: this.isWorn(it) ? 0 : G.gain(it) }));
+    const junk = rows.filter((r) => !r.worn && r.dl < -1), junkV = junk.reduce((a, r) => a + SYS.sellValue(r.it), 0), nNew = rows.filter((r) => r.it.nw === 1).length;
+    el('pLoot').innerHTML = `<div class="lhead"><div><b>BEUTE</b><span>${this.lootSrc() ? this.lootSrc() + ' · ' : ''}${nNew} new · backpack ${S.inv.length}/40</span></div><div class="row">${junk.length ? `<button class="pill sm" data-do="ljunk">Scrap ${junk.length} worse · +${junkV}</button>` : ''}<button class="pill sm hot" data-do="lclose">Weiter</button></div></div>
+      <div class="lrow">${rows.map((r) => this.lootCard(r)).join('') || '<p class="note">Nothing new yet. Every fight ends in a chest.</p>'}</div>`;
+  }
+  lootSrc() { return this.G.lootSrc || ''; }
+  isWorn(it) { const S = this.G.S; return S.wpn.includes(it) || Object.values(S.gear).includes(it); }
+  lootCard({ it, worn, dl }) {
+    const G = this.G, S = G.S, R = RAR[it.rar], w = it.t === 'w', W = w ? WPN[it.cls] : null, tg = G.equipTarget(it), cur = worn ? null : G.worn(it);
+    const slotN = w ? ['Primär', 'Sekundär', 'Pistole'][tg] : SLOTS[tg][0], up = !worn && dl > 1, eq = !worn && Math.abs(dl) <= 1;
+    const big = w ? Math.round(SYS.power(it)) : it.arm, bigU = w ? 'damage / s' : 'armour';
+    const ver = worn ? '<div class="ld on">✓ Equipped</div>' : `<div class="ld ${up ? 'up' : eq ? 'eq' : 'dn'}">${up ? '▲ UPGRADE' : eq ? '= SAME' : '▼ WORSE'}<i>${eq ? '' : (dl > 0 ? '+' : '−') + Math.min(999, Math.abs(Math.round(dl))) + '%'}</i></div><small class="lvs">than your ${slotN}${cur ? ': ' + cur.n + ' · ' + Math.round(w ? SYS.power(cur) : cur.arm) : ''}</small>`;
+    const det = w ? `${Math.round(SYS.wpnDmg(it) * it.q)}${W.pellets ? '×' + W.pellets : ''} per shot · ${W.rpm} rpm · ${Math.round(W.mag * (SYS.hasPerk(it, 'mag') ? 1.25 : 1))} mag${[it.perk, it.perk2].filter(Boolean).map((p) => `<br><b>${PERKS[p][0]}</b> ${PERKS[p][1]}`).join('')}`
+      : `<b style="color:${ATTR[it.at][2]}">+${it.av}% ${ATTR[it.at][0]}</b>${it.sub ? ` · +${it.sv}% ${{ crit: 'crit', hs: 'headshot', hp: 'health' }[it.sub]}` : ''}`;
+    return `<div class="lc${up ? ' up' : ''}${worn ? ' worn' : ''}" style="--rc:${R.c}">
+      <div class="lr"><span>${R.n}</span><em>Stufe ${it.lvl}</em></div>
+      <div class="li">${icon(it)}</div>
+      <b class="ln">${it.n}</b><span class="lk">${w ? W.n : SLOTS[it.slot][0]}${it.nw === 2 ? ' · taken off' : ''}</span>
+      <div class="lv"><b>${big}</b><span>${bigU}</span></div>
+      ${ver}
+      <div class="lx">${det}</div>
+      ${worn ? '' : `<div class="lb"><button class="pill sm${up ? ' hot' : ''}" data-do="lequip" data-v="${it.id}">Equip</button><button class="pill sm" data-do="lscrap" data-v="${it.id}">Scrap +${SYS.sellValue(it)}</button></div>`}
+    </div>`;
+  }
   card(it, eq, label) {
-    const S = this.G.S, cmp = eq ? null : it.t === 'w' ? S.wpn[it.cls === 'pst' ? 2 : S.cur < 2 ? S.cur : 0] : S.gear[it.slot], dl = cmp ? this.power(it) - this.power(cmp) : 0;
+    const cmp = eq ? null : this.G.worn(it), dl = cmp ? this.power(it) - this.power(cmp) : 0;
     return `<button class="it${this.sel === it ? ' sel' : ''}" style="--rc:${RAR[it.rar].c}" data-it="${it.id}"><b>${label ? label + ' · ' : ''}${it.n}</b><span>${it.t === 'w' ? WPN[it.cls].n : SLOTS[it.slot][0]} · ${this.itemLine(it)}${cmp ? ` <span class="${dl >= 0 ? 'up' : 'dn'}">${dl >= 0 ? '▲' : '▼'}</span>` : ''}</span><em>${it.lvl}</em></button>`;
   }
   renderInv() {
@@ -255,7 +307,7 @@ export class UI {
       <div class="sec">Getragen</div><div class="grid">${S.wpn.map((w, i) => this.card(w, true, ['Primär', 'Sekundär', 'Pistole'][i])).join('')}${Object.keys(SLOTS).map((k) => this.card(S.gear[k], true)).join('')}</div>
       <div class="sec">Rucksack <small>${S.inv.length} / 40 · <a data-do="tab" data-v="all" style="color:${this.invTab === 'all' ? '#fff' : 'inherit'}">alle</a> · <a data-do="tab" data-v="w" style="color:${this.invTab === 'w' ? '#fff' : 'inherit'}">Waffen</a> · <a data-do="tab" data-v="g" style="color:${this.invTab === 'g' ? '#fff' : 'inherit'}">Ausrüstung</a></small></div>
       <div class="grid">${inv.map((i) => this.card(i, false)).join('') || '<p class="note">Empty. Hostiles, Depots and secured sites drop gear.</p>'}</div>
-      <div id="det">${it ? `<p><b style="color:${RAR[it.rar].c}">${it.n}</b> · ${RAR[it.rar].n} · Stufe ${it.lvl}<br>${this.itemLine(it)}${it.perk ? '<br>' + PERKS[it.perk][0] + ': ' + PERKS[it.perk][1] : ''}${it.perk2 ? '<br>' + PERKS[it.perk2][0] + ': ' + PERKS[it.perk2][1] : ''}</p><div class="row"><button class="pill sm hot" data-do="equip">Equip</button><button class="pill sm" data-do="scrap">Scrap +${SYS.sellValue(it)}</button></div>` : `<p>Tap an item to compare it. Weapons replace the one in your hands.</p><div class="row"><button class="pill sm" data-do="scrapall">Scrap all Standard</button></div>`}</div>`;
+      <div id="det">${it ? `<p><b style="color:${RAR[it.rar].c}">${it.n}</b> · ${RAR[it.rar].n} · Stufe ${it.lvl}<br>${this.itemLine(it)}${it.perk ? '<br>' + PERKS[it.perk][0] + ': ' + PERKS[it.perk][1] : ''}${it.perk2 ? '<br>' + PERKS[it.perk2][0] + ': ' + PERKS[it.perk2][1] : ''}</p><div class="row"><button class="pill sm hot" data-do="equip">Equip</button><button class="pill sm" data-do="scrap">Scrap +${SYS.sellValue(it)}</button></div>` : `<p>Tap an item to compare it. A gun goes next to one of the same kind, otherwise over your weaker one.</p><div class="row"><button class="pill sm" data-do="scrapall">Scrap all Standard</button></div>`}</div>`;
   }
   renderNet() {
     const G = this.G, S = G.S;
@@ -275,7 +327,7 @@ export class UI {
       <div class="sec">Shift</div>
       <div class="opt"><span>Time of day</span><button class="pill sm" data-do="time">${this.clock()} · skip 4 h</button></div>
       <div class="opt"><span>Start over<br><small>Erases this Lotse on this device</small></span><button class="pill sm" data-do="wipe">New Lotse</button></div>
-      <p class="note" style="margin-top:14px">${IS_TOUCH ? 'Left thumb moves; push it all the way forward to sprint. Drag the right side to look. FIRE shoots; with auto aim it finds the target. COVER snaps to walls, cars and barriers; press it again while looking at other cover to run there. Hold the prompt to use things.' : 'WASD move · Shift sprint · mouse look · left click fire · right click aim · Space cover · C roll · R reload · Q pulse · E turret · G grenade · H med kit · F use · V shoulder · 1 2 3 weapons · M map · I gear · J missions'}</p>
+      <p class="note" style="margin-top:14px">${IS_TOUCH ? 'Left thumb moves; push it all the way forward to sprint. Drag the right side to look. FIRE shoots; with auto aim it finds the target. COVER snaps to walls, cars and barriers; press it again while looking at other cover to run there. Hold the prompt to use things.' : 'WASD move · Shift sprint · mouse look · left click fire · right click aim · Space cover · C roll · R reload · Q pulse · E turret · G grenade · H med kit · F use · T drop at the next fight · Y equip the better item · V shoulder · 1 2 3 weapons · M map · I gear · J missions'}</p>
       <p class="note">${G.saved === false ? 'This frame does not allow saving on this device: progress lasts until the page is closed.' : 'Progress saves in this browser on this device.'}</p>
       <p class="note">Photo-scanned materials: Poly Haven and ambientCG (CC0).</p>`;
   }
@@ -292,7 +344,10 @@ export class UI {
       const look = G.playerLook(); G.P.rig.setOutfit(look.outfit, look.pal); G.save(); this.render(); return;
     }
     if (!dob) return; const a = dob.dataset.do, v = dob.dataset.v; this.audio.play('ui', 0.3);
-    if (a === 'equip' && this.sel) { G.equip(this.sel); this.sel = null; } else if (a === 'scrap' && this.sel) { G.scrap(this.sel); this.sel = null; } else if (a === 'scrapall') { for (const i of S.inv.filter((x) => x.rar === 0)) G.scrap(i); }
+    if (a === 'equip' && this.sel) { G.equip(this.sel, G.equipTarget(this.sel)); this.sel = null; } else if (a === 'scrap' && this.sel) { G.scrap(this.sel); this.sel = null; } else if (a === 'scrapall') { for (const i of S.inv.filter((x) => x.rar === 0)) G.scrap(i); }
+    else if (a === 'lequip' || a === 'lscrap') { const it = S.inv.find((i) => i.id === +v); if (it) { if (a === 'lequip') { const old = G.equip(it, G.equipTarget(it)); it.nw = 0; if (old) { old.nw = 2; if (!this.lootList.includes(old)) this.lootList.push(old); } } else { G.scrap(it); } } }
+    else if (a === 'ljunk') { for (const it of (this.lootList || []).slice()) if (S.inv.includes(it) && G.gain(it) < -1) G.scrap(it); }
+    else if (a === 'lclose') { this.close(); return; }
     else if (a === 'tab') this.invTab = v; else if (a === 'net') G.buyNet(v);
     else if (a === 'wp') { G.setWaypoint(G.wp && G.wp.s === this.mSel ? null : this.mSel); this.mapCard(); this.drawMap(); return; } else if (a === 'travel') { if (G.travel(this.mSel)) this.close(); return; }
     else if (a === 'leave' && G.mode) { G.mode.leave(); return; } else if (a === 'invite' && G.mode) { G.mode.invite(); return; }

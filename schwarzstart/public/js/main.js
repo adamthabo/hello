@@ -44,9 +44,9 @@ addEventListener('unhandledrejection', (e) => { if (!window.__ready) fail(e.reas
     audio.init(); playing = true; if (mp) { const nm = el('mName').value.trim().slice(0, 16); if (nm) { mp.name = nm; store.set('mp', { ...(store.get('mp', null) || {}), name: nm }); } mp.start(); } el('title').classList.add('hidden'); el('hud').classList.remove('hidden'); game.paused = false; inp.on = true; ui.fade();
     if (mp) ui.banner(mp.def.name.toUpperCase(), mp.def.sub, mp.def.pvp ? 'warn' : 'net');
     else if (fresh) {
-      ui.banner('DIE INSEL', 'Museumsinsel · Stützpunkt Notbetrieb', 'net');
-      const H = IS_TOUCH ? ['Left thumb moves. Drag the right side to look. Hold FIRE: your weapon finds the nearest hostile in front of you.', 'COVER snaps you behind walls, cars and barriers. Fire from cover to lean out.', 'The desks in the museum colonnade run the five networks. The map button shows all of Berlin.', 'First shift: cross the bridge north-east to S Hackescher Markt. Follow the yellow marker.']
-        : ['WASD to move, mouse to look, click to fire, right click to aim. Shift sprints, C rolls.', 'Space snaps you into cover behind walls, cars and barriers. Fire from cover to lean out.', 'The desks in the museum colonnade run the five networks. M opens the map of Berlin.', 'First shift: cross the bridge north-east to S Hackescher Markt. Follow the yellow marker.'];
+      ui.banner('SCHICHTBEGINN', 'Follow the route. Fight. Take the loot.', 'net');
+      const H = IS_TOUCH ? ['Left thumb moves. Drag the right side to look. Hold FIRE: your weapon finds the nearest hostile in front of you.', 'COVER snaps you behind walls, cars and barriers. Fire from cover to lean out.', 'Follow the orange route on the street: it always leads to the next fight. Far away? Tap ABSETZEN and you are dropped right there.', 'Every fight ends in a pile of loot. A green card means you found something better: tap it to equip.']
+        : ['WASD to move, mouse to look, click to fire, right click to aim. Shift sprints, C rolls.', 'Space snaps you into cover behind walls, cars and barriers. Fire from cover to lean out.', 'Follow the orange route on the street: it always leads to the next fight. T drops you right there.', 'Every fight ends in a pile of loot. A green card means you found something better: Y equips it.'];
       H.forEach((t, i) => setTimeout(() => { if (!game.paused) ui.hint(t, 9); }, 1800 + i * 11000));
     }
   };

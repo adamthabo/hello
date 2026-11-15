@@ -105,7 +105,43 @@ export function installOps(Game, Enemy) {
     if (s.flag >= 0) { this.flagM.setColorAt(s.flag, col); this.flagM.instanceColor.needsUpdate = true; }
     if (s.bea >= 0) { this.beaM.setColorAt(s.bea, col.setRGB(b[0], b[1], b[2])); this.beaM.instanceColor.needsUpdate = true; }
   };
+  // ---------------------------------------------------------------- the director: there is always a next fight, picked for you
+  const FIGHT = { cp: 'Kontrollpunkt', power: 'Umspannwerk', relay: 'Funkmast', mission: 'Einsatz', safe: 'Stützpunkt' };
+  G.nextFight = function () {
+    const P = this.P, lv = this.S.lvl; let best = null, bs = 1e9;
+    for (const s of this.sites) {
+      if (s.locked || s.done || !FIGHT[s.k] || s.d === 0) continue; if (s.k === 'safe' && this.S.sites['lib:' + s.d]) continue;
+      const slv = s.k === 'mission' ? s.def.lv : this.map.districts[s.d].lv[0], d = hyp(s.x - P.x, s.z - P.z);
+      const sc = d + Math.max(0, slv - lv - 1) * 320 + (s.k === 'mission' && slv <= lv + 1 ? -80 : 0);
+      if (sc < bs) { bs = sc; best = s; }
+    }
+    return best;
+  };
+  G.fightName = function (s) { return s.k === 'mission' ? s.n : s.n.replace(/^(Kontrollpunkt|Umspannwerk|Funkmast|Stützpunkt)\s*/, FIGHT[s.k] + ' · '); };
   G.pickTrack = function () {
+    const s = this.nextFight(); this.wp = s ? { x: s.x, z: s.z, n: this.fightName(s), s, auto: true } : null; if (s && s.k === 'mission') this.S.track = s.def.id;
+  };
+  // tap to be dropped close to the next fight: a spot 45-60 m out, on our side, out of the defenders' sight
+  // drop the agent a short walk from the fight: on foot-connected ground (never across the river), out of sight, near cover
+  G.deploy = function () {
+    const wp = this.wp, P = this.P, W = this.world, rt = this.routeL; if (!wp || P.dead || wp.loot) return false;
+    if (this.combatT > 0 && this.alive() > 0) { this.ui.toast('Not while under fire'); return false; }
+    const tx = wp.x, tz = wp.z, a0 = Math.atan2(P.x - tx, P.z - tz), fieldOk = rt && rt.F && rt.F.tx === tx && rt.F.tz === tz; let best = null, bs = -1e9;
+    for (let pass = 0; pass < 2 && !best; pass++) for (let i = 0; i < 120; i++) {
+      const a = i < 50 ? a0 + (Math.random() - 0.5) * 2.4 : Math.random() * 6.2832, d = 34 + Math.random() * 32, x = tx + Math.sin(a) * d, z = tz + Math.cos(a) * d;
+      if (!W.walkable(x, z) || !W.walkable(x + 1.2, z) || !W.walkable(x - 1.2, z) || !W.walkable(x, z + 1.2) || !W.walkable(x, z - 1.2)) continue;
+      const wd = fieldOk ? rt.distAt(x, z) : d; if (pass === 0 && (wd < 0 || wd > 115)) continue;   // must reach the fight on foot
+      let da = Math.abs(a - a0) % 6.2832; if (da > Math.PI) da = 6.2832 - da;
+      const sc = -da * 6 - Math.abs((wd < 0 ? d : wd) - 52) * 0.35 + (W.los(x, 1.6, z, tx, 1.6, tz) ? -25 : 0) + (W.coversNear(x, z, 4, []).length ? 6 : 0) + Math.random() * 2;
+      if (sc > bs) { bs = sc; best = [x, z]; }
+    }
+    if (!best) { this.ui.toast('No safe drop point near there'); return false; }
+    this.leaveCover(); P.x = best[0]; P.z = best[1]; P.vx = P.vz = 0; this.cam.yaw = P.yaw = Math.atan2(tx - P.x, tz - P.z); W.collide(P, 0.34);
+    for (const e of this.en) if (!e.isRemote && !e.home) e.gone = true;
+    if (rt) rt.t = 0;
+    this.ui.fade(); this.audio.play('travel', 0.6); this.ui.banner('ABGESETZT', wp.n, 'warn'); this.save(); return true;
+  };
+  G._pickTrackOld = function () {
     const S = this.S; let cur = this.sites.find((s) => s.k === 'mission' && s.def.id === S.track && !s.done && !s.locked);
     if (!cur) { cur = this.sites.filter((s) => s.k === 'mission' && !s.done && !s.locked).sort((a, b) => a.def.lv - b.def.lv)[0]; S.track = cur ? cur.def.id : null; }
     this.wp = cur ? { x: cur.x, z: cur.z, n: cur.n, s: cur } : null;
@@ -132,13 +168,23 @@ export function installOps(Game, Enemy) {
     S.stats.kills++; this.addXP(22 * Math.pow(1.12, e.lvl - 1) * T.xp * (diff < -4 ? 0.4 : 1));
     this.ui.hitmark(true); this.audio.playAt('die', e.x, e.z, 0.6, 0.9 + R() * 0.2);
     const w = this.curW(); if (SYS.hasPerk(w, 'kill')) this.mags[S.cur] = Math.min(this.magSize(w), this.mags[S.cur] + Math.ceil(this.magSize(w) * 0.2));
-    if (R() < 0.42) this.drop(e.x, e.z, 'ammo'); if (R() < 0.1 && S.kits < this.D.kits) this.drop(e.x, e.z, 'kit'); if (R() < 0.35) this.drop(e.x, e.z, 'marken', Math.round((4 + R() * 8) * Math.sqrt(e.lvl) * (1 + e.tier)));
-    const ch = [0.1, 0.34, 0.75, 1][e.tier]; if (R() < ch) this.drop(e.x, e.z, 'item', SYS.makeItem(e.lvl, e.tier * 0.07)); if (e.tier === 3) { this.drop(e.x, e.z, 'item', SYS.makeWeapon(e.lvl, 3 + (R() < 0.3 ? 1 : 0))); this.drop(e.x, e.z, 'item', SYS.makeGear(e.lvl, 2 + ((R() * 2) | 0))); }
+    if (R() < 0.58) this.drop(e.x, e.z, 'ammo'); if (R() < 0.14 && S.kits < this.D.kits) this.drop(e.x, e.z, 'kit'); if (R() < 0.45) this.drop(e.x, e.z, 'marken', Math.round((4 + R() * 8) * Math.sqrt(e.lvl) * (1 + e.tier)));
+    const ch = [0.22, 0.55, 0.9, 1][e.tier]; if (R() < ch) this.drop(e.x, e.z, 'item', SYS.makeItem(e.lvl, e.tier * 0.07)); if (e.tier === 3) { this.drop(e.x, e.z, 'item', SYS.makeWeapon(e.lvl, 3 + (R() < 0.3 ? 1 : 0))); this.drop(e.x, e.z, 'item', SYS.makeGear(e.lvl, 2 + ((R() * 2) | 0))); }
     void info; void P;
   };
   G.give = function (xp, marken, item) { this.addXP(xp); this.S.marken += marken; if (item) { const P = this.P; this.drop(P.x + Math.sin(this.cam.yaw) * 1.5, P.z + Math.cos(this.cam.yaw) * 1.5, 'item', item); } this.ui.toast(`+${marken} Marken · +${Math.round(xp)} XP`, 'mk'); };
+  G.chest = function (x, z, lv, n, bonus) {            // loot bursts out of the cleared position
+    const tag = (this.chestN = (this.chestN || 0) + 1), k0 = this.loot.length;
+    for (let i = 0; i < n; i++) this.drop(x, z, 'item', SYS.makeItem(lv, bonus));
+    for (let k = k0; k < this.loot.length; k++) this.loot[k].chest = tag;
+    this.drop(x, z, 'ammo'); this.drop(x, z, 'marken', Math.round((14 + lv * 5) * (1 + bonus * 4))); if (R() < 0.6) this.drop(x, z, 'kit');
+    this.fx.puff(x, 1.0, z, 30, [4, 3, 1.2], 0.06, 7, 0.7, -1, -6, 4); this.audio.play('lootHi', 0.6); return tag;
+  };
   G.complete = function (s) {
     const S = this.S, lv = this.map.districts[s.d].lv[0], P = this.P; s.done = true; s.active = false; S.sites[s.key] = 1; this.paint(s); this.ui.dirty = true;
+    let tag = 0; if (['cp', 'power', 'relay', 'mission', 'safe'].includes(s.k) && s.d !== 0) { const lvl = s.k === 'mission' ? s.def.lv : Math.round(lv + R() * (this.map.districts[s.d].lv[1] - lv)); tag = this.chest(s.ux ?? s.x, s.uz ?? s.z, lvl, s.k === 'mission' ? 4 : s.k === 'cp' ? 3 : 2, s.k === 'mission' ? 0.18 : 0.08); }
+    this.lootSrc = this.fightName ? this.fightName(s) : s.n;
+    if (this.wp && this.wp.s === s) { this.wp = tag ? { x: s.ux ?? s.x, z: s.uz ?? s.z, n: 'Beute', loot: tag, auto: true, t0: this.t } : null; this.nextT = tag ? 1.5 : 3; }
     if (s.k === 'power') { if (!S.power.includes(s.d)) S.power.push(s.d); this.world.setPower(s.d, true); this.audio.play('power', 0.8); this.ui.banner('STROM', `The lights are back on in ${this.map.districts[s.d].name}.`, 'net'); this.give(260 * Math.pow(1.13, lv), 60 + lv * 14, SYS.makeItem(lv, 0.1)); }
     else if (s.k === 'cp') { this.audio.play('capture', 0.8); this.ui.banner('KONTROLLPUNKT GESICHERT', s.n.replace('Kontrollpunkt ', ''), 'net'); this.give(220 * Math.pow(1.13, lv), 50 + lv * 12, R() < 0.6 ? SYS.makeItem(lv, 0.08) : null); }
     else if (s.k === 'relay') { S.seen[s.d] = 1; this.audio.play('pulse', 0.7); this.ui.banner('FUNKMAST ONLINE', `Every site in ${this.map.districts[s.d].name} is on your map.`, 'net'); this.give(160 * Math.pow(1.13, lv), 40 + lv * 8); }
@@ -160,13 +206,18 @@ export function installOps(Game, Enemy) {
   };
   G.buyNet = function (key) {
     const S = this.S, N = NETS[key], t = S.net[key], def = N.t[t]; if (!def) return false; const pts = SYS.netPoints(S, N.src);
-    if (!this.inSafe) { this.ui.toast('Networks are switched at the hub on Museumsinsel'); return false; } if (pts < def[0]) { this.ui.toast(`Needs ${def[0]} ${N.unit}`); return false; } if (S.marken < def[1]) { this.ui.toast('Not enough Marken'); return false; }
+    if (pts < def[0]) { this.ui.toast(`Needs ${def[0]} ${N.unit}`); return false; } if (S.marken < def[1]) { this.ui.toast('Not enough Marken'); return false; }
     S.marken -= def[1]; S.net[key]++; this.recalc(); S.kits = Math.max(S.kits, Math.min(this.D.kits, S.kits + 1)); this.audio.play('power', 0.8); this.ui.banner(N.n + ' · ' + def[2], def[3], 'net'); this.ui.dirty = true; this.save(); return true;
   };
 
   // ---------------------------------------------------------------- per-frame
   G.updOps = function (dt) {
     const P = this.P, W = this.world, S = this.S, map = this.map; this.pathN = 2;
+    if (!this.mode || this.mode.id === 'frei') {
+      this.nextT = Math.max(0, (this.nextT || 0) - dt); this.dirT = (this.dirT || 0) - dt;
+      if (this.dirT <= 0) { this.dirT = 0.5; let w = this.wp; if (w && w.loot && (hyp(w.x - P.x, w.z - P.z) < 2.5 || !this.loot.some((o) => o.chest === w.loot && o.kind === 'item' && !o.full) || this.t - w.t0 > 60)) { this.wp = w = null; this.nextT = Math.max(this.nextT, 2.5); } if ((!w || (w.s && (w.s.done || w.s.locked))) && this.nextT <= 0 && !this.ui.panel) { this.pickTrack(); if (this.wp) { const d = Math.round(hyp(this.wp.x - P.x, this.wp.z - P.z)); this.ui.banner('NÄCHSTER KAMPF', this.wp.n + ' · ' + d + ' m', 'warn'); this.audio.play('alarm', 0.35); } } }
+    }
+    if (this.routeL) this.routeL.update(dt, this);
     const pd = W.district(P.x, P.z); this.inSafe = pd === 0;
     if (pd !== this.lastD) { const D = map.districts[pd], st = this.districtState(pd); if (this.lastD >= 0) this.ui.banner(D.name.toUpperCase(), pd === 0 ? 'Die Insel · safe ground' : st.lib ? 'Secured' : `${FACTIONS[D.fac].name} · level ${D.lv[0]}–${D.lv[1]}`, pd === 0 || st.lib ? 'net' : 'warn'); this.lastD = pd; this.loc.dist = D; if (pd !== 0 && !S.seen['v' + pd]) { S.seen['v' + pd] = 1; } }
     this.locT -= dt; if (this.locT <= 0) { this.locT = 0.6; this.loc.street = W.street(P.x, P.z); }
@@ -201,13 +252,15 @@ export function installOps(Game, Enemy) {
             if (s.wave === 0) { s.wave = 1; this.group(s.x, s.z, 6, lv, fac, { home: s, r0: 30, r1: 48, aware: true, tiers: [2, 1] }); this.ui.toast('Second wave', 'warn'); this.audio.play('alarm', 0.5); }
             else if (s.wave === 1) { s.wave = 2; this.group(s.x, s.z, 5, lv, fac, { home: s, r0: 26, r1: 44, aware: true, tiers: [3, 1], archs: ['heavy', 'rifle', 'rush', 'gren', 'rifle'], names: [s.def.boss] }); this.ui.banner(s.def.boss.toUpperCase(), FACTIONS[fac].name, 'bad'); this.audio.play('boss', 0.8); }
             else this.complete(s);
-          } else if (!s.cleared) { s.cleared = true; if (s.k !== 'safe') this.ui.toast(s.n + ' is clear', 'ok'); }
+          } else if (s.wave === 0 && (s.k === 'power' || s.k === 'relay' || (s.k === 'safe' && !S.sites['lib:' + s.d]))) { s.wave = 1; this.group(s.x, s.z, 3 + (lv > 5 ? 1 : 0), lv, fac, { home: s, r0: 28, r1: 44, aware: true, vet: 0.2 }); this.ui.toast('Reinforcements inbound', 'warn'); this.audio.play('alarm', 0.45); }
+          else if (!s.cleared) { s.cleared = true; if (USE[s.k]) { this.ui.banner('GESICHERT', USE[s.k][0] + ' · follow the route', 'net'); if (this.wp && this.wp.s === s) { this.wp.x = s.ux; this.wp.z = s.uz; this.wp.n = USE[s.k][0]; } } else this.ui.toast(s.n + ' is clear', 'ok'); }
         }
       }
       // roaming patrols in hostile districts
       this.patT -= 0.3;
       if (this.patT <= 0 && pd !== 0 && !lib && !P.dead && !this.noPatrol && this.alive() < this.cap - 5) {
-        this.patT = 14 + R() * 16; const D = map.districts[pd], a = this.cam.yaw + (R() - 0.5) * 2.4, dd = 62 + R() * 26, x = P.x + Math.sin(a) * dd, z = P.z + Math.cos(a) * dd, p = W.findWalk(x, z, 0, 14, R, 16);
+        this.patT = 9 + R() * 10; const D = map.districts[pd], rp = this.routeL && this.routeL.pts, ahead = rp && rp.length > 1 ? (() => { let acc = 0; for (let k = 1; k < rp.length; k++) { acc += hyp(rp[k][0] - rp[k - 1][0], rp[k][1] - rp[k - 1][1]); if (acc > 55) return rp[k]; } return null; })() : null;
+        const a = this.cam.yaw + (R() - 0.5) * 2.4, dd = 62 + R() * 26, x = ahead ? ahead[0] : P.x + Math.sin(a) * dd, z = ahead ? ahead[1] : P.z + Math.cos(a) * dd, p = W.findWalk(x, z, 0, 14, R, 16);
         if (p && W.district(p[0], p[1]) === pd && !W.los(p[0], 1.6, p[1], P.x, 1.6, P.z)) this.group(p[0], p[1], 3 + ((R() * 2) | 0), D.lv[0] + R() * (D.lv[1] - D.lv[0]), D.fac, { r0: 0, r1: 5, patrol: [P.x + (R() - 0.5) * 30, P.z + (R() - 0.5) * 30] });
       } else if (this.patT <= 0) this.patT = 6;
     }

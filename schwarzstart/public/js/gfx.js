@@ -132,7 +132,7 @@ const FRAG_FX = /* glsl */`
   vec4 pk_ = texture2D( normalMap, vNormalMapUv );
   vec3 mapN = vec3( pk_.xy * 2.0 - 1.0, 0.0 ); mapN.xy *= normalScale; mapN.z = sqrt( max( 0.0, 1.0 - dot( mapN.xy, mapN.xy ) ) );
   normal = normalize( tbn * mapN );
-  roughnessFactor = clamp( roughness * pk_.b, 0.03, 1.0 );
+  roughnessFactor = clamp( roughness * pk_.b, 0.1, 1.0 );
 #else
   vec4 pk_ = vec4( 0.5, 0.5, 1.0, 0.0 );
 #endif
@@ -243,7 +243,7 @@ vec3 wN_ = normalize( vWNrm );
   float ice = smoothstep( 0.50, 0.56, texture2D( uNoise, wp2 * 0.012 + uTime * 0.0006 ).r + ( n2.g - 0.5 ) * 0.12 );
   vec2 rip = ( n1.xy + n2.yz - 1.0 ) * 0.22 * ( 1.0 - ice );
   diffuseColor.rgb = mix( vec3( 0.010, 0.018, 0.024 ), vec3( 0.60, 0.66, 0.72 ) * ( 0.8 + 0.3 * n2.b ), ice );
-  roughnessFactor = mix( 0.06, 0.75, ice ); metalnessFactor = 0.0;
+  roughnessFactor = mix( 0.13, 0.75, ice ); metalnessFactor = 0.0;
   normal = normalize( ( viewMatrix * vec4( normalize( vec3( rip.x, 1.0, rip.y ) ), 0.0 ) ).xyz );
 }
 #endif
