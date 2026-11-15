@@ -21,6 +21,7 @@ export const OPTIONS = [
   { g: 'Controls', k: 'haptics', n: 'Vibration', touch: 1, vals: [1, 0], lbl: onoff, def: 1, apply: (c, v) => { c.game.haptics = !!v; } },
   { g: 'Sound', k: 'mute', n: 'Sound', vals: [false, true], lbl: (v) => (v ? 'off' : 'on'), def: false, apply: (c, v) => c.audio.mute(!!v) },
   { g: 'Sound', k: 'vol', n: 'Master volume', type: 'range', min: 0, max: 1, step: 0.05, def: 0.9, lbl: (v) => Math.round(v * 100) + '%', apply: (c, v) => c.audio.setVolume && c.audio.setVolume(+v) },
+  { g: 'Sound', k: 'steps', n: 'Footsteps', vals: [0.5, 1, 0], lbl: (v) => ({ 0.5: 'quiet', 1: 'normal', 0: 'off' })[v], def: 0.5, apply: (c, v) => { c.audio.stepVol = +v; } },
   { g: 'Sound', k: 'amb', n: 'Wind and city', type: 'range', min: 0, max: 1, step: 0.05, def: 1, lbl: (v) => Math.round(v * 100) + '%', apply: (c, v) => { c.audio.amb = +v; } },
   { g: 'Display', k: 'dmgNum', n: 'Damage numbers', vals: [1, 0], lbl: onoff, def: 1, apply: (c, v) => { c.ui.dmgOn = !!v; } },
   { g: 'Display', k: 'hints', n: 'Tips', vals: [1, 0], lbl: onoff, def: 1, apply: (c, v) => { c.ui.hintsOn = !!v; } },

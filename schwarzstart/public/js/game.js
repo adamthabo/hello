@@ -156,7 +156,7 @@ export class Game {
     for (let i = 0; i < 2; i++) P.sk[i] = Math.max(0, P.sk[i] - dt * D.haste); P.nadeT = Math.max(0, P.nadeT - dt * D.haste); P.kitT = Math.max(0, P.kitT - dt);
     if (this.S.nades < 2 && P.nadeT <= 0) { this.S.nades++; if (this.S.nades < 2) P.nadeT = 20; }
     // steps
-    if (speed > 0.5 && !P.roll) { P.stepT = (P.stepT || 0) - dt * speed; if (P.stepT <= 0) { P.stepT = P.sprint ? 2.5 : 2.1; this.audio.play('step', 0.25 + (P.sprint ? 0.15 : 0), 0.9 + Math.random() * 0.25); if (Math.random() < 0.6) this.fx.puff(P.x, 0.05, P.z, 2, [0.8, 0.84, 0.9], 0.12, 0.6, 0.5, 0.35, -1, 0.5); } }
+    if (speed > 0.5 && !P.roll) { P.stepT = (P.stepT || 0) - dt * speed; if (P.stepT <= 0) { P.stepT = P.sprint ? 2.5 : 2.1; this.audio.step(P.sprint ? 0.15 : 0.11); if (Math.random() < 0.6) this.fx.puff(P.x, 0.05, P.z, 2, [0.8, 0.84, 0.9], 0.12, 0.6, 0.5, 0.35, -1, 0.5); } }
     const rig = P.rig; rig.root.position.set(P.x, 0, P.z); rig.root.rotation.y = P.yaw;
     const cyw = Math.cos(P.yaw), syw = Math.sin(P.yaw), lml = ml > 0.05 && P.st !== 'cover' ? 1 / Math.max(ml, 1e-3) : 0;
     rig.pose({ speed, mx: lml ? (mx * cyw - mz * syw) * lml : 0, mz: lml ? (mx * syw + mz * cyw) * lml : 1, aim: P.aim || this.t - P.lastShot < 0.5, pitch: c.pitch, crouch: P.crouch, reload: P.relT > 0 ? 1 - P.relT / P.relD : 0, roll: P.roll, lean: P.st === 'cover' && P.peek && !P.cov.low ? (P.covDir || 1) * -0.5 : 0 }, dt);

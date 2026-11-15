@@ -17,7 +17,11 @@ const DEF = {
   swap: [[N, 0, 0, 0.16, 0.03, 22, 0.4, 1800, 3800, 0, 600], [N, 0, 0, 0.04, 0.001, 100, 0.5, 4000, 1500, 0.13, 800]],
   cover: [[N, 0, 0, 0.14, 0.004, 30, 0.6, 700, 200, 0, 0], [S, 90, 55, 0.12, 0.002, 28, 0.6]],
   roll: [[N, 0, 0, 0.36, 0.08, 9, 0.45, 900, 2400, 0, 300]],
-  step: [[N, 0, 0, 0.13, 0.008, 34, 0.6, 2600, 900, 0, 500], [N, 0, 0, 0.06, 0.002, 60, 0.35, 5200, 2800, 0.02, 1800]],
+  // footsteps: a soft, dark crunch of packed snow; four takes so a run never sounds like a loop
+  step0: [[N, 0, 0, 0.12, 0.007, 38, 0.55, 1000, 380, 0, 120], [N, 0, 0, 0.05, 0.004, 75, 0.1, 2200, 1300, 0.012, 800]],
+  step1: [[N, 0, 0, 0.1, 0.006, 44, 0.55, 900, 340, 0, 110], [N, 0, 0, 0.04, 0.003, 80, 0.08, 2000, 1200, 0.018, 760]],
+  step2: [[N, 0, 0, 0.13, 0.008, 34, 0.5, 1150, 420, 0, 140], [N, 0, 0, 0.05, 0.004, 70, 0.11, 2400, 1400, 0.01, 820]],
+  step3: [[N, 0, 0, 0.11, 0.006, 40, 0.52, 820, 320, 0, 100], [N, 0, 0, 0.045, 0.003, 78, 0.09, 1900, 1150, 0.015, 740]],
   hitArm: [[S, 1900, 1750, 0.14, 0.0005, 30, 0.35], [S, 2760, 2600, 0.1, 0.0005, 40, 0.25], [N, 0, 0, 0.03, 0.0005, 150, 0.5, 8000, 5000, 0, 2500]],
   hitBody: [[N, 0, 0, 0.1, 0.001, 40, 0.8, 900, 260, 0, 0], [S, 130, 70, 0.09, 0.001, 40, 0.7]],
   armBreak: [[N, 0, 0, 0.35, 0.0005, 14, 0.8, 9000, 3200, 0, 2600], [S, 2400, 900, 0.3, 0.001, 12, 0.3], [S, 3300, 1300, 0.26, 0.001, 14, 0.22, 0, 0, 0.03]],
@@ -96,6 +100,7 @@ export class Sound {
     s.start();
   }
   playAt(name, x, z, vol = 1, rate = 1) { const dx = x - this.lx, dz = z - this.lz, d = hyp(dx, dz), a = Math.atan2(dx, dz) - this.yaw; this.play(name, vol * clamp(1.15 - d / 75, 0, 1) ** 1.6, rate * (d > 40 ? 0.92 : 1), -Math.sin(a) * clamp(d / 12, 0, 0.85)); }
+  step(vol) { const v = vol * (this.stepVol ?? 0.5); if (v <= 0.002) return; this.stepN = ((this.stepN || 0) + 1 + ((Math.random() * 3) | 0)) % 4; this.stepL = !this.stepL; this.play('step' + this.stepN, v, 0.9 + Math.random() * 0.18, this.stepL ? -0.08 : 0.08); }
   shot(cls, vol = 0.6, rate = 1) { this.play('shot_' + cls, vol, rate * (0.96 + Math.random() * 0.08)); }
   shotAt(cls, x, z) { const t = performance.now(); if (t - this.lastShot < 28) return; this.lastShot = t; this.playAt('shot_' + cls, x, z, 0.55, 0.9 + Math.random() * 0.1); }
 }
