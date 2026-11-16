@@ -1,0 +1,58 @@
+[
+ {
+  "Name": "schieber",
+  "DisplayName": "Die Schieber",
+  "Color": "#d9623a",
+  "Tagline": "Black-market gangs. Fast, loud, and always too many.",
+  "UnitNames": {
+   "rush": "Schläger",
+   "rifle": "Schütze",
+   "sniper": "Späher",
+   "heavy": "Brecher",
+   "gren": "Werfer"
+  },
+  "Mix": "[\"rush\", \"rush\", \"rifle\", \"rifle\", \"gren\", \"rush\", \"heavy\"]"
+ },
+ {
+  "Name": "kartell",
+  "DisplayName": "Das Stromkartell",
+  "Color": "#ecc92f",
+  "Tagline": "They hold the substations and sell every kilowatt hour.",
+  "UnitNames": {
+   "rush": "Sicherung",
+   "rifle": "Monteur",
+   "sniper": "Peiler",
+   "heavy": "Trafo",
+   "gren": "Zünder"
+  },
+  "Mix": "[\"rifle\", \"rifle\", \"rush\", \"sniper\", \"gren\", \"heavy\", \"rifle\"]"
+ },
+ {
+  "Name": "garde",
+  "DisplayName": "Die Garde",
+  "Color": "#77a3e0",
+  "Tagline": "Deserted security forces. Disciplined, armoured, without mercy.",
+  "UnitNames": {
+   "rush": "Vorposten",
+   "rifle": "Gardist",
+   "sniper": "Scharfschütze",
+   "heavy": "Panzerschütze",
+   "gren": "Grenadier"
+  },
+  "Mix": "[\"rifle\", \"rifle\", \"rifle\", \"sniper\", \"heavy\", \"gren\", \"rush\"]"
+ },
+ {
+  "Name": "stille",
+  "DisplayName": "Die Stillen",
+  "Color": "#e3e9f0",
+  "Tagline": "They want the city to stay dark. You never hear them coming.",
+  "UnitNames": {
+   "rush": "Läufer",
+   "rifle": "Jäger",
+   "sniper": "Wächter",
+   "heavy": "Träger",
+   "gren": "Rufer"
+  },
+  "Mix": "[\"sniper\", \"rifle\", \"rush\", \"sniper\", \"rifle\", \"gren\", \"heavy\"]"
+ }
+]

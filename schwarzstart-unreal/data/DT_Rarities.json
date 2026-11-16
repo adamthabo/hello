@@ -1,0 +1,32 @@
+[
+ {
+  "Name": "rarity0",
+  "Label": "Standard",
+  "Color": "#c9ccd1",
+  "Multiplier": 1
+ },
+ {
+  "Name": "rarity1",
+  "Label": "Solide",
+  "Color": "#62c36a",
+  "Multiplier": 1.12
+ },
+ {
+  "Name": "rarity2",
+  "Label": "Selten",
+  "Color": "#4a9be8",
+  "Multiplier": 1.26
+ },
+ {
+  "Name": "rarity3",
+  "Label": "Episch",
+  "Color": "#b06be0",
+  "Multiplier": 1.42
+ },
+ {
+  "Name": "rarity4",
+  "Label": "Legendär",
+  "Color": "#f0b63c",
+  "Multiplier": 1.62
+ }
+]

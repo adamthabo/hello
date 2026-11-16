@@ -1,0 +1,172 @@
+[
+ {
+  "Name": "strom",
+  "Label": "STROM",
+  "Color": "#f2c230",
+  "Source": "power",
+  "UnitLabel": "Umspannwerke",
+  "Description": "Power. Every substation relights a Kiez.",
+  "Tiers": [
+   {
+    "Level": 1,
+    "Cost": 150,
+    "Label": "Notstrom",
+    "Effect": "skills recharge 10% faster"
+   },
+   {
+    "Level": 3,
+    "Cost": 500,
+    "Label": "Geschütz Mk II",
+    "Effect": "turret: +40% damage, +8 s uptime"
+   },
+   {
+    "Level": 6,
+    "Cost": 1500,
+    "Label": "Flutlicht",
+    "Effect": "+10% weapon damage in districts with power"
+   },
+   {
+    "Level": 10,
+    "Cost": 4000,
+    "Label": "Schwarzstart",
+    "Effect": "skills recharge 25% faster"
+   }
+  ]
+ },
+ {
+  "Name": "wasser",
+  "Label": "WASSER",
+  "Color": "#4aa8e8",
+  "Source": "pump",
+  "UnitLabel": "Pumpen",
+  "Description": "Water from the green street pumps.",
+  "Tiers": [
+   {
+    "Level": 2,
+    "Cost": 150,
+    "Label": "Feldflasche",
+    "Effect": "+1 med kit"
+   },
+   {
+    "Level": 6,
+    "Cost": 500,
+    "Label": "Lazarett",
+    "Effect": "health regenerates twice as fast"
+   },
+   {
+    "Level": 14,
+    "Cost": 1500,
+    "Label": "Zisterne",
+    "Effect": "+1 med kit"
+   },
+   {
+    "Level": 26,
+    "Cost": 4000,
+    "Label": "Wasserwerk",
+    "Effect": "kits keep mending armour for 8 s"
+   }
+  ]
+ },
+ {
+  "Name": "waerme",
+  "Label": "WÄRME",
+  "Color": "#ea7a3c",
+  "Source": "cp",
+  "UnitLabel": "Kontrollpunkte",
+  "Description": "Heat. A warm room at every secured checkpoint.",
+  "Tiers": [
+   {
+    "Level": 2,
+    "Cost": 150,
+    "Label": "Wärmestube",
+    "Effect": "+10% health"
+   },
+   {
+    "Level": 6,
+    "Cost": 500,
+    "Label": "Fernwärme",
+    "Effect": "armour recovers twice as fast out of combat"
+   },
+   {
+    "Level": 14,
+    "Cost": 1500,
+    "Label": "Heizkraftwerk",
+    "Effect": "+15% health"
+   },
+   {
+    "Level": 26,
+    "Cost": 4000,
+    "Label": "Winterfest",
+    "Effect": "+15% armour"
+   }
+  ]
+ },
+ {
+  "Name": "funk",
+  "Label": "FUNK",
+  "Color": "#8fd6a0",
+  "Source": "relay",
+  "UnitLabel": "Funkmasten",
+  "Description": "Signal. The radio net of the Lotsen.",
+  "Tiers": [
+   {
+    "Level": 1,
+    "Cost": 150,
+    "Label": "Kiezfunk",
+    "Effect": "the minimap shows alerted hostiles"
+   },
+   {
+    "Level": 3,
+    "Cost": 500,
+    "Label": "Peilsender",
+    "Effect": "pulse: +50% range, +4 s"
+   },
+   {
+    "Level": 6,
+    "Cost": 1500,
+    "Label": "Lagebild",
+    "Effect": "Depots and pumps appear on the map"
+   },
+   {
+    "Level": 10,
+    "Cost": 4000,
+    "Label": "Fernsehturm",
+    "Effect": "+12% critical hits on marked hostiles"
+   }
+  ]
+ },
+ {
+  "Name": "bahn",
+  "Label": "BAHN",
+  "Color": "#c9a3ef",
+  "Source": "safe",
+  "UnitLabel": "Stützpunkte",
+  "Description": "Rail. U-Bahn stations as safehouses, tunnels as roads.",
+  "Tiers": [
+   {
+    "Level": 1,
+    "Cost": 150,
+    "Label": "Tunnelwege",
+    "Effect": "fast travel between Stützpunkte"
+   },
+   {
+    "Level": 4,
+    "Cost": 500,
+    "Label": "Fahrdienst",
+    "Effect": "safehouses restock more ammo"
+   },
+   {
+    "Level": 8,
+    "Cost": 1500,
+    "Label": "Streckenläufer",
+    "Effect": "+12% sprint speed"
+   },
+   {
+    "Level": 14,
+    "Cost": 4000,
+    "Label": "Ringschluss",
+    "Effect": "full ammo at every Stützpunkt, +20% reserve"
+   }
+  ]
+ }
+]

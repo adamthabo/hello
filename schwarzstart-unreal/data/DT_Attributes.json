@@ -1,0 +1,20 @@
+[
+ {
+  "Name": "fk",
+  "Label": "Feuerkraft",
+  "Unit": "% weapon damage",
+  "Color": "#e0694a"
+ },
+ {
+  "Name": "pz",
+  "Label": "Panzerung",
+  "Unit": "% armour",
+  "Color": "#5aa0e6"
+ },
+ {
+  "Name": "tk",
+  "Label": "Technik",
+  "Unit": "% skills",
+  "Color": "#e8c84a"
+ }
+]

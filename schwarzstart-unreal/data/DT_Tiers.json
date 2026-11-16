@@ -1,0 +1,30 @@
+[
+ {
+  "Name": "tier0",
+  "Label": "",
+  "HealthScale": 1,
+  "Armor": 0,
+  "XpScale": 1
+ },
+ {
+  "Name": "tier1",
+  "Label": "Veteran",
+  "HealthScale": 1.9,
+  "Armor": 0.6,
+  "XpScale": 2.4
+ },
+ {
+  "Name": "tier2",
+  "Label": "Elite",
+  "HealthScale": 3.2,
+  "Armor": 1.1,
+  "XpScale": 5
+ },
+ {
+  "Name": "tier3",
+  "Label": "Anführer",
+  "HealthScale": 10,
+  "Armor": 2.2,
+  "XpScale": 22
+ }
+]

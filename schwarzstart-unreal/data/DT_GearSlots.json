@@ -1,0 +1,50 @@
+[
+ {
+  "Name": "kopf",
+  "Label": "Kopf",
+  "Items": [
+   "Wollmütze",
+   "Schutzhelm",
+   "Sturmhaube"
+  ],
+  "Weight": 0.8
+ },
+ {
+  "Name": "weste",
+  "Label": "Weste",
+  "Items": [
+   "Schutzweste",
+   "Einsatzweste",
+   "Plattenträger"
+  ],
+  "Weight": 1.6
+ },
+ {
+  "Name": "rucksack",
+  "Label": "Rucksack",
+  "Items": [
+   "Tagesrucksack",
+   "Einsatzrucksack",
+   "Seesack"
+  ],
+  "Weight": 1.1
+ },
+ {
+  "Name": "handschuhe",
+  "Label": "Handschuhe",
+  "Items": [
+   "Arbeitshandschuhe",
+   "Einsatzhandschuhe"
+  ],
+  "Weight": 0.7
+ },
+ {
+  "Name": "stiefel",
+  "Label": "Stiefel",
+  "Items": [
+   "Winterstiefel",
+   "Einsatzstiefel"
+  ],
+  "Weight": 0.8
+ }
+]

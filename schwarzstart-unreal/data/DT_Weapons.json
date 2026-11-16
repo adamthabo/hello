@@ -1,0 +1,107 @@
+[
+ {
+  "Name": "ar",
+  "Class": "Sturmgewehr",
+  "Damage": 21,
+  "RoundsPerMinute": 640,
+  "Magazine": 30,
+  "ReloadSeconds": 2.1,
+  "RangeMetres": 46,
+  "Spread": 0.013,
+  "Kick": 0.011,
+  "Automatic": true,
+  "Reserve": 300,
+  "ModelNames": [
+   "StG »Havel«",
+   "Karabiner »Spree«",
+   "StG »Wannsee«",
+   "Karabiner K-90"
+  ]
+ },
+ {
+  "Name": "smg",
+  "Class": "Maschinenpistole",
+  "Damage": 14,
+  "RoundsPerMinute": 880,
+  "Magazine": 32,
+  "ReloadSeconds": 1.8,
+  "RangeMetres": 26,
+  "Spread": 0.021,
+  "Kick": 0.008,
+  "Automatic": true,
+  "Reserve": 360,
+  "ModelNames": [
+   "MP »Wedding«",
+   "MP »Kotti«",
+   "MP »Ostkreuz«"
+  ]
+ },
+ {
+  "Name": "lmg",
+  "Class": "Maschinengewehr",
+  "Damage": 20,
+  "RoundsPerMinute": 560,
+  "Magazine": 80,
+  "ReloadSeconds": 4.2,
+  "RangeMetres": 50,
+  "Spread": 0.02,
+  "Kick": 0.013,
+  "Automatic": true,
+  "Reserve": 480,
+  "ModelNames": [
+   "MG »Tegel«",
+   "MG »Tempelhof«"
+  ]
+ },
+ {
+  "Name": "sg",
+  "Class": "Flinte",
+  "Damage": 13,
+  "RoundsPerMinute": 78,
+  "Magazine": 7,
+  "ReloadSeconds": 2.5,
+  "RangeMetres": 17,
+  "Spread": 0.065,
+  "Kick": 0.05,
+  "Automatic": false,
+  "Reserve": 56,
+  "ModelNames": [
+   "Flinte »Grunewald«",
+   "Flinte »Müggel«"
+  ]
+ },
+ {
+  "Name": "dmr",
+  "Class": "Präzisionsgewehr",
+  "Damage": 104,
+  "RoundsPerMinute": 150,
+  "Magazine": 10,
+  "ReloadSeconds": 2.5,
+  "RangeMetres": 120,
+  "Spread": 0.002,
+  "Kick": 0.035,
+  "Automatic": false,
+  "Reserve": 60,
+  "ModelNames": [
+   "Büchse »Teufelsberg«",
+   "Büchse »Pfaueninsel«"
+  ]
+ },
+ {
+  "Name": "pst",
+  "Class": "Dienstpistole",
+  "Damage": 25,
+  "RoundsPerMinute": 320,
+  "Magazine": 15,
+  "ReloadSeconds": 1.4,
+  "RangeMetres": 30,
+  "Spread": 0.014,
+  "Kick": 0.02,
+  "Automatic": false,
+  "Reserve": "Infinity",
+  "ModelNames": [
+   "Dienstpistole »Amt 9«",
+   "Pistole »Kiezwache«"
+  ]
+ }
+]

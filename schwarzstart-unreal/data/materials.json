@@ -1,0 +1,785 @@
+{
+ "M_Plaster_Ochre": {
+  "base": "#b8964f",
+  "rough": 0.9,
+  "metal": 0.0,
+  "kind": "plaster",
+  "ms": "painted plaster wall, fine, yellow ochre"
+ },
+ "M_Plaster_Sand": {
+  "base": "#bfa878",
+  "rough": 0.9,
+  "metal": 0.0,
+  "kind": "plaster",
+  "ms": "painted plaster wall, fine, sand"
+ },
+ "M_Plaster_Cream": {
+  "base": "#cdbd95",
+  "rough": 0.9,
+  "metal": 0.0,
+  "kind": "plaster",
+  "ms": "painted plaster wall, fine, cream"
+ },
+ "M_Plaster_GreyGreen": {
+  "base": "#8f9a80",
+  "rough": 0.9,
+  "metal": 0.0,
+  "kind": "plaster",
+  "ms": "painted plaster wall, fine, grey green"
+ },
+ "M_Plaster_Rose": {
+  "base": "#b17e66",
+  "rough": 0.9,
+  "metal": 0.0,
+  "kind": "plaster",
+  "ms": "painted plaster wall, fine, terracotta rose"
+ },
+ "M_Plaster_WarmGrey": {
+  "base": "#9c9486",
+  "rough": 0.9,
+  "metal": 0.0,
+  "kind": "plaster",
+  "ms": "painted plaster wall, fine, warm grey"
+ },
+ "M_Plaster_BlueGrey": {
+  "base": "#8c9aa3",
+  "rough": 0.9,
+  "metal": 0.0,
+  "kind": "plaster",
+  "ms": "painted plaster wall, fine, blue grey"
+ },
+ "M_Plaster_Ivory": {
+  "base": "#cfc8b4",
+  "rough": 0.9,
+  "metal": 0.0,
+  "kind": "plaster",
+  "ms": "painted plaster wall, fine, ivory"
+ },
+ "M_Plaster_Weathered_Grey": {
+  "base": "#8f8c84",
+  "rough": 0.95,
+  "metal": 0.0,
+  "kind": "plaster_old",
+  "ms": "damaged plaster wall, stained, grey"
+ },
+ "M_Plaster_Weathered_Beige": {
+  "base": "#a39a85",
+  "rough": 0.95,
+  "metal": 0.0,
+  "kind": "plaster_old",
+  "ms": "damaged plaster wall, stained, beige"
+ },
+ "M_Plaster_Weathered_Green": {
+  "base": "#8c9080",
+  "rough": 0.95,
+  "metal": 0.0,
+  "kind": "plaster_old",
+  "ms": "damaged plaster wall, stained, green grey"
+ },
+ "M_Plaster_Weathered_Dark": {
+  "base": "#6b6862",
+  "rough": 0.95,
+  "metal": 0.0,
+  "kind": "plaster_old",
+  "ms": "rough cement render, dark"
+ },
+ "M_Stucco_Light": {
+  "base": "#d9d3c2",
+  "rough": 0.85,
+  "metal": 0.0,
+  "kind": "stucco",
+  "ms": "smooth painted plaster, off white"
+ },
+ "M_Brick_Red": {
+  "base": "#8a4a38",
+  "rough": 0.9,
+  "metal": 0.0,
+  "kind": "brick",
+  "ms": "old red brick wall, Flemish or cross bond"
+ },
+ "M_Brick_Yellow": {
+  "base": "#b89a62",
+  "rough": 0.9,
+  "metal": 0.0,
+  "kind": "brick",
+  "ms": "old yellow brick wall"
+ },
+ "M_Brick_Arch": {
+  "base": "#6e3a2c",
+  "rough": 0.9,
+  "metal": 0.0,
+  "kind": "brick_arch",
+  "ms": "dark red brick, soldier course"
+ },
+ "M_Brick_Chimney": {
+  "base": "#7a4636",
+  "rough": 0.95,
+  "metal": 0.0,
+  "kind": "brick",
+  "ms": "sooty red brick"
+ },
+ "M_Firewall_Brick": {
+  "base": "#855040",
+  "rough": 0.95,
+  "metal": 0.0,
+  "kind": "firewall",
+  "ms": "rough common brick wall, patched"
+ },
+ "M_Firewall_Render": {
+  "base": "#9a958b",
+  "rough": 0.95,
+  "metal": 0.0,
+  "kind": "plaster_old",
+  "ms": "rough cement render, patched"
+ },
+ "M_Stone_Granite": {
+  "base": "#77756f",
+  "rough": 0.7,
+  "metal": 0.0,
+  "kind": "stone",
+  "ms": "grey granite, flamed"
+ },
+ "M_Stone_Sand": {
+  "base": "#b9a988",
+  "rough": 0.85,
+  "metal": 0.0,
+  "kind": "stone",
+  "ms": "sandstone, smooth sawn"
+ },
+ "M_Stone_Ashlar_Pale": {
+  "base": "#c9c3b3",
+  "rough": 0.75,
+  "metal": 0.0,
+  "kind": "ashlar",
+  "ms": "limestone cladding panels"
+ },
+ "M_Concrete": {
+  "base": "#8b8a85",
+  "rough": 0.9,
+  "metal": 0.0,
+  "kind": "concrete",
+  "ms": "cast concrete, weathered"
+ },
+ "M_Frame_White": {
+  "base": "#e4e1d8",
+  "rough": 0.55,
+  "metal": 0.0,
+  "kind": "paint",
+  "ms": "white painted wood"
+ },
+ "M_Frame_Brown": {
+  "base": "#4a3426",
+  "rough": 0.6,
+  "metal": 0.0,
+  "kind": "paint",
+  "ms": "brown stained wood"
+ },
+ "M_Frame_Green": {
+  "base": "#2f4a3a",
+  "rough": 0.55,
+  "metal": 0.0,
+  "kind": "paint",
+  "ms": "dark green painted wood"
+ },
+ "M_Frame_Anthracite": {
+  "base": "#2e3134",
+  "rough": 0.45,
+  "metal": 0.6,
+  "kind": "paint",
+  "ms": "anthracite powder-coated aluminium"
+ },
+ "M_Glass": {
+  "base": "#0c1114",
+  "rough": 0.03,
+  "metal": 0.0,
+  "kind": "glass",
+  "alpha": 0.35,
+  "ms": "window glass, slightly dirty"
+ },
+ "M_Interior_Dark": {
+  "base": "#14110f",
+  "rough": 1.0,
+  "metal": 0.0,
+  "kind": "interior"
+ },
+ "M_Interior_Shop": {
+  "base": "#1c1a17",
+  "rough": 1.0,
+  "metal": 0.0,
+  "kind": "interior"
+ },
+ "M_Interior_Candle": {
+  "base": "#2a1c10",
+  "rough": 1.0,
+  "metal": 0.0,
+  "kind": "interior_lit",
+  "emit": "#ff9a3c",
+  "emit_strength": 7.0
+ },
+ "M_Interior_Lantern": {
+  "base": "#20262c",
+  "rough": 1.0,
+  "metal": 0.0,
+  "kind": "interior_lit",
+  "emit": "#cfe4ff",
+  "emit_strength": 9.0
+ },
+ "M_Curtain_White": {
+  "base": "#d9d6cc",
+  "rough": 0.95,
+  "metal": 0.0,
+  "kind": "cloth"
+ },
+ "M_Curtain_Cream": {
+  "base": "#cfc4a8",
+  "rough": 0.95,
+  "metal": 0.0,
+  "kind": "cloth"
+ },
+ "M_Curtain_Net": {
+  "base": "#e6e4dc",
+  "rough": 0.95,
+  "metal": 0.0,
+  "kind": "cloth",
+  "alpha": 0.45
+ },
+ "M_Blind_Grey": {
+  "base": "#8a8a86",
+  "rough": 0.8,
+  "metal": 0.0,
+  "kind": "cloth"
+ },
+ "M_Door_Green": {
+  "base": "#263d30",
+  "rough": 0.5,
+  "metal": 0.0,
+  "kind": "paint",
+  "ms": "dark green painted wood, worn"
+ },
+ "M_Door_Oxblood": {
+  "base": "#5a231f",
+  "rough": 0.5,
+  "metal": 0.0,
+  "kind": "paint",
+  "ms": "oxblood painted wood, worn"
+ },
+ "M_Door_Oak": {
+  "base": "#6b4a2c",
+  "rough": 0.6,
+  "metal": 0.0,
+  "kind": "wood",
+  "ms": "varnished oak"
+ },
+ "M_Door_Blue": {
+  "base": "#27384d",
+  "rough": 0.5,
+  "metal": 0.0,
+  "kind": "paint",
+  "ms": "dark blue painted wood, worn"
+ },
+ "M_Shopframe_Dark": {
+  "base": "#1d2422",
+  "rough": 0.45,
+  "metal": 0.0,
+  "kind": "paint",
+  "ms": "black-green painted wood"
+ },
+ "M_Shopframe_Wood": {
+  "base": "#5b4129",
+  "rough": 0.6,
+  "metal": 0.0,
+  "kind": "wood",
+  "ms": "stained wood"
+ },
+ "M_Shopframe_Cream": {
+  "base": "#cfc7b0",
+  "rough": 0.55,
+  "metal": 0.0,
+  "kind": "paint",
+  "ms": "cream painted wood"
+ },
+ "M_Sign_Green": {
+  "base": "#22402f",
+  "rough": 0.5,
+  "metal": 0.0,
+  "kind": "sign"
+ },
+ "M_Sign_Red": {
+  "base": "#7c1f1c",
+  "rough": 0.5,
+  "metal": 0.0,
+  "kind": "sign"
+ },
+ "M_Sign_Navy": {
+  "base": "#1c2a44",
+  "rough": 0.5,
+  "metal": 0.0,
+  "kind": "sign"
+ },
+ "M_Sign_Black": {
+  "base": "#17181a",
+  "rough": 0.5,
+  "metal": 0.0,
+  "kind": "sign"
+ },
+ "M_Sign_Cream": {
+  "base": "#d6cdb2",
+  "rough": 0.5,
+  "metal": 0.0,
+  "kind": "sign"
+ },
+ "M_Sign_Mustard": {
+  "base": "#b98f2a",
+  "rough": 0.5,
+  "metal": 0.0,
+  "kind": "sign"
+ },
+ "M_Shutter": {
+  "base": "#7d8082",
+  "rough": 0.5,
+  "metal": 0.8,
+  "kind": "shutter",
+  "ms": "roller shutter, galvanised, graffiti decals"
+ },
+ "M_Shutter_Box": {
+  "base": "#5f6264",
+  "rough": 0.5,
+  "metal": 0.8,
+  "kind": "metal"
+ },
+ "M_Metal_Brass": {
+  "base": "#a8873f",
+  "rough": 0.35,
+  "metal": 1.0,
+  "kind": "metal"
+ },
+ "M_Enamel_Blue": {
+  "base": "#1c3f8f",
+  "rough": 0.2,
+  "metal": 0.0,
+  "kind": "paint"
+ },
+ "M_Iron_Black": {
+  "base": "#151515",
+  "rough": 0.55,
+  "metal": 0.3,
+  "kind": "metal",
+  "ms": "black painted wrought iron"
+ },
+ "M_Board_OSB": {
+  "base": "#b08e58",
+  "rough": 0.9,
+  "metal": 0.0,
+  "kind": "wood",
+  "ms": "OSB sheet"
+ },
+ "M_Board_Plank": {
+  "base": "#8a6f4d",
+  "rough": 0.9,
+  "metal": 0.0,
+  "kind": "wood",
+  "ms": "rough sawn planks"
+ },
+ "M_Zinc": {
+  "base": "#8d9498",
+  "rough": 0.45,
+  "metal": 0.9,
+  "kind": "metal",
+  "ms": "zinc sheet, weathered"
+ },
+ "M_Roof_Tile": {
+  "base": "#7a4a38",
+  "rough": 0.85,
+  "metal": 0.0,
+  "kind": "rooftile",
+  "ms": "plain clay roof tiles (Biberschwanz)"
+ },
+ "M_Roof_Slate": {
+  "base": "#3d4247",
+  "rough": 0.7,
+  "metal": 0.0,
+  "kind": "rooftile",
+  "ms": "slate roof"
+ },
+ "M_Roof_Bitumen": {
+  "base": "#2c2d2e",
+  "rough": 0.95,
+  "metal": 0.0,
+  "kind": "concrete",
+  "ms": "bitumen roofing felt"
+ },
+ "M_Clay_Pot": {
+  "base": "#96583e",
+  "rough": 0.9,
+  "metal": 0.0,
+  "kind": "concrete"
+ },
+ "M_Metal_Panel_Grey": {
+  "base": "#70767a",
+  "rough": 0.5,
+  "metal": 0.7,
+  "kind": "metal",
+  "ms": "standing seam metal cladding"
+ },
+ "M_Asphalt": {
+  "base": "#2a2b2d",
+  "rough": 0.85,
+  "metal": 0.0,
+  "kind": "asphalt",
+  "ms": "worn asphalt, patched, with snow blend"
+ },
+ "M_Cobble": {
+  "base": "#6f6d68",
+  "rough": 0.8,
+  "metal": 0.0,
+  "kind": "cobble",
+  "ms": "granite cobblestones (Kopfsteinpflaster)"
+ },
+ "M_Paving_Slab": {
+  "base": "#8a8780",
+  "rough": 0.8,
+  "metal": 0.0,
+  "kind": "paving",
+  "ms": "large granite pavement slabs"
+ },
+ "M_Paving_Mosaic": {
+  "base": "#7c7971",
+  "rough": 0.85,
+  "metal": 0.0,
+  "kind": "cobble",
+  "ms": "small mosaic paving stones"
+ },
+ "M_Kerb_Granite": {
+  "base": "#8b8983",
+  "rough": 0.75,
+  "metal": 0.0,
+  "kind": "kerb",
+  "ms": "granite kerb"
+ },
+ "M_Rail_Steel": {
+  "base": "#5a5d60",
+  "rough": 0.35,
+  "metal": 1.0,
+  "kind": "rail",
+  "ms": "worn steel"
+ },
+ "M_Rail_Groove": {
+  "base": "#141414",
+  "rough": 0.6,
+  "metal": 0.0,
+  "kind": "rail"
+ },
+ "M_Sign_Text_Light": {
+  "base": "#e2dcc6",
+  "rough": 0.5,
+  "metal": 0.0,
+  "kind": "signtext"
+ },
+ "M_Sign_Text_Dark": {
+  "base": "#1c1a17",
+  "rough": 0.5,
+  "metal": 0.0,
+  "kind": "signtext"
+ },
+ "M_Bush_Snow": {
+  "base": "#e3e8ec",
+  "rough": 0.8,
+  "metal": 0.0,
+  "kind": "snow",
+  "ms": "snow-covered shrub"
+ },
+ "M_Snow": {
+  "base": "#e9eef2",
+  "rough": 0.75,
+  "metal": 0.0,
+  "kind": "snow",
+  "ms": "fresh snow"
+ },
+ "M_Snow_Ploughed": {
+  "base": "#c9ccce",
+  "rough": 0.85,
+  "metal": 0.0,
+  "kind": "snow_dirty",
+  "ms": "dirty ploughed snow with grit"
+ },
+ "M_Ground_Yard": {
+  "base": "#d9dde0",
+  "rough": 0.85,
+  "metal": 0.0,
+  "kind": "snow",
+  "ms": "snow over rough ground"
+ },
+ "M_Lamp_Metal": {
+  "base": "#3a4640",
+  "rough": 0.5,
+  "metal": 0.6,
+  "kind": "metal",
+  "ms": "dark green-grey painted steel"
+ },
+ "M_Lamp_Glass": {
+  "base": "#b9bcb4",
+  "rough": 0.3,
+  "metal": 0.0,
+  "kind": "lampglass"
+ },
+ "M_Poster": {
+  "base": "#b9a98a",
+  "rough": 0.8,
+  "metal": 0.0,
+  "kind": "poster",
+  "ms": "layered torn posters"
+ },
+ "M_Bark": {
+  "base": "#3b3028",
+  "rough": 0.95,
+  "metal": 0.0,
+  "kind": "bark",
+  "ms": "lime tree bark"
+ },
+ "M_Jersey_Concrete": {
+  "base": "#9a9892",
+  "rough": 0.9,
+  "metal": 0.0,
+  "kind": "concrete",
+  "ms": "concrete barrier, chipped, stained"
+ },
+ "M_Sandbag": {
+  "base": "#8c7c5c",
+  "rough": 0.95,
+  "metal": 0.0,
+  "kind": "cloth",
+  "ms": "burlap sandbag"
+ },
+ "M_Barrel_Rust": {
+  "base": "#5a3a28",
+  "rough": 0.8,
+  "metal": 0.5,
+  "kind": "metal",
+  "ms": "rusted oil drum"
+ },
+ "M_Fire": {
+  "base": "#200a02",
+  "rough": 1.0,
+  "metal": 0.0,
+  "kind": "fire",
+  "emit": "#ff7a1e",
+  "emit_strength": 40.0
+ },
+ "M_Ember": {
+  "base": "#200a02",
+  "rough": 1.0,
+  "metal": 0.0,
+  "kind": "fire",
+  "emit": "#ff4a0c",
+  "emit_strength": 12.0
+ },
+ "M_Bulb_Warm": {
+  "base": "#fff0d0",
+  "rough": 0.5,
+  "metal": 0.0,
+  "kind": "bulb",
+  "emit": "#ffb45a",
+  "emit_strength": 60.0
+ },
+ "M_Flood_White": {
+  "base": "#ffffff",
+  "rough": 0.5,
+  "metal": 0.0,
+  "kind": "bulb",
+  "emit": "#dfeaff",
+  "emit_strength": 70.0
+ },
+ "M_Beam_Amber": {
+  "base": "#ffb040",
+  "rough": 1.0,
+  "metal": 0.0,
+  "kind": "beam",
+  "emit": "#ffb040",
+  "emit_strength": 5.0,
+  "alpha": 0.42
+ },
+ "M_Beam_Cyan": {
+  "base": "#7fdcff",
+  "rough": 1.0,
+  "metal": 0.0,
+  "kind": "beam",
+  "emit": "#7fdcff",
+  "emit_strength": 5.0,
+  "alpha": 0.4
+ },
+ "M_Wood_Raw": {
+  "base": "#8b7355",
+  "rough": 0.9,
+  "metal": 0.0,
+  "kind": "wood",
+  "ms": "rough pallet wood"
+ },
+ "M_Tarp_Blue": {
+  "base": "#27508a",
+  "rough": 0.6,
+  "metal": 0.0,
+  "kind": "cloth",
+  "ms": "plastic tarpaulin"
+ },
+ "M_Tarp_Green": {
+  "base": "#3f5a3c",
+  "rough": 0.7,
+  "metal": 0.0,
+  "kind": "cloth",
+  "ms": "canvas tarpaulin"
+ },
+ "M_Tarp_Orange": {
+  "base": "#b8591c",
+  "rough": 0.6,
+  "metal": 0.0,
+  "kind": "cloth",
+  "ms": "plastic tarpaulin"
+ },
+ "M_Tarp_Sand": {
+  "base": "#a8997a",
+  "rough": 0.8,
+  "metal": 0.0,
+  "kind": "cloth",
+  "ms": "canvas tarpaulin"
+ },
+ "M_Crate_Green": {
+  "base": "#4a5540",
+  "rough": 0.8,
+  "metal": 0.0,
+  "kind": "paint",
+  "ms": "military crate, painted wood"
+ },
+ "M_Rubber": {
+  "base": "#1a1a1b",
+  "rough": 0.9,
+  "metal": 0.0,
+  "kind": "rubber"
+ },
+ "M_Car_Paint_A": {
+  "base": "#5c6670",
+  "rough": 0.35,
+  "metal": 0.5,
+  "kind": "carpaint"
+ },
+ "M_Car_Paint_B": {
+  "base": "#2f3d36",
+  "rough": 0.35,
+  "metal": 0.4,
+  "kind": "carpaint"
+ },
+ "M_Car_Paint_C": {
+  "base": "#8e9090",
+  "rough": 0.35,
+  "metal": 0.5,
+  "kind": "carpaint"
+ },
+ "M_Car_Paint_D": {
+  "base": "#1f2a3a",
+  "rough": 0.35,
+  "metal": 0.5,
+  "kind": "carpaint"
+ },
+ "M_Car_Glass": {
+  "base": "#0b0d0f",
+  "rough": 0.08,
+  "metal": 0.0,
+  "kind": "paint"
+ },
+ "M_Tram_Yellow": {
+  "base": "#e0b010",
+  "rough": 0.45,
+  "metal": 0.1,
+  "kind": "paint",
+  "ms": "BVG yellow paint, dirty"
+ },
+ "M_Tram_Grey": {
+  "base": "#3b3d40",
+  "rough": 0.6,
+  "metal": 0.3,
+  "kind": "metal"
+ },
+ "M_Bin_Orange": {
+  "base": "#d9601a",
+  "rough": 0.5,
+  "metal": 0.0,
+  "kind": "paint"
+ },
+ "M_Box_Grey": {
+  "base": "#8a8f8c",
+  "rough": 0.6,
+  "metal": 0.0,
+  "kind": "paint",
+  "ms": "utility cabinet, stickers and graffiti decals"
+ },
+ "M_Post_Yellow": {
+  "base": "#e2b616",
+  "rough": 0.45,
+  "metal": 0.0,
+  "kind": "paint"
+ },
+ "M_Flag_Red": {
+  "base": "#8c1d18",
+  "rough": 0.9,
+  "metal": 0.0,
+  "kind": "cloth"
+ },
+ "M_Tower_Concrete": {
+  "base": "#b4b2aa",
+  "rough": 0.9,
+  "metal": 0.0,
+  "kind": "concrete"
+ },
+ "M_Tower_Steel": {
+  "base": "#9aa3aa",
+  "rough": 0.3,
+  "metal": 0.9,
+  "kind": "metal"
+ },
+ "M_Tower_Red": {
+  "base": "#b3261c",
+  "rough": 0.6,
+  "metal": 0.0,
+  "kind": "paint"
+ },
+ "M_Tower_White": {
+  "base": "#e6e6e2",
+  "rough": 0.6,
+  "metal": 0.0,
+  "kind": "paint"
+ },
+ "M_Beacon_Red": {
+  "base": "#400000",
+  "rough": 0.5,
+  "metal": 0.0,
+  "kind": "bulb",
+  "emit": "#ff2010",
+  "emit_strength": 80.0
+ },
+ "M_Viaduct_Brick": {
+  "base": "#9a7a52",
+  "rough": 0.9,
+  "metal": 0.0,
+  "kind": "viaduct",
+  "ms": "yellow-brown brick railway viaduct with arches"
+ },
+ "M_Bg_Facade": {
+  "base": "#8d8779",
+  "rough": 0.9,
+  "metal": 0.0,
+  "kind": "bgfacade",
+  "ms": "distant massing: any tiling facade"
+ },
+ "M_Bg_Roof": {
+  "base": "#4a4643",
+  "rough": 0.9,
+  "metal": 0.0,
+  "kind": "bgroof",
+  "ms": "distant massing: roof"
+ },
+ "M_Wire": {
+  "base": "#1c1c1c",
+  "rough": 0.6,
+  "metal": 0.5,
+  "kind": "metal"
+ }
+}

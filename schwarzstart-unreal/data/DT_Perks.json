@@ -1,0 +1,32 @@
+[
+ {
+  "Name": "crit",
+  "Label": "Scharf",
+  "Effect": "+15% critical hits"
+ },
+ {
+  "Name": "mag",
+  "Label": "Erweitert",
+  "Effect": "+25% magazine"
+ },
+ {
+  "Name": "rel",
+  "Label": "Flink",
+  "Effect": "20% faster reload"
+ },
+ {
+  "Name": "arm",
+  "Label": "Panzerbrechend",
+  "Effect": "+20% damage to armour"
+ },
+ {
+  "Name": "stab",
+  "Label": "Ruhig",
+  "Effect": "30% tighter spread"
+ },
+ {
+  "Name": "kill",
+  "Label": "Nachschub",
+  "Effect": "kills refill 20% of the magazine"
+ }
+]
