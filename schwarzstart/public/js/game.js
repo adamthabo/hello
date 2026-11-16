@@ -145,14 +145,25 @@ export class Game {
         P.yaw = dampAng(P.yaw, P.peek ? c.yaw : Math.atan2(cv.dx * (P.covDir || 1), cv.dz * (P.covDir || 1)), 12, dt);
       }
     } else {
-      const sp = (P.sprint ? 6.6 * D.sprint : P.aim ? 2.6 : 4.4) * (ml > 0.05 ? Math.min(1, ml * 1.15) : 0), dir = ml > 0.05 ? 1 / ml : 0;
-      const tvx = mx * dir * sp, tvz = mz * dir * sp, cur = hyp(P.vx || 0, P.vz || 0), rev = (P.vx || 0) * tvx + (P.vz || 0) * tvz < 0;
-      const acc = rev ? 15 : sp > cur + 0.05 ? (P.aim ? 13 : P.sprint ? 7 : 10) : 11;          // quick to start, quicker to stop, sprint builds up
-      P.vx = damp(P.vx || 0, tvx, acc, dt); P.vz = damp(P.vz || 0, tvz, acc, dt);
+      // footwork: speed and heading are kept apart. Running, the heading swings round at a limited rate, so the agent carves corners and
+      // leans into them; pulling the stick the other way brakes hard and turns at the bottom of the stop. Aiming, the agent strafes:
+      // the velocity follows the stick and the body keeps facing the crosshair.
+      const back = P.aim && ml > 0.05 ? Math.max(0, -(mx * fx + mz * fz) / ml) : 0, top = P.sprint ? 6.4 * D.sprint : P.aim ? 2.3 * (1 - back * 0.3) : 4.1, want = ml > 0.05 ? top * Math.min(1, ml * 1.15) : 0;   // aimed, backing off is slower than pushing on
+      let vx = P.vx || 0, vz = P.vz || 0, cur = hyp(vx, vz);
+      if (P.aim || want < 0.05 || cur < 0.6) {
+        const tx = ml > 0.05 ? (mx / ml) * want : 0, tz = ml > 0.05 ? (mz / ml) * want : 0, k = want < 0.05 ? 8.5 : P.aim ? 11 : 14;
+        vx = damp(vx, tx, k, dt); vz = damp(vz, tz, k, dt);
+      } else {
+        let hd = Math.atan2(vx, vz); const dA = angDiff(hd, Math.atan2(mx, mz));
+        if (Math.abs(dA) > 2.6) { cur = Math.max(0, cur - 20 * dt); if (cur < 0.7) hd += dA; }
+        else { const rate = P.sprint ? 4.2 : 8.5; hd += clamp(dA, -rate * dt, rate * dt); cur = damp(cur, want, want > cur ? (P.sprint ? 3.2 : 6.5) : 9, dt); }
+        vx = Math.sin(hd) * cur; vz = Math.cos(hd) * cur;
+      }
+      P.vx = vx; P.vz = vz;
       const ox = P.x, oz = P.z; P.x += P.vx * dt; P.z += P.vz * dt;
       const hitWall = W.collide(P, PR); if (dt > 0 && hitWall) { P.vx = (P.x - ox) / dt; P.vz = (P.z - oz) / dt; }
       speed = hyp(P.vx, P.vz);
-      if (P.aim) P.yaw = dampAng(P.yaw, c.yaw, 18, dt); else if (speed > 0.5) P.yaw = dampAng(P.yaw, Math.atan2(P.vx, P.vz), P.sprint ? 8 : 11, dt);
+      if (P.aim) P.yaw = dampAng(P.yaw, c.yaw, 16, dt); else if (speed > 0.5) P.yaw = dampAng(P.yaw, Math.atan2(P.vx, P.vz), P.sprint ? 10 : 13, dt);
       if (coverKey) this.enterCover(mx || fx, mz || fz, true); else if (this.autoAim && hitWall && this.combatT > 0 && ml > 0.6 && !P.aim && !P.sprint) this.enterCover(mx, mz, false, true);
     }
     const b = W.core, bm = W.coreMargin; P.x = clamp(P.x, b[0] + bm[0], b[2] - bm[2]); P.z = clamp(P.z, b[1] + bm[1], b[3] - bm[3]);
@@ -179,9 +190,9 @@ export class Game {
     if (hasMocap()) {                           // footsteps land when the captured feet do
       const ev = P.rig.stepEv || 0; if (ev !== P.stepSeen) { P.stepSeen = ev; if (speed > 0.5 && !P.roll) { this.audio.step(P.sprint ? 0.15 : speed > 3 ? 0.13 : 0.1); if (Math.random() < 0.6) this.fx.puff(P.x, 0.05, P.z, 2, [0.8, 0.84, 0.9], 0.12, 0.6, 0.5, 0.35, -1, 0.5); } }
     } else if (speed > 0.5 && !P.roll) { P.stepT = (P.stepT || 0) - dt * speed; if (P.stepT <= 0) { P.stepT = P.sprint ? 2.5 : 2.1; this.audio.step(P.sprint ? 0.15 : 0.11); if (Math.random() < 0.6) this.fx.puff(P.x, 0.05, P.z, 2, [0.8, 0.84, 0.9], 0.12, 0.6, 0.5, 0.35, -1, 0.5); } }
-    const rig = P.rig; rig.root.position.set(P.x, 0, P.z); rig.root.rotation.y = P.yaw;
+    const rig = P.rig; rig.root.position.set(P.x, P.vault > 0 ? Math.sin(Math.min(1, P.vault) * Math.PI) * 0.5 : 0, P.z); rig.root.rotation.y = P.yaw;
     const cyw = Math.cos(P.yaw), syw = Math.sin(P.yaw), vl = hyp(P.vx || 0, P.vz || 0), lvx = P.st === 'free' && vl > 0.3 ? P.vx / vl : 0, lvz = P.st === 'free' && vl > 0.3 ? P.vz / vl : 0, lml = lvx || lvz ? 1 : 0;
-    rig.pose({ speed, melee: P.mel, mx: lml ? lvx * cyw - lvz * syw : 0, mz: lml ? lvx * syw + lvz * cyw : 1, aim: !(P.mel > 0) && (P.aim || this.t - P.lastShot < 0.5), pitch: c.pitch, crouch: P.crouch, reload: P.relT > 0 ? 1 - P.relT / P.relD : 0, roll: P.roll, lean: P.st === 'cover' && P.peek && !P.cov.low ? (P.covDir || 1) * -0.5 : 0 }, dt);
+    rig.pose({ speed, melee: P.mel, mx: lml ? lvx * cyw - lvz * syw : 0, mz: lml ? lvx * syw + lvz * cyw : 1, aim: !(P.mel > 0) && (P.aim || this.t - P.lastShot < 0.5), pitch: c.pitch, crouch: P.crouch, reload: P.relT > 0 ? 1 - P.relT / P.relD : 0, roll: P.roll, vault: P.vault > 0 ? Math.min(1, P.vault) : 0, lean: P.st === 'cover' && P.peek && !P.cov.low ? (P.covDir || 1) * -0.5 : 0 }, dt);
     rig.root.updateMatrixWorld(true);
   }
   // the nearest hostile that knows where you are: cover is picked to put something solid between you and it
@@ -392,9 +403,13 @@ export class Game {
     const c = this.cam, P = this.P, W = this.world, cam = this.gfx.camera;
     c.sh = damp(c.sh, c.shT, 9, dt); c.kick = damp(c.kick, 0, 9, dt); c.shake = damp(c.shake, 0, 5, dt);
     const aim = this.inp.aim && !P.dead, pitch = c.pitch + c.kick, cp = Math.cos(pitch), fx = Math.sin(c.yaw) * cp, fy = Math.sin(pitch), fz = Math.cos(c.yaw) * cp, rx = -Math.cos(c.yaw), rz = Math.sin(c.yaw);
-    const py = (P.crouch ? 1.12 : EYE) - (P.dead ? Math.min(1, P.dead) * 0.8 : 0); let so = (aim ? 0.62 : 0.55) * c.sh;
-    const sh = W.ray(P.x, py, P.z, rx * Math.sign(so), 0, rz * Math.sign(so), Math.abs(so) + 0.25); if (sh && !sh.ground) so = Math.sign(so) * Math.max(0, sh.t - 0.25);
-    const px = P.x + rx * so, pz = P.z + rz * so, want = P.dead ? 4.2 : aim ? 1.85 : P.sprint ? 3.4 : 2.95;
+    // the camera rides a short spring behind the agent: steps, stops and bumps are smoothed, aiming stays tight
+    if (c.fx === undefined || hyp(c.fx - P.x, c.fz - P.z) > 3) { c.fx = P.x; c.fz = P.z; c.py = EYE; c.so = 0.55 * c.sh; }
+    const fk = aim ? 30 : 16; c.fx = damp(c.fx, P.x, fk, dt); c.fz = damp(c.fz, P.z, fk, dt);
+    c.py = damp(c.py ?? EYE, (P.crouch ? 1.12 : EYE) - (P.dead ? Math.min(1, P.dead) * 0.8 : 0), 9, dt); const py = c.py; let so = (aim ? 0.72 : 0.55) * c.sh;
+    const sh = W.ray(c.fx, py, c.fz, rx * Math.sign(so), 0, rz * Math.sign(so), Math.abs(so) + 0.25); if (sh && !sh.ground) so = Math.sign(so) * Math.max(0, sh.t - 0.25);
+    c.so = Math.abs(so) < Math.abs(c.so) ? damp(c.so, so, 22, dt) : damp(c.so, so, 8, dt); so = c.so;
+    const px = c.fx + rx * so, pz = c.fz + rz * so, want = P.dead ? 4.2 : aim ? 2.0 : P.sprint ? 3.4 : 2.95;
     const h = W.ray(px, py, pz, -fx, -fy, -fz, want + 0.3); let d = want; if (h) d = Math.max(0.45, h.t - 0.28);
     c.dist = d < c.dist ? d : damp(c.dist, d, 6, dt);
     const sk = c.shake * this.motion; cam.position.set(px - fx * c.dist + (Math.random() - 0.5) * sk * 0.2, py - fy * c.dist + 0.1 + (Math.random() - 0.5) * sk * 0.2, pz - fz * c.dist + (Math.random() - 0.5) * sk * 0.2);

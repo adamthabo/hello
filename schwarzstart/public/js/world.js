@@ -177,7 +177,7 @@ export class World {
   // ---------------------------------------------------------------- construction
   ch(x, z) {
     const k = Math.floor(x / CHUNK) + ',' + Math.floor(z / CHUNK); let c = this.chunks.get(k);
-    if (!c) { c = { fac: [], brand: new MB(), roof: new MB(), trim: new MB(), prop: new MB(), det: new MB(), dec: new MB(), tree: new MB(), via: new MB(), gp: [], gg: [], pool: new MB(), pg: [] }; for (let i = 0; i < 8; i++) c.fac.push(new MB()); c.ex = {}; this.chunks.set(k, c); }
+    if (!c) { c = { fac: [], brand: new MB(), roof: new MB(), trim: new MB(), prop: new MB(), det: new MB(), dec: new MB(), tree: new MB(), via: new MB(), gp: [], gg: [], pool: new MB(true), pg: [] }; for (let i = 0; i < 8; i++) c.fac.push(new MB()); c.ex = {}; this.chunks.set(k, c); }
     return c;
   }
   mb(x, z, name) { const c = this.ch(x, z); if (name === 'roof' || name === 'trim' || name === 'prop' || name === 'det' || name === 'dec') return c[name]; return c.ex[name] || (c.ex[name] = new MB()); }
@@ -358,7 +358,7 @@ export class World {
   _flush() {
     const g = this.gfx, T = g.tex;
     const mats = { brand: g.surf('brandwand', { vcol: true, snow: 0 }), roof: g.surf('roof', { snow: 1.1 }), trim: g.surf('stone', { vcol: true, snow: 0.9 }), via: g.surf('viaduct', { snow: 0 }), prop: g.vcol({ rough: 0.55, snow: 1 }) };
-    this.treeMat = new THREE.MeshStandardMaterial({ map: T.tree, alphaTest: 0.42, side: THREE.DoubleSide, roughness: 1, color: 0xb9b2ac });
+    this.treeMat = new THREE.MeshStandardMaterial({ map: T.tree, alphaTest: 0.42, alphaToCoverage: g.q.msaa > 0, side: THREE.DoubleSide, roughness: 1, color: 0xb9b2ac });   // with multisampling the twigs get soft edges
     this.decMat = g.patch(new THREE.MeshStandardMaterial({ map: T.decals, vertexColors: true, transparent: true, depthWrite: false, roughness: 0.92, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }), {});
     const shed = g.vcol({ rough: 0.28, metal: 0.5, snow: 0.7, side: THREE.DoubleSide });
     const ex = { copper: g.surf('copper', { vcol: true, snow: 0.8 }), concrete: g.surf('concrete', { vcol: true, snow: 0.6 }), glass: g.vcol({ rough: 0.34, metal: 0.72, snow: 0.35 }), dark: g.vcol({ rough: 0.6, snow: 0 }), gold: g.vcol({ rough: 0.32, metal: 1, snow: 0 }), tile: g.surf('tile', { vcol: true, snow: 1 }), metal: g.surf('metal', { vcol: true, snow: 0.6, metal: 0.6 }) };
@@ -372,14 +372,15 @@ export class World {
       for (const k in c.ex) if (!c.ex[k].empty) grp.add(c.ex[k].mesh(ex[k] || mats.prop));
       if (!c.tree.empty) { const m = c.tree.mesh(this.treeMat); grp.add(m); }
       if (c.gp.length) { const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.Float32BufferAttribute(c.gp, 3)); pg.setAttribute('aG', new THREE.Float32BufferAttribute(c.gg, 3)); pg.computeBoundingSphere(); const pts = new THREE.Points(pg, g.glow()); pts.renderOrder = 15; grp.add(pts); }
-      if (!c.pool.empty) { const pm = c.pool.geometry(); pm.setAttribute('aG', new THREE.Float32BufferAttribute(c.pg, 3)); const m = new THREE.Mesh(pm, g.pools()); m.renderOrder = 5; grp.add(m); }
+      if (!c.pool.empty) { const pm = c.pool.geometry(); pm.setAttribute('aG', new THREE.Float32BufferAttribute(c.pg, 3)); const m = new THREE.Mesh(pm, g.pools()); m.renderOrder = 5; grp.add(m); c.poolMesh = m; }
+      c.casters = grp.children.filter((m) => m.castShadow); c.shadowOn = true;
       this.group.add(grp); c.fac = c.brand = c.roof = c.trim = c.prop = c.det = c.dec = c.tree = c.via = c.pool = c.shed = c.ex = null; c.gp = c.gg = c.pg = null; c.group = grp;
     }
   }
   // generator floodlights, flares and the like: always on at night whatever the district grid is doing.
   // e = { x, y, z, type (glow tint), size, pool (radius m), pt (pool tint), pa (pool strength), i (light intensity), c (light colour) }
   addEmitters(list) {
-    if (!list.length) return; const gp = [], gg = [], pool = new MB(), pg = [];
+    if (!list.length) return; const gp = [], gg = [], pool = new MB(true), pg = [];
     for (const e of list) {
       gp.push(e.x, e.y, e.z); gg.push(-1, e.type ?? 1, e.size ?? 2.6);
       if (e.pool) { const s = e.pool; pool.quad([e.x - s, 0.06, e.z - s], [e.x + s, 0.06, e.z - s], [e.x + s, 0.06, e.z + s], [e.x - s, 0.06, e.z + s], [0, 0], [1, 0], [1, 1], [0, 1], null, null, [0, 1, 0]); for (let k = 0; k < 6; k++) pg.push(-1, e.pt ?? e.type ?? 1, e.pa ?? 0.4); }
@@ -394,8 +395,10 @@ export class World {
   update(dt, px, pz) {
     this.cullT -= dt; if (this.litterField) this.litterField.update(px, pz);
     if (this.cullT <= 0) {               // distance culling of whole city chunks
-      this.cullT = 0.3; const R = this.drawDist + CHUNK * 0.75; let n = 0;
-      for (const [key, c] of this.chunks) { if (!c.group) continue; if (c.cx === undefined) { const [i, j] = key.split(',').map(Number); c.cx = (i + 0.5) * CHUNK; c.cz = (j + 0.5) * CHUNK; } const v = hyp(c.cx - px, c.cz - pz) < R; c.group.visible = v; if (c.detMesh) c.detMesh.visible = v && hyp(c.cx - px, c.cz - pz) < (this.detDist || 340); n += v; }
+      this.cullT = 0.3; const R = this.drawDist + CHUNK * 0.75, shR = (this.gfx.q.shadowDist || 70) + CHUNK * 0.72, lit = this.gfx.U.uNight.value > 0.17; let n = 0;   // light pools only draw once it is dark enough to see them
+      for (const [key, c] of this.chunks) { if (!c.group) continue; if (c.cx === undefined) { const [i, j] = key.split(',').map(Number); c.cx = (i + 0.5) * CHUNK; c.cz = (j + 0.5) * CHUNK; } const d = hyp(c.cx - px, c.cz - pz), v = d < R; c.group.visible = v; if (c.detMesh) c.detMesh.visible = v && d < (this.detDist || 340); n += v;
+        const sh = d < shR; if (c.casters && c.shadowOn !== sh) { c.shadowOn = sh; for (const m of c.casters) m.castShadow = sh; }   // only the chunks around you draw into the shadow map
+        if (c.poolMesh) c.poolMesh.visible = lit; }
       this.visChunks = n;
     }
     const U = this.gfx.U.uPower.value;

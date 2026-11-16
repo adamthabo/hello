@@ -281,6 +281,7 @@ export class Gfx {
 
   // ---------------------------------------------------------------- textures
   async loadTextures(meta, base, onStep) {
+    this._texMeta = meta; this._texBase = base; this._texDiv = this.q.texDiv;
     const div = this.q.texDiv; const names = Object.keys(meta).filter((n) => !n.startsWith('_') && !/^f\d_[ug]$/.test(n));
     const total = names.length + meta._styles.length + 5; let done = 0; const step = () => onStep && onStep(++done / total);
     const img = (f) => loadImage(base + f);
@@ -468,7 +469,7 @@ export class Gfx {
     this.sky = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), m); this.sky.frustumCulled = false; this.sky.renderOrder = -10; this.sky.scale.setScalar(this.q.far * 0.9);
     this.scene.add(this.sky);
     this.envScene = new THREE.Scene(); const es = new THREE.Mesh(this.sky.geometry, m); es.scale.setScalar(200); es.frustumCulled = false; this.envScene.add(es); this.envAt = -99; this.envKey = '';
-    const N = this.q.snow, g = new THREE.BufferGeometry(), p = new Float32Array(N * 3), a = new Float32Array(N);
+    const N = QUALITY.high.snow, g = new THREE.BufferGeometry(), p = new Float32Array(N * 3), a = new Float32Array(N); g.setDrawRange(0, this.q.snow);
     for (let i = 0; i < N; i++) { p[i * 3] = Math.random() * 48; p[i * 3 + 1] = Math.random() * 30; p[i * 3 + 2] = Math.random() * 48; a[i] = Math.random(); }
     g.setAttribute('position', new THREE.BufferAttribute(p, 3)); g.setAttribute('aR', new THREE.BufferAttribute(a, 1));
     this.snowU = { uTime: this.U.uTime, uCam: { value: V3() }, uAmt: { value: 1 }, uPx: { value: 1 }, uLight: { value: C3(1, 1, 1) }, uWind: { value: V3(1.4, -2.2, 0.6) } };
@@ -503,13 +504,25 @@ export class Gfx {
       void main(){ vec3 s = texture2D( t, vUv + px * vec2( -1.0, -1.0 ) ).rgb + texture2D( t, vUv + px * vec2( 1.0, -1.0 ) ).rgb + texture2D( t, vUv + px * vec2( -1.0, 1.0 ) ).rgb + texture2D( t, vUv + px * vec2( 1.0, 1.0 ) ).rgb;
         gl_FragColor = vec4( s * 0.25, 1.0 ); }`);
     this.mUp.blending = THREE.AdditiveBlending; this.mUp.transparent = true;
-    this.mFin = mk({ t: { value: null }, b: { value: null }, uExp: { value: 1 }, uBloom: { value: 0.085 }, uTime: this.U.uTime, uHurt: { value: 0 }, uTint: { value: C3(0.0, 0.012, 0.03) }, uSat: { value: 0.92 }, uFade: { value: 0 }, uAspect: { value: 1 }, uGrain: { value: 1 }, uSplit: { value: 1 } }, /* glsl */`
-      varying vec2 vUv; uniform sampler2D t, b; uniform float uExp, uBloom, uTime, uHurt, uSat, uFade, uAspect, uGrain, uSplit; uniform vec3 uTint;
+    this.mFin = mk({ t: { value: null }, b: { value: null }, uExp: { value: 1 }, uBloom: { value: 0.085 }, uTime: this.U.uTime, uHurt: { value: 0 }, uTint: { value: C3(0.0, 0.012, 0.03) }, uSat: { value: 0.92 }, uFade: { value: 0 }, uAspect: { value: 1 }, uGrain: { value: 1 }, uSplit: { value: 1 }, uAA: { value: 0 }, uPx: { value: new THREE.Vector2(1 / 1280, 1 / 720) } }, /* glsl */`
+      varying vec2 vUv; uniform sampler2D t, b; uniform float uExp, uBloom, uTime, uHurt, uSat, uFade, uAspect, uGrain, uSplit, uAA; uniform vec3 uTint; uniform vec2 uPx;
       float h( vec2 p ){ return fract( sin( dot( p, vec2( 12.9898, 78.233 ) ) ) * 43758.5453 ); }
+      float lu( vec2 p ){ vec3 c = texture2D( t, p ).rgb * uExp; c = ( c * ( 2.51 * c + 0.03 ) ) / ( c * ( 2.43 * c + 0.59 ) + 0.14 ); return dot( c, vec3( 0.299, 0.587, 0.114 ) ); }
+      vec3 fxaa( vec2 uv ){          // edge-directed smoothing for when the GPU has no multisampling to spare
+        float lM = lu( uv ), lNW = lu( uv + vec2( -1.0, 1.0 ) * uPx ), lNE = lu( uv + vec2( 1.0, 1.0 ) * uPx ), lSW = lu( uv + vec2( -1.0, -1.0 ) * uPx ), lSE = lu( uv + vec2( 1.0, -1.0 ) * uPx );
+        float lMin = min( lM, min( min( lNW, lNE ), min( lSW, lSE ) ) ), lMax = max( lM, max( max( lNW, lNE ), max( lSW, lSE ) ) );
+        if ( lMax - lMin < max( 0.035, lMax * 0.12 ) ) return texture2D( t, uv ).rgb;
+        vec2 d = vec2( -( ( lNW + lNE ) - ( lSW + lSE ) ), ( lNW + lSW ) - ( lNE + lSE ) );
+        float red = max( ( lNW + lNE + lSW + lSE ) * 0.03125, 0.0078125 ), rcp = 1.0 / ( min( abs( d.x ), abs( d.y ) ) + red );
+        d = clamp( d * rcp, -8.0, 8.0 ) * uPx;
+        vec3 A = 0.5 * ( texture2D( t, uv - d * 0.1667 ).rgb + texture2D( t, uv + d * 0.1667 ).rgb );
+        vec3 B = A * 0.5 + 0.25 * ( texture2D( t, uv - d * 0.5 ).rgb + texture2D( t, uv + d * 0.5 ).rgb );
+        vec3 bt = B * uExp; bt = ( bt * ( 2.51 * bt + 0.03 ) ) / ( bt * ( 2.43 * bt + 0.59 ) + 0.14 ); float lB = dot( bt, vec3( 0.299, 0.587, 0.114 ) );
+        return ( lB < lMin || lB > lMax ) ? A : B; }
       void main(){
         vec2 cuv = vUv - 0.5; float rr = dot( cuv, cuv );
         vec2 ca = cuv * rr * 0.012;
-        vec3 c = vec3( texture2D( t, vUv - ca ).r, texture2D( t, vUv ).g, texture2D( t, vUv + ca ).b );
+        vec3 c = uAA > 0.5 ? fxaa( vUv ) : vec3( texture2D( t, vUv - ca ).r, texture2D( t, vUv ).g, texture2D( t, vUv + ca ).b );
         c += texture2D( b, vUv ).rgb * uBloom;
         c *= uExp;
         c = ( c * ( 2.51 * c + 0.03 ) ) / ( c * ( 2.43 * c + 0.59 ) + 0.14 );
@@ -525,6 +538,36 @@ export class Gfx {
         c *= 1.0 - uFade;
         gl_FragColor = vec4( c, 1.0 ); }`);
   }
+  // change the quality preset in place: resolution, multisampling, bloom, shadows, far plane, anisotropy, snow, and the texture detail
+  // (swapped in the background, one texture at a time). The point-light count and the low tier's skipped fog glow stay as loaded.
+  setTier(tier) {
+    if (!QUALITY[tier] || tier === this.tier) return false;
+    const lights = this.q.lights; this.tier = tier; this.q = { ...QUALITY[tier], lights };
+    this.maxAniso = Math.min(this.q.aniso, this.renderer.capabilities.getMaxAnisotropy());
+    const sun = this.sun; sun.shadow.mapSize.set(this.q.shadow, this.q.shadow); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; }
+    const d = this.q.shadowDist, sc = sun.shadow.camera; sc.left = -d; sc.right = d; sc.top = d; sc.bottom = -d; sc.updateProjectionMatrix();
+    this.camera.far = this.q.far; this.camera.updateProjectionMatrix(); if (this.sky) this.sky.scale.setScalar(this.q.far * 0.9);
+    if (this.snow) this.snow.geometry.setDrawRange(0, this.q.snow);
+    if (this.q.texDiv !== this._texDiv) this.retexture();
+    else for (const k in this.tex) { const t = this.tex[k]; for (const x of [t, t && t.map, t && t.pk]) if (x && x.isTexture && x !== this.tex.tree && x !== this.tex.noise && x.anisotropy !== this.maxAniso) { x.anisotropy = this.maxAniso; x.needsUpdate = true; } }
+    this.scale = 1; this.dynT = 0; this.w = 0; this.resize();
+    return true;
+  }
+  async retexture() {
+    const meta = this._texMeta, base = this._texBase, div = this.q.texDiv, job = (this._texJob = {}); if (!meta) return;
+    const img = (f) => loadImage(base + f), tick = () => new Promise((r) => setTimeout(r, 0));
+    const swap = (old, nu) => { old.dispose(); old.image = nu.image; old.anisotropy = this.maxAniso; old.needsUpdate = true; };
+    for (const n of Object.keys(meta).filter((n) => !n.startsWith('_') && !/^f\d_[ug]$/.test(n))) {
+      const t = this.tex[n]; if (!t || !t.map) continue; const [a, p] = await Promise.all([img(n + '_a.jpg'), img(n + '_p.jpg')]); if (this._texJob !== job) return;
+      const m = meta[n], w = m.w / div, hh = m.h / div; swap(t.map, this._albedo(a, w, hh)); swap(t.pk, this._pack([{ im: p, w, h: hh, sx: w / m.mw, sy: hh / m.mh, hr: m.hr }], w, hh)); await tick();
+    }
+    for (const s of meta._styles) {
+      const t = this.tex[s.n]; if (!t) continue; const [ua, up, ga, gp] = await Promise.all([img(s.n + '_u_a.jpg'), img(s.n + '_u_p.jpg'), img(s.n + '_g_a.jpg'), img(s.n + '_g_p.jpg')]); if (this._texJob !== job) return;
+      const w = 1024 / div, hu = 512 / div, hg = 256 / div, c = document.createElement('canvas'); c.width = w; c.height = hu + hg; const x = c.getContext('2d'); x.drawImage(ua, 0, 0, w, hu); x.drawImage(ga, 0, hu, w, hg);
+      const mu = meta[s.n + '_u'], mg = meta[s.n + '_g']; swap(t.map, this._albedo(c, w, hu + hg)); swap(t.pk, this._pack([{ im: up, w, h: hu, sx: w / mu.mw, sy: hu / mu.mh, hr: mu.hr }, { im: gp, w, h: hg, sx: w / mg.mw, sy: hg / mg.mh, hr: mg.hr }], w, hu + hg)); await tick();
+    }
+    this._texDiv = div;
+  }
   resize() {
     const cw = this.canvas.clientWidth || innerWidth, ch = this.canvas.clientHeight || innerHeight;
     const dpr = Math.min(window.devicePixelRatio || 1, this.q.maxDpr) * this.q.scale * this.scale;
@@ -537,7 +580,7 @@ export class Gfx {
     this.bl = []; let bw = w >> 1, bh = h >> 1;
     for (let i = 0; i < this.q.bloom && bw > 8 && bh > 8; i++) { this.bl.push(new THREE.WebGLRenderTarget(bw, bh, { type: THREE.HalfFloatType, depthBuffer: false })); bw >>= 1; bh >>= 1; }
     const pxs = h / (2 * Math.tan((this.camera.fov * Math.PI) / 360));
-    this.snowU.uPx.value = pxs; this.glow().uniforms.uPx.value = pxs; this.mFin.uniforms.uAspect.value = w / h;
+    this.snowU.uPx.value = pxs; this.glow().uniforms.uPx.value = pxs; this.mFin.uniforms.uAspect.value = w / h; this.mFin.uniforms.uPx.value.set(1 / w, 1 / h); this.mFin.uniforms.uAA.value = this.q.msaa ? 0 : 1;
   }
 
   // ---------------------------------------------------------------- per-frame
@@ -605,6 +648,6 @@ export class Gfx {
     f.t.value = this.rt.texture; f.b.value = this.bl.length ? this.bl[0].texture : null; f.uBloom.value = this.bloomOn ? 0.085 : 0; f.uExp.value = this.exposure || 1;
     this.fsMesh.material = this.mFin; r.setRenderTarget(null); r.render(this.fsScene, this.fsCam);
     // dynamic resolution: hold frame time on phones
-    if (dtMs) { this.frameMs = lerp(this.frameMs, dtMs, 0.05); this.dynT += dtMs; if (this.fixedScale) this.dynT = 0; if (this.dynT > 2500) { this.dynT = 0; const o = this.scale; if (this.frameMs > 30 && this.scale > 0.6) this.scale -= 0.1; else if (this.frameMs < 19 && this.scale < 1) this.scale += 0.05; if (o !== this.scale) this.wantResize = true; } }
+    if (dtMs) { this.frameMs = lerp(this.frameMs, dtMs, 0.05); this.dynT += dtMs; if (this.fixedScale) this.dynT = 0; if (this.dynT > 2500) { this.dynT = 0; const o = this.scale; if (this.frameMs > 30 && this.scale > 0.66) this.scale = Math.max(0.65, Math.round((this.scale - 0.07) * 100) / 100); else if (this.frameMs < 20 && this.scale < 1) this.scale = Math.min(1, Math.round((this.scale + 0.05) * 100) / 100); /* never below 65 %: past that the picture turns to staircases */ if (o !== this.scale) this.wantResize = true; } }
   }
 }

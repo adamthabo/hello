@@ -5,15 +5,16 @@ export const F_COVER = 1, F_LOW = 2, F_WALL = 4, F_SOFT = 8;
 const _c = new THREE.Color();
 export const C = (hex, k = 1) => { _c.set(hex); return [_c.r * k, _c.g * k, _c.b * k]; };
 
-// ---------------------------------------------------------------- mesh builder (non-indexed triangles)
+// ---------------------------------------------------------------- mesh builder (indexed: a quad is 4 vertices, not 6; `flat` keeps one vertex per corner of every triangle)
 export class MB {
-  constructor() { this.p = []; this.n = []; this.u = []; this.c = []; this.x = []; }
+  constructor(flat = false) { this.p = []; this.n = []; this.u = []; this.c = []; this.x = []; this.i = flat ? null : []; this.nv = 0; }
   get empty() { return this.p.length === 0; }
-  v(a, n, uv, col, fx) { this.p.push(a[0], a[1], a[2]); this.n.push(n[0], n[1], n[2]); this.u.push(uv[0], uv[1]); if (col) this.c.push(col[0], col[1], col[2]); if (fx) this.x.push(fx[0], fx[1], fx[2], fx[3]); }
+  _v(a, n, uv, col, fx) { this.p.push(a[0], a[1], a[2]); this.n.push(n[0], n[1], n[2]); this.u.push(uv[0], uv[1]); if (col) this.c.push(col[0], col[1], col[2]); if (fx) this.x.push(fx[0], fx[1], fx[2], fx[3]); return this.nv++; }
+  v(a, n, uv, col, fx) { const k = this._v(a, n, uv, col, fx); if (this.i) this.i.push(k); }
   tri(a, b, c, ua, ub, uc, col, fx, n, want) {
     if (want) { const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2], vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2]; if ((uy * vz - uz * vy) * want[0] + (uz * vx - ux * vz) * want[1] + (ux * vy - uy * vx) * want[2] < 0) { let t = b; b = c; c = t; t = ub; ub = uc; uc = t; } }
     if (!n) { const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2], vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2]; n = [uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx]; const l = Math.hypot(n[0], n[1], n[2]) || 1; n[0] /= l; n[1] /= l; n[2] /= l; }
-    this.v(a, n, ua, col, fx); this.v(b, n, ub, col, fx); this.v(c, n, uc, col, fx);
+    const i0 = this._v(a, n, ua, col, fx), i1 = this._v(b, n, ub, col, fx), i2 = this._v(c, n, uc, col, fx); if (this.i) this.i.push(i0, i1, i2);
   }
   // quad a,b,c,d (perimeter order). `want` flips the winding so the face normal agrees with it; `fn` overrides the stored normal.
   quad(a, b, c, d, ua, ub, uc, ud, col, fx, want, fn) {
@@ -21,7 +22,8 @@ export class MB {
     let n = [uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx]; const l = Math.hypot(n[0], n[1], n[2]) || 1; n[0] /= l; n[1] /= l; n[2] /= l;
     if (want && n[0] * want[0] + n[1] * want[1] + n[2] * want[2] < 0) { let t = b; b = d; d = t; t = ub; ub = ud; ud = t; n = [-n[0], -n[1], -n[2]]; }
     if (fn) n = fn;
-    this.v(a, n, ua, col, fx); this.v(b, n, ub, col, fx); this.v(c, n, uc, col, fx); this.v(a, n, ua, col, fx); this.v(c, n, uc, col, fx); this.v(d, n, ud, col, fx);
+    if (!this.i) { this._v(a, n, ua, col, fx); this._v(b, n, ub, col, fx); this._v(c, n, uc, col, fx); this._v(a, n, ua, col, fx); this._v(c, n, uc, col, fx); this._v(d, n, ud, col, fx); return; }
+    const ia = this._v(a, n, ua, col, fx), ib = this._v(b, n, ub, col, fx), ic = this._v(c, n, uc, col, fx), id = this._v(d, n, ud, col, fx); this.i.push(ia, ib, ic, ia, ic, id);
   }
   // vertical wall; a is the left end as seen from outside
   wall(ax, az, bx, bz, y0, y1, u0, u1, v0, v1, col, fx) {
@@ -69,6 +71,7 @@ export class MB {
     g.setAttribute('position', new THREE.Float32BufferAttribute(this.p, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(this.n, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(this.u, 2));
     if (this.c.length) g.setAttribute('color', new THREE.Float32BufferAttribute(this.c, 3));
     if (this.x.length) g.setAttribute('aFx', new THREE.Float32BufferAttribute(this.x, 4));
+    if (this.i) g.setIndex(this.nv > 65535 ? new THREE.Uint32BufferAttribute(this.i, 1) : new THREE.Uint16BufferAttribute(this.i, 1));
     g.computeBoundingSphere(); g.computeBoundingBox(); return g;
   }
   mesh(mat, shadow = true, recv = true) { const m = new THREE.Mesh(this.geometry(), mat); m.castShadow = shadow; m.receiveShadow = recv; m.matrixAutoUpdate = false; return m; }

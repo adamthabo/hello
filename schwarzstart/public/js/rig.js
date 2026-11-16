@@ -156,7 +156,7 @@ const _qa = new THREE.Quaternion(), _qb = new THREE.Quaternion(), _qY = new THRE
 const _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _m = new THREE.Matrix4(), DOWN = new THREE.Vector3(0, -1, 0), _pole = new THREE.Vector3(), _hd = new THREE.Vector3();
 const _A = new THREE.Vector3(), _hA = new THREE.Vector3(), _wR = new THREE.Vector3(), _hR = new THREE.Vector3(), _wL = new THREE.Vector3(), _hL = new THREE.Vector3();
 const _iS = new THREE.Vector3(), _iE = new THREE.Vector3(), _iD = new THREE.Vector3(), _iP = new THREE.Vector3(), _iT = new THREE.Vector3(), _iH = new THREE.Vector3();
-const _r0 = new THREE.Vector3(), _r1 = new THREE.Vector3(), _r2 = new THREE.Vector3(), _r3 = new THREE.Vector3(), _r4 = new THREE.Vector3(), _r5 = new THREE.Vector3(), _X = new THREE.Vector3(1, 0, 0), _Y = new THREE.Vector3(0, 1, 0);
+const _r0 = new THREE.Vector3(), _r1 = new THREE.Vector3(), _r2 = new THREE.Vector3(), _r3 = new THREE.Vector3(), _r4 = new THREE.Vector3(), _r5 = new THREE.Vector3(), _X = new THREE.Vector3(1, 0, 0), _Y = new THREE.Vector3(0, 1, 0), _Z = new THREE.Vector3(0, 0, 1);
 const lerp3 = (o, a, b, t) => o.set(lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t));
 const wrapA = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 
@@ -207,7 +207,9 @@ export class Rig {
     // far away (40 m+) people are animated every other frame; nobody can tell, and crowds stay cheap
     if (!s.dead && this.gfx.camera.position.distanceToSquared(this.root.position) > 1600 && (this.lod = !this.lod)) { this.lodDt = (this.lodDt || 0) + dt; return; }
     if (this.lodDt) { dt += this.lodDt; this.lodDt = 0; }
-    const b = this.bones, R = (n) => b[B[n]].rotation, armed = !!this.gunType; this.t += dt;
+    const b = this.bones, R = (n) => b[B[n]].rotation, armed = !!this.gunType; this.t += dt; this.fdt = dt;
+    { const ry = this.root.rotation.y, yr = dt > 0 && this.ry0 !== undefined ? clamp(wrapA(ry - this.ry0) / dt, -8, 8) : 0, pr = dt > 0 && this.pi0 !== undefined ? clamp(((s.pitch || 0) - this.pi0) / dt, -6, 6) : 0; this.ry0 = ry; this.pi0 = s.pitch || 0;
+      this.sway = damp(this.sway || 0, -yr * 0.022, 11, dt); this.swayP = damp(this.swayP || 0, pr * 0.018, 11, dt); }   // the weapon trails quick turns a touch, then settles
     this.aim = damp(this.aim, s.aim && armed ? 1 : 0, 12, dt); this.cr = damp(this.cr, s.crouch ? 1 : 0, 10, dt); this.spd = damp(this.spd, s.speed || 0, 9, dt);
     this.kick = damp(this.kick, 0, 16, dt); this.hit = damp(this.hit, 0, 6, dt); this.rel = s.reload || 0; this.lean = damp(this.lean, s.lean || 0, 8, dt);
     if (s.mz !== undefined) { this.mx = damp(this.mx, s.mx, 8, dt); this.mz = damp(this.mz, s.mz, 8, dt); } else { this.mx = damp(this.mx, 0, 8, dt); this.mz = damp(this.mz, 1, 8, dt); }
@@ -306,12 +308,12 @@ export class Rig {
   _mocapBody(dt, s, c, a) {
     const A = ANIM, b = this.bones, sc = this.scale, sp = this.spd, bk = this.back;
     let wi = 0, ww = 0, wj = 0, wr = 0, g = 1;
-    const vW = A.walk.v * sc, vJ = A.jog.v * sc, vR = A.run.v * sc, v0 = 0.2 * sc;
+    const vW = A.walk.v * sc, vJ = A.jog.v * sc, vR = A.run.v * sc, v0 = 0.2 * sc, vRb = 5.3 * sc;   // the full run only takes over toward a sprint
     if (sp <= v0) wi = 1;
     else if (sp < vW) { const t = smoothT((sp - v0) / (vW - v0)); wi = 1 - t; ww = t; }
     else if (sp < vJ) { const t = smoothT((sp - vW) / (vJ - vW)); ww = 1 - t; wj = t; }
-    else if (sp < vR) { const t = smoothT((sp - vJ) / (vR - vJ)); wj = 1 - t; wr = t; }
-    else { wr = 1; g = Math.min(1.3, Math.pow(sp / vR, 0.4)); }
+    else if (sp < vRb) { const t = smoothT((sp - vJ) / (vRb - vJ)); wj = 1 - t; wr = t; }
+    else { wr = 1; g = Math.min(1.3, Math.pow(sp / vRb, 0.4) * Math.pow(vRb / vR, 0.25)); }
     const mvw = 1 - wi, wb = mvw * bk; ww *= 1 - bk; wj *= 1 - bk; wr *= 1 - bk;
     const den = ww + wj + wr + wb, stride = den > 1e-4 ? ((ww * A.walk.stride + wj * A.jog.stride + wr * A.run.stride * g + wb * A.back.stride) / den) * sc : 1;
     if (sp > 0.02) this.aph = (this.aph + (dt * sp) / Math.max(0.35, stride)) % 1;
@@ -320,6 +322,7 @@ export class Rig {
     // sprint: longer strides, lower and leaning; crouch: the pelvis drops, the feet stay put, so the knees bend
     if (g > 1) { const e = g - 1; for (const k of ['la', 'ra', 'lk', 'rk']) MP[k][2] *= g; MP.pel[1] -= e * 0.12; }
     this.sprintLean = damp(this.sprintLean || 0, (g - 1) * 0.55, 6, dt);
+    if (s.vault > 0) { const k = Math.sin(s.vault * Math.PI); MP.la[1] += 0.32 * k; MP.ra[1] += 0.24 * k; MP.la[2] += 0.12 * k; MP.ra[2] -= 0.05 * k; MP.lk[1] += 0.2 * k; MP.rk[1] += 0.16 * k; MP.lk[2] += 0.18 * k; MP.rk[2] += 0.1 * k; }
     if (c > 0.01) { const kn = c * wi; MP.pel[1] -= c * 0.36 + kn * 0.15; MP.pel[2] -= c * 0.05; MP.la[2] += c * 0.14 + kn * 0.14; MP.ra[2] -= c * 0.12 + kn * 0.24; MP.la[0] += c * 0.04; MP.ra[0] -= c * 0.04; MP.lk[2] += c * 0.3 + kn * 0.12; MP.rk[2] += c * 0.3; MP.rk[1] -= kn * 0.25; }   // stopped behind low cover: down on one knee
     // the legs turn toward the direction of travel (the spine turns the chest back to the aim)
     if (this.pivot) { const k = this.t * 13; MP.la[1] += 0.05 * Math.max(0, Math.sin(k)); MP.ra[1] += 0.05 * Math.max(0, -Math.sin(k)); }
@@ -327,6 +330,7 @@ export class Rig {
     for (const k of ['pel', 'la', 'ra', 'lk', 'rk']) { const o = MP[k], x = o[0], z = o[2]; o[0] = x * cy + z * sy; o[2] = -x * sy + z * cy; }
     _qY.setFromAxisAngle(_Y, ly);
     _qa.set(MP.pq[0], MP.pq[1], MP.pq[2], MP.pq[3]); _qa.premultiply(_qY);
+    this.bank = damp(this.bank || 0, clamp(-(this.accR || 0) * 0.0075, -0.09, 0.09) * Math.min(1, sp / 2), 8, dt); if (Math.abs(this.bank) > 1e-3) _qa.premultiply(_qb.setFromAxisAngle(_Z, this.bank));
     b[0].quaternion.copy(_qa); _v.set(0, 0.05, 0).applyQuaternion(_qa);
     b[0].position.set(MP.pel[0] + _v.x + this.lean * 0.12, MP.pel[1] + _v.y, MP.pel[2] + _v.z);
     // contact events for footsteps: left at phase 0, right at 0.5
@@ -416,11 +420,11 @@ export class Rig {
     lerp3(g.position, L[0], A[0], a);
     let px = lerp(L[1], A[1], a) - pit * 0.2 * a - this.kick * 0.5, py = lerp(L[2], A[2], a), pz = lerp(L[3], A[3], a);
     // flat out, the rifle comes across the chest, muzzle up (port arms); it drops back to the ready as soon as you aim
-    this.carry = damp(this.carry || 0, ANIM && this.spd > 5.1 ? 1 : 0, 7, 1 / 60); const cw = this.carry * lowW;
+    this.carry = damp(this.carry || 0, ANIM && this.spd > 5.1 ? 1 : 0, 7, this.fdt || 1 / 60); const cw = this.carry * lowW;
     if (cw > 0.01 && H.run) { const S2 = H.run; g.position.lerp(_v.fromArray(S2[0]), cw); px = lerp(px, S2[1], cw); py = lerp(py, S2[2], cw); pz = lerp(pz, S2[3], cw); }
     if (r > 0) { g.position.lerp(_v.fromArray(Rl[0]), r); px = lerp(px, Rl[1], r); py = lerp(py, Rl[2], r); pz = lerp(pz, Rl[3], r); }
     g.position.z -= this.kick * 0.05; g.position.y += (ANIM ? Math.sin(this.aph * Math.PI * 4) * 0.016 : Math.sin(this.ph * 2) * 0.012) * mv * lowW;
-    g.rotation.set(px + run * 0.15 * lowW, py, pz);
+    g.rotation.set(px + run * 0.15 * lowW + (this.swayP || 0), py + (this.sway || 0), pz + (this.sway || 0) * 0.6); g.position.x -= (this.sway || 0) * 0.05; g.position.y += (this.swayP || 0) * 0.03;
     // shoulders roll forward a little when aiming
     this.bones[B.uaL].position.z = 0.05 * a; this.bones[B.uaR].position.z = 0.02 * a;
   }

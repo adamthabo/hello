@@ -352,7 +352,7 @@ export class UI {
     else if (a === 'wp') { G.setWaypoint(G.wp && G.wp.s === this.mSel ? null : this.mSel); this.mapCard(); this.drawMap(); return; } else if (a === 'travel') { if (G.travel(this.mSel)) this.close(); return; }
     else if (a === 'leave' && G.mode) { G.mode.leave(); return; } else if (a === 'invite' && G.mode) { G.mode.invite(); return; }
     else if (a === 'resume') { this.close(); return; } else if (a === 'aa') G.autoAim = !G.autoAim; else if (a === 'sens') G.sens = G.sens <= 0.7 ? 1 : G.sens >= 1.4 ? 0.6 : 1.5; else if (a === 'inv') G.invY = !G.invY; else if (a === 'snd') this.audio.mute(!this.audio.muted);
-    else if (a === 'q') { const n = { low: 'mid', mid: 'high', high: 'low' }[G.gfx.tier]; S.opt.q = n; G.save(); location.reload(); return; } else if (a === 'time') { G.gfx.time = (G.gfx.time + 4) % 24; }
+    else if (a === 'q') { const n = { low: 'mid', mid: 'high', high: 'low' }[G.gfx.tier]; setOpt(this.ctx, S.opt, 'q', n); G.save(); this.toast && this.toast('Quality · ' + n, 'ok'); } else if (a === 'time') { G.gfx.time = (G.gfx.time + 4) % 24; }
     else if (a === 'wipe') { if (dob.dataset.sure) { G.wipe(); location.reload(); return; } dob.dataset.sure = 1; dob.textContent = 'Tap again to erase'; return; }
     this.render();
   }

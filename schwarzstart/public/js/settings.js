@@ -3,7 +3,7 @@ import { IS_TOUCH, el } from './util.js';
 
 // type: 'cycle' (vals) | 'range' (min, max, step) ; apply(ctx, v) runs at boot and on every change
 export const OPTIONS = [
-  { g: 'Picture', k: 'q', n: 'Quality preset', d: 'Texture detail, shadow resolution, draw distance. Reloads.', vals: ['low', 'mid', 'high'], lbl: (v) => v, reload: 1 },
+  { g: 'Picture', k: 'q', n: 'Quality preset', d: 'Texture detail, shadows, draw distance and edge smoothing. Changes straight away.', vals: ['low', 'mid', 'high'], lbl: (v) => v, apply: (c, v) => applyTier(c, v) },
   { g: 'Picture', k: 'res', n: 'Resolution', d: 'Auto keeps the frame rate steady on phones', vals: ['auto', 0.6, 0.75, 0.9, 1], lbl: (v) => (v === 'auto' ? 'auto' : Math.round(v * 100) + '%'), def: 'auto',
     apply: (c, v) => { c.gfx.fixedScale = v === 'auto' ? null : v; if (v !== 'auto') { c.gfx.scale = v; c.gfx.resize(); } } },
   { g: 'Picture', k: 'draw', n: 'Draw distance', vals: ['auto', 450, 650, 900, 1200], lbl: (v) => (v === 'auto' ? 'auto' : v + ' m'), def: 'auto',
@@ -32,6 +32,19 @@ export const OPTIONS = [
   { g: 'Game', k: 'diff', n: 'Difficulty', vals: [0, 1, 2], lbl: (v) => ['gentle', 'normal', 'hard'][v], def: 1, apply: (c, v) => { c.game.diff = [0.6, 1, 1.4][v]; c.game.diffHp = [0.75, 1, 1.3][v]; } },
 ];
 function onoff(v) { return v ? 'on' : 'off'; }
+// a new quality preset, applied to the running game: no reload
+export function applyTier(c, v) {
+  const g = c.gfx; if (!g || !g.setTier(v)) return;
+  const W = c.world, opt = (c.game && c.game.S && c.game.S.opt) || {};
+  if (W) {
+    if (!opt.draw || opt.draw === 'auto') W.drawDist = g.q.draw || 800;
+    W.detDist = v === 'low' ? 150 : v === 'mid' ? 210 : 340; W.cullT = 0;
+    if (W.treeMat) { W.treeMat.alphaToCoverage = g.q.msaa > 0; W.treeMat.needsUpdate = true; }
+    if (W.litterField) { W.litterField.R = v === 'low' ? 42 : v === 'mid' ? 58 : 72; W.litterField.cx = 1e9; }
+  }
+  if (c.game) c.game.cap = v === 'low' ? 12 : 18;
+  if (opt.res && opt.res !== 'auto') { g.scale = opt.res; g.resize(); }
+}
 
 export function optDefaults(opt = {}) {
   for (const o of OPTIONS) if (opt[o.k] === undefined && o.def !== undefined) opt[o.k] = o.def;
