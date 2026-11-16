@@ -77,11 +77,11 @@ body.dropping::after{content:"";position:fixed;inset:10px;z-index:30;border:1px 
 .ic:hover,.ic[aria-pressed=true]{border-color:var(--lume);color:var(--lume);box-shadow:0 0 16px -4px var(--lume)}
 .chip{height:32px;padding:0 11px;border-radius:999px;border:1px solid var(--warm);background:rgba(1,4,10,.55);color:var(--warm);
   font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
-/* ---------- bottom: a world's own row (Smoke's tools, the Earth's layers), then the worlds. (There was a row of circles here, one for
+/* ---------- bottom: a world's own row (Paint's tools, the Earth's layers), then the worlds. (There was a row of circles here, one for
    each player; on 13 Nov the owner asked for just a small music on/off button, which is at the top) ---------- */
 .foot{position:fixed;z-index:6;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;gap:4px;
   padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));pointer-events:none}
-/* Smoke's tools: a labelled row along the bottom, like Wind's layers */
+/* Paint's tools: a labelled row along the bottom, like Wind's layers */
 .tools{display:flex;justify-content:center;gap:4px;flex-wrap:wrap;pointer-events:auto;padding:0 4px}
 .tb{display:flex;align-items:center;gap:4px;height:28px;padding:0 8px 0 6px;border-radius:14px;border:1px solid rgba(234,249,255,.14);color:var(--dim);background:rgba(1,4,10,.45);
   font-family:var(--mono);font-size:8.5px;letter-spacing:.07em;text-transform:uppercase;transition:color .2s,border-color .2s,background .2s}
@@ -100,17 +100,20 @@ body.dropping::after{content:"";position:fixed;inset:10px;z-index:30;border:1px 
   font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;transition:color .25s,border-color .25s,background .25s}
 .lb svg{width:13px;height:13px;display:block;fill:none;stroke:currentColor;stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round}
 .lb[aria-pressed=true]{color:var(--ink);border-color:rgba(62,240,255,.42);background:rgba(62,240,255,.08)}
-/* the Earth's layers (14 Nov, night: "be able to take on and off layers"): a row of buttons, each a picture over a word, lit while its
-   layer shows (the videos in the red of a live stream); the row scrolls sideways when the screen is narrow */
-.dock{gap:6px}
-.dk{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:56px;height:46px;padding:0 7px;border-radius:12px;
-  border:1px solid rgba(234,249,255,.13);background:rgba(1,4,10,.6);color:rgba(234,249,255,.5);font:500 8.5px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;
-  cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
-.dk svg{width:18px;height:18px;display:block;fill:none;stroke:currentColor;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
+/* the Earth's layers (14 Nov, night: "be able to take on and off layers"): a button each, a picture over a word, lit while its layer
+   shows (the videos in the red of a live stream). Until 15 Nov, 23:20 they were one row that ran off the side of a phone and had to be
+   slid along ("The list of buttons on the globe hardly work. Make everything work"); now every one is on the screen at once, in as few
+   rows as fit, the rows even and centred: 12-wind.js sets the width (--dkw), the height (--dkh) and the row's width (--dkm) */
+.dock{display:flex;flex-wrap:wrap;justify-content:center;gap:5px;pointer-events:auto;width:100%;max-width:var(--dkm,100%)}
+.dk{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;width:var(--dkw,64px);height:var(--dkh,44px);padding:0 2px;border-radius:12px;
+  border:1px solid rgba(234,249,255,.13);background:rgba(1,4,10,.6);color:rgba(234,249,255,.5);font:500 8.5px/1 var(--mono);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;
+  overflow:hidden;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.dk span{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.dock.dkt .dk{font-size:7.5px;letter-spacing:.02em}
+.dk svg{width:18px;height:18px;display:block;flex:none;fill:none;stroke:currentColor;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
 .dk[aria-pressed=true]{color:var(--ink);border-color:rgba(62,240,255,.55);background:rgba(62,240,255,.14)}
 .dk.dk-vid[aria-pressed=true]{border-color:rgba(255,82,82,.75);background:rgba(255,82,82,.16)}
 .dk:active{transform:scale(.96)}
-.dock .dk:first-child{margin-left:auto}.dock .dk:last-child{margin-right:auto}
 /* the scale of the layer of colour shown, over the row */
 .lgd{display:flex;align-items:center;gap:8px;width:min(340px,calc(100% - 32px));font:500 8px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--dim);pointer-events:none}
 .lgd[hidden]{display:none}
@@ -188,32 +191,47 @@ body.camw .zm{display:none}
   #gl,#ov,.ic,.wb,.vid,.vid .vb{transition:none}
 }
 
-/* ---- the mixer (16-mix.js): the band's nine players, then the instruments, each a row of two loops; big buttons ---- */
+/* ---- the mixer (16-mix.js): the five modes, the band's nine players, then the mode's instruments as cards of two loops; a new mix and
+   stop at the foot. All of it on the screen, whatever its size (15 Nov, 20:39, and again at 23:20: "make the music buttons always on
+   the page, fit"): 16-mix.js sets --bh, the height of a button, to the most that lets everything fit (46 px at most, 24 at least), and
+   the gaps, the corners and the letters follow it. On a screen wider than it is tall the instruments go beside the rest ---- */
 #mix{position:fixed;left:0;right:0;z-index:5;display:flex;flex-direction:column;padding:0 max(12px,env(safe-area-inset-right,0px)) 0 max(12px,env(safe-area-inset-left,0px));
-  font-family:var(--mono);color:var(--ink)}
+  font-family:var(--mono);color:var(--ink);--bh:40px;--g:clamp(3px,calc(var(--bh) * .14),6px);--fs:clamp(8px,calc(var(--bh) * .25),10.5px)}
 #mix[hidden]{display:none}
-.mxl{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;touch-action:pan-y;display:flex;flex-direction:column;gap:6px;width:100%;max-width:560px;margin:0 auto;padding-bottom:12px;
-  scrollbar-width:none;-webkit-mask-image:linear-gradient(#000 calc(100% - 18px),transparent);mask-image:linear-gradient(#000 calc(100% - 18px),transparent)}
+.mxl{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;touch-action:pan-y;display:flex;flex-direction:column;gap:var(--g);width:100%;max-width:560px;margin:0 auto;padding-bottom:6px;
+  scrollbar-width:none}
 .mxl::-webkit-scrollbar{display:none}
-.mxsec{font:500 9px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--dim);padding:8px 2px 2px}
-.mxband{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
-.mxrow{display:grid;grid-template-columns:76px minmax(0,1fr) minmax(0,1fr);gap:6px;align-items:stretch}
-.mxn{align-self:center;font:600 10px/1.1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--c);overflow:hidden;text-overflow:ellipsis}
-.mxb{min-height:46px;min-width:0;padding:0 8px;border-radius:12px;border:1.5px solid color-mix(in srgb,var(--c) 45%,transparent);background:rgba(1,4,10,.55);
-  color:var(--ink);font:500 11px/1.15 var(--mono);letter-spacing:.06em;text-transform:uppercase;transition:background .15s,box-shadow .15s,color .15s}
-.mxp{min-height:42px;font-size:10px}
+.mxa,.mxi{display:flex;flex-direction:column;gap:var(--g);min-width:0}
+.mxsec{font:500 9px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--dim);padding:calc(var(--g) * .5) 2px 0}
+.mxband{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:var(--g)}
+.mxrows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--g)}
+.mxrow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(2px,calc(var(--bh) * .1),4px);padding:clamp(3px,calc(var(--bh) * .12),5px);border-radius:12px;
+  border:1px solid color-mix(in srgb,var(--c) 30%,transparent);background:color-mix(in srgb,var(--c) 6%,rgba(1,4,10,.5))}
+.mxn{grid-column:1/-1;padding:1px 3px 0;font:600 9px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--c);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mxb{min-height:var(--bh);min-width:0;padding:0 4px;border-radius:clamp(7px,calc(var(--bh) * .25),10px);border:1.5px solid color-mix(in srgb,var(--c) 45%,transparent);background:rgba(1,4,10,.55);
+  color:var(--ink);font:500 var(--fs)/1.1 var(--mono);letter-spacing:.05em;text-transform:uppercase;transition:background .15s,box-shadow .15s,color .15s;overflow:hidden;text-overflow:ellipsis}
+.mxp{font-size:calc(var(--fs) - .5px);letter-spacing:.03em;padding:0 2px}
 /* (15 Nov) the five modes, in a row of their own at the top of Mix, and the mode's name beside the note at the top of every world */
-.mxmodes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
-.mxm{min-height:42px;padding:0 3px;font-size:10px;letter-spacing:.04em}
+.mxmodes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:var(--g)}
+.mxm{padding:0 2px;letter-spacing:.04em}
 .chip.mode{min-width:56px;padding:0 10px;border-color:var(--mc,#ffb347);color:var(--mc,#ffb347);cursor:pointer}
 .chip.mode.wait{animation:mxblink .5s steps(2) infinite}
 .mxb.on{color:#01040a;background:var(--c);border-color:var(--c);box-shadow:0 0 18px -3px var(--c)}
 .mxb.wait{border-color:var(--c);color:var(--c);animation:mxblink .5s steps(2) infinite}
 .mxb.stopping{background:var(--c);color:#01040a;opacity:.45}
-.mxfoot{display:flex;justify-content:center;padding-top:6px}
-.mxjf{padding:2px 0 4px}
-.mxstop.mxjam{height:46px;padding:0 22px;border-radius:23px;border-color:var(--warm);color:var(--ink);background:rgba(255,179,71,.14);font-size:11px}
+.mxfoot{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:var(--g)}
+.mxstop{height:var(--bh);padding:0 12px;border-radius:calc(var(--bh) / 2);border:1px solid rgba(234,249,255,.2);color:var(--dim);background:rgba(1,4,10,.5);font:500 calc(var(--fs) - .5px)/1 var(--mono);letter-spacing:.14em;text-transform:uppercase}
+.mxstop.mxjam{border-color:var(--warm);color:var(--ink);background:rgba(255,179,71,.14);font-size:var(--fs)}
 .mxstop.mxjam:active{background:rgba(255,179,71,.3)}
-.mxstop{height:36px;padding:0 16px;border-radius:18px;border:1px solid rgba(234,249,255,.2);color:var(--dim);background:rgba(1,4,10,.5);font:500 9px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase}
-@media (max-height:520px){.mxb{min-height:36px}.mxp{min-height:32px}}
+/* a phone on its side: the modes, the band and the foot on the left, the instruments on the right */
+#mix.mxw .mxl{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto 1fr;column-gap:14px;row-gap:var(--g);align-content:start;max-width:980px}
+#mix.mxw .mxl>*{align-self:start}
+#mix.mxw .mxa{grid-area:1/1}
+#mix.mxw .mxfoot{grid-area:2/1}
+#mix.mxw .mxi{grid-area:1/2/3/3}
+/* very little height (a small phone, or one on its side): no headings, and each instrument's name beside its two loops */
+#mix.mxsm .mxsec{display:none}
+#mix.mxsm .mxrow{grid-template-columns:minmax(0,.8fr) minmax(0,1fr) minmax(0,1fr);align-items:center}
+#mix.mxsm .mxn{grid-column:auto;padding:0 1px 0 2px;font-size:7.5px;letter-spacing:0}
+#mix.mxsm .mxrow .mxb{padding:0 2px;font-size:8px;letter-spacing:0}
 @keyframes mxblink{50%{opacity:.25}}

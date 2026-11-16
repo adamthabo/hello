@@ -1,6 +1,46 @@
 # Changelog
 
 ## For the owner
+15 Nov 2026, late night, after "Almost. The list of buttons on the globe hardly work. Make everything work. And also make the music
+buttons always on the page, fit.":
+
+- **Every Earth button on the screen.** The row of layers ran off the side of the phone and had to be slid along, so some buttons could
+  not be reached. Now they all show at once, in rows (seven in the artifact: four and three; thirteen on your site: five, five and
+  three), each tap switches its layer, and a second tap switches it back.
+- **Every button shows what it did.** Switch a layer on and the Earth turns to it as before, and for two seconds rings go out from each
+  fire, flash of lightning or storm in view (the war zones and the aurora flare up instead). The fires and the lightning are drawn
+  bigger, and grow as you come closer: they were specks.
+- **Mix always fits.** The buttons take the height there is: the page in the Claude app is shorter than the phone, and the foot of Mix
+  had run under the worlds. On a short screen the headings go and each instrument's name sits beside its loops; on a phone on its side,
+  the instruments go beside the band.
+
+15 Nov 2026, night, after "music is great! I love it, maybe see if you can make it all fit on one page. Remove the real smoke, worked
+out as it moves; text at the top. and remove the word smoke. Aren't free and hand the snake thing? Call it paint, not smoke. on the
+earth mode, we need something to be different ... Even just the satleinetes moving is more fun, videos is def good, forget wind. Storms
+and fires are good. War zones and blacked out zones is good. Gaza, North Korea, Moscow, Beijing, etc.. major cities live is fun...":
+
+- **Mix on one screen.** No scrolling on a phone: the five modes along the top, the band's nine in two rows, the mode's instruments as
+  cards in two columns (the name over its two loops), and "jam" and "stop" side by side at the bottom. The line at the top is one line.
+- **Smoke is Paint.** The name, and the word "smoke" is gone from everything you see. No words over the paint any more (only a count
+  of what you have built, once you build something). "Free" is gone: it did what the hand does. In a game the hand stays, and tapping
+  it ends the game.
+- **The Earth moves.** The wind is gone. The satellites fly at sixty times their speed (a minute a second), a swarm streaming round
+  the planet; tap one and time comes back to now so its card is true; let go and they speed up again.
+- **War zones** (a new layer, on by default): every war with more than a thousand dead this year, by Wikipedia's count, glows red where
+  the fighting is, brighter the more people it has killed, and beats slowly: Ukraine (with the ground Russia holds in deeper orange and
+  the front line bright, from DeepStateMap's map of today), the Sahel, Gaza, south Lebanon, Iran, Darfur and Kordofan in Sudan, Myanmar,
+  Somalia, Mexico, Ethiopia, Afghanistan, Yemen, eastern Congo, Nigeria, Ecuador, Haiti, Syria, Colombia, Cameroon, northwest Pakistan.
+  Tap one: the war, how many it has killed this year, and the latest news of it with its source and date.
+- **Blackouts** (a new layer, on by default): the places cut off go dark. North Korea (no open internet at all), Gaza, Cuba and Ukraine
+  (no power, or power by the hour), Balochistan, Iraqi Kurdistan and the island of Annobón (the internet switched off), and China,
+  Russia, Iran, Myanmar, Uganda and Togo (the big apps blocked). On your site it also marks any country where the internet dropped in
+  the last day.
+- **Sixteen more cities live**: Moscow, Beijing, Shanghai, Kyiv, Jerusalem, Tel Aviv, Gaza, Beirut, Mecca, Cairo, Tehran, Taipei,
+  Mumbai, Bangkok, Havana and Berlin. Your site finds whatever is streaming live there now (North Korea has no streams to find).
+- **No writing at the top** (after "Remove the writing on the top", 22:59): in every world. Words show up only when you tap something
+  to read it (a war zone, a place, a fire, a storm, a camera). In the game, the round's instructions are in big letters in the tank
+  as it starts, and your score and best are in the tank's top corners.
+
 15 Nov 2026, evening, after "put the videos accessible right on the page, if possible. Change their icons on the globe. The mix is
 good! Make it able to also cycle through sounds or modes. another layer to change globally. five modes. funky, African, bluesy,
 acid, dub":
@@ -163,6 +203,62 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 15 Nov 2026, late night: every layer's button on the screen, buttons that show what they did, Mix fits any screen (rule 23)
+
+- `#lyd` is no longer a sideways-scrolling `.lyr.scr` row but `.dock`, a centred wrapping flex row; `dockFit()` in `12-wind.js` picks the
+  columns (as many as fit at 58 px or more, then the rows evened out: `rows = ceil(n / max)`, `cols = ceil(n / rows)`) and sets `--dkw`
+  (the width, at most 78), `--dkh` (44 for one or two rows, 40 for three, 36 for more, 4 less under 600 high) and `--dkm` (the row's
+  width, so it wraps at `cols`); `.dkt` sets the words a size smaller under 66 px. It runs when the buttons change, on resize, and
+  checks a key of (count, width, height) so the 700 ms `dockSync` costs nothing.
+- `lyPing` (`{k, t}`, set by `lyTap` when a layer goes on, two seconds): rings go out from up to about ninety of the layer's fires,
+  lightning strikes or storms in view; `pingK(k)` raises `warK` (to 1.9) and `aurK` (to 1.8) in `GLOBE.draw` for the war zones and the
+  aurora. `dbg().ping` names it. The lightning's dust, its flashes and the fires' embers scale with `zf = clamp(sqrt(R / 170), .9, 2.2)`.
+- Mix: `build()` puts the modes, the band's heading and the band in `.mxa`, the instruments' heading and cards in `.mxi`, then
+  `.mxfoot`. `fit()` (from `place()` on any change of top, bottom or width, from `rowsBuild()` when the mode changes, and when the fonts
+  are ready) halves its way to the tallest `--bh` in 24..46 at which the parts' bounding box fits the list's height; the CSS takes the
+  gaps (`--g`), corners and letters (`--fs`) from it. Under 30 it tries `.mxsm` (no `.mxsec` headings, each card one row of name and two
+  loops) and keeps it if it gives taller buttons. `.mxw` (wider than 1.15 times the height and at least 520): a grid, `.mxa` and the
+  foot left, `.mxi` right. The old `max-height` media queries are gone. `MIX.dbg()` has `bh`, `fits`, `wide`, `small`.
+- Tests: `t_play.js` checks every layer button on the screen, uncovered and its word whole, then taps each for real (switches, switches
+  back, shows itself), and fits Mix at 390×750, 390×660, 375×560, 360×520 and 844×390 (every button inside, none under 28, no
+  scrolling). `t_lock.js` counts the opening hint's touches from when the hint begins (a busy machine had started it late).
+  `t_published.js` puts a place's card away after a tap that misses a camera (the card made the globe smaller under the next tap),
+  and switches "videos" off and on again if the camera it opened has none near it (the space station's).
+
+## 15 Nov 2026, night: Mix on one screen, Paint, war zones and blackouts, flying satellites, sixteen cities (rule 22)
+
+- `16-mix.js` `build()`: no "mode" heading; the band's nine in five columns; `.mxrows` a two-column grid of cards (`.mxrow`: the name
+  across the top, its two loops under it); `.mxfoot` "jam: a new mix" and "stop" side by side (`UI.stop` was "stop the instruments");
+  `hud()` one line, its list cut to 46 characters with "+n". `style.css`: buttons 40 high, 34 under 740 pixels of height, 30 under 680
+  (360 by 640 measured with the ten African instruments: no scrolling). `t_play.js` checks that `.mxl` does not scroll and its foot is
+  above the rail.
+- `11-drift.js`: the world is Paint (`20-ui.js` `WORLDS[0]` `id:'paint'`, a brush for its sign; `OLDHASH.smoke` lands on it; the best
+  score stays `lc.smoke.best`); `TOOLS` lost `undo` ("free"): in a game the hand (`t_ink`) stays and ends it (`gmOff`); `hud()` outside
+  a game says only what is built; every word shown says paint.
+- `12-wind.js`: the wind's smoke is gone (the advection pass, the fires' points, the dye targets, `sim`, `size`, `LGD.wind`, the
+  `wind` layer and its colour); `windT` stays for the clouds' drift and the reading of a place (its wind now last in the line, the
+  arrow gone). `LYS` order: videos, war zones, blackouts, satellites, live view, storms, fires, lightning, rain, clouds, temperature,
+  waves, pressure, aurora. A tap: camera, satellite, storm or fire, then `ZONES.pick`, then the place; `probe.zone` reads as
+  `ZONES.words`. The line of what is happening counts the wars and the places cut off first (cut to 46 characters).
+- `12-zones.js` (new) and `tools/gen_zones.py` (new): see the README's architecture. `07-globe.js`: `uFlow`/`uFlowK` became
+  `uZone`/`uZoneK` (unit 4): a place cut off darkened (`col*=1-b`), a war added in red with a beat and a drifting hatch, the ground held
+  in orange.
+- `13-orbit.js` `layer.tick`: `want` is `LAPSE` (60) unless one is chosen (then a glide back to now, `ret`, and `spd=1`) or motion is
+  reduced; `layer.pace()`; on the Earth the trails are six minutes long and a little brighter (`LAY` gains .55 and .34).
+- Worker: `/api/zones` (`front()`: DeepStateMap's daily copy, simplified to 0.01 degree, its area worked out on an equal-area plane,
+  kept three hours; `outages()`: IODA's summary of the last day by country, the eight highest, kept a quarter of an hour); sixteen city
+  cameras (`gen_cams.js`: 102). `hostmock.mjs` answers both new sources from `testdata/deepstate.geojson` and a made-up summary.
+- 22:59, "Remove the writing on the top": `hud()` of Mix and Paint return nothing; the Earth's returns only a reading (a camera open,
+  or `probe` not a ghost's), the layer messages (`lyMsg`) and the idle lines (`lyLine`, the counts) went; `geo()` and `boardFit()`
+  keep room only for words that are there; `20-ui.js` `chrome()` clears the line on a world's opening (`DATAX=null`: a world with no
+  words left the last one's standing); the game's score, best and combo are drawn in the tank (`gmDraw`), the intro's big words say
+  the seconds and, in round 1 or a round with something new, how to play (`big(a,b,al,c3)`); `dbg().game.news`, `newBest`. Taps are
+  timed by the shorter of the frame clock and the device's own touch times (`held(p)` in `20-ui.js`), so a slow frame between a touch
+  and its lifting no longer turns a quick tap into a long press.
+- Tests: `t_play.js` (Mix on one screen, no writing at the top, the row, the zones read by a tap on Ukraine, the held ground and North
+  Korea, war zones off and on, the satellites flying and the present coming back with one chosen), `t_smoke.js`, `t_published.js`,
+  `t_hosted.js`, `t_misc.js`, `t_gov.js` updated.
 
 ## 15 Nov 2026, evening: five modes, new camera icons, videos one tap away (rule 21)
 

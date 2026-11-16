@@ -15,7 +15,7 @@
    about) and A seventh for two (A C sharp E G): E dorian all through. So the tuned loops are four bars long and change with the band,
    and they are lined up with its four bars wherever they start.
    The first time Mix is opened (or a mode is chosen) it takes the band over from its usual loops where they are, without a gap, and
-   keeps it from then on: what is set here goes on playing in Smoke and on the Earth, and the music button at the top pauses it and
+   keeps it from then on: what is set here goes on playing in Paint and on the Earth, and the music button at the top pauses it and
    brings it back.
    The band keeps its own levels and its own room; African's instruments go through the toys' bus, under its ceiling; the other modes'
    instruments are those modes' bands, into a bus of their own with a little of the band's room and the mode's echo. Each at a level
@@ -237,7 +237,7 @@ var MIX=(function(){
   function next(){var cur=pend||MODE,i=0;for(var k=0;k<MODES.length;k++)if(MODES[k].k===cur)i=k;modeSet(MODES[(i+1)%MODES.length].k)}
   /* every sound the mode needs, fetched once */
   function loadAll(){var k=pend||MODE;loading=SND.load(banksOf(k));return loading}
-  /* ---- a touch's voice in the mode (Smoke, the Earth): the mode's own instrument for the main notes, its hat for the lightning, its
+  /* ---- a touch's voice in the mode (Paint, the Earth): the mode's own instrument for the main notes, its hat for the lightning, its
      kick and rim for the knocks; into the mode's bus, under the ceiling its band is under; African keeps the glass ---- */
   /* a touch in a mode lands on the mode's next sixteenth, and one touch sounds on any one sixteenth (so a flurry of fingers plays
      along with the groove, as a sixteenth-note line, rather than over it) */
@@ -261,27 +261,44 @@ var MIX=(function(){
   var MCOL={funk:'#ff6a3d',africa:'#ffb347',blues:'#4aa8ff',acid:'#c6ff6b',dub:'#b46bff'};
   function E(tag,cls,txt,par){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined&&txt!==null)e.textContent=txt;if(par)par.appendChild(e);return e}
   function btn(cls,txt,par,fn){var b=E('button',cls,txt,par);b.type='button';if(fn)b.addEventListener('click',fn);return b}
+  /* (15 Nov, 20:39: "music is great! I love it, maybe see if you can make it all fit on one page") one screen of a phone, no scrolling:
+     the five modes; the band's nine in two rows; the mode's instruments as cards in two columns, each its name over its two loops; and
+     at the foot, side by side, a new mix and stop */
+  /* (15 Nov, 23:20: "make the music buttons always on the page, fit") in three parts, the modes and the band, the instruments, and the
+     foot, so that a screen wider than it is tall can set the instruments beside the rest */
   function build(){
     if(built)return;built=true;
     var R=E('div','mx',null,document.body);R.id='mix';R.hidden=true;UI.root=R;
     var L=E('div','mxl',null,R);UI.list=L;UI.b=[];UI.m=[];
-    var jf=E('div','mxfoot mxjf',null,L);UI.jam=btn('mxstop mxjam','jam: a new mix',jf,function(){jam();hit('tok',.2,0)});UI.jam.setAttribute('aria-label','Jam: start a new mix of instruments');
-    E('div','mxsec','mode',L);
-    var md=E('div','mxmodes',null,L);MODES.forEach(function(m){var b=btn('mxb mxm',m.n,md,function(){modeSet(m.k)});b.style.setProperty('--c',MCOL[m.k]);b.setAttribute('aria-label','Mode: '+m.n);UI.m.push({el:b,k:m.k})});
-    E('div','mxsec','the band',L);
-    var band=E('div','mxband',null,L);
+    var A=E('div','mxa',null,L),C=E('div','mxi',null,L);
+    var md=E('div','mxmodes',null,A);MODES.forEach(function(m){var b=btn('mxb mxm',m.n,md,function(){modeSet(m.k)});b.style.setProperty('--c',MCOL[m.k]);b.setAttribute('aria-label','Mode: '+m.n);UI.m.push({el:b,k:m.k})});
+    E('div','mxsec','the band',A);
+    var band=E('div','mxband',null,A);
     TR.forEach(function(t,j){if(t.k!=='stem')return;var b=btn('mxb mxp',t.n,band,function(){launch(j,0)});b.style.setProperty('--c',t.col);b.setAttribute('aria-label',BNAMES[t.i]);UI.b.push({el:b,j:j,k:0})});
     UI.bandN=UI.b.length;
-    UI.sec=E('div','mxsec','play along',L);
-    UI.rows=E('div','mxrows',null,L);
-    var f=E('div','mxfoot',null,L);UI.stop=btn('mxstop','stop the instruments',f,function(){hand();stopAll()});
-    rowsBuild();uiSync(true)}
-  /* the mode's instruments, a row each with its two loops */
+    UI.sec=E('div','mxsec','play along',C);
+    UI.rows=E('div','mxrows',null,C);
+    var f=E('div','mxfoot',null,L);UI.jam=btn('mxstop mxjam','jam: a new mix',f,function(){jam();hit('tok',.2,0)});UI.jam.setAttribute('aria-label','Jam: start a new mix of instruments');
+    UI.stop=btn('mxstop','stop',f,function(){hand();stopAll()});UI.stop.setAttribute('aria-label','Stop the instruments');
+    rowsBuild();uiSync(true);try{document.fonts.ready.then(function(){UI.py=-1;place()})}catch(e){}}
+  /* the mode's instruments: a card each, its name over its two loops */
   function rowsBuild(){if(!built)return;var L=UI.rows,k=MODE;if(UI.rowsK===k)return;UI.rowsK=k;while(L.firstChild)L.removeChild(L.firstChild);UI.b.length=UI.bandN;
     UI.sec.textContent=k==='africa'?'play along':modeName(k)+' band';
     TR.forEach(function(t,j){if(t.k!=='row'||t.mode!==k)return;var row=E('div','mxrow',null,L);row.style.setProperty('--c',t.col);E('span','mxn',t.n,row);
       t.loops.forEach(function(lp,q){var b=btn('mxb',lp.n,row,function(){launch(j,q)});b.setAttribute('aria-label',t.n+': '+lp.n);UI.b.push({el:b,j:j,k:q})})});
-    uiSync(true)}
+    uiSync(true);fit()}
+  /* (15 Nov, 23:20: "make the music buttons always on the page, fit") every button is as tall as lets the whole of Mix fit between the
+     top and the worlds, whatever the screen: 46 px at most, 24 at least, found by halving; the gaps and the letters go with it. A screen
+     wider than it is tall (a phone on its side) sets the instruments beside the modes and the band. Where that still leaves the buttons
+     low (under 30), the headings go and each instrument's name stands beside its loops, if that gives them more. Only a screen too small
+     even for that would scroll */
+  function fit(){var R=UI.root,L=UI.list;if(!R||R.hidden||!L)return;R.classList.toggle('mxw',VW>VH*1.15&&VW>=520);
+    var H=L.clientHeight-(parseFloat(getComputedStyle(L).paddingBottom)||0);if(!(H>0))return;
+    function need(bh){R.style.setProperty('--bh',bh+'px');var a=1e9,b=-1e9;for(var e=L.firstElementChild;e;e=e.nextElementSibling){var q=e.getBoundingClientRect();if(q.height<=0)continue;a=Math.min(a,q.top);b=Math.max(b,q.bottom)}return b-a}
+    function best(){var lo=24,hi=46;if(need(hi)<=H)return hi;if(need(lo)>H)return 0;while(hi-lo>1){var m=(lo+hi)>>1;if(need(m)<=H)lo=m;else hi=m}return lo}
+    R.classList.remove('mxsm');var b1=best(),b2=0;
+    if(b1<30){R.classList.add('mxsm');b2=best();if(b2<=b1){R.classList.remove('mxsm');b2=0}}
+    var bh=Math.max(b1,b2)||24;R.style.setProperty('--bh',bh+'px');UI.bh=bh;UI.fits=!!(b1||b2);L.scrollTop=0}
   /* the button at the top of every world: the mode's name; a tap, the next one (blinking until it comes in on the bar) */
   function chipSync(){var b=document.getElementById('bMode');if(!b)return;var k=pend||MODE,nm=modeName(k);if(b.textContent!==nm)b.textContent=nm;b.style.setProperty('--mc',MCOL[k]);
     b.classList.toggle('wait',!!pend);var i=0;for(var q=0;q<MODES.length;q++)if(MODES[q].k===k)i=q;
@@ -293,7 +310,7 @@ var MIX=(function(){
       if(c.el._s!==st){c.el._s=st;c.el.className=(tr.k==='stem'?'mxb mxp':'mxb')+(st?' '+st:'');c.el.setAttribute('aria-pressed',st==='on'?'true':'false')}});
     UI.m.forEach(function(c){var st=pend===c.k?'wait':!pend&&MODE===c.k?'on':'';if(c.el._s!==st){c.el._s=st;c.el.className='mxb mxm'+(st?' '+st:'');c.el.setAttribute('aria-pressed',st==='on'?'true':'false')}})}
   function place(){if(!UI.root)return;var r=UI.root,d=$('data'),y=STG.y0;if(d){var b=d.getBoundingClientRect();if(b.height)y=Math.max(y,Math.round(b.bottom+8))}
-    if(y===UI.py&&STG.y1===UI.py1)return;UI.py=y;UI.py1=STG.y1;r.style.top=y+'px';r.style.height=Math.max(160,STG.y1-y)+'px'}
+    if(y===UI.py&&STG.y1===UI.py1&&VW===UI.pw)return;UI.py=y;UI.py1=STG.y1;UI.pw=VW;r.style.top=y+'px';r.style.height=Math.max(120,STG.y1-y)+'px';fit()}
   /* ===================== the world ===================== */
   function enter(){build();on=true;UI.root.hidden=false;UI.py=-1;place();loadAll();start();rowsBuild();uiSync(true)}
   /* leaving changes nothing that plays: the loops go on in the other worlds */
@@ -305,14 +322,12 @@ var MIX=(function(){
     var c=ctx(),o=OV;if(!c||c.state!=='running'||!MIXON)return;var b=beatAt(c.currentTime),f=b-Math.floor(b);
     var R=Math.min(STG.w,STG.h)*(.38+.05*(1-f)),col=MODE==='africa'?'62,240,255':hexRGB(MCOL[MODE]);o.strokeStyle='rgba('+col+','+(.16*(1-f)).toFixed(3)+')';o.lineWidth=1.2;o.beginPath();o.arc(STG.cx,STG.cy,R,0,TAU);o.stroke()}
   function hexRGB(h){var n=parseInt(h.slice(1),16);return ((n>>16)&255)+','+((n>>8)&255)+','+(n&255)}
-  function hud(){
-    var a=TR.filter(function(t){return t.k==='stem'&&t.play>=0}).length,r=TR.filter(function(t){return t.k==='row'&&t.play>=0}).map(function(t){return t.n});
-    return 'tap a loop: in on the next bar, in tune\n'+(pend?'mode: '+modeName(pend)+' on the next bar\n':'')+(a||r.length?(MODE==='africa'?'playing: ':modeName(MODE)+': ')+(a?'the band ('+a+')':'')+(a&&r.length?', ':'')+r.join(', ')+'\nit keeps playing in Smoke and Earth'
-      :'nothing playing: tap the band, or an instrument')}
+  /* no words over it (15 Nov, 22:59: "Remove the writing on the top"): what plays is lit, what waits blinks */
+  function hud(){return ''}
   return {enter:enter,leave:leave,tick:tick,draw:draw,hud:hud,resize:function(){if(UI.root)UI.py=-1;place()},
     /* the band left to itself (04-band.js) brings a player in, or takes one out, while the mixer has it: on the next bar */
     player:function(i,v){var tr=TR[i];if(!tr)return;if(v){if(tr.play<0&&tr.next<0)tr.next=0}else stopT(i)},
-    dbg:function(){var c=ctx(),n=c?c.currentTime:0;return {on:on,want:want,mixon:MIXON,ctx:c?c.state:'none',graph:!!gr,beat:c&&MIXON?beatAt(n):0,mode:MODE,pend:pend,
+    dbg:function(){var c=ctx(),n=c?c.currentTime:0;return {on:on,want:want,mixon:MIXON,ctx:c?c.state:'none',graph:!!gr,bh:UI.bh||0,fits:!!UI.fits,wide:!!(UI.root&&UI.root.classList.contains('mxw')),small:!!(UI.root&&UI.root.classList.contains('mxsm')),beat:c&&MIXON?beatAt(n):0,mode:MODE,pend:pend,
       banks:Object.keys(SND.B).filter(SND.ready),loops:rowsOf(MODE).reduce(function(a,t){return a+t.loops.length},0),rows:rowsOf(MODE).map(function(t){return t.n}),
       fx:gr?{room:+gr.fx.rs.gain.value.toFixed(2),fb:+gr.fx.fb.gain.value.toFixed(2)}:null,
       tracks:TR.map(function(t){return {n:t.n,k:t.k,m:t.mode||'',play:t.play,next:t.next,src:!!t.src}})}},

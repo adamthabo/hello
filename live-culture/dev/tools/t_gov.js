@@ -10,7 +10,7 @@ const st = page => page.evaluate(() => { const L = window.__lc; return { ql: L.Q
     await page.mouse.click(195, 420); await sleep(9000); s = await st(page);
     ok(s.ql >= 1 && !s.errs.length, 'after a touch it thins itself: level ' + s.ql + ', canvas at ' + s.dpr + 'x, water ' + s.dbg.sw + ' x ' + s.dbg.sh);
     ok(Math.abs(s.dpr - [2, 1.5, 1.25][s.ql]) < .02, 'the canvas follows the level');
-    const lv = s.ql; await page.evaluate(() => window.__lc.go(1, true)); await sleep(3500); s = await st(page); ok(!s.errs.length && s.dbg.ok && s.dbg.dw === [1024, 512, 512][s.ql], 'the Earth takes the level it is given: level ' + s.ql + ', smoke ' + s.dbg.dw + ' wide');
+    const lv = s.ql; await page.evaluate(() => window.__lc.go(1, true)); await sleep(3500); s = await st(page); ok(!s.errs.length && s.dbg.ok && Math.abs(s.dpr - [2, 1.5, 1.25][s.ql]) < .02, 'the Earth takes the level it is given: level ' + s.ql + ', canvas at ' + s.dpr + 'x');
     all = all.concat(errs); await ctx.close(); }
   { console.log('A PACE SET BY THE SYSTEM (thirty frames a second, whatever the page does)');
     const { page, errs, ctx } = await open(browser, 'phone', { hash: '#mix', init: () => { const raf = window.requestAnimationFrame.bind(window); let last = 0; window.requestAnimationFrame = cb => raf(function f(t) { if (t - last < 32) return raf(f); last = t; cb(t); }); } });

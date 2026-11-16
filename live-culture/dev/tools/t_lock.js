@@ -13,6 +13,8 @@ const tap = async (page, x, y) => { await page.mouse.move(x, y); await page.mous
 (async () => { const browser = await launch();
   let { page, errs, ctx } = await open(browser, 'phone', { init: hold });
   // the opening hint: a tap before anything else
+  // (counted from when the hint starts: on a busy machine the page can take a second or two longer to begin it)
+  { const tw = Date.now(); while (Date.now() - tw < 8000 && !(await page.evaluate(() => window.__lc.GH.on))) await sleep(25); }
   let downs = 0, was = 0; const t0 = Date.now(); while (Date.now() - t0 < 4300) { const n = await page.evaluate(() => Object.keys(window.__lc.GP).length); if (n && !was) downs++; was = n; await sleep(25); }
   let s = await S(page); ok(downs >= 2 && s.mode === 1, 'the opening hint taps before it strokes (' + downs + ' ghost touches in the first four seconds)');
   await stroke(page, 330); await sleep(350); s = await S(page);

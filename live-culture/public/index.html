@@ -85,11 +85,11 @@ body.dropping::after{content:"";position:fixed;inset:10px;z-index:30;border:1px 
 .ic:hover,.ic[aria-pressed=true]{border-color:var(--lume);color:var(--lume);box-shadow:0 0 16px -4px var(--lume)}
 .chip{height:32px;padding:0 11px;border-radius:999px;border:1px solid var(--warm);background:rgba(1,4,10,.55);color:var(--warm);
   font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
-/* ---------- bottom: a world's own row (Smoke's tools, the Earth's layers), then the worlds. (There was a row of circles here, one for
+/* ---------- bottom: a world's own row (Paint's tools, the Earth's layers), then the worlds. (There was a row of circles here, one for
    each player; on 13 Nov the owner asked for just a small music on/off button, which is at the top) ---------- */
 .foot{position:fixed;z-index:6;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;gap:4px;
   padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));pointer-events:none}
-/* Smoke's tools: a labelled row along the bottom, like Wind's layers */
+/* Paint's tools: a labelled row along the bottom, like Wind's layers */
 .tools{display:flex;justify-content:center;gap:4px;flex-wrap:wrap;pointer-events:auto;padding:0 4px}
 .tb{display:flex;align-items:center;gap:4px;height:28px;padding:0 8px 0 6px;border-radius:14px;border:1px solid rgba(234,249,255,.14);color:var(--dim);background:rgba(1,4,10,.45);
   font-family:var(--mono);font-size:8.5px;letter-spacing:.07em;text-transform:uppercase;transition:color .2s,border-color .2s,background .2s}
@@ -108,17 +108,20 @@ body.dropping::after{content:"";position:fixed;inset:10px;z-index:30;border:1px 
   font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;transition:color .25s,border-color .25s,background .25s}
 .lb svg{width:13px;height:13px;display:block;fill:none;stroke:currentColor;stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round}
 .lb[aria-pressed=true]{color:var(--ink);border-color:rgba(62,240,255,.42);background:rgba(62,240,255,.08)}
-/* the Earth's layers (14 Nov, night: "be able to take on and off layers"): a row of buttons, each a picture over a word, lit while its
-   layer shows (the videos in the red of a live stream); the row scrolls sideways when the screen is narrow */
-.dock{gap:6px}
-.dk{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:56px;height:46px;padding:0 7px;border-radius:12px;
-  border:1px solid rgba(234,249,255,.13);background:rgba(1,4,10,.6);color:rgba(234,249,255,.5);font:500 8.5px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;
-  cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
-.dk svg{width:18px;height:18px;display:block;fill:none;stroke:currentColor;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
+/* the Earth's layers (14 Nov, night: "be able to take on and off layers"): a button each, a picture over a word, lit while its layer
+   shows (the videos in the red of a live stream). Until 15 Nov, 23:20 they were one row that ran off the side of a phone and had to be
+   slid along ("The list of buttons on the globe hardly work. Make everything work"); now every one is on the screen at once, in as few
+   rows as fit, the rows even and centred: 12-wind.js sets the width (--dkw), the height (--dkh) and the row's width (--dkm) */
+.dock{display:flex;flex-wrap:wrap;justify-content:center;gap:5px;pointer-events:auto;width:100%;max-width:var(--dkm,100%)}
+.dk{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;width:var(--dkw,64px);height:var(--dkh,44px);padding:0 2px;border-radius:12px;
+  border:1px solid rgba(234,249,255,.13);background:rgba(1,4,10,.6);color:rgba(234,249,255,.5);font:500 8.5px/1 var(--mono);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;
+  overflow:hidden;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.dk span{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.dock.dkt .dk{font-size:7.5px;letter-spacing:.02em}
+.dk svg{width:18px;height:18px;display:block;flex:none;fill:none;stroke:currentColor;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
 .dk[aria-pressed=true]{color:var(--ink);border-color:rgba(62,240,255,.55);background:rgba(62,240,255,.14)}
 .dk.dk-vid[aria-pressed=true]{border-color:rgba(255,82,82,.75);background:rgba(255,82,82,.16)}
 .dk:active{transform:scale(.96)}
-.dock .dk:first-child{margin-left:auto}.dock .dk:last-child{margin-right:auto}
 /* the scale of the layer of colour shown, over the row */
 .lgd{display:flex;align-items:center;gap:8px;width:min(340px,calc(100% - 32px));font:500 8px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--dim);pointer-events:none}
 .lgd[hidden]{display:none}
@@ -196,34 +199,49 @@ body.camw .zm{display:none}
   #gl,#ov,.ic,.wb,.vid,.vid .vb{transition:none}
 }
 
-/* ---- the mixer (16-mix.js): the band's nine players, then the instruments, each a row of two loops; big buttons ---- */
+/* ---- the mixer (16-mix.js): the five modes, the band's nine players, then the mode's instruments as cards of two loops; a new mix and
+   stop at the foot. All of it on the screen, whatever its size (15 Nov, 20:39, and again at 23:20: "make the music buttons always on
+   the page, fit"): 16-mix.js sets --bh, the height of a button, to the most that lets everything fit (46 px at most, 24 at least), and
+   the gaps, the corners and the letters follow it. On a screen wider than it is tall the instruments go beside the rest ---- */
 #mix{position:fixed;left:0;right:0;z-index:5;display:flex;flex-direction:column;padding:0 max(12px,env(safe-area-inset-right,0px)) 0 max(12px,env(safe-area-inset-left,0px));
-  font-family:var(--mono);color:var(--ink)}
+  font-family:var(--mono);color:var(--ink);--bh:40px;--g:clamp(3px,calc(var(--bh) * .14),6px);--fs:clamp(8px,calc(var(--bh) * .25),10.5px)}
 #mix[hidden]{display:none}
-.mxl{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;touch-action:pan-y;display:flex;flex-direction:column;gap:6px;width:100%;max-width:560px;margin:0 auto;padding-bottom:12px;
-  scrollbar-width:none;-webkit-mask-image:linear-gradient(#000 calc(100% - 18px),transparent);mask-image:linear-gradient(#000 calc(100% - 18px),transparent)}
+.mxl{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;touch-action:pan-y;display:flex;flex-direction:column;gap:var(--g);width:100%;max-width:560px;margin:0 auto;padding-bottom:6px;
+  scrollbar-width:none}
 .mxl::-webkit-scrollbar{display:none}
-.mxsec{font:500 9px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--dim);padding:8px 2px 2px}
-.mxband{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
-.mxrow{display:grid;grid-template-columns:76px minmax(0,1fr) minmax(0,1fr);gap:6px;align-items:stretch}
-.mxn{align-self:center;font:600 10px/1.1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--c);overflow:hidden;text-overflow:ellipsis}
-.mxb{min-height:46px;min-width:0;padding:0 8px;border-radius:12px;border:1.5px solid color-mix(in srgb,var(--c) 45%,transparent);background:rgba(1,4,10,.55);
-  color:var(--ink);font:500 11px/1.15 var(--mono);letter-spacing:.06em;text-transform:uppercase;transition:background .15s,box-shadow .15s,color .15s}
-.mxp{min-height:42px;font-size:10px}
+.mxa,.mxi{display:flex;flex-direction:column;gap:var(--g);min-width:0}
+.mxsec{font:500 9px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--dim);padding:calc(var(--g) * .5) 2px 0}
+.mxband{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:var(--g)}
+.mxrows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--g)}
+.mxrow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(2px,calc(var(--bh) * .1),4px);padding:clamp(3px,calc(var(--bh) * .12),5px);border-radius:12px;
+  border:1px solid color-mix(in srgb,var(--c) 30%,transparent);background:color-mix(in srgb,var(--c) 6%,rgba(1,4,10,.5))}
+.mxn{grid-column:1/-1;padding:1px 3px 0;font:600 9px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--c);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mxb{min-height:var(--bh);min-width:0;padding:0 4px;border-radius:clamp(7px,calc(var(--bh) * .25),10px);border:1.5px solid color-mix(in srgb,var(--c) 45%,transparent);background:rgba(1,4,10,.55);
+  color:var(--ink);font:500 var(--fs)/1.1 var(--mono);letter-spacing:.05em;text-transform:uppercase;transition:background .15s,box-shadow .15s,color .15s;overflow:hidden;text-overflow:ellipsis}
+.mxp{font-size:calc(var(--fs) - .5px);letter-spacing:.03em;padding:0 2px}
 /* (15 Nov) the five modes, in a row of their own at the top of Mix, and the mode's name beside the note at the top of every world */
-.mxmodes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
-.mxm{min-height:42px;padding:0 3px;font-size:10px;letter-spacing:.04em}
+.mxmodes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:var(--g)}
+.mxm{padding:0 2px;letter-spacing:.04em}
 .chip.mode{min-width:56px;padding:0 10px;border-color:var(--mc,#ffb347);color:var(--mc,#ffb347);cursor:pointer}
 .chip.mode.wait{animation:mxblink .5s steps(2) infinite}
 .mxb.on{color:#01040a;background:var(--c);border-color:var(--c);box-shadow:0 0 18px -3px var(--c)}
 .mxb.wait{border-color:var(--c);color:var(--c);animation:mxblink .5s steps(2) infinite}
 .mxb.stopping{background:var(--c);color:#01040a;opacity:.45}
-.mxfoot{display:flex;justify-content:center;padding-top:6px}
-.mxjf{padding:2px 0 4px}
-.mxstop.mxjam{height:46px;padding:0 22px;border-radius:23px;border-color:var(--warm);color:var(--ink);background:rgba(255,179,71,.14);font-size:11px}
+.mxfoot{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:var(--g)}
+.mxstop{height:var(--bh);padding:0 12px;border-radius:calc(var(--bh) / 2);border:1px solid rgba(234,249,255,.2);color:var(--dim);background:rgba(1,4,10,.5);font:500 calc(var(--fs) - .5px)/1 var(--mono);letter-spacing:.14em;text-transform:uppercase}
+.mxstop.mxjam{border-color:var(--warm);color:var(--ink);background:rgba(255,179,71,.14);font-size:var(--fs)}
 .mxstop.mxjam:active{background:rgba(255,179,71,.3)}
-.mxstop{height:36px;padding:0 16px;border-radius:18px;border:1px solid rgba(234,249,255,.2);color:var(--dim);background:rgba(1,4,10,.5);font:500 9px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase}
-@media (max-height:520px){.mxb{min-height:36px}.mxp{min-height:32px}}
+/* a phone on its side: the modes, the band and the foot on the left, the instruments on the right */
+#mix.mxw .mxl{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto 1fr;column-gap:14px;row-gap:var(--g);align-content:start;max-width:980px}
+#mix.mxw .mxl>*{align-self:start}
+#mix.mxw .mxa{grid-area:1/1}
+#mix.mxw .mxfoot{grid-area:2/1}
+#mix.mxw .mxi{grid-area:1/2/3/3}
+/* very little height (a small phone, or one on its side): no headings, and each instrument's name beside its two loops */
+#mix.mxsm .mxsec{display:none}
+#mix.mxsm .mxrow{grid-template-columns:minmax(0,.8fr) minmax(0,1fr) minmax(0,1fr);align-items:center}
+#mix.mxsm .mxn{grid-column:auto;padding:0 1px 0 2px;font-size:7.5px;letter-spacing:0}
+#mix.mxsm .mxrow .mxb{padding:0 2px;font-size:8px;letter-spacing:0}
 @keyframes mxblink{50%{opacity:.25}}
 </style>
 
@@ -234,7 +252,7 @@ body.camw .zm{display:none}
 <div id="stage" role="application" aria-label="The world. Touch it, drag through it, use more than one finger"></div>
 
 <header class="top" id="top">
-  <div class="mark"><h1>Live Culture</h1><p class="wname" id="wname">Smoke</p></div>
+  <div class="mark"><h1>Live Culture</h1><p class="wname" id="wname">Paint</p></div>
   <div class="acts">
     <button class="chip" id="bNow" type="button" hidden aria-label="Return to the present moment">Now</button>
     <button class="ic" id="bPhoto" type="button" aria-label="Use a photo of your own. It stays on this device"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="4" width="13" height="9.5" rx="2"/><circle cx="8" cy="8.8" r="2.6"/><path d="M5.5 4l1-1.8h3l1 1.8"/></svg></button>
@@ -252,7 +270,7 @@ body.camw .zm{display:none}
 <footer class="foot" id="foot">
   <div class="lyr scr" id="themes" hidden role="group" aria-label="Kinds of camera"></div>
   <div class="lgd" id="lgd" hidden aria-hidden="true"><b id="lgn"></b><span class="lgw"><i id="lgb"></i><span class="lgs" id="lgs"></span></span></div>
-  <div class="lyr scr dock" id="lyd" hidden role="group" aria-label="Layers of the Earth: tap one to switch it on or off"></div>
+  <div class="dock" id="lyd" hidden role="group" aria-label="Layers of the Earth: tap one to switch it on or off"></div>
   <div class="tools" id="tools" hidden role="toolbar" aria-label="Build in the water"></div>
   <nav class="rail" id="rail" aria-label="Worlds"></nav>
 </footer>
@@ -906,6 +924,22 @@ cams:[
 {"id":"tokyotower","t":"city","kind":"yt","name":"Tokyo Tower","place":"Tokyo, Japan","lat":35.6586,"lon":139.7454,"best":"night","yt":"https://www.youtube.com/results?search_query=tokyo%20tower%20live%20camera&sp=EgJAAQ%253D%253D"},
 {"id":"sydney","t":"city","kind":"yt","name":"Sydney Harbour","place":"Sydney, Australia","lat":-33.8568,"lon":151.2153,"best":"any","yt":"https://www.youtube.com/@webcamsydney/live"},
 {"id":"auckland","t":"city","kind":"yt","name":"Viaduct Harbour","place":"Auckland, New Zealand","lat":-36.8431,"lon":174.759,"best":"any","yt":"https://www.youtube.com/channel/UCfNoVlW5-BHsoCKTGs_F0WQ/live"},
+{"id":"moscow","t":"city","kind":"yt","name":"Red Square","place":"Moscow, Russia","lat":55.7539,"lon":37.6208,"best":"any","yt":"https://www.youtube.com/results?search_query=moscow%20live%20camera%20red%20square&sp=EgJAAQ%253D%253D"},
+{"id":"beijing","t":"city","kind":"yt","name":"Beijing","place":"China","lat":39.9042,"lon":116.4074,"best":"any","yt":"https://www.youtube.com/results?search_query=beijing%20live%20cam&sp=EgJAAQ%253D%253D"},
+{"id":"shanghai","t":"city","kind":"yt","name":"The Bund","place":"Shanghai, China","lat":31.24,"lon":121.49,"best":"night","yt":"https://www.youtube.com/results?search_query=shanghai%20bund%20live&sp=EgJAAQ%253D%253D"},
+{"id":"kyiv","t":"city","kind":"yt","name":"Kyiv","place":"Ukraine","lat":50.4501,"lon":30.5234,"best":"any","yt":"https://www.youtube.com/results?search_query=kyiv%20live%20camera&sp=EgJAAQ%253D%253D"},
+{"id":"jerusalem","t":"city","kind":"yt","name":"The Western Wall","place":"Jerusalem","lat":31.7767,"lon":35.2345,"best":"any","yt":"https://www.youtube.com/results?search_query=western%20wall%20live%20kotel&sp=EgJAAQ%253D%253D"},
+{"id":"telaviv","t":"city","kind":"yt","name":"The beach","place":"Tel Aviv","lat":32.08,"lon":34.767,"best":"day","yt":"https://www.youtube.com/results?search_query=tel%20aviv%20live%20cam%20beach&sp=EgJAAQ%253D%253D"},
+{"id":"gaza","t":"city","kind":"yt","name":"Gaza","place":"the Gaza Strip","lat":31.5017,"lon":34.4668,"best":"any","yt":"https://www.youtube.com/results?search_query=gaza%20live%20camera&sp=EgJAAQ%253D%253D"},
+{"id":"beirut","t":"city","kind":"yt","name":"Beirut","place":"Lebanon","lat":33.8938,"lon":35.5018,"best":"any","yt":"https://www.youtube.com/results?search_query=beirut%20live%20camera&sp=EgJAAQ%253D%253D"},
+{"id":"mecca","t":"city","kind":"yt","name":"The Grand Mosque","place":"Mecca, Saudi Arabia","lat":21.4225,"lon":39.8262,"best":"any","yt":"https://www.youtube.com/results?search_query=makkah%20live&sp=EgJAAQ%253D%253D"},
+{"id":"cairo","t":"city","kind":"yt","name":"The pyramids of Giza","place":"Cairo, Egypt","lat":29.9792,"lon":31.1342,"best":"day","yt":"https://www.youtube.com/results?search_query=giza%20pyramids%20live%20cam&sp=EgJAAQ%253D%253D"},
+{"id":"tehran","t":"city","kind":"yt","name":"Tehran","place":"Iran","lat":35.6892,"lon":51.389,"best":"any","yt":"https://www.youtube.com/results?search_query=tehran%20live%20camera&sp=EgJAAQ%253D%253D"},
+{"id":"taipei","t":"city","kind":"yt","name":"Taipei 101","place":"Taiwan","lat":25.0339,"lon":121.5645,"best":"night","yt":"https://www.youtube.com/results?search_query=taipei%20101%20live%20cam&sp=EgJAAQ%253D%253D"},
+{"id":"mumbai","t":"city","kind":"yt","name":"Mumbai","place":"India","lat":19.076,"lon":72.8777,"best":"any","yt":"https://www.youtube.com/results?search_query=mumbai%20live%20cam&sp=EgJAAQ%253D%253D"},
+{"id":"bangkok","t":"city","kind":"yt","name":"Bangkok","place":"Thailand","lat":13.7563,"lon":100.5018,"best":"night","yt":"https://www.youtube.com/results?search_query=bangkok%20live%20cam&sp=EgJAAQ%253D%253D"},
+{"id":"havana","t":"city","kind":"yt","name":"Havana","place":"Cuba","lat":23.1136,"lon":-82.3666,"best":"any","yt":"https://www.youtube.com/results?search_query=havana%20live%20cam&sp=EgJAAQ%253D%253D"},
+{"id":"berlin","t":"city","kind":"yt","name":"The Brandenburg Gate","place":"Berlin, Germany","lat":52.5163,"lon":13.3777,"best":"any","yt":"https://www.youtube.com/results?search_query=berlin%20live%20cam%20brandenburg%20gate&sp=EgJAAQ%253D%253D"},
 {"id":"monterey","t":"sea","kind":"yt","name":"Sea nettles","place":"Monterey Bay Aquarium, California","lat":36.6187,"lon":-121.9025,"best":"any","yt":"https://www.youtube.com/results?search_query=monterey%20bay%20aquarium%20jelly%20cam&sp=EgJAAQ%253D%253D","v":["gswNWtJlUco"]},
 {"id":"kelp","t":"sea","kind":"yt","name":"The kelp forest","place":"Monterey Bay Aquarium, California","lat":36.618,"lon":-121.901,"best":"any","yt":"https://www.youtube.com/results?search_query=monterey%20bay%20aquarium%20kelp%20forest%20cam&sp=EgJAAQ%253D%253D"},
 {"id":"otters","t":"sea","kind":"yt","name":"Sea otters","place":"Monterey Bay Aquarium, California","lat":36.6182,"lon":-121.9015,"best":"day","yt":"https://www.youtube.com/results?search_query=monterey%20bay%20aquarium%20sea%20otter%20cam&sp=EgJAAQ%253D%253D"},
@@ -1134,8 +1168,9 @@ function liveHosted(){if(!HOSTED||PULL.timer)return;livePull(true);PULL.timer=se
 
 /* ---------- the globe, shared by the worlds that show the Earth: NASA's Blue Marble by day and its city lights by night, the line
    between day and night where the Sun has it at the moment asked for; mountains throw their shade when the Sun is low on them,
-   the sea glints under the Sun, the night is a little less dark where the Moon is up. Two more layers can be laid over it:
-   smoke (a picture of the whole Earth unrolled flat, lit where there is smoke) and the aurora (the same, lit where NOAA expects it).
+   the sea glints under the Sun, the night is a little less dark where the Moon is up. Two more layers can be laid over it, each a
+   picture of the whole Earth unrolled flat: the zones (since 15 Nov: red where there is war, dark where a place is cut off, from
+   12-zones.js; the wind's smoke had this place until then) and the aurora (lit where NOAA expects it).
    Where the page is served from the owner's own host it also has the real clouds (GLOBE.cloud: EUMETSAT's world cloud map, white where
    the geostationary satellites see cold cloud tops), lit by the Sun by day and faintly by the Moon and the night sky; and (14 Nov,
    night: "Doesn't noa have live weather?!") the live view: the Earth as NOAA's GOES-19 and GOES-18 see it now, each full-disk picture
@@ -1149,7 +1184,7 @@ var GLOBE=(function(){
   var VS='attribute vec2 a_p;void main(){gl_Position=vec4(a_p,0.0,1.0);}';
   function fsrc(){return (GLX.deriv?'#extension GL_OES_standard_derivatives : enable\n#define DERIV\n':'')+
     'precision highp float;uniform sampler2D uDet;uniform vec4 uDetR;uniform float uDetK;uniform vec2 uC;uniform float uR;uniform mat3 uM;uniform vec3 uSun;uniform vec3 uSunV;uniform vec3 uMoon;uniform float uMoonK;uniform float uReady;uniform vec3 uBg;\n'+
-    'uniform sampler2D uDay;uniform sampler2D uLit;uniform sampler2D uWater;uniform sampler2D uTopo;uniform sampler2D uFlow;uniform sampler2D uAur;uniform float uFlowK;uniform float uAurK;uniform float uDim;uniform float uTime;uniform sampler2D uCld;uniform float uCldK;uniform sampler2D uRain;uniform float uRainK;uniform float uSunK;uniform sampler2D uWindF;uniform float uFlowA;uniform float uFlowT;\n'+
+    'uniform sampler2D uDay;uniform sampler2D uLit;uniform sampler2D uWater;uniform sampler2D uTopo;uniform sampler2D uZone;uniform sampler2D uAur;uniform vec2 uZoneK;uniform float uAurK;uniform float uDim;uniform float uTime;uniform sampler2D uCld;uniform float uCldK;uniform sampler2D uRain;uniform float uRainK;uniform float uSunK;uniform sampler2D uWindF;uniform float uFlowA;uniform float uFlowT;\n'+
     'uniform sampler2D uWx;uniform float uHeatK;uniform float uWaveK;uniform float uIsoK;uniform float uWindK;uniform sampler2D uGeoE;uniform sampler2D uGeoW;uniform vec2 uGeoH;uniform float uGeoK;\n'+
     /* the shader's colours are worked out before a last curve brings them into the screen's range: a colour meant to be seen as it is
        is first taken back through that curve */
@@ -1210,11 +1245,14 @@ var GLOBE=(function(){
     /* the Sun: a warm light where it shines on clear ground, the point it stands straight over, and where dusk is six, twelve and eighteen degrees deep */
     'float sk=uSunK*(1.0-wsat*0.85)*(1.0-colK*0.6);if(sk>0.0){col+=vec3(1.0,0.74,0.36)*(1.0-cw)*pow(max(d,0.0),1.6)*0.3*sk*mix(uDim,1.0,0.5);col+=vec3(1.0,0.86,0.6)*exp(-(1.0-d)*110.0)*0.9*sk;\n'+
     'col+=(vec3(1.0,0.55,0.25)*(1.0-smoothstep(0.0,0.006,abs(d+0.1045)))*0.34+vec3(0.75,0.45,1.0)*(1.0-smoothstep(0.0,0.006,abs(d+0.2079)))*0.22+vec3(0.45,0.40,1.0)*(1.0-smoothstep(0.0,0.006,abs(d+0.3090)))*0.16)*sk;}\n'+
+    /* the zones: a place cut off goes dark, its lights out; a war glows red, beating slowly and hatched; the ground held in Ukraine
+       glows a deeper red */
+    'if(uZoneK.x+uZoneK.y>0.0){vec3 zn=texture2D(uZone,uv).rgb;col*=1.0-zn.b*uZoneK.y;\n'+
+    'float pu=0.5+0.5*sin(uTime*2.1-(lat+lon)*5.0);float hh=smoothstep(0.55,0.8,abs(fract((lon+lat)*28.6479+uTime*0.3)-0.5)*2.0);\n'+
+    'col+=(vec3(1.0,0.14,0.08)*zn.r*(0.2+0.12*pu+0.16*hh)+vec3(1.0,0.42,0.12)*zn.g*(0.3+0.1*pu))*uZoneK.x;}\n'+
     /* the aurora: where it is expected, a green that leans to violet where it is strongest, shimmering along its length; plainest at night */
     'float au=texture2D(uAur,uv).r*2.55;float ak=smoothstep(0.012,0.34,au)*uAurK;\n'+
     'float sh=0.72+0.28*sin(lon*46.0+uTime*1.7+sin(lat*38.0+uTime*0.6)*2.2);col+=mix(vec3(0.08,1.0,0.46),vec3(0.62,0.34,1.0),clamp(au*1.6-0.1,0.0,0.75))*ak*sh*(0.3+0.9*night);\n'+
-    /* the smoke: its own light, over day and night alike */
-    'vec3 fl=texture2D(uFlow,vec2(u,0.5+lat*0.31830989)).rgb;col+=fl*uFlowK;\n'+
     /* the air: blue at the edge by day, red where day meets night */
     'float fr=pow(1.0-n.z,3.0);float dayA=smoothstep(-0.28,0.25,d);col+=vec3(0.22,0.50,1.0)*fr*(0.07+0.95*dayA);col+=vec3(1.0,0.40,0.14)*exp(-d*d/0.010)*(0.05+0.55*fr);\n'+
     /* a faint grid every thirty degrees */
@@ -1242,16 +1280,16 @@ var GLOBE=(function(){
   /* the place on the Earth under a point of the screen (latitude, longitude in degrees), or null off the globe */
   function at(x,y,g){var px=(x-g.cx)/g.R,py=-(y-g.cy)/g.R,r2=px*px+py*py;if(r2>=1)return null;var pz=Math.sqrt(1-r2),
     ex=g.E[0]*px+g.N[0]*py+g.C[0]*pz,ey=g.E[1]*px+g.N[1]*py+g.C[1]*pz,ez=g.E[2]*px+g.N[2]*py+g.C[2]*pz;return {lat:Math.asin(clamp(ez,-1,1))/AS.D,lon:Math.atan2(ey,ex)/AS.D,z:pz}}
-  /* g: cx, cy, R (CSS pixels) and E, N, C from basis(); o: sun and moon as unit vectors on the Earth, moonK, bg, dim, flow and aur textures (or null), their strengths, time */
+  /* g: cx, cy, R (CSS pixels) and E, N, C from basis(); o: sun and moon as unit vectors on the Earth, moonK, bg, dim, the zone and aur textures (or null), their strengths, time */
   function draw(g,o){
     if(!GLX.ok||GLX.lost)return false;if(gen!==GLX.gen)glSetup();if(!P)return false;
     var gl=GLX.gl,u,bg=o.bg,E3=g.E,N3=g.N,C3=g.C,cx=g.cx,cy=g.cy,R=g.R;glAttrOff();gl.disable(gl.BLEND);u=glUse(P,null);gl.uniform2f(u.uC,cx*DPR,(VH-cy)*DPR);gl.uniform1f(u.uR,R*DPR);
     gl.uniformMatrix3fv(u.uM,false,[E3[0],E3[1],E3[2],N3[0],N3[1],N3[2],C3[0],C3[1],C3[2]]);gl.uniform3f(u.uSun,o.sun[0],o.sun[1],o.sun[2]);
     gl.uniform3f(u.uSunV,dot(o.sun,E3),dot(o.sun,N3),dot(o.sun,C3));gl.uniform3f(u.uMoon,o.moon[0],o.moon[1],o.moon[2]);gl.uniform1f(u.uMoonK,o.moonK||0);
     gl.uniform3f(u.uBg,bg[0],bg[1],bg[2]);gl.uniform1f(u.uReady,ready?1:0);gl.uniform1f(u.uDim,o.dim===undefined?1:o.dim);gl.uniform1f(u.uTime,o.time||0);
-    gl.uniform1f(u.uFlowK,o.flow?(o.flowK===undefined?1:o.flowK):0);gl.uniform1f(u.uAurK,o.aur?(o.aurK===undefined?1:o.aurK):0);
+    gl.uniform2f(u.uZoneK,o.zone?o.warK||0:0,o.zone?o.darkK||0:0);gl.uniform1f(u.uAurK,o.aur?(o.aurK===undefined?1:o.aurK):0);
     glBind(0,(ready?tex.day:dot1).tex,u.uDay);glBind(1,(ready?tex.lit:dot1).tex,u.uLit);glBind(2,(ready?tex.water:dot1).tex,u.uWater);glBind(3,(ready?tex.topo:dot1).tex,u.uTopo);
-    glBind(4,(o.flow||dot1.tex),u.uFlow);glBind(5,(o.aur||dot1.tex),u.uAur);var ck=o.cld&&tex.cld?(o.cldK===undefined?1:o.cldK):0;glBind(6,ck?tex.cld.tex:dot1.tex,u.uCld);gl.uniform1f(u.uCldK,ck);
+    glBind(4,(o.zone||dot1.tex),u.uZone);glBind(5,(o.aur||dot1.tex),u.uAur);var ck=o.cld&&tex.cld?(o.cldK===undefined?1:o.cldK):0;glBind(6,ck?tex.cld.tex:dot1.tex,u.uCld);gl.uniform1f(u.uCldK,ck);
     var rk=o.rain&&tex.rain?(o.rainK===undefined?1:o.rainK):0;glBind(7,rk?tex.rain.tex:dot1.tex,u.uRain);gl.uniform1f(u.uRainK,rk);gl.uniform1f(u.uSunK,o.sunK||0);
     glBind(9,o.windF||dot1.tex,u.uWindF);gl.uniform1f(u.uFlowA,o.windF&&!reduce?1:0);gl.uniform1f(u.uFlowT,(o.time||0)/7);
     glBind(8,o.wx||dot1.tex,u.uWx);gl.uniform1f(u.uHeatK,o.wx?o.heatK||0:0);gl.uniform1f(u.uWaveK,o.wx?o.waveK||0:0);gl.uniform1f(u.uIsoK,o.wx?o.isoK||0:0);gl.uniform1f(u.uWindK,o.windF?o.windK||0:0);
@@ -1272,16 +1310,16 @@ var GLOBE=(function(){
     geo:function(k,im){layer(k==='e'?'ge':'gw',im)},hasGeo:function(){return (tex.ge?1:0)+(tex.gw?2:0)}}
 })();
 
-/* ---------- SMOKE: ink in water. A real fluid on the graphics chip (Stam's stable fluids: carry the flow along itself, find the
+/* ---------- PAINT (Smoke until 15 Nov: "Call it paint, not smoke"): ink in water. A real fluid on the graphics chip (Stam's stable fluids: carry the flow along itself, find the
    pressure that keeps it from piling up, take that pressure's push out). A finger drags the water and leaves ink; a tap is a
    drop; a finger that stays is a spring. The screen is nine notes high, and the ink is the colour of the note it was drawn on.
    The bass rolls the water from below, the balafon and kora drip their notes into it as a score.
    Given a photo, the photo is the ink: smear it, and it slowly remembers itself.
-   It is also a machine to build in, and a game. Smoke rises (warm ink is light). Walls stop the water and the ink; a fan
+   It is also a machine to build in, and a game. The paint rises (warm ink is light). Walls stop the water and the ink; a fan
    pushes the water one way for as long as it stands (and breathes ink); a drain swallows ink and draws the water in. (The prism
    and the tunnel went on 14 Nov: "Get rid of tunnel prism and things that don't do anything"; their passes stay, the game's
    finger uses the tunnel's.) Two fingers turning make a whirlpool; two fingers closing pull the water in, opening throw it out.
-   The game: push the smoke. Vents at the foot of a tank of fixed shape (so it plays the same on any screen) pour coloured smoke up;
+   The game: push the paint. Vents at the foot of a tank of fixed shape (so it plays the same on any screen) pour coloured smoke up;
    a ring waits where the smoke does not go by itself, and a finger pushes the water (no ink) to bring the smoke through it; the
    ring fills with its own colour only. So many rings in so many seconds a round, each round faster; the best score kept.
    (The owner, 12 Nov: "The smoke game needs to be better": levels, stars, parts to unlock. 13 Nov, evening: "you shouldn't see the
@@ -1405,8 +1443,8 @@ var DRIFT=(function(){
   /* the level's tank: a fixed shape (a little narrower than a phone held upright) fitted into the stage. A level's places are in
      fractions of the tank, and its jets and pieces are as strong, for the tank's size, on any screen */
   var BA=.64,B={x0:0,y0:0,w:1,h:1};
-  /* the tank sits under the round's three lines of words, whatever they say at the moment */
-  function boardFit(){var y0=STG.y0,d=$('data');try{var r=d.getBoundingClientRect(),lh=parseFloat(getComputedStyle(d).lineHeight)||15.5;if(r.top>0)y0=Math.max(y0,Math.round(r.top+lh*3+8))}catch(e){}
+  /* (until 15 Nov, night, three lines of words were kept above it; now there are none, and it has the room) */
+  function boardFit(){var y0=STG.y0,d=$('data');try{var r=d.getBoundingClientRect();if(r.top>0&&r.height>1)y0=Math.max(y0,Math.round(r.bottom+8))}catch(e){}
     var h=Math.max(80,STG.y1-y0-6),w=Math.min(STG.w-14,h*BA);h=Math.min(h,w/BA);B.w=w;B.h=h;B.x0=STG.x0+(STG.w-w)/2;B.y0=y0+(STG.y1-y0-h)/2}
   function bx(u){return (B.x0+u*B.w)/VW}function by(v){return (B.y0+v*B.h)/VH}
   /* how strong, for the tank: speeds (pixels a second) and areas (pixels squared) scale with it; splat sizes are in screen heights */
@@ -1436,8 +1474,8 @@ var DRIFT=(function(){
     r:Math.max(.7,1.25-.06*(n-1)),drift:n>=4?Math.min(.2,.07+.02*(n-4)):0,wall:n>=6,gold:n>=2,drain:n>=5,cur:n>=7,two:n>=8}}
   /* (each short enough for one line of a phone: the words over the tank are kept to three lines, so none of them covers it) */
   var NEWS={2:['GOLD RINGS','gold rings are worth 3, but they fade'],3:['TWO COLOURS','each ring wants its own colour'],
-    4:['MOVING RINGS','the rings move: follow them'],5:['A DRAIN','a drain swallows smoke: go round it'],6:['A WALL','a wall in the way: go round it'],
-    7:['A CURRENT','a current pushes the smoke sideways'],8:['TWO AT ONCE','two rings at once: one of each colour']};
+    4:['MOVING RINGS','the rings move: follow them'],5:['A DRAIN','a drain swallows paint: go round it'],6:['A WALL','a wall in the way: go round it'],
+    7:['A CURRENT','a current pushes the paint sideways'],8:['TWO AT ONCE','two rings at once: one of each colour']};
   function gmPlace(){var n=GM.cols.length,X=VENTX[n-1];FIX.walls=tank();
     FIX.fans=GM.cols.map(function(c,i){return {x:bx(X[i]),y:by(.955),dx:0,dy:-1,c:c,fixed:1,ph:0,a0:-Math.PI/2,sa:0,sp:4,u:X[i]}});
     if(GM.wall){var w=GM.wall;FIX.walls.push([bx(w[0]),by(w[1]),bx(w[2]),by(w[3]),1])}
@@ -1558,8 +1596,9 @@ var DRIFT=(function(){
     ['wall','wall','<path d="M3 15.5L15.5 3"/><circle cx="3" cy="15.5" r="1.4"/><circle cx="15.5" cy="3" r="1.4"/>'],
     ['fan','fan','<circle cx="9.2" cy="9.2" r="1.6"/><path d="M9.2 7.6c0-3 1.4-4.6 3.2-4.2 1.5.4 1.4 2.6-1.5 4.6M10.8 9.2c3 0 4.6 1.4 4.2 3.2-.4 1.5-2.6 1.4-4.6-1.5M9.2 10.8c0 3-1.4 4.6-3.2 4.2-1.5-.4-1.4-2.6 1.5-4.6M7.6 9.2c-3 0-4.6-1.4-4.2-3.2.4-1.5 2.6-1.4 4.6 1.5"/>'],
     ['drain','drain','<circle cx="9.2" cy="9.2" r="6.4"/><path d="M9.2 5.4a3.8 3.8 0 1 1-3.6 2.6M9.2 7.8a1.4 1.4 0 1 1-1.3 1.9"/>'],
-    ['puz','play','<path d="M5.4 3.6l9.4 5.6-9.4 5.6z"/>'],
-    ['undo','free','<path d="M3.4 14.8c2-3.6 4.2-.2 6.2-3.6s4.2-.6 5.8-3.6M4.2 6.6c1.6-2.4 3.4-.4 5-2.6"/>']];
+    ['puz','play','<path d="M5.4 3.6l9.4 5.6-9.4 5.6z"/>']];
+  /* (15 Nov: free and hand, the owner said, were the same thing. They were: "free" ended a game and gave the hand back. Now the hand stays in the row
+     during a game, and a tap on it ends the game) */
   var PLAYI=['<path d="M5.4 3.6l9.4 5.6-9.4 5.6z"/>','<path d="M14.6 7.4A5.8 5.8 0 1 0 15 11.6M15 3.6v3.8h-3.8"/>'];
   function toolsBuild(){
     var r=$('tools');if(!r||r.childNodes.length)return;
@@ -1567,13 +1606,13 @@ var DRIFT=(function(){
       b.innerHTML='<span></span><svg viewBox="0 0 18.4 18.4" aria-hidden="true">'+t[2]+'</svg>';b.firstChild.textContent=t[1];
       b.addEventListener('click',function(){
         if(t[0]==='puz'){gmStart();toolsSync();return}
-        if(t[0]==='undo'){gmOff();return}
+        if(t[0]==='ink'&&PZ>=0){gmOff();return}
         TOOL=t[0];toolsSync()});r.appendChild(b)})}
   function toolsSync(){var g=given(),r=$('tools'),h0=r?r.offsetHeight:0;TOOLS.forEach(function(t){var b=$('t_'+t[0]);if(!b)return;
       /* play, and in a game: start again */
       if(t[0]==='puz'){var pl=PZ<0?'play':'again';if(b.firstChild.textContent!==pl){b.firstChild.textContent=pl;b.lastChild.innerHTML=PLAYI[PZ<0?0:1]}b.setAttribute('aria-pressed','false');return}
-      if(t[0]==='undo'){b.hidden=PZ<0;return}
-      /* in a game there is nothing to build: a finger only pushes */
+      /* in a game there is nothing to build: a finger only pushes, and the hand ends the game */
+      if(t[0]==='ink'){b.setAttribute('aria-pressed',PZ<0&&TOOL==='ink'?'true':'false');b.setAttribute('aria-label',PZ<0?'hand: push the paint':'hand: end the game and paint');b.hidden=false;return}
       b.setAttribute('aria-pressed',TOOL===t[0]?'true':'false');b.hidden=PZ>=0});
     if(r&&!r.hidden&&r.offsetHeight!==h0){layout();pzRelayout()}}
   function enter(){if(GLX.ok&&gen!==GLX.gen)glSetup();size();t0=FT;lastT=0;GM.best=bestGet();toolsBuild();var r=$('tools');if(r)r.hidden=false;toolsSync()}
@@ -1776,10 +1815,18 @@ var DRIFT=(function(){
     /* the rings this round asks for: a dot each, lit as they are filled */
     for(k=0;k<GM.need;k++){var dx=B.x0+B.w/2+(k-(GM.need-1)/2)*16,dy=B.y0+18;c.beginPath();c.arc(dx,dy,4.2,0,TAU);
       if(k<GM.got){c.fillStyle='rgba(234,249,255,.95)';c.fill()}else{c.strokeStyle='rgba(234,249,255,.45)';c.lineWidth=1.2;c.stroke()}}
-    /* between rounds and at the end: big words in the middle of the tank */
-    function big(a,b,al){c.save();c.globalAlpha=al;c.textAlign='center';c.fillStyle='rgba(234,249,255,.96)';c.font='800 '+Math.round(Math.min(46,B.w*.13))+'px Anybody, system-ui, sans-serif';
-      c.fillText(a,cx,cy);if(b){c.font='500 '+Math.round(Math.min(14,B.w*.04))+'px "JetBrains Mono", ui-monospace, monospace';c.fillStyle='rgba(234,249,255,.8)';c.fillText(b,cx,cy+28)}c.restore()}
-    if(GM.phase==='intro')big('ROUND '+GM.round,'FILL '+GM.need+' RINGS'+(NEWS[GM.round]?' · NEW: '+NEWS[GM.round][0]:''),smooth(e/.25)*(1-smooth((e-1.5)/.3)));
+    /* the score and the best, in the tank's top corners (15 Nov, 22:59: "Remove the writing on the top": the three lines that said them
+       over the tank went) */
+    c.save();c.font='500 10px '+MONO;c.textBaseline='middle';c.textAlign='left';c.fillStyle='rgba(234,249,255,.88)';
+    c.fillText('SCORE '+GM.score+(GM.combo>1&&simT-GM.lastT<4?' ×'+GM.combo:''),B.x0+8,B.y0+18);
+    if(GM.best){c.textAlign='right';c.fillStyle='rgba(234,249,255,.55)';c.fillText('BEST '+GM.best,B.x0+B.w-8,B.y0+18)}c.restore();
+    /* between rounds and at the end: big words in the middle of the tank (a round's opening says what it asks and, the first time or when
+       it brings something new, how to play it) */
+    function big(a,b,al,c3){c.save();c.globalAlpha=al;c.textAlign='center';c.fillStyle='rgba(234,249,255,.96)';c.font='800 '+Math.round(Math.min(46,B.w*.13))+'px Anybody, system-ui, sans-serif';
+      c.fillText(a,cx,cy);if(b){c.font='500 '+Math.round(Math.min(14,B.w*.04))+'px "JetBrains Mono", ui-monospace, monospace';c.fillStyle='rgba(234,249,255,.8)';c.fillText(b,cx,cy+28)}
+      if(c3){c.font='500 '+Math.round(Math.min(11,B.w*.03))+'px "JetBrains Mono", ui-monospace, monospace';c.fillStyle='rgba(62,240,255,.85)';c.fillText(c3,cx,cy+50)}c.restore()}
+    if(GM.phase==='intro')big('ROUND '+GM.round,'FILL '+GM.need+' RINGS IN '+P.secs+' SECONDS',smooth(e/.25)*(1-smooth((e-1.5)/.3)),
+      GM.round===1?'DRAG A STREAM INTO THE RING OF ITS COLOUR':NEWS[GM.round]?'NEW: '+NEWS[GM.round][1].toUpperCase():'');
     else if(GM.phase==='won'){c.fillStyle='rgba(1,4,10,'+(.35*smooth(e/.4)).toFixed(3)+')';c.fillRect(B.x0,B.y0,B.w,B.h);big('ROUND '+GM.round+' DONE','NEXT: FASTER',smooth(e/.3));
       for(k=0;k<3;k++){var g2=smooth((e-k*.22)/.9);if(g2<=0||g2>=1)continue;c.strokeStyle='rgba(234,249,255,'+(.7*(1-g2)).toFixed(3)+')';c.lineWidth=2;c.beginPath();c.arc(cx,cy,20+g2*B.w*.42,0,TAU);c.stroke()}}
     else if(GM.phase==='over'){c.fillStyle='rgba(1,4,10,'+(.5*smooth(e/.5)).toFixed(3)+')';c.fillRect(B.x0,B.y0,B.w,B.h);
@@ -1788,20 +1835,13 @@ var DRIFT=(function(){
   var CN=['cyan','green','amber','rose','violet'];
   function left(n,one,many){return n+' '+(n===1?one:many)}
   /* the words, three lines at most: what to do; how it is going; what the piece in hand does */
-  var HINT={wall:'drag to draw a wall: smoke slides along it',fan:'drag to set a fan, the way it should blow',
-    prism:'tap to set a prism: it dyes the smoke in it',drain:'tap to set a drain: it swallows smoke',
-    tunnel:'drag a tunnel from its way in to its way out',ink:'push the smoke with a finger, tap for a drop'};
+  var HINT={wall:'drag to draw a wall: paint slides along it',fan:'drag to set a fan, the way it should blow',
+    prism:'tap to set a prism: it dyes the paint in it',drain:'tap to set a drain: it swallows paint',
+    tunnel:'drag a tunnel from its way in to its way out',ink:'push the paint with a finger, tap for a drop'};
   function ringName(c){return c==='mix'?'white':CN[c]}
-  /* the game's words, three lines: what to do, how the round goes, the score */
-  function hud(){
-    if(PZ>=0){var cp=CUPS[0],secs=Math.ceil(GM.left),tm=Math.floor(secs/60)+':'+('0'+secs%60).slice(-2),best=GM.best?' · best '+GM.best:'';
-      if(GM.phase==='intro')return 'round '+GM.round+': fill '+GM.need+' rings in '+gmPlan(GM.round).secs+' seconds\n'+(NEWS[GM.round]?'new: '+NEWS[GM.round][1]:'drag a stream into the ring of its colour')+'\nscore '+GM.score+best;
-      if(GM.phase==='won')return 'round '+GM.round+' done · next one is faster\n\nscore '+GM.score+best;
-      if(GM.phase==='over')return 'time up · score '+GM.score+(GM.newBest?', a new best':'')+'\npress again to play again, or free to stop\nscore '+GM.score+best;
-      return (CUPS.length>1?'steer each colour into its own ring':'steer the '+(cp?CN[cp.c]+' smoke into the '+CN[cp.c]+' ring':'smoke into the ring'))+'\nround '+GM.round+' · '+GM.got+' of '+GM.need+' rings · '+tm+' left\nscore '+GM.score+(GM.combo>1&&simT-GM.lastT<4?' · combo ×'+GM.combo:'')+best}
-    var bt=[[WALLS.length,'wall','walls'],[FANS.length,'fan','fans'],[PRISMS.length,'prism','prisms'],[DRAINS.length,'drain','drains'],[TUNNELS.length,'tunnel','tunnels']].filter(function(a){return a[0]}).map(function(a){return left(a[0],a[1],a[2])}).join(' · ');
-    if(PHOTO.has)return 'your photo is the ink: smear it and it remembers itself'+(bt?'\nbuilt: '+bt:'');
-    return 'real smoke, worked out as it moves: push it with a finger, tap for a drop\nplay: push the smoke into rings against the clock'+(bt?'\nbuilt: '+bt:'')}
+  /* (15 Nov, 22:59: "Remove the writing on the top") no words over the paint, in a game or out of one: a round says what it asks in big
+     words in the tank as it opens, and the time, the rings got, the score and the best are drawn in the tank itself */
+  function hud(){return ''}
   /* the hint: a tap (a drop of ink bursts), then one finger drawn across. The tap comes first on purpose: this is the world the page
      opens on, and a tap is the one touch an iPhone will start the sound on */
   function ghost(t){if(PZ>=0||TOOL!=='ink')return [null];var u=(t*.21)%1,k=Math.floor(t*.21)%2;
@@ -1816,7 +1856,7 @@ var DRIFT=(function(){
   function U(x){return PZ>=0?bx(x):(STG.x0+x*STG.w)/VW}function V(y){return PZ>=0?by(y):(STG.y0+y*STG.h)/VH}
   return {enter:enter,leave:leave,resize:function(){resize();pzRelayout();obsDirty=true},down:down,up:up,gesture:gesture,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
     dbg:function(){return {ok:!!(P&&dye),simT:simT,simple:simple,sw:sw,sh:sh,dw:dw,dh:dh,lin:GLX.hfLin,tool:TOOL,pz:PZ,won:!!pzWon,walls:WALLS.length,fans:FANS.length,drains:DRAINS.length,prisms:PRISMS.length,tunnels:TUNNELS.length,wn:WN,
-      game:{round:GM.round,need:GM.need,got:GM.got,left:+GM.left.toFixed(2),score:GM.score,best:GM.best,phase:GM.phase,cols:GM.cols.slice(),wall:!!GM.wall,combo:GM.combo,drain:GM.drain,cur:GM.cur,ringN:GM.ringN},board:{x0:B.x0,y0:B.y0,w:B.w,h:B.h},run:RUN,rt:RT,
+      game:{round:GM.round,need:GM.need,got:GM.got,left:+GM.left.toFixed(2),score:GM.score,best:GM.best,phase:GM.phase,news:NEWS[GM.round]?NEWS[GM.round][0]:'',newBest:!!GM.newBest,cols:GM.cols.slice(),wall:!!GM.wall,combo:GM.combo,drain:GM.drain,cur:GM.cur,ringN:GM.ringN},board:{x0:B.x0,y0:B.y0,w:B.w,h:B.h},run:RUN,rt:RT,
       cups:CUPS.map(function(c){return {c:c.c,fill:c.fill,match:c.match,done:c.done,x:WX(c.x),y:WY(c.y),r:cupR()*(c.r||1),gold:!!c.gold}}),vents:FIX.fans.map(function(f){return {x:WX(f.x),y:WY(f.y),c:f.c,a:f.a===undefined?-Math.PI/2:f.a}}),fix:{walls:FIX.walls.length,fans:FIX.fans.length,drains:FIX.drains.length,prisms:FIX.prisms.length},rb:rbOk}},
     /* for the tests: how much ink there is around a point (pixels), from the last copy read back; and a level by number */
     sample:function(x,y,r){want=1;return sample(x,y,r,null,false)},
@@ -1844,65 +1884,159 @@ var DRIFT=(function(){
     gold:function(){var c=CUPS[0];if(c){c.gold=true;c.t0=RT}}}
 })();
 
-/* ---------- WIND: the air of the whole Earth as it is moving now, made visible as smoke. The wind is real: NOAA's GFS model, the
-   wind ten metres above every degree of the planet, from its latest run. Smoke is born all over the globe and the real wind
-   draws it out (speeded up some thirty thousand times), so the trade winds, the westerlies and every storm turning today can
-   be seen turning. Over it, also real and also measured from space: the aurora where NOAA expects it at this hour (from the
-   solar wind read a million miles upstream), and the lightning of the last half hour as the GOES weather satellites saw it,
-   replayed over sixteen bars: each flash a flash, and a soft tick. The strongest fires burning in the last day, as NASA's instruments saw
-   their heat from orbit (FIRMS): each an ember where it burns, and its smoke, in the fire's own colour, carried off by the same real wind.
-   And the tropical cyclones turning now, each with its name where its eye is.
-   Hands do not add anything to the air (the owner found that fingers drawing smoke made it less interesting, 9 Nov): one
-   finger turns the globe, a pinch comes closer, and a tap on any place reads the real figures for it: how hard the wind is
-   blowing there and from where, how high the Sun stands, the chance of aurora, the lightning nearby; a tap on a fire or a storm
-   reads what is known of it.
-   Left alone, it turns slowly.
-   Since 13 Nov this is the Earth world: the owner asked "Put them all on the same globe as satellites and make that just a layer", so
-   the satellites (13-orbit.js) and the live cameras (14-live.js) are on this one globe. On 14 Nov (15:24) a list of layers opened from
-   one button went ("I don't understand the layers ... Make that go away so you can see the whole globe"); that night he asked for them
-   back, done better: "On the earth there should be videos, that's the best part!!! And be able to take on and off layers. The weather is
-   pretty lame. Make it so much better! Doesn't noa have live weather?!" So each layer is its own button in a row under the globe, and
-   each shows itself at once (see "the layers" below); on the site the live view is NOAA's own satellites' picture of now and the
-   model's fields are its forecast for this hour. A tap goes to a camera first, then a satellite, then a storm or a fire, then the
-   place. ---------- */
+/* ---------- ZONES: two layers of the Earth (15 Nov, 20:39: "War zones and blacked out zones is good. Gaza, North Korea, Moscow,
+   Beijing, etc.."). War zones: each war with more than a thousand dead this year, by the count of Wikipedia's list of ongoing armed
+   conflicts, glowing red where its fighting is, brighter the more it has killed, beating slowly; and in Ukraine the ground Russia holds,
+   as DeepStateMap draws it each day, with its edge (the front) drawn bright. Blackouts: the places cut off: no open internet at all
+   (North Korea), the internet switched off (as the Internet Society's Pulse lists them, ongoing), no power (Gaza, Cuba, and Ukraine
+   under the strikes on its grid), or the big services blocked (China, Russia, Iran...): the land there goes dark. On the site, the
+   countries where IODA (Georgia Tech) has seen the internet drop in the last day are marked as well, and the front is the day's.
+   All of it is in data/zones.json (tools/gen_zones.py), as checked on the day it was made; a tap on a zone reads what is known of it
+   and where that comes from. The zones' colour is laid on the Earth itself (a picture of the whole Earth unrolled, red where there is
+   war, its blue the darkness of the places cut off, its green the ground held in Ukraine: the globe's own shader paints them, so the
+   satellites pass over them); their edges, the front, the small ones and the names are drawn over it on the flat canvas, each edge cut
+   where it goes over the horizon ---------- */
+var ZONES=(function(){
+  var W=[],K=[],FR=null,IO=[],CC={},asOf='',ver=0,asked=false,tq=[0,0,0],
+    KW={closed:'no open internet',cut:'internet cut',power:'no power',blocked:'blocked',out:'outage now'};
+  function word(v,n){return String(v===undefined||v===null?'':v).replace(/[^\w .,:;'()&%\/À-ſ+\-–]/g,'').slice(0,n||120)}
+  /* a shape: its rings as points on the unit sphere, their latitudes and longitudes (for a tap), and a circle round it (to skip it
+     when it is all behind the Earth) */
+  function rings(p){var out=[];if(!Array.isArray(p))return out;
+    p.slice(0,40).forEach(function(r){if(!Array.isArray(r)||r.length<6)return;var n=Math.min(4000,r.length>>1),V=new Float32Array(n*3),L=new Float32Array(n*2),i,ok=true;
+      for(i=0;i<n;i++){var lo=+r[i*2]/100,la=+r[i*2+1]/100;if(!(la>=-90&&la<=90&&lo>=-181&&lo<=181)){ok=false;break}L[i*2]=lo;L[i*2+1]=la;var v=AS.llv(la,lo,tq);V[i*3]=v[0];V[i*3+1]=v[1];V[i*3+2]=v[2]}
+      if(ok)out.push({V:V,L:L,n:n})});return out}
+  function bound(R){var c=[0,0,0],i,k,n=0;R.forEach(function(r){for(i=0;i<r.n;i++){for(k=0;k<3;k++)c[k]+=r.V[i*3+k];n++}});var m=Math.hypot(c[0],c[1],c[2])||1;c=[c[0]/m,c[1]/m,c[2]/m];
+    var lo=1;R.forEach(function(r){for(i=0;i<r.n;i++)lo=Math.min(lo,c[0]*r.V[i*3]+c[1]*r.V[i*3+1]+c[2]*r.V[i*3+2])});return {c:c,cosr:lo}}
+  function zone(z,war){if(!z||typeof z!=='object')return null;var R=rings(z.p);if(!R.length)return null;var b=bound(R),lab=Array.isArray(z.lab)&&z.lab.length===2?[clamp(+z.lab[0],-89,89),AS.n180(+z.lab[1])]:null;
+    var o={id:word(z.id,24),name:word(z.name,40),line:word(z.line,140),by:word(z.by,60),R:R,c:b.c,cosr:b.cosr,lab:lab,lv:lab?AS.llv(lab[0],lab[1],[0,0,0]):b.c.slice(),p:[0,0,0],ph:Math.random()*TAU,sz:0};
+    if(war){o.war=word(z.war,60);o.since=word(z.since,20);o.dead=clamp(Math.round(+z.dead||0),0,1e7);o.k=clamp(Math.log(Math.max(1,o.dead)/500)/Math.log(100),.15,1)}
+    else{o.kind=KW[z.kind]?z.kind:'blocked'}
+    return o}
+  function take(d){
+    try{if(!d||typeof d!=='object')return false;var w=[],k=[];
+      (Array.isArray(d.war)?d.war:[]).slice(0,40).forEach(function(z){var o=zone(z,true);if(o)w.push(o)});
+      (Array.isArray(d.dark)?d.dark:[]).slice(0,40).forEach(function(z){var o=zone(z,false);if(o)k.push(o)});
+      if(!w.length&&!k.length)return false;W=w.sort(function(a,b){return b.dead-a.dead});K=k;asOf=word(d.asOf,24);
+      CC=d.cc&&typeof d.cc==='object'?d.cc:{};
+      FR=null;if(d.front&&Array.isArray(d.front.p)){var R=rings(d.front.p);if(R.length){var fb=bound(R);FR={R:R,c:fb.c,cosr:fb.cosr,sz:0,date:word(d.front.date,12),by:word(d.front.by,40),km2:clamp(Math.round(+d.front.km2||0),0,1e6)}}}
+      /* (on the site) where IODA saw the internet drop in the last day: a mark on the country, by its place in the table */
+      /* (a country IODA names that is already on the list of places cut off gets the word on its own card, not a second mark) */
+      IO=[];(Array.isArray(d.ioda)?d.ioda:[]).slice(0,16).forEach(function(x){var c=x&&CC[x.cc];if(!c||!Array.isArray(c))return;var la=clamp(+c[1],-89,89),lo=AS.n180(+c[2]);if(isNaN(la)||isNaN(lo))return;
+        var inK=null;for(var q=0;q<K.length;q++)if(inZone(K[q],la,lo)){inK=K[q];break}if(inK){inK.io='IODA saw the internet drop here in the last day'+(d.iodaAt?' ('+word(d.iodaAt,20)+')':'');return}
+        IO.push({id:'io-'+word(x.cc,2),name:word(c[0],40),cc:word(x.cc,2),kind:'out',lv:AS.llv(la,lo,[0,0,0]),lab:[la,lo],p:[0,0,0],line:'the internet dropped here in the last day'+(x.what?' ('+word(x.what,40)+')':''),by:'IODA, Georgia Tech'+(d.iodaAt?' ('+word(d.iodaAt,20)+')':''),ph:Math.random()*TAU,R:null})});
+      ver++;return true}catch(e){return false}}
+  /* the file the page carries; on the site, then, what changes by the day (the Worker's /api/zones: the day's front, IODA's outages),
+     asked for again when the Earth is entered half an hour later */
+  var BASE=null,liveAt=0;
+  function live(){if(!HOSTED||!BASE||Date.now()-liveAt<1800000)return;liveAt=Date.now();
+    fetch('/api/zones').then(function(r){return r.ok?r.json():null}).then(function(d){if(!d||!BASE)return;var m={},k;for(k in BASE)m[k]=BASE[k];
+      if(d.front&&Array.isArray(d.front.p)&&d.front.p.length)m.front=d.front;m.ioda=Array.isArray(d.ioda)?d.ioda:[];m.iodaAt=d.iodaAt;take(m)}).catch(function(){liveAt=0})}
+  function load(){if(asked){live();return}asked=true;
+    try{fetch('data/zones.json').then(function(r){return r.ok?r.json():null}).then(function(d){if(take(d)){BASE=d;live()}}).catch(function(){asked=false})}catch(e){asked=false}}
+  /* ---- one ring's outline on the canvas, cut at the horizon (and closed along it); the box it takes on the screen ---- */
+  var BX=[0,0,0,0];
+  function ring(c,r,g){var V=r.V,n=r.n,i,s=-1,E=g.E,N=g.N,C=g.C,R=g.R,cx=g.cx,cy=g.cy;
+    function z(j){return V[j*3]*C[0]+V[j*3+1]*C[1]+V[j*3+2]*C[2]}
+    for(i=0;i<n;i++)if(z(i)>0){s=i;break}if(s<0)return false;
+    function pt(j){var x=cx+(V[j*3]*E[0]+V[j*3+1]*E[1]+V[j*3+2]*E[2])*R,y=cy-(V[j*3]*N[0]+V[j*3+1]*N[1]+V[j*3+2]*N[2])*R;if(x<BX[0])BX[0]=x;if(x>BX[2])BX[2]=x;if(y<BX[1])BX[1]=y;if(y>BX[3])BX[3]=y;return [x,y]}
+    function limb(a,b,za,zb){var t=za/(za-zb),q=[V[a*3]+(V[b*3]-V[a*3])*t,V[a*3+1]+(V[b*3+1]-V[a*3+1])*t,V[a*3+2]+(V[b*3+2]-V[a*3+2])*t],
+      x=q[0]*E[0]+q[1]*E[1]+q[2]*E[2],y=q[0]*N[0]+q[1]*N[1]+q[2]*N[2],m=Math.hypot(x,y)||1;return Math.atan2(y/m,x/m)}
+    var p=pt(s),ex=null;c.moveTo(p[0],p[1]);
+    for(var k=0;k<n;k++){var a=(s+k)%n,b=(s+k+1)%n,za=z(a),zb=z(b);
+      if(za>0&&zb>0){p=pt(b);c.lineTo(p[0],p[1])}
+      else if(za>0){ex=limb(a,b,za,zb);c.lineTo(cx+Math.cos(ex)*R,cy-Math.sin(ex)*R)}
+      else if(zb>0){var en=limb(a,b,za,zb);if(ex!==null){var d=en-ex;while(d>Math.PI)d-=TAU;while(d<-Math.PI)d+=TAU;c.arc(cx,cy,R,-ex,-en,d>0)}else c.lineTo(cx+Math.cos(en)*R,cy-Math.sin(en)*R);p=pt(b);c.lineTo(p[0],p[1]);ex=null}}
+    c.closePath();return true}
+  function shapeOf(c,o,g){if(o.c[0]*g.C[0]+o.c[1]*g.C[1]+o.c[2]*g.C[2]<-Math.sqrt(Math.max(0,1-o.cosr*o.cosr))-.02)return false;
+    BX[0]=BX[1]=1e9;BX[2]=BX[3]=-1e9;c.beginPath();var any=false;o.R.forEach(function(r){if(ring(c,r,g))any=true});o.sz=any?Math.max(BX[2]-BX[0],BX[3]-BX[1]):0;return any}
+  /* ---- the picture of the zones for the globe: the Earth unrolled (across, longitude from 180 W; down, latitude from the north pole),
+     red the wars (as bright as each has killed), green the ground held in Ukraine, blue how dark a place cut off goes ---- */
+  var ZT=null,ztV=-1,ztG=-1;
+  function raster(){var Wd=2048,Hd=1024,cv=document.createElement('canvas');cv.width=Wd;cv.height=Hd;var c=cv.getContext('2d');c.fillStyle='#000';c.fillRect(0,0,Wd,Hd);c.globalCompositeOperation='lighter';
+    function path(R){c.beginPath();R.forEach(function(r){for(var i=0;i<r.n;i++){var x=(r.L[i*2]+180)/360*Wd,y=(90-r.L[i*2+1])/180*Hd;if(i)c.lineTo(x,y);else c.moveTo(x,y)}c.closePath()})}
+    W.forEach(function(o){path(o.R);c.fillStyle='rgb('+Math.round(o.k*235)+',0,0)';c.fill()});
+    if(FR){path(FR.R);c.fillStyle='rgb(0,230,0)';c.fill()}
+    K.forEach(function(o){path(o.R);c.fillStyle='rgb(0,0,'+Math.round((o.kind==='blocked'?.36:o.kind==='power'?.66:.82)*255)+')';c.fill()});
+    return cv}
+  function tex(){if(!GLX.ok||(!W.length&&!K.length))return null;if(ZT&&ztV===ver&&ztG===GLX.gen)return ZT.tex;var old=ztG===GLX.gen?ZT:null;
+    try{var t=glImageTex(raster(),true,false,true);if(!t)return null;if(old)glFree(old);ZT=t;ztV=ver;ztG=GLX.gen;return t.tex}catch(e){ztV=ver;ztG=GLX.gen;return ZT?ZT.tex:null}}
+  /* ---- over the globe: the edges (a dashed grey for the places cut off, red for the wars), the front, the small ones, the names ---- */
+  var LB=[];
+  function draw(c,g,t,war,dark){
+    if(!W.length&&!K.length)return;var i,o;LB.length=0;c.save();c.lineJoin='round';
+    if(dark){c.setLineDash([3,3]);for(i=0;i<K.length;i++){o=K[i];if(!shapeOf(c,o,g))continue;c.strokeStyle='rgba(190,205,225,'+(o.kind==='blocked'?.3:.55)+')';c.lineWidth=1;c.stroke();if(o.sz<14)mark(c,o,g,false);LB.push(o)}
+      c.setLineDash([]);for(i=0;i<IO.length;i++){o=IO[i];GLOBE.pr(o.lv,g,o.p);if(o.p[2]<=.08)continue;mark(c,o,g,false);LB.push(o)}}
+    if(war){for(i=0;i<W.length;i++){o=W[i];if(!shapeOf(c,o,g))continue;c.strokeStyle='rgba(255,72,52,'+(.3+.45*o.k).toFixed(3)+')';c.lineWidth=1.1;c.stroke();if(o.sz<14)mark(c,o,g,true);LB.push(o)}
+      /* the front: the edge of the ground Russia holds */
+      if(FR&&shapeOf(c,FR,g)){c.strokeStyle='rgba(1,4,10,.6)';c.lineWidth=3.2;c.stroke();c.strokeStyle='rgba(255,156,100,'+(.78+.18*Math.sin((reduce?0:t)*.004)).toFixed(3)+')';c.lineWidth=1.4;c.stroke()}}
+    labels(c,g);c.restore()}
+  /* a zone too small to see at this distance (Gaza, an island) is a ring that beats, so it can be seen and tapped */
+  function mark(c,o,g,war){GLOBE.pr(o.lv,g,o.p);if(o.p[2]<=.05)return;var u=.5+.5*Math.sin((reduce?0:FT)*.004+o.ph),r=4+2*u;
+    c.beginPath();c.arc(o.p[0],o.p[1],r,0,TAU);if(war){c.fillStyle='rgba(255,44,30,'+(.35+.3*u).toFixed(3)+')';c.fill();c.strokeStyle='rgba(255,120,90,.95)'}else{c.fillStyle='rgba(0,1,4,.85)';c.fill();c.strokeStyle='rgba(200,214,235,.85)'}
+    c.lineWidth=1.2;c.stroke()}
+  /* the names: the wars by their dead, then the places cut off; none over another */
+  function labels(c,g){var box=[],n=0,tw={};c.font='600 9px '+MONO;c.textBaseline='middle';c.lineJoin='round';
+    /* a war first, by its dead; a place both at war and cut off has one name, the war's, with what it is cut off from */
+    var L=LB.filter(function(o){return o.war}).concat(LB.filter(function(o){return !o.war}));
+    L.forEach(function(o){if(o.war)tw[o.id]=o});L.forEach(function(o){var twin=!o.war&&tw[o.id];if(twin)return;var dk=null;if(o.war)for(var q=0;q<LB.length;q++)if(!LB[q].war&&LB[q].id===o.id)dk=LB[q];
+      if(n>=14)return;GLOBE.pr(o.lv,g,o.p);if(o.p[2]<=.2)return;if(o.sz>0&&o.sz<8&&g.R<300&&!o.war&&o.kind!=='closed'&&o.kind!=='power'&&o.kind!=='out')return;
+      var t=o.name.toUpperCase()+(o.war?(dk?' · '+KW[dk.kind].toUpperCase():''):' · '+KW[o.kind].toUpperCase()),w=c.measureText(t).width,x=o.p[0]-w/2,y=o.p[1]+(o.sz<14?13:0);
+      if(o.sz>=8&&o.sz<w*.7&&!o.war&&o.kind==='blocked')return;
+      for(var i=0;i<box.length;i++){var b=box[i];if(x<b[2]&&x+w>b[0]&&y-6<b[3]&&y+6>b[1])return}
+      if(x<4||x+w>VW-4||y<STG.y0+8||y>STG.y1-8)return;box.push([x-3,y-7,x+w+3,y+7]);n++;
+      c.lineWidth=3;c.strokeStyle='rgba(1,4,10,.75)';c.strokeText(t,x,y);c.fillStyle=o.war?'rgba(255,112,88,.98)':'rgba(214,224,240,.9)';c.fillText(t,x,y)})}
+  /* ---- a tap: the zone under the finger (a small one's ring within reach of it first), war and cut off; and the front ---- */
+  function inside(r,lo,la){var L=r.L,n=r.n,i,j,c=false;for(i=0,j=n-1;i<n;j=i++){var xi=L[i*2],yi=L[i*2+1],xj=L[j*2],yj=L[j*2+1];if((yi>la)!==(yj>la)&&lo<(xj-xi)*(la-yi)/(yj-yi)+xi)c=!c}return c}
+  function inZone(o,la,lo){if(!o.R)return false;for(var i=0;i<o.R.length;i++)if(inside(o.R[i],lo,la))return true;return false}
+  function pick(x,y,la,lo,g,war,dark){var out={w:null,d:null,front:false},i;
+    function near(L,isW,bd){var o,d,best=null;for(var j=0;j<L.length;j++){o=L[j];if(o.R&&o.sz>=14)continue;GLOBE.pr(o.lv,g,o.p);if(o.p[2]<=.05)continue;d=(o.p[0]-x)*(o.p[0]-x)+(o.p[1]-y)*(o.p[1]-y);if(d<bd){bd=d;best=o}}return best}
+    if(war)out.w=near(W,true,18*18);if(dark)out.d=near(K.concat(IO),false,18*18);
+    if(la!==null){if(war&&!out.w)for(i=0;i<W.length;i++)if(inZone(W[i],la,lo)){out.w=W[i];break}
+      if(dark&&!out.d)for(i=0;i<K.length;i++)if(inZone(K[i],la,lo)){out.d=K[i];break}
+      if(war&&FR&&out.w&&out.w.id==='ukraine'&&FR.R.some(function(r){return inside(r,lo,la)}))out.front=true}
+    return out.w||out.d?out:null}
+  /* the words for a zone read (three or four lines, each short enough for a phone where it can be) */
+  function words(z){var L=[],w=z.w,d=z.d;
+    if(w){L.push(w.name+' · '+w.war+(w.since?', since '+w.since:''));
+      L.push(w.dead.toLocaleString('en-US')+' killed in 2026'+(W.filter(function(x){return x.dead===w.dead}).length>1?' in the conflict as a whole':'')+' (Wikipedia)');
+      if(z.front&&FR)L.push('held by Russia: '+FR.km2.toLocaleString('en-US')+' km² ('+FR.by+', '+FR.date+')');
+      if(w.line)L.push(w.line+' · '+w.by)}
+    if(d){L.push((w?'':d.name+' · ')+KW[d.kind]+': '+d.line+(d.by?' · '+d.by:''));if(d.io)L.push(d.io)}
+    return L.join('\n')}
+  return {load:load,take:take,draw:draw,pick:pick,words:words,tex:tex,
+    has:function(k){return k==='war'?W.length>0:K.length>0||IO.length>0},
+    count:function(k){return k==='war'?W.length:K.length+IO.length},
+    first:function(k){var o=k==='war'?W[0]:K[0];return o&&o.lab?{lat:o.lab[0],lon:o.lab[1],name:o.name}:null},
+    dbg:function(){return {ver:ver,asOf:asOf,war:W.map(function(o){return o.id}),dark:K.map(function(o){return o.id+':'+o.kind}),ioda:IO.map(function(o){return o.cc}),front:FR?{km2:FR.km2,date:FR.date,rings:FR.R.length}:null,
+      shown:LB.map(function(o){return {id:o.id,x:Math.round(o.p[0]),y:Math.round(o.p[1]),z:+o.p[2].toFixed(2),sz:Math.round(o.sz||0),war:!!o.war}})}}}
+})();
+
+/* ---------- THE EARTH: the whole planet as it is now, on one globe that turns under a finger, with layers to switch on and off.
+   (13 Nov: "Put them all on the same globe as satellites and make that just a layer": the satellites (13-orbit.js) and the live
+   cameras (14-live.js) are layers of it.) On it, all real and all measured: the satellites, each where it is, flying (sixty times
+   their speed, so the swarm can be seen moving; one tapped brings the present back); the war zones and the places cut off
+   (12-zones.js); the aurora where NOAA expects it at this hour (from the solar wind read a million miles upstream); the lightning of
+   the last half hour as the GOES weather satellites saw it, replayed over sixteen bars, each flash a flash and a soft tick; the
+   strongest fires burning in the last day, as NASA's instruments saw their heat from orbit (FIRMS), each an ember; the tropical
+   cyclones turning now, each with its name where its eye is; the clouds and the rain; and on the site NOAA's own picture of now and
+   its model's fields for this hour.
+   (Until 15 Nov the wind of the whole Earth was drawn here too, as smoke carried by NOAA's GFS wind: "forget wind", the owner said
+   that evening. The wind is still read where a place is tapped, and it still carries the clouds.)
+   One finger turns the globe, a pinch comes closer, and a tap reads what is there: a camera first, then a satellite, then a storm
+   or a fire, then a war or a place cut off, then the place itself. Left alone, it turns slowly.
+   On 14 Nov (15:24) a list of layers opened from one button went ("I don't understand the layers ... Make that go away so you can
+   see the whole globe"); that night he asked for them back, done better: "On the earth there should be videos, that's the best
+   part!!! And be able to take on and off layers." So each layer is its own button in a row under the globe, and each shows itself
+   at once (see "the layers" below). ---------- */
 var WIND=(function(){
-  var P=null,gen=-1,dye=null,type=0,dw=0,dh=0,ql=-1,byte8=false,windT=null,windV=-1,aurT=null,aurV=-1,skV=-1,
+  var gen=-1,windT=null,windV=-1,aurT=null,aurV=-1,skV=-1,
     g={cx:0,cy:0,R:100,E:[0,0,0],N:[0,0,0],C:[0,0,0]},lat0=16,lon0=clamp(-(new Date().getTimezoneOffset())/4,-180,180),zoom=1,idle=0,vlon=0,vlat=0,
     sunV=[0,0,0],moonV=[0,0,0],moonI=null,sunI=null,lastT=0,SK=[],byStep=[],flashes=[],STEPS=256,tmp=[0,0,0],probe=null,turned=0,
-    FR=[],frV=-1,fireB=null,fireN=0,fireGen=-1,ST=[],stV=-1,
+    FR=[],frV=-1,ST=[],stV=-1,
     ftAt=0,GT={R:0,cy:0,on:0},GR=0,GC=0,dataH=-1,entT=0,HUDB=0,HLH=0,FOC=null,FLY=null,camOn=false,footH=0;
-  var VQ='attribute vec2 a_p;varying vec2 vUv;void main(){vUv=a_p*0.5+0.5;gl_Position=vec4(a_p,0.0,1.0);}';
-  var H='precision highp float;varying vec2 vUv;\n';
-  /* the fires' smoke: each fire is a point in the picture of the unrolled Earth, lit a little every frame, and the wind does the rest */
-  var VP='attribute vec3 a_f;uniform float uSize;varying float vS;void main(){vS=a_f.z;gl_Position=vec4(a_f.xy*2.0-1.0,0.0,1.0);gl_PointSize=uSize;}',
-    FP='precision mediump float;varying float vS;uniform vec3 uCol;void main(){vec2 d=gl_PointCoord-0.5;float a=max(0.0,1.0-dot(d,d)*4.0);gl_FragColor=vec4(uCol*vS*a*a,1.0);}';
-  var F={
-    /* the smoke is carried: each place takes what the wind is bringing it, a little faded. And it is fed: thousands of small fires, each
-       burning in one place for a few seconds (more of them, and brighter, where the wind is strong), so that every one trails a plume
-       down the wind; and a thin haze everywhere the wind is hard, so a storm glows as a whole.
-       The picture is the Earth unrolled: across is longitude, up is north */
-    adv:H+'uniform sampler2D uDye;uniform sampler2D uWind;uniform float uDt;uniform float uK;uniform float uDiss;uniform float uTime;uniform float uRate;uniform float uEmit;uniform float uHaze;uniform vec2 uGrid;uniform float uHas;\n'+
-      'float hash(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}\n'+
-      'void main(){float lat=(vUv.y-0.5)*3.14159265;float cl=max(cos(lat),0.16);\n'+
-      'vec2 vel=(texture2D(uWind,vec2(vUv.x,1.0-vUv.y)).xy-0.50196)*80.315*uHas;\n'+
-      'vec2 back=vUv-uDt*uK*vec2(vel.x/cl*0.15915494,vel.y*0.31830989);back.y=clamp(back.y,0.003,0.997);\n'+
-      'vec3 d=max(texture2D(uDye,back).rgb*uDiss-0.0012,0.0);float sp=length(vel);\n'+
-      'vec2 cell=floor(vUv*uGrid);float thr=uRate*(0.22+sp*0.085);float ta=uTime*0.2;float tb=ta+0.5;\n'+
-      'float born=step(1.0-thr,hash(cell+floor(ta)*17.0))*(1.0-abs(fract(ta)*2.0-1.0))+step(1.0-thr,hash(cell+floor(tb)*31.0+7.0))*(1.0-abs(fract(tb)*2.0-1.0));\n'+
-      'born*=smoothstep(1.5,1.2,abs(lat));\n'+
-      'vec3 sc=mix(vec3(0.03,0.30,0.52),vec3(0.22,0.92,1.0),clamp(sp/13.0,0.0,1.0));sc=mix(sc,vec3(1.0,0.78,0.5),clamp((sp-15.0)/11.0,0.0,1.0));\n'+
-      'gl_FragColor=vec4(d+sc*(born*uEmit*(0.55+sp*0.05)+uHaze*sp*sp*0.0016)*uHas,1.0);}'
-  };
-  function mk(w,h,filt){var gl=GLX.gl,t=glTarget(w,h,type,filt);if(t){gl.bindTexture(gl.TEXTURE_2D,t.tex);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT)}return t}
-  function freeAll(){if(dye){glFree(dye.r);glFree(dye.w)}dye=null}
-  function glSetup(){
-    if(!GLX.ok)return;var gl=GLX.gl;gen=GLX.gen;dye=null;windT=aurT=null;windV=aurV=-1;P={};
-    byte8=!(GLX.hf&&GLX.hfRT&&GLX.hfLin);type=byte8?gl.UNSIGNED_BYTE:GLX.hf.HALF_FLOAT_OES;
-    for(var k in F){P[k]=glProg(VQ,F[k]);if(!P[k]){P=null;return}}P.pts=glProg(VP,FP);fireB=null;fireGen=-1}
-  function size(){
-    if(!P)return;var w=[1024,512,512][QL],h=w/2;if(dye&&dw===w)return;freeAll();ql=QL;dw=w;dh=h;
-    var a=mk(w,h,GLX.gl.LINEAR),b=mk(w,h,GLX.gl.LINEAR);if(!a||!b){glFree(a);glFree(b);P=null;return}
-    dye={r:a,w:b,swap:function(){var t=this.r;this.r=this.w;this.w=t}}}
+  /* the pictures made here for the chip (the wind, for the clouds to drift on; the aurora) are made again if the chip is lost */
+  function glSetup(){if(!GLX.ok)return;gen=GLX.gen;windT=aurT=null;windV=aurV=-1}
   /* a grid of numbers, one per degree from the north pole down and from 0 E round, as a picture the chip can read: 512 x 256,
      with 180 W at its left edge like the photographs of the Earth */
   function gridTex(grid,ch,old){
@@ -1921,10 +2055,9 @@ var WIND=(function(){
     if(LIVE.aurora&&aurV!==LIVE.ver.aurora){aurV=LIVE.ver.aurora;aurT=gridTex(LIVE.aurora.grid,1,aurT)}
     if(LIVE.strikes&&skV!==LIVE.ver.strikes){skV=LIVE.ver.strikes;SK=[];byStep=[];var L=LIVE.strikes.list,sp=LIVE.strikes.span,i;for(i=0;i<STEPS;i++)byStep.push(null);
       for(i=0;i<L.length;i++){var s={v:AS.llv(L[i].lat,L[i].lon),st:clamp(Math.floor((1-L[i].age/sp)*STEPS),0,STEPS-1),p:[0,0,0]};SK.push(s);(byStep[s.st]=byStep[s.st]||[]).push(s)}}
-    if(LIVE.fires&&frV!==LIVE.ver.fires){frV=LIVE.ver.fires;FR=LIVE.fires.list.map(function(f){return {f:f,v:AS.llv(f.lat,f.lon),p:[0,0,0],ph:Math.random()*TAU,s:clamp(Math.sqrt(f.frp/150),1,3.4)}});fireGen=-1}
+    if(LIVE.fires&&frV!==LIVE.ver.fires){frV=LIVE.ver.fires;FR=LIVE.fires.list.map(function(f){return {f:f,v:AS.llv(f.lat,f.lon),p:[0,0,0],ph:Math.random()*TAU,s:clamp(Math.sqrt(f.frp/150),1,3.4)}})}
     if(LIVE.storms&&stV!==LIVE.ver.storms){stV=LIVE.ver.storms;ST=LIVE.storms.list.map(function(s){return {s:s,v:AS.llv(s.lat,s.lon),p:[0,0,0]}})}
-    if(P&&P.pts&&fireGen!==GLX.gen&&FR.length){var gl=GLX.gl,fb=new Float32Array(FR.length*3);for(i=0;i<FR.length;i++){fb[i*3]=(FR[i].f.lon+180)/360;fb[i*3+1]=.5+FR[i].f.lat/180;fb[i*3+2]=FR[i].s}
-      if(!fireB)fireB=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,fireB);gl.bufferData(gl.ARRAY_BUFFER,fb,gl.STATIC_DRAW);fireN=FR.length;fireGen=GLX.gen}}
+}
   /* the model's fields as one picture the chip can read, the Earth unrolled from 180 W: red the temperature (-40 to 45 degrees), green
      the waves (0 where there is no sea, then up to twelve metres), blue the isobars (drawn only once the pressure is switched on).
      Built a slice of rows a frame, so a phone does not stall the moment a field arrives */
@@ -1955,14 +2088,14 @@ var WIND=(function(){
     return c.getImageData(0,0,W,Hh).data}
   function geo(){var y0=STG.y0,y1=STG.y1,cd=(PCD&&PCD.on)||(camOn&&LIVEW.layer.cardOn())?$('card'):null;if(cd&&!cd.hidden){var ct=cd.getBoundingClientRect().top;if(ct>STG.y0+80&&ct<y1)y1=ct-6}
     /* (14 Nov, afternoon: "so you can see the whole globe") on a phone held upright the globe is kept whole under the words at the
-       top: room for four lines of them at least, and when a place read takes more, the globe glides to its new place and size rather
-       than jumping. (The hints' ghost readings are not measured: the globe stays where it is under them) */
-    if(VW<VH){var d=$('data');if(d&&!(probe&&probe.ghost)){var b=d.getBoundingClientRect();if(!HLH)HLH=parseFloat(getComputedStyle(d).lineHeight)||15.5;if(b.top>0)HUDB=Math.round(b.top+Math.max(b.height,HLH*4)+8)}
+       top; since 15 Nov (night) there are none until something is read, so the globe has the room, and when a reading comes it glides
+       to its new place and size rather than jumping */
+    if(VW<VH){var d=$('data');if(d&&!(probe&&probe.ghost)){var b=d.getBoundingClientRect();if(!HLH)HLH=parseFloat(getComputedStyle(d).lineHeight)||15.5;HUDB=b.top>0&&b.height>1?Math.round(b.bottom+8):0}
       if(HUDB)y0=Math.max(y0,Math.min(HUDB,y1-200))}
     var h=y1-y0;GT.R=Math.max(40,Math.min(STG.w,h-10)*.47);GT.cy=y0+h/2;if(!GT.on){GT.on=1;GR=GT.R;GC=GT.cy}
     g.R=GR*zoom;g.cx=STG.cx;g.cy=GC}
   function camSync(v){v=!!v;if(v===camOn)return;camOn=v;try{LIVEW.layer.on(v)}catch(e){}layout();geo()}
-  function enter(){if(GLX.ok&&gen!==GLX.gen)glSetup();GLOBE.load();liveLoad();size();lyApply();dockSync(true);GT.on=0;entT=FT;dataH=-1;geo();idle=0;lastT=0;
+  function enter(){if(GLX.ok&&gen!==GLX.gen)glSetup();GLOBE.load();liveLoad();try{ZONES.load()}catch(e){}lyApply();dockSync(true);GT.on=0;entT=FT;dataH=-1;geo();idle=0;lastT=0;
     try{ORBIT.layer.on()}catch(e){}try{LIVEW.layer.flyTo(flyTo)}catch(e){}nowAt=0;zmSync(true);
     if(!zmW){zmW=1;$('zIn').addEventListener('click',function(){zoomBy(1.8)});$('zOut').addEventListener('click',function(){zoomBy(1/1.8)})}}
   function leave(){flashes.length=0;['lyd','lgd'].forEach(function(id){var e=$(id);if(e)e.hidden=true});zmSync(false);cardOff();try{ORBIT.layer.off()}catch(e){}camSync(false);if(typeof GEO!=='undefined')GEO.want=false}
@@ -1987,11 +2120,14 @@ var WIND=(function(){
      globe, a picture and a word, lit while it shows, and each shows itself at once: one layer of colour at a time (the temperature or the
      waves, else the wind's speed) with its scale over the row; a point layer switched on turns the Earth to where it has most to show;
      the words at the top say for a moment what was switched. Kept on this device ---- */
-  var LYS=[['vid','videos'],['sat','live view'],['wind','wind'],['temp','temperature'],['rain','rain'],['cld','clouds'],['waves','waves'],['pres','pressure'],
-      ['bolt','lightning'],['storm','storms'],['fire','fires'],['orbit','satellites'],['aur','aurora']],
+  /* (15 Nov, 20:39: the wind went: "forget wind"; the war zones and the places cut off came, after the videos: "War zones and blacked
+     out zones is good") */
+  var LYS=[['vid','videos'],['war','war zones'],['dark','blackouts'],['orbit','satellites'],['sat','live view'],['storm','storms'],['fire','fires'],['bolt','lightning'],
+      ['rain','rain'],['cld','clouds'],['temp','temperature'],['waves','waves'],['pres','pressure'],['aur','aurora']],
     LYI={vid:'<rect x="1.6" y="3.4" width="12.8" height="9.2" rx="2"/><path d="M6.6 5.9v4.2l3.6-2.1z"/>',
       sat:'<circle cx="7" cy="9.2" r="4.6"/><path d="M2.6 9.2h8.8M7 4.6c-2 2.6-2 6.6 0 9.2M7 4.6c2 2.6 2 6.6 0 9.2"/><rect x="11.4" y="1.6" width="3" height="3" rx=".6"/>',
-      wind:'<path d="M2.5 6h8.2a2.2 2.2 0 1 0-2.2-2.2M2.5 9.8h11a2.3 2.3 0 1 1-2.3 2.3"/>',temp:'<path d="M6.6 9.6V3.6a1.6 1.6 0 1 1 3.2 0v6a3.1 3.1 0 1 1-3.2 0z"/><path d="M8.2 7v4.6"/>',
+      war:'<circle cx="8" cy="8" r="4.4"/><path d="M8 1.6v3.6M8 10.8v3.6M1.6 8h3.6M10.8 8h3.6"/>',
+      dark:'<path d="M2.4 6.6a8.2 8.2 0 0 1 11.2 0M4.5 9a5.1 5.1 0 0 1 7 0M6.7 11.4a1.9 1.9 0 0 1 2.6 0M2.4 2.4l11.2 11.2"/>',temp:'<path d="M6.6 9.6V3.6a1.6 1.6 0 1 1 3.2 0v6a3.1 3.1 0 1 1-3.2 0z"/><path d="M8.2 7v4.6"/>',
       rain:'<path d="M4.6 9.2h7a2.6 2.6 0 0 0 .2-5.2 3.6 3.6 0 0 0-6.9-.5 2.9 2.9 0 0 0-.3 5.7M5.6 11.6l-.9 2.2M8.4 11.6l-.9 2.2M11.2 11.6l-.9 2.2"/>',
       cld:'<path d="M4.6 12.5h7a2.9 2.9 0 0 0 .2-5.8 4 4 0 0 0-7.6-.6 3.2 3.2 0 0 0 .4 6.4z"/>',
       waves:'<path d="M1.6 7.4c1.6-1.6 3.1-1.6 4.4 0s2.9 1.6 4.4 0 3.1-1.6 4.1 0M1.6 11.4c1.6-1.6 3.1-1.6 4.4 0s2.9 1.6 4.4 0 3.1-1.6 4.1 0"/>',
@@ -1999,15 +2135,18 @@ var WIND=(function(){
       bolt:NOWI.bolt,storm:NOWI.storm,fire:NOWI.fire,aur:NOWI.aurora,
       orbit:'<circle cx="8" cy="8" r="2.6"/><ellipse cx="8" cy="8" rx="6.6" ry="2.7" transform="rotate(-24 8 8)"/><circle cx="13.4" cy="4.9" r=".9"/>'},
     /* what each shows, in a line of a phone (with its name and "on:") */
-    LYT={vid:HOSTED?'live cameras, tap one to watch':'live cameras, each opens on YouTube',sat:'the Earth from NOAA\'s satellites',wind:'blue calm, red strong',temp:'blue cold, red hot',
+    LYT={vid:HOSTED?'live cameras, tap one to watch':'live cameras, each opens on YouTube',sat:'the Earth from NOAA\'s satellites',temp:'blue cold, red hot',
+      war:'the wars of 2026, brighter where more have died',dark:'no internet, no power, or blocked',
       rain:'the last half hour, from orbit',cld:'as the weather satellites see them',waves:'their height over the seas',pres:'lines every 4 hPa, H high, L low',bolt:'the flashes of the last half hour',
-      storm:'the tropical storms turning now',fire:'the strongest of the last day',orbit:'each where it is now',aur:'where NOAA expects it now'},
-    LYDEF={vid:1,sat:1,wind:1,temp:0,rain:1,cld:1,waves:0,pres:0,bolt:1,storm:1,fire:1,orbit:1,aur:1},LY={},lyAv='',lyMsg=null,dkAt=0;
+      storm:'the tropical storms turning now',fire:'the strongest of the last day',orbit:'sixty times their speed',aur:'where NOAA expects it now'},
+    LYDEF={vid:1,war:1,dark:1,sat:1,temp:0,rain:1,cld:1,waves:0,pres:0,bolt:1,storm:1,fire:1,orbit:1,aur:1},LY={},lyAv='',lyMsg=null,dkAt=0,lyPing=null;
   (function(){var o=null;try{o=JSON.parse(localStorage.getItem('lc-earth-layers')||'null')}catch(e){}for(var k in LYDEF)LY[k]=o&&(o[k]===0||o[k]===1)?o[k]:LYDEF[k]})();
+  /* how much of a layer's moment of showing itself is left (1 as it is switched on, 0 two seconds later) */
+  function pingK(k){return lyPing&&lyPing.k===k?Math.max(0,1-(FT-lyPing.t)/2000):0}
   function lySave(){try{localStorage.setItem('lc-earth-layers',JSON.stringify(LY))}catch(e){}}
   function lyName(k){for(var i=0;i<LYS.length;i++)if(LYS[i][0]===k)return LYS[i][1];return k}
   /* which there is something for: the live view and the model's fields only on the site, the clouds and the rain once their pictures came */
-  function lyHas(k){var X=typeof WX!=='undefined'?WX:{};switch(k){case 'vid':return typeof LIVEW!=='undefined';case 'sat':return !!HOSTED;case 'wind':return !!LIVE.wind;
+  function lyHas(k){var X=typeof WX!=='undefined'?WX:{};switch(k){case 'vid':return typeof LIVEW!=='undefined';case 'sat':return !!HOSTED;case 'war':case 'dark':return ZONES.has(k);
     case 'temp':return !!X.t2m;case 'rain':return GLOBE.hasRain();case 'cld':return GLOBE.hasCloud();case 'waves':return !!X.wave;case 'pres':return !!X.mslp;
     case 'bolt':return !!(LIVE.strikes&&LIVE.strikes.list.length);case 'storm':return ST.length>0;case 'fire':return FR.length>0;case 'orbit':return !!LIVE.sats;case 'aur':return !!LIVE.aurora}return false}
   function dockSync(force){var r=$('lyd');if(!r)return;var av=LYS.filter(function(x){return lyHas(x[0])}).map(function(x){return x[0]}).join(',');
@@ -2015,30 +2154,40 @@ var WIND=(function(){
       b.innerHTML='<svg viewBox="0 0 16 16" aria-hidden="true">'+LYI[x[0]]+'</svg><span></span>';b.lastChild.textContent=x[1];b.setAttribute('aria-label',x[1]+': '+LYT[x[0]]);
       b.addEventListener('click',function(){lyTap(x[0])});r.appendChild(b)})}
     [].forEach.call(r.childNodes,function(b){var on=!!LY[b.id.slice(3)];if(b.getAttribute('aria-pressed')!==(on?'true':'false'))b.setAttribute('aria-pressed',on?'true':'false')});
-    var hid=!r.firstChild;if(r.hidden!==hid){r.hidden=hid;layout();geo()}lgdSync()}
+    var hid=!r.firstChild;if(r.hidden!==hid){r.hidden=hid;dockFit(true);layout();geo()}else dockFit(false);lgdSync()}
+  /* (15 Nov, 23:20: "The list of buttons on the globe hardly work. Make everything work") every button on the screen: as many to a
+     row as fit (none narrower than 58 px), the rows as even as they can be (13 on a phone: five, five and three), the words a size
+     smaller where the buttons are narrow, the buttons a little lower when there are three rows or more */
+  function dockFit(force){var r=$('lyd');if(!r||r.hidden)return;var n=r.childNodes.length;if(!n)return;var k0=n+','+VW+','+VH;if(!force&&r._k0===k0)return;r._k0=k0;var f=$('foot'),cs=getComputedStyle(f),
+      w=Math.floor(f.clientWidth-(parseFloat(cs.paddingLeft)||0)-(parseFloat(cs.paddingRight)||0)),gap=5,
+      mc=Math.max(1,Math.floor((w+gap)/(58+gap))),rows=Math.ceil(n/mc),cols=Math.ceil(n/rows),cw=Math.min(78,Math.floor((w-(cols-1)*gap)/cols)),
+      h=rows<=2?44:rows===3?40:36,key=[cols,cw,h].join();
+    if(VH<600&&rows>1)h-=4;
+    if(!force&&r._fit===key)return;r._fit=key;r.style.setProperty('--dkw',cw+'px');r.style.setProperty('--dkh',h+'px');r.style.setProperty('--dkm',(cols*cw+(cols-1)*gap)+'px');
+    r.classList.toggle('dkt',cw<66);if(!force){layout();geo()}}
   function lyTap(k){var on=!LY[k];LY[k]=on?1:0;if(on&&k==='temp')LY.waves=0;if(on&&k==='waves')LY.temp=0;
     /* (a hint's ghost reading would hide the words saying what was switched) */
     if(probe&&probe.ghost)probe=null;
-    lySave();lyApply();dockSync();lyMsg={k:k,on:on,t:FT};idle=0;tone('glass',pent(on?8:4,40),.35,0);if(on)lyShow(k)}
+    lySave();lyApply();dockSync();idle=0;tone('glass',pent(on?8:4,40),.35,0);lyPing=on?{k:k,t:FT}:null;if(on)lyShow(k)}
   /* what follows from the layers: the cameras on or off, no satellite chosen while they are away, NOAA's pictures asked for while the
      live view is on, and a reading of a fire or a storm put away with its layer */
   function lyApply(){camSync(!!LY.vid&&typeof LIVEW!=='undefined');if(!LY.orbit)try{ORBIT.layer.off()}catch(e){}
     if(typeof GEO!=='undefined'){var w=!!(HOSTED&&LY.sat),was=GEO.want;GEO.want=w;if(w&&!was&&PULL.timer)try{livePull(false)}catch(e){}}
-    if(probe&&((probe.fire&&!LY.fire)||(probe.storm&&!LY.storm)))probe=null}
+    if(probe&&((probe.fire&&!LY.fire)||(probe.storm&&!LY.storm)||(probe.zone&&!(probe.zone.w&&LY.war)&&!(probe.zone.d&&LY.dark))))probe=null}
   /* a layer switched on turns the Earth to where it has most to show */
   function lyShow(k){var L=nowList(),f=function(kk){for(var i=0;i<L.length;i++)if(L[i].k===kk)return L[i];return null},it=k==='storm'?f('storm'):k==='fire'?f('fire'):k==='bolt'?f('bolt'):k==='aur'?f('aurora'):null;
     if(it){nowGo(it);return}
     if(k==='orbit'){var s2=f('iss');if(s2)flyTo(s2.lat,s2.lon);return}
+    /* the war zones turn the Earth to the war that has killed most this year; the places cut off, to the most closed of them */
+    if(k==='war'||k==='dark'){var z=ZONES.first(k);if(z)flyTo(z.lat,z.lon);return}
     /* (15 Nov: "put the videos accessible right on the page") videos on: a camera opens at once, the Earth turned to it */
     if(k==='vid'){try{if(!LIVEW.layer.openOne()){var c=LIVEW.layer.airSpot();if(c)flyTo(c[0],c[1])}}catch(e){}return}
     /* (the live view sees the Americas and the oceans either side: from anywhere else the Earth turns to them) */
     if(k==='sat'&&Math.abs(AS.n180(lon0+106))>70)flyTo(12,-100)}
   /* the layer of colour shown (one at a time) and its scale over the row */
-  var LGD={wind:['wind','km/h',[[0,'#5466bd'],[.11,'#3385cc'],[.22,'#29b3a8'],[.33,'#5cc74d'],[.44,'#ebd642'],[.58,'#ff8529'],[.75,'#e62e3d'],[1,'#db4ddb']],['0','30','65','100','130']],
-    temp:['temperature','°C',[[0,'#3d1a78'],[.235,'#2e4fd9'],[.47,'#9ed9ff'],[.59,'#73e09e'],[.71,'#f5d659'],[.82,'#ff8a2b'],[1,'#cc1f3d']],['-40','-20','0','25','45']],
+  var LGD={temp:['temperature','°C',[[0,'#3d1a78'],[.235,'#2e4fd9'],[.47,'#9ed9ff'],[.59,'#73e09e'],[.71,'#f5d659'],[.82,'#ff8a2b'],[1,'#cc1f3d']],['-40','-20','0','25','45']],
     waves:['waves','m',[[0,'#030d29'],[.17,'#084d7a'],[.36,'#1ab8d1'],[.62,'#e6f7ff'],[.95,'#ff40b8']],['0','3','6','9','12']]};
-  /* (the wind's colours give way to the live view: over NOAA's picture of the Earth the wind is its flow alone) */
-  function colLayer(){var X=typeof WX!=='undefined'?WX:{};return LY.temp&&wxT&&X.t2m?'temp':LY.waves&&wxT&&X.wave?'waves':LY.wind&&windT&&!(HOSTED&&LY.sat&&GLOBE.hasGeo())?'wind':''}
+  function colLayer(){var X=typeof WX!=='undefined'?WX:{};return LY.temp&&wxT&&X.t2m?'temp':LY.waves&&wxT&&X.wave?'waves':''}
   function lgdSync(){var e=$('lgd');if(!e)return;var k=colLayer();if(e.dataset.k===k&&e.hidden===!k)return;e.dataset.k=k;e.hidden=!k;
     if(k){var L=LGD[k],sc=$('lgs');$('lgn').textContent=L[0]+' '+L[1];$('lgb').style.background='linear-gradient(90deg,'+L[2].map(function(x){return x[1]+' '+Math.round(x[0]*100)+'%'}).join(',')+')';
       sc.innerHTML='';L[3].forEach(function(t){var x=document.createElement('span');x.textContent=t;sc.appendChild(x)})}
@@ -2067,7 +2216,7 @@ var WIND=(function(){
       im.onerror=function(){DET.busy=false;DET.err++;URL.revokeObjectURL(u)};im.src=u}).catch(function(){DET.busy=false;DET.err++})}
   /* the Earth turns to a place over a second (a camera opened, say); a finger on it stops the turning */
   function flyTo(la,lo){FOC=null;FLY={t:FT,a:lat0,b:lon0,la:clamp(la,-70,70),lo:lo};idle=-30}
-  function resize(){GT.on=0;HLH=0;geo();if(GLX.ok&&P)size();if(!$('zm').hidden)zmSync(true)}
+  function resize(){GT.on=0;HLH=0;dockFit(true);layout();geo();if(!$('zm').hidden)zmSync(true)}
   function pan(x){return clamp((x-g.cx)/Math.max(1,g.R)*.8,-1,1)}
   /* one finger turns the globe; let go while moving and it coasts */
   function down(p){if(camOn&&!p.ghost&&LIVEW.layer.hit(p.x,p.y)){p.win=1;return}idle=0;vlon=vlat=0;FLY=null;if(FOC&&FT-FOC.t>1400)FOC=null}
@@ -2075,7 +2224,7 @@ var WIND=(function(){
     if(!p.ghost){turned=1;vlon=-p.vx*k/c;vlat=p.vy*k;if(p.moved>12)FOC=null}idle=0}
   /* a tap on a place reads it; a tap on the dark puts the reading away. A finger down up to 600 ms and not moved is a tap (a slow
      phone can be that long in passing the lifting on); the hints' ghost fingers keep to their own 320 */
-  function up(p){if(p.win){if(p.win===1)LIVEW.layer.up(p);return}idle=0;if(FT-p.t0>(p.ghost?320:600)||p.moved>12)return;var w=GLOBE.at(p.x,p.y,g),i,bd,d,tg=null;
+  function up(p){if(p.win){if(p.win===1)LIVEW.layer.up(p);return}idle=0;if(held(p)>(p.ghost?320:600)||p.moved>12)return;var w=GLOBE.at(p.x,p.y,g),i,bd,d,tg=null;
     /* a camera, then a satellite (while they are shown), are what a tap meant before the place under it */
     if(!p.ghost)try{LIVEW.layer.cardOff()}catch(e){}
     if(!p.ghost&&camOn&&LIVEW.layer.near(p.x,p.y)>=0){probe=null;cardOff();try{ORBIT.layer.off()}catch(e){}LIVEW.layer.pick(p.x,p.y);return}
@@ -2086,9 +2235,11 @@ var WIND=(function(){
     for(i=0,bd=26*26;i<ST.length&&LY.storm;i++){if(ST[i].p[2]<=.04)continue;d=(ST[i].p[0]-p.x)*(ST[i].p[0]-p.x)+(ST[i].p[1]-p.y)*(ST[i].p[1]-p.y);if(d<bd){bd=d;tg=ST[i].s}}
     if(!tg&&LY.fire)for(i=0,bd=15*15;i<FR.length;i++){if(FR[i].p[2]<=.04)continue;d=(FR[i].p[0]-p.x)*(FR[i].p[0]-p.x)+(FR[i].p[1]-p.y)*(FR[i].p[1]-p.y);if(d<bd){bd=d;tg=FR[i].f}}
     if(tg)w={lat:tg.lat,lon:tg.lon};
+    /* a war, or a place cut off (a small one's ring within reach of the finger, else the zone the place is in) */
+    var zh=null;if(!tg&&(LY.war||LY.dark))try{zh=ZONES.pick(p.x,p.y,w.lat,w.lon,g,!!LY.war,!!LY.dark)}catch(e){}
     /* a storm tapped: the Earth turns to it and comes close, so its spiral and its way can be seen */
     if(tg&&!tg.frp&&!p.ghost)FOC={s:tg,t:FT,lat:lat0,lon:lon0,z:zoom,tz:Math.max(zoom,2.9)};else if(!p.ghost)FOC=null;
-    probe={lat:w.lat,lon:w.lon,v:AS.llv(w.lat,w.lon),p:[0,0,0],q:[0,0,0],t:FT,ghost:!!p.ghost,fire:tg&&tg.frp?tg:null,storm:tg&&!tg.frp?tg:null};
+    probe={lat:w.lat,lon:w.lon,v:AS.llv(w.lat,w.lon),p:[0,0,0],q:[0,0,0],t:FT,ghost:!!p.ghost,fire:tg&&tg.frp?tg:null,storm:tg&&!tg.frp?tg:null,zone:zh};
     if(!p.ghost){tone('glass',pent(5+clamp(Math.floor((w.lat+72)/144*9),0,8),40),.4,pan(p.x));if(!tg)placeCard(w.lat,w.lon);else cardOff()}}
   /* two fingers: sliding turns the globe too, a pinch comes closer */
   function gesture(e){var k=57.2958/g.R;lon0-=e.dx*k/Math.max(.35,Math.cos(lat0*AS.D));lat0=clamp(lat0+e.dy*k,-80,80);
@@ -2187,43 +2338,43 @@ var WIND=(function(){
     for(i=0;i<SK.length;i++)GLOBE.pr(SK[i].v,g,SK[i].p);
     for(i=0;i<FR.length;i++)GLOBE.pr(FR[i].v,g,FR[i].p);
     for(i=0;i<ST.length;i++)GLOBE.pr(ST[i].v,g,ST[i].p);
-    /* the place being read, and a second point a little down the wind from it, for the arrow */
-    if(probe){GLOBE.pr(probe.v,g,probe.p);var w=windAt(probe.lat,probe.lon);if(w&&w.kmh>.5){var s=1.2/Math.max(1,Math.hypot(w.u,w.v));GLOBE.pr(AS.llv(clamp(probe.lat+w.v*s,-89,89),probe.lon+w.u*s/Math.max(.2,Math.cos(probe.lat*AS.D)),tmp),g,probe.q);probe.w=w}else probe.w=null}}
-  function sim(dt){
-    var gl=GLX.gl,u,i;
-    var src=windT;
-    u=glUse(P.adv,dye.w);glBind(0,dye.r.tex,u.uDye);glBind(1,src||dye.r.tex,u.uWind);gl.uniform1f(u.uHas,src?1:0);gl.uniform1f(u.uDt,dt);gl.uniform1f(u.uK,reduce?.0016:.006);
-    gl.uniform1f(u.uDiss,Math.exp(-dt/(byte8?3.6:6.4)));gl.uniform1f(u.uTime,reduce?0:(FT*.001)%4000);gl.uniform2f(u.uGrid,dw/2,dh/2);gl.uniform1f(u.uRate,dw>600?.013:.03);
-    /* the bass and the drums make the fires burn up */
-    gl.uniform1f(u.uEmit,dt*2.3*(1+1.1*HIT[5]*G[5]+.7*HIT[0]*G[0]));gl.uniform1f(u.uHaze,dt*.1);glQuad(P.adv);dye.swap();
-    /* the real fires feed the smoke where they burn */
-    if(P.pts&&fireN&&fireGen===GLX.gen&&LY.fire){u=glUse(P.pts,dye.r);var a=P.pts.a.a_f,k=dt*(byte8?5.2:4.2);gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE);gl.bindBuffer(gl.ARRAY_BUFFER,fireB);gl.enableVertexAttribArray(a);
-      gl.vertexAttribPointer(a,3,gl.FLOAT,false,0,0);gl.uniform1f(u.uSize,dw>600?3:2);gl.uniform3f(u.uCol,k,k*.36,k*.07);gl.drawArrays(gl.POINTS,0,fireN);gl.disable(gl.BLEND);gl.disableVertexAttribArray(a)}}
+    /* the place being read */
+    if(probe)GLOBE.pr(probe.v,g,probe.p)}
   function draw(t){
     var c=OV,i,k;
-    if(!GLX.ok||GLX.lost)blank();else{if(gen!==GLX.gen)glSetup();if(P&&(ql!==QL||!dye))size();
-      var gl=GLX.gl,bg=[ABYSS[0]*.6,ABYSS[1]*.6,ABYSS[2]*.7],dt=lastT?Math.min(.1,Math.max(.001,(t-lastT)/1000)):.016;lastT=t;
-      glAttrOff();gl.disable(gl.BLEND);if(P&&dye&&LY.wind)sim(dt);
+    if(!GLX.ok||GLX.lost)blank();else{if(gen!==GLX.gen)glSetup();
+      var gl=GLX.gl,bg=[ABYSS[0]*.6,ABYSS[1]*.6,ABYSS[2]*.7];lastT=t;
+      glAttrOff();gl.disable(gl.BLEND);
       glClear(bg[0],bg[1],bg[2]);
-      /* the layers that are on: NOAA's live view (on the site), the cloud map and the rain, one layer of colour, the isobars. With the
-         clouds or the live view on, the Earth is shown nearer to how it looks from orbit and the wind's smoke is laid over it more lightly */
+      /* the layers that are on: NOAA's live view (on the site), the cloud map and the rain, one layer of colour, the isobars, the war
+         zones and the places cut off. With the clouds or the live view on, the Earth is shown nearer to how it looks from orbit */
       var cl=GLOBE.hasCloud()&&!!LY.cld,rn=GLOBE.hasRain()&&!!LY.rain,gk=HOSTED&&LY.sat&&GLOBE.hasGeo()?1:0,ck=colLayer(),ik=LY.pres&&wxT&&typeof WX!=='undefined'&&WX.mslp?1:0,dim=cl||gk?.64:.38;
-      if(!GLOBE.draw(g,{sun:sunV,moon:moonV,moonK:moonI?moonI.phase:0,bg:bg,dim:dim,flow:LY.wind&&P&&dye?dye.r.tex:null,flowK:(cl||gk?.62:1.15)*clamp((10-zoom)/6,.3,1)*(ck?.7:1),aur:LY.aur?aurT:null,aurK:1,
-        cld:cl,cldK:.95,rain:rn,rainK:1,sunK:1,time:t*.001,windF:windT,windK:ck==='wind'?1:0,wx:wxT,heatK:ck==='temp'?1:0,waveK:ck==='waves'?1:0,isoK:ik,geoK:gk}))blank();
+      if(!GLOBE.draw(g,{sun:sunV,moon:moonV,moonK:moonI?moonI.phase:0,bg:bg,dim:dim,zone:LY.war||LY.dark?ZONES.tex():null,warK:LY.war?1+.9*pingK('war'):0,darkK:LY.dark?1:0,aur:LY.aur?aurT:null,aurK:1+.8*pingK('aur'),
+        cld:cl,cldK:.95,rain:rn,rainK:1,sunK:1,time:t*.001,windF:windT,windK:0,wx:wxT,heatK:ck==='temp'?1:0,waveK:ck==='waves'?1:0,isoK:ik,geoK:gk}))blank();
       /* the satellites over the same Earth: the stars behind, every satellite where it is this second (while they are on), the one tapped
          with its orbit */
       try{ORBIT.layer.draw(t,!LY.orbit)}catch(e){}}
+    /* the zones' edges, the front, and their names */
+    if(LY.war||LY.dark)try{ZONES.draw(c,g,t,!!LY.war,!!LY.dark)}catch(e){}
     /* the lightning: where the storms are (a faint violet dust), and each flash as its bar comes round */
-    c.globalCompositeOperation='lighter';c.fillStyle='rgba(150,120,255,.28)';
-    for(i=0;i<SK.length&&LY.bolt;i++){k=SK[i];if(k.p[2]>.04)c.fillRect(k.p[0]-.7,k.p[1]-.7,1.4,1.4)}
+    /* (15 Nov, 23:20: "Make everything work": the lightning and the fires had been specks; they grow as the Earth comes closer) */
+    var zf=clamp(Math.sqrt(g.R/170),.9,2.2),sq=1.6*zf;c.globalCompositeOperation='lighter';c.fillStyle='rgba(150,120,255,.34)';
+    for(i=0;i<SK.length&&LY.bolt;i++){k=SK[i];if(k.p[2]>.04)c.fillRect(k.p[0]-sq/2,k.p[1]-sq/2,sq,sq)}
     for(i=0;i<flashes.length;i++){var f=flashes[i];k=f.k;if(k.p[2]<=.04)continue;var a=(1-f.t)*(1-f.t),z=clamp(k.p[2]*2.5,.35,1);
-      c.fillStyle='rgba(190,170,255,'+(a*.20*z).toFixed(3)+')';c.beginPath();c.arc(k.p[0],k.p[1],3+13*f.t,0,TAU);c.fill();
-      c.fillStyle='rgba(245,240,255,'+(a*.95*z).toFixed(3)+')';c.beginPath();c.arc(k.p[0],k.p[1],1.7,0,TAU);c.fill()}
+      c.fillStyle='rgba(190,170,255,'+(a*.24*z).toFixed(3)+')';c.beginPath();c.arc(k.p[0],k.p[1],(4+16*f.t)*zf,0,TAU);c.fill();
+      c.fillStyle='rgba(245,240,255,'+(a*.95*z).toFixed(3)+')';c.beginPath();c.arc(k.p[0],k.p[1],2.2*zf,0,TAU);c.fill()}
     /* the fires: an ember where each burns, bigger the more heat it gives off */
-    for(i=0;i<FR.length&&LY.fire;i++){k=FR[i];if(k.p[2]<=.04)continue;var fa=(.6+.4*Math.sin(t*.004*(1+k.ph*.2)+k.ph*7))*clamp(k.p[2]*3,.3,1),fr=.7+k.s*.5;
-      c.fillStyle='rgba(255,96,36,'+(fa*.34).toFixed(3)+')';c.beginPath();c.arc(k.p[0],k.p[1],fr*2.4,0,TAU);c.fill();
-      c.fillStyle='rgba(255,196,120,'+(fa*.95).toFixed(3)+')';c.beginPath();c.arc(k.p[0],k.p[1],fr*.62,0,TAU);c.fill()}
+    for(i=0;i<FR.length&&LY.fire;i++){k=FR[i];if(k.p[2]<=.04)continue;var fa=(.6+.4*Math.sin(t*.004*(1+k.ph*.2)+k.ph*7))*clamp(k.p[2]*3,.3,1),fr=(.7+k.s*.5)*zf;
+      c.fillStyle='rgba(255,90,30,'+(fa*.3).toFixed(3)+')';c.beginPath();c.arc(k.p[0],k.p[1],fr*3.2,0,TAU);c.fill();
+      c.fillStyle='rgba(255,140,60,'+(fa*.45).toFixed(3)+')';c.beginPath();c.arc(k.p[0],k.p[1],fr*1.5,0,TAU);c.fill();
+      c.fillStyle='rgba(255,214,150,'+(fa*.95).toFixed(3)+')';c.beginPath();c.arc(k.p[0],k.p[1],fr*.75,0,TAU);c.fill()}
     c.globalCompositeOperation='source-over';
+    /* a layer just switched on shows where its things are: for two seconds rings go out from each of them in view */
+    if(lyPing&&FT-lyPing.t<2000){var pu=(FT-lyPing.t)/2000,pk=lyPing.k,pl=pk==='fire'&&LY.fire?FR:pk==='storm'&&LY.storm?ST:pk==='bolt'&&LY.bolt?SK:null,
+        pc=pk==='fire'?'255,150,70':pk==='bolt'?'200,180,255':'234,249,255',pst=pl?Math.max(1,Math.ceil(pl.length/90)):1;
+      if(pl){c.lineWidth=1.4;for(i=0;i<pl.length;i+=pst){k=pl[i];if(k.p[2]<=.04)continue;for(var w2=0;w2<2;w2++){var u2=pu*1.5-w2*.4;if(u2<0||u2>1)continue;
+        c.strokeStyle='rgba('+pc+','+(.85*(1-u2)*(1-u2)).toFixed(3)+')';c.beginPath();c.arc(k.p[0],k.p[1],(5+28*u2)*zf,0,TAU);c.stroke()}}}}
+    else if(lyPing)lyPing=null;
     /* close to a storm: its arms of cloud turning (the way it turns), as wide as its winds are strong, and its way: where its present
        motion would carry it in one and two days (NOAA's movement; a line of motion, not a forecast) */
     var kmPx=g.R/6371;
@@ -2246,51 +2397,33 @@ var WIND=(function(){
     if(LY.pres&&wxT&&typeof WX!=='undefined'&&WX.hl&&WX.hl.length){var HL=WX.hl,q4=[0,0,0];c.textAlign='center';c.textBaseline='middle';for(i=0;i<HL.length;i++){var h=HL[i];GLOBE.pr(h.v,g,q4);if(q4[2]<=.15)continue;
       c.font='700 12px '+MONO;c.lineWidth=3;c.strokeStyle='rgba(1,4,10,.75)';c.fillStyle=h.h?'rgba(255,179,71,.95)':'rgba(62,240,255,.95)';c.strokeText(h.h?'H':'L',q4[0],q4[1]);c.fillText(h.h?'H':'L',q4[0],q4[1]);
       c.font='500 8px '+MONO;c.fillStyle='rgba(234,249,255,.8)';c.strokeText(String(h.hpa),q4[0],q4[1]+11);c.fillText(String(h.hpa),q4[0],q4[1]+11)}c.textAlign='left'}
-    /* the place being read: a ring, and an arrow down the wind, longer the harder it blows */
+    /* the place being read: a ring */
     if(probe&&probe.p[2]>.02){var px=probe.p[0],py=probe.p[1],al=clamp((t-probe.t)/250,0,1);c.strokeStyle='rgba(1,4,10,.55)';c.lineWidth=3.4;c.beginPath();c.arc(px,py,8,0,TAU);c.stroke();
-      c.strokeStyle='rgba(234,249,255,'+(.92*al).toFixed(3)+')';c.lineWidth=1.2;c.beginPath();c.arc(px,py,8,0,TAU);c.stroke();
-      if(probe.w){var dx=probe.q[0]-px,dy=probe.q[1]-py,dl=Math.hypot(dx,dy)||1,len=clamp(10+probe.w.kmh*.5,14,64);dx/=dl;dy/=dl;var x1=px+dx*10,y1=py+dy*10,x2=px+dx*(10+len),y2=py+dy*(10+len);
-        c.strokeStyle='rgba(255,179,71,'+(.95*al).toFixed(3)+')';c.lineWidth=1.4;c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.moveTo(x2-dx*7-dy*4,y2-dy*7+dx*4);c.lineTo(x2,y2);c.lineTo(x2-dx*7+dy*4,y2-dy*7-dx*4);c.stroke()}}
+      c.strokeStyle='rgba(234,249,255,'+(.92*al).toFixed(3)+')';c.lineWidth=1.2;c.beginPath();c.arc(px,py,8,0,TAU);c.stroke()}
     /* the cameras: a ring for each, and the window of the one playing */
     if(camOn)try{LIVEW.layer.draw(t,g)}catch(e){}}
-  /* the words: how to use it, then (a place read) what is there, or (nothing read) what is happening and how fresh it is */
+  /* the words at the top: only what a tap asked for (15 Nov, 22:59: "Remove the writing on the top"; until then four lines stood there:
+     what to do, what was happening, how fresh it was, the cameras): a camera open, or a place, a fire, a storm, a war or a place cut off
+     read. Nothing for the hints' ghost finger, nothing when a layer is switched (its button says it) */
   function hud(){
-    var head='drag to turn · tap a video or a place',
-      cam=camOn&&LIVEW.layer.open()?LIVEW.layer.hud():'';
-    if(cam)return head+'\n'+cam;
-    var b=wxHud();if(probe)return b||head;
-    /* (on the site: how many cameras are on the air, and how to watch one) */
-    var cm=camOn?LIVEW.layer.hud():'';
-    return head+(b?'\n'+b:'')+(cm?'\n'+cm:'')}
+    var cam=camOn&&LIVEW.layer.open()?LIVEW.layer.hud():'';if(cam)return cam;
+    return probe&&!probe.ghost?wxHud():''}
   function wxHud(){
-    var w=LIVE.wind,a=LIVE.aurora,s=LIVE.strikes;if(!w)return LIVE.asked?'reading the wind':'';
-    var r=reading();
-    if(r&&r.wind){var la=probe.lat,lo=probe.lon,h=Math.floor(r.hour),m=Math.floor((r.hour-h)*60),F=r.fire,S=r.storm,l3,nm=placeName(la,lo),
+    var w=LIVE.wind,r=reading();
+    /* a war or a place cut off: what is known of it, and where that comes from */
+    if(r&&probe.zone)return ZONES.words(probe.zone);
+    if(r){var la=probe.lat,lo=probe.lon,h=Math.floor(r.hour),m=Math.floor((r.hour-h)*60),F=r.fire,S=r.storm,l3='',nm=placeName(la,lo),
         l1=(nm?nm+'\n':'')+Math.abs(la).toFixed(1)+'°'+(la>=0?'N':'S')+' '+Math.abs(lo).toFixed(1)+'°'+(lo>=0?'E':'W')+' · '+(h<10?'0':'')+h+':'+(m<10?'0':'')+m+' by the Sun · '+(r.sun>-.83?'Sun '+Math.round(Math.max(0,r.sun))+'° up':r.sun>-18?'dusk':'night'),
-        l2='wind '+Math.round(r.wind.kmh)+' km/h from '+COMPASS[Math.round(r.wind.from/22.5)%16]+(r.aurora>=3?' · aurora '+r.aurora+'%':''),
-        l2b=[r.t!==null?Math.round(r.t)+'°C':'',r.hpa!==null?Math.round(r.hpa)+' hPa':'',r.wave!==null?'waves '+r.wave.toFixed(1)+' m':''].filter(Boolean).join(' · ');
-      if(l2b)l2+='\n'+l2b;
+        l2=[r.t!==null?Math.round(r.t)+'°C':'',r.hpa!==null?Math.round(r.hpa)+' hPa':'',r.wave!==null?'waves '+r.wave.toFixed(1)+' m':'',
+          r.wind?'wind '+Math.round(r.wind.kmh)+' km/h from '+COMPASS[Math.round(r.wind.from/22.5)%16]:'',r.aurora>=3?'aurora '+r.aurora+'%':''].filter(Boolean).join(' · ');
       /* a fire: how much heat it was giving off, which satellite saw it and how long ago. A storm: what its forecasters last said of it
          (the hurricane centre gives the wind it has now; GDACS, for the rest of the world, the highest it has reached) */
       if(F)l3='fire · '+F.frp.toLocaleString('en-US')+' MW · seen by '+(F.sat||'satellite')+' '+agoWords((Date.now()-LIVE.fires.asOf)+F.age*60000);
       else if(S){l3=S.name+' · '+(CLS[S.cls]||'cyclone')+(S.kmh?' · '+(S.peak?'has reached ':'')+S.kmh+' km/h':'');if(S.hpa&&l3.length<34)l3+=' · '+S.hpa+' hPa';l3+=' · '+S.by}
       else if(r.near)l3=r.near+' lightning flash'+(r.near>1?'es':'')+' within 300 km';
-      else l3='NOAA GFS, '+stampUTC(w.asOf);
-      return l1+'\n'+l2+'\n'+l3}
-    /* nothing read: two short lines (each short enough for one line of a phone): what is happening now, of the layers that are on; and
-       the layer just switched, or how fresh what is shown is */
-    var n=[];if(LY.storm&&ST.length)n.push(ST.length===1?'1 storm':ST.length+' storms');if(LY.fire&&FR.length)n.push(FR.length.toLocaleString('en-US')+' fires');
-    if(LY.bolt&&s&&s.list.length)n.push(s.list.length.toLocaleString('en-US')+' lightning flashes');
-    return (n.length?n.join(' · ')+'\n':'')+lyLine(w,a)}
-  function lyLine(w,a){
-    if(lyMsg&&FT-lyMsg.t<3800){var k=lyMsg.k,nm=lyName(k);return lyMsg.on?nm+' on: '+(k==='wind'&&colLayer()!=='wind'?'its flow, shown as smoke':LYT[k]):nm+' off'}
-    /* the live view's age, then the layer of colour (or the wind) and its hour: "now" when it is the model's forecast for this hour */
-    var X=typeof WX!=='undefined'?WX:{},parts=[],ck=colLayer();
-    if(HOSTED&&LY.sat&&GLOBE.hasGeo()&&typeof GEO!=='undefined')parts.push('live view '+agoWords(Date.now()-Math.max(GEO.e.at,GEO.w.at)));
-    var wk=ck==='temp'||ck==='waves',at=wk?X.at:w.asOf,nm=ck==='temp'?'temperature':ck==='waves'?'waves':LY.wind?'wind':'weather';
-    if(ck||LY.wind||!parts.length)parts.push(nm+(Math.abs(Date.now()-at)<2.2*3600000?' now':' of '+stampUTC(at)));
-    if(LY.aur&&a&&a.max>=30)parts.push('aurora '+(a.max<60?'active':'strong'));
-    return parts.join(' · ')}
+      else if(w)l3='NOAA GFS, '+stampUTC(w.asOf);
+      return l1+(l2?'\n'+l2:'')+(l3?'\n'+l3:'')}
+    return ''}
   /* the hint: one finger turns the globe a little, one way and then the other; then it taps a place */
   function ghost(t){
     /* (14 Nov) no hints once the Earth has been brought close, or while something is being read or watched: a ghost finger would
@@ -2300,9 +2433,9 @@ var WIND=(function(){
     if(u>.46&&u<.5)return [{x:g.cx-dir*R*.22,y:g.cy-R*.28}];
     return [null]}
   return {nowGo:function(i){nowGo(NOWL[i])},zoomBy:zoomBy,nowList:function(){return NOWL.map(function(x){return x.k+':'+x.n})},enter:enter,leave:leave,resize:resize,down:down,move:move,up:up,gesture:gesture,wheel:wheel,key:key,seq:seq,step:step,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
-    dbg:function(){return {ok:!!(P&&dye),byte8:byte8,dw:dw,dh:dh,wind:!!windT,aurora:!!aurT,strikes:SK.length,flashes:flashes.length,ready:GLOBE.ready(),lat0:lat0,lon0:lon0,R:g.R,cx:g.cx,cy:g.cy,zoom:zoom,turned:turned,
-      LY:LY,dock:[].map.call($('lyd').childNodes,function(b){return b.id.slice(3)+(b.getAttribute('aria-pressed')==='true'?'+':'-')}),dockShown:!$('lyd').hidden,lgd:$('lgd').hidden?'':$('lgd').dataset.k,
-      col:colLayer(),wx:!!wxT,geo:GLOBE.hasGeo(),now:NOWL.map(function(x){return x.k+':'+x.n}),cams:camOn,fly:!!FLY,probe:probe?{lat:probe.lat,lon:probe.lon,ghost:probe.ghost,r:reading()}:null,vis:SK.filter(function(k){return k.p[2]>.3}).length,fires:FR.length,fireGL:fireN,storms:ST.map(function(k){return {name:k.s.name,lat:k.s.lat,lon:k.s.lon,x:k.p[0],y:k.p[1],z:k.p[2]}}),foc:!!FOC,
+    dbg:function(){return {ok:GLX.ok&&gen===GLX.gen,wind:!!windT,aurora:!!aurT,strikes:SK.length,flashes:flashes.length,ready:GLOBE.ready(),lat0:lat0,lon0:lon0,R:g.R,cx:g.cx,cy:g.cy,zoom:zoom,turned:turned,
+      LY:LY,ping:lyPing?lyPing.k:'',dock:[].map.call($('lyd').childNodes,function(b){return b.id.slice(3)+(b.getAttribute('aria-pressed')==='true'?'+':'-')}),dockShown:!$('lyd').hidden,lgd:$('lgd').hidden?'':$('lgd').dataset.k,
+      col:colLayer(),wx:!!wxT,geo:GLOBE.hasGeo(),now:NOWL.map(function(x){return x.k+':'+x.n}),cams:camOn,fly:!!FLY,probe:probe?{lat:probe.lat,lon:probe.lon,ghost:probe.ghost,r:reading(),zone:probe.zone?{w:probe.zone.w?probe.zone.w.id:null,d:probe.zone.d?probe.zone.d.id:null,front:probe.zone.front}:null}:null,vis:SK.filter(function(k){return k.p[2]>.3}).length,fires:FR.length,zones:ZONES.dbg(),storms:ST.map(function(k){return {name:k.s.name,lat:k.s.lat,lon:k.s.lon,x:k.p[0],y:k.p[1],z:k.p[2]}}),foc:!!FOC,
       fireAt:FR.filter(function(k){return k.p[2]>.3}).slice(0,3).map(function(k){return {x:k.p[0],y:k.p[1],frp:k.f.frp}})}},
     windAt:windAt,
     /* (for the checks) a layer switched as its button would, or read */
@@ -2351,7 +2484,7 @@ var ORBIT=(function(){
      same body at two moments (k runs 0 at the body to 1 at the far end). The body stays where it really is this second; light runs
      along the trail towards it, so that in real time, when a lap takes an hour and a half, the eye still sees which way everything
      is going. (Kepler's equation is solved a step less finely here: the trail is a few pixels wide) */
-  var TN=4,TRAILS=true,LAY=false;
+  var TN=4,TRAILS=true,LAY=false,LAPSE=60;
   var TVS=VS.replace('attribute vec4 a_c;','attribute vec4 a_c;varying float v_ph;')
     .replace('E=E-(E-e*sin(E)-M)/(1.0-e*cos(E));E=E-(E-e*sin(E)-M)/(1.0-e*cos(E));E=E-(E-e*sin(E)-M)/(1.0-e*cos(E));','E=E-(E-e*sin(E)-M)/(1.0-e*cos(E));E=E-(E-e*sin(E)-M)/(1.0-e*cos(E));')
     .replace('v_c=vec4(a_c.rgb*hid*(q.z<0.0?0.5:1.0)*(a_e1.x<1.7?uGain:1.0),1.0-k);}','v_c=vec4(a_c.rgb*hid*(q.z<0.0?0.4:1.0)*(a_e1.x<1.7?uGain:1.0),k);v_ph=fract(a_e3.x*0.1591549+a_e2.x*0.2347);}');
@@ -2461,7 +2594,7 @@ var ORBIT=(function(){
   function key(e,dn){if(e.key==='ArrowRight')keyRate=dn?1:0;else if(e.key==='ArrowLeft')keyRate=dn?-1:0;else if(dn&&(e.key==='n'||e.key==='N'))toNow();else return false;return true}
   function pan(x){return clamp((x-g.cx)/Math.max(60,VW*.4),-1,1)}
   function up(p){
-    if(p.ghost||FT-p.t0>600||p.moved>12||!EL)return;var i,best=-1,bd=24*24,d;
+    if(p.ghost||held(p)>600||p.moved>12||!EL)return;var i,best=-1,bd=24*24,d;
     for(i=0;i<satN;i++){view(place(i,simMs,tmp),tq);if(!shown(tq))continue;var x=g.cx+tq[0]*g.R-p.x,y=g.cy-tq[1]*g.R-p.y;d=x*x+y*y;if(GRP[i]===7||(FLG[i]&1))d*=.45;if(d<bd){bd=d;best=i}}
     sel=best;path=null;selI=null;if(best>=0){satInfoLoad();tone('glass',pent(clamp(Math.round(14-Math.log(EL[best*11])*9),2,14),52),.45,pan(p.x))}cardBuild()}
   /* is a body in sunlight? (in the frame of the stars; the Earth's shadow taken as a cylinder) */
@@ -2517,14 +2650,14 @@ var ORBIT=(function(){
       glAttrOff();u=P.sat.u;a=P.sat.a;gl.useProgram(P.sat.p);gl.uniform3f(u.uE,RE3[0],RE3[1],RE3[2]);gl.uniform3f(u.uN,RN3[0],RN3[1],RN3[2]);gl.uniform3f(u.uV,RC3[0],RC3[1],RC3[2]);
       gl.uniform2f(u.uC,g.cx,g.cy);gl.uniform2f(u.uRes,VW,VH);gl.uniform1f(u.uR,g.R);gl.uniform1f(u.uT,(simMs-baseT)/60000);gl.uniform1f(u.uTail,lerp(1.2,3.2,fast));
       /* seen from far off the low swarm is thousands of points in a small disc: it is dimmed there, so the Earth still shows through it */
-      gl.uniform1f(u.uPt,DPR*clamp(.5+.5*zoom,.62,1.5)*(LAY?.8:1)*(1+.1*HIT[4]*G[4]));gl.uniform1f(u.uGain,clamp(.1+zoom*1.05,.2,1)*(LAY?.42:1));
+      gl.uniform1f(u.uPt,DPR*clamp(.5+.5*zoom,.62,1.5)*(LAY?.8:1)*(1+.1*HIT[4]*G[4]));gl.uniform1f(u.uGain,clamp(.1+zoom*1.05,.2,1)*(LAY?.55:1));
       gl.bindBuffer(gl.ARRAY_BUFFER,satB);
       var ptr=function(stride){gl.enableVertexAttribArray(a.a_e1);gl.vertexAttribPointer(a.a_e1,4,gl.FLOAT,false,stride,0);gl.enableVertexAttribArray(a.a_e2);gl.vertexAttribPointer(a.a_e2,4,gl.FLOAT,false,stride,16);
         gl.enableVertexAttribArray(a.a_e3);gl.vertexAttribPointer(a.a_e3,4,gl.FLOAT,false,stride,32);gl.enableVertexAttribArray(a.a_c);gl.vertexAttribPointer(a.a_c,4,gl.FLOAT,false,stride,48)};
       /* the trails, then the bodies (the first entry of each body's run in the same list) */
       if(P.trail&&TRAILS){var tu=P.trail.u,ta=P.trail.a;glAttrOff();gl.useProgram(P.trail.p);
         gl.uniform3f(tu.uE,RE3[0],RE3[1],RE3[2]);gl.uniform3f(tu.uN,RN3[0],RN3[1],RN3[2]);gl.uniform3f(tu.uV,RC3[0],RC3[1],RC3[2]);gl.uniform2f(tu.uC,g.cx,g.cy);gl.uniform2f(tu.uRes,VW,VH);
-        gl.uniform1f(tu.uR,g.R);gl.uniform1f(tu.uT,(simMs-baseT)/60000);gl.uniform1f(tu.uTail,lerp(9,14,fast));gl.uniform1f(tu.uGain,clamp(.1+zoom*1.05,.2,1)*(LAY?.32:1));gl.uniform1f(tu.uPt,1);
+        gl.uniform1f(tu.uR,g.R);gl.uniform1f(tu.uT,(simMs-baseT)/60000);gl.uniform1f(tu.uTail,LAY?lerp(9,6,fast):lerp(9,14,fast));gl.uniform1f(tu.uGain,clamp(.1+zoom*1.05,.2,1)*(LAY?.34:1));gl.uniform1f(tu.uPt,1);
         gl.uniform1f(tu.uLine,clamp(.1+zoom*.12,.12,.3)*(1+.5*fast));gl.uniform1f(tu.uPh,reduce?0:(t*.00055)%1);
         [['a_e1',0],['a_e2',16],['a_e3',32],['a_c',48]].forEach(function(x){var l=ta[x[0]];if(l>=0){gl.enableVertexAttribArray(l);gl.vertexAttribPointer(l,4,gl.FLOAT,false,64,x[1])}});
         gl.drawArrays(gl.LINES,0,n*TN*2);glAttrOff();gl.useProgram(P.sat.p)}
@@ -2568,8 +2701,12 @@ var ORBIT=(function(){
     layer:{
       on:function(){LAY=true;if(GLX.ok&&gen!==GLX.gen)glSetup();liveLoad()},
       off:function(){if(sel<0)return;sel=-1;path=null;selI=null;cardBuild()},
+      /* (15 Nov, 20:39: "Even just the satellites moving is more fun") on the Earth they fly at sixty times their speed, a minute a
+         second, so the swarm is seen streaming round; one chosen brings the present back (its card's figures are its own, now), and
+         when it is let go they speed up again. Two days ahead, they come back to now and set off again */
       tick:function(dt,t,gx){if(LIVE.sats&&satV!==LIVE.ver.sats)unpack();g.cx=gx.cx;g.cy=gx.cy;g.R=gx.R;for(var k=0;k<3;k++){g.E[k]=gx.E[k];g.N[k]=gx.N[k];g.C[k]=gx.C[k]}
-        zoom=gx.R/Math.max(1,Math.min(STG.w,STG.h)*.3);off=0;want=1;spd=1;ret=false;clock(dt,t)},
+        zoom=gx.R/Math.max(1,Math.min(STG.w,STG.h)*.3);var w=sel>=0||reduce?1:LAPSE;if(w===1&&want!==1&&!ret&&off!==0){ret={t0:FT,from:off};spd=1}want=w;clock(dt,t)},
+      pace:function(){return live()?'satellites now':ret?'satellites back to now':'satellites ×'+(Math.abs(spd-want)<3?want:Math.round(Math.abs(spd)))},
       /* (hide: the Earth's satellites layer is off; the stars are still drawn) */
       draw:function(t,hide){if(!GLX.ok||GLX.lost)return;if(gen!==GLX.gen)glSetup();if(!P)return;sky(t,hide)},
       /* a tap near a satellite: the nearest within reach is chosen (true), or none is (false). Over the Earth's face a tap is for the
@@ -2579,7 +2716,7 @@ var ORBIT=(function(){
         for(i=0;i<satN;i++){if(on&&GRP[i]!==7&&!(NOTE&&NOTE[i]))continue;view(place(i,simMs,tmp),tq);if(!shown(tq))continue;var x=g.cx+tq[0]*g.R-p.x,y=g.cy-tq[1]*g.R-p.y;d=x*x+y*y;if(GRP[i]===7||(FLG[i]&1))d*=.45;if(d<bd){bd=d;best=i}}
         if(best<0)return false;sel=best;path=null;selI=null;satInfoLoad();tone('glass',pent(clamp(Math.round(14-Math.log(EL[best*11])*9),2,14),52),.45,pan(p.x));cardBuild();return true},
       sel:function(){return sel},
-      hud:function(){var S=LIVE.sats;if(!S||!EL)return LIVE.asked?'reading the orbits':'';return satN.toLocaleString('en-US')+' satellites, where they are now · orbits of '+stampUTC(S.fresh||S.asOf)}}}
+      hud:function(){var S=LIVE.sats;if(!S||!EL)return LIVE.asked?'reading the orbits':'';return satN.toLocaleString('en-US')+' satellites, '+(live()?'where they are now':'at sixty times their speed')+' · orbits of '+stampUTC(S.fresh||S.asOf)}}}
 })();
 
 /* ---------- the cameras: a layer of the Earth (12-wind.js). They play only where the page is served from the owner's own host
@@ -2703,7 +2840,7 @@ var LIVEW=(function(){
   function inWin(x,y){return cur>=0&&x>=win.x&&x<=win.x+win.w&&y>=win.y&&y<=win.y+win.h}
   function onX(x,y){return cur>=0&&x>=win.x+win.w-34&&y<=win.y+34}
   /* a finger on the window: across it, the next camera east or west; a tap, bigger or smaller; on its cross, closed */
-  function winUp(p){if(p.ghost||p.multi)return;var dx=p.x-p.x0,dy=p.y-p.y0,ax=Math.abs(dx),ay=Math.abs(dy),tap=FT-p.t0<600&&p.moved<14;
+  function winUp(p){if(p.ghost||p.multi)return;var dx=p.x-p.x0,dy=p.y-p.y0,ax=Math.abs(dx),ay=Math.abs(dy),tap=held(p)<600&&p.moved<14;
     if(tap){if(onX(p.x0,p.y0)){winClose();hit('tok',.25,0);return}big=!big;winGeo();hit('tok',.2,0);return}
     if((ax>50&&ax>ay*1.2)||(Math.abs(p.vx||0)>600&&ax>24&&ax>ay))step(dx<0?1:-1)}
   /* ---- the row of themes ---- */
@@ -2852,7 +2989,7 @@ var LIVEW=(function(){
     go:function(id){for(var i=0;i<CAMS.length;i++)if(CAMS[i].id===id){show(i);return i}return -1},theme:themeSet,close:winClose}
 })();
 
-/* ---------- SND: real recorded instruments, for Mix and for Smoke's game.
+/* ---------- SND: real recorded instruments, for Mix and for Paint's game.
    13 Nov, night: "impossible to make good sounds with those noises" (Mix's machine of sounds made on the device). So these are
    recordings: the Versilian Community Sample Library, which its makers put in the public domain (CC0 1.0: no royalties, no credit
    asked; github.com/sgossner/VCSL). Every one is struck or plucked and dies away. They come in eight small MP3 files in snd/, one a
@@ -2907,7 +3044,7 @@ var SND=(function(){
 /* ---------- the modes (15 Nov: "The mix is good! Make it able to also cycle through sounds or modes. another layer to change
    globally. five modes. funky, African, bluesy, acid, dub").
    A mode is the whole music's way of playing: its own instruments, written to its own groove, its own room and echo, and the voice
-   every touch has in Smoke and on the Earth. It is chosen in Mix (five buttons) or from the small button beside the note at the top
+   every touch has in Paint and on the Earth. It is chosen in Mix (five buttons) or from the small button beside the note at the top
    of every world (a tap: the next one), comes in on the next bar, and is kept on the device.
    African is the band exactly as it was: the nine players and the ten instruments of 13 and 14 Nov. The other four are new bands of
    recorded instruments (struck or plucked, every note dying away: drums, basses, clavinet, electric piano, guitars, and Mix's own
@@ -3098,7 +3235,7 @@ var MODEROWS=(function(){
         xs: '......................................................5.........'}}]}]}})();
 /* each mode: who of the band plays when it is chosen (African: all nine), which instruments on which loop, the order the music
    builds in when the page starts in it, its room (how much of the band's reverb), its echo (sixteenths, how much comes back, its
-   filters), and the voice of a touch in Smoke and on the Earth ('glass', the main one; 'tick', the lightning; 'thump', 'tok', 'kal') */
+   filters), and the voice of a touch in Paint and on the Earth ('glass', the main one; 'tick', the lightning; 'thump', 'tok', 'kal') */
 var MODESET={
   africa:{band:[1,1,1,1,1,1,1,1,1],rows:{},room:0,echo:{fb:0}},
   funk:{band:[0,0,0,0,0,0,0,0,0],rows:{drums:0,bass:0,clav:0,guitar:0,perc:0},room:.05,echo:{fb:0},
@@ -3129,7 +3266,7 @@ var MODEBUILD={funk:['drums','bass','guitar','clav','perc'],blues:['drums','bass
    about) and A seventh for two (A C sharp E G): E dorian all through. So the tuned loops are four bars long and change with the band,
    and they are lined up with its four bars wherever they start.
    The first time Mix is opened (or a mode is chosen) it takes the band over from its usual loops where they are, without a gap, and
-   keeps it from then on: what is set here goes on playing in Smoke and on the Earth, and the music button at the top pauses it and
+   keeps it from then on: what is set here goes on playing in Paint and on the Earth, and the music button at the top pauses it and
    brings it back.
    The band keeps its own levels and its own room; African's instruments go through the toys' bus, under its ceiling; the other modes'
    instruments are those modes' bands, into a bus of their own with a little of the band's room and the mode's echo. Each at a level
@@ -3351,7 +3488,7 @@ var MIX=(function(){
   function next(){var cur=pend||MODE,i=0;for(var k=0;k<MODES.length;k++)if(MODES[k].k===cur)i=k;modeSet(MODES[(i+1)%MODES.length].k)}
   /* every sound the mode needs, fetched once */
   function loadAll(){var k=pend||MODE;loading=SND.load(banksOf(k));return loading}
-  /* ---- a touch's voice in the mode (Smoke, the Earth): the mode's own instrument for the main notes, its hat for the lightning, its
+  /* ---- a touch's voice in the mode (Paint, the Earth): the mode's own instrument for the main notes, its hat for the lightning, its
      kick and rim for the knocks; into the mode's bus, under the ceiling its band is under; African keeps the glass ---- */
   /* a touch in a mode lands on the mode's next sixteenth, and one touch sounds on any one sixteenth (so a flurry of fingers plays
      along with the groove, as a sixteenth-note line, rather than over it) */
@@ -3375,27 +3512,44 @@ var MIX=(function(){
   var MCOL={funk:'#ff6a3d',africa:'#ffb347',blues:'#4aa8ff',acid:'#c6ff6b',dub:'#b46bff'};
   function E(tag,cls,txt,par){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined&&txt!==null)e.textContent=txt;if(par)par.appendChild(e);return e}
   function btn(cls,txt,par,fn){var b=E('button',cls,txt,par);b.type='button';if(fn)b.addEventListener('click',fn);return b}
+  /* (15 Nov, 20:39: "music is great! I love it, maybe see if you can make it all fit on one page") one screen of a phone, no scrolling:
+     the five modes; the band's nine in two rows; the mode's instruments as cards in two columns, each its name over its two loops; and
+     at the foot, side by side, a new mix and stop */
+  /* (15 Nov, 23:20: "make the music buttons always on the page, fit") in three parts, the modes and the band, the instruments, and the
+     foot, so that a screen wider than it is tall can set the instruments beside the rest */
   function build(){
     if(built)return;built=true;
     var R=E('div','mx',null,document.body);R.id='mix';R.hidden=true;UI.root=R;
     var L=E('div','mxl',null,R);UI.list=L;UI.b=[];UI.m=[];
-    var jf=E('div','mxfoot mxjf',null,L);UI.jam=btn('mxstop mxjam','jam: a new mix',jf,function(){jam();hit('tok',.2,0)});UI.jam.setAttribute('aria-label','Jam: start a new mix of instruments');
-    E('div','mxsec','mode',L);
-    var md=E('div','mxmodes',null,L);MODES.forEach(function(m){var b=btn('mxb mxm',m.n,md,function(){modeSet(m.k)});b.style.setProperty('--c',MCOL[m.k]);b.setAttribute('aria-label','Mode: '+m.n);UI.m.push({el:b,k:m.k})});
-    E('div','mxsec','the band',L);
-    var band=E('div','mxband',null,L);
+    var A=E('div','mxa',null,L),C=E('div','mxi',null,L);
+    var md=E('div','mxmodes',null,A);MODES.forEach(function(m){var b=btn('mxb mxm',m.n,md,function(){modeSet(m.k)});b.style.setProperty('--c',MCOL[m.k]);b.setAttribute('aria-label','Mode: '+m.n);UI.m.push({el:b,k:m.k})});
+    E('div','mxsec','the band',A);
+    var band=E('div','mxband',null,A);
     TR.forEach(function(t,j){if(t.k!=='stem')return;var b=btn('mxb mxp',t.n,band,function(){launch(j,0)});b.style.setProperty('--c',t.col);b.setAttribute('aria-label',BNAMES[t.i]);UI.b.push({el:b,j:j,k:0})});
     UI.bandN=UI.b.length;
-    UI.sec=E('div','mxsec','play along',L);
-    UI.rows=E('div','mxrows',null,L);
-    var f=E('div','mxfoot',null,L);UI.stop=btn('mxstop','stop the instruments',f,function(){hand();stopAll()});
-    rowsBuild();uiSync(true)}
-  /* the mode's instruments, a row each with its two loops */
+    UI.sec=E('div','mxsec','play along',C);
+    UI.rows=E('div','mxrows',null,C);
+    var f=E('div','mxfoot',null,L);UI.jam=btn('mxstop mxjam','jam: a new mix',f,function(){jam();hit('tok',.2,0)});UI.jam.setAttribute('aria-label','Jam: start a new mix of instruments');
+    UI.stop=btn('mxstop','stop',f,function(){hand();stopAll()});UI.stop.setAttribute('aria-label','Stop the instruments');
+    rowsBuild();uiSync(true);try{document.fonts.ready.then(function(){UI.py=-1;place()})}catch(e){}}
+  /* the mode's instruments: a card each, its name over its two loops */
   function rowsBuild(){if(!built)return;var L=UI.rows,k=MODE;if(UI.rowsK===k)return;UI.rowsK=k;while(L.firstChild)L.removeChild(L.firstChild);UI.b.length=UI.bandN;
     UI.sec.textContent=k==='africa'?'play along':modeName(k)+' band';
     TR.forEach(function(t,j){if(t.k!=='row'||t.mode!==k)return;var row=E('div','mxrow',null,L);row.style.setProperty('--c',t.col);E('span','mxn',t.n,row);
       t.loops.forEach(function(lp,q){var b=btn('mxb',lp.n,row,function(){launch(j,q)});b.setAttribute('aria-label',t.n+': '+lp.n);UI.b.push({el:b,j:j,k:q})})});
-    uiSync(true)}
+    uiSync(true);fit()}
+  /* (15 Nov, 23:20: "make the music buttons always on the page, fit") every button is as tall as lets the whole of Mix fit between the
+     top and the worlds, whatever the screen: 46 px at most, 24 at least, found by halving; the gaps and the letters go with it. A screen
+     wider than it is tall (a phone on its side) sets the instruments beside the modes and the band. Where that still leaves the buttons
+     low (under 30), the headings go and each instrument's name stands beside its loops, if that gives them more. Only a screen too small
+     even for that would scroll */
+  function fit(){var R=UI.root,L=UI.list;if(!R||R.hidden||!L)return;R.classList.toggle('mxw',VW>VH*1.15&&VW>=520);
+    var H=L.clientHeight-(parseFloat(getComputedStyle(L).paddingBottom)||0);if(!(H>0))return;
+    function need(bh){R.style.setProperty('--bh',bh+'px');var a=1e9,b=-1e9;for(var e=L.firstElementChild;e;e=e.nextElementSibling){var q=e.getBoundingClientRect();if(q.height<=0)continue;a=Math.min(a,q.top);b=Math.max(b,q.bottom)}return b-a}
+    function best(){var lo=24,hi=46;if(need(hi)<=H)return hi;if(need(lo)>H)return 0;while(hi-lo>1){var m=(lo+hi)>>1;if(need(m)<=H)lo=m;else hi=m}return lo}
+    R.classList.remove('mxsm');var b1=best(),b2=0;
+    if(b1<30){R.classList.add('mxsm');b2=best();if(b2<=b1){R.classList.remove('mxsm');b2=0}}
+    var bh=Math.max(b1,b2)||24;R.style.setProperty('--bh',bh+'px');UI.bh=bh;UI.fits=!!(b1||b2);L.scrollTop=0}
   /* the button at the top of every world: the mode's name; a tap, the next one (blinking until it comes in on the bar) */
   function chipSync(){var b=document.getElementById('bMode');if(!b)return;var k=pend||MODE,nm=modeName(k);if(b.textContent!==nm)b.textContent=nm;b.style.setProperty('--mc',MCOL[k]);
     b.classList.toggle('wait',!!pend);var i=0;for(var q=0;q<MODES.length;q++)if(MODES[q].k===k)i=q;
@@ -3407,7 +3561,7 @@ var MIX=(function(){
       if(c.el._s!==st){c.el._s=st;c.el.className=(tr.k==='stem'?'mxb mxp':'mxb')+(st?' '+st:'');c.el.setAttribute('aria-pressed',st==='on'?'true':'false')}});
     UI.m.forEach(function(c){var st=pend===c.k?'wait':!pend&&MODE===c.k?'on':'';if(c.el._s!==st){c.el._s=st;c.el.className='mxb mxm'+(st?' '+st:'');c.el.setAttribute('aria-pressed',st==='on'?'true':'false')}})}
   function place(){if(!UI.root)return;var r=UI.root,d=$('data'),y=STG.y0;if(d){var b=d.getBoundingClientRect();if(b.height)y=Math.max(y,Math.round(b.bottom+8))}
-    if(y===UI.py&&STG.y1===UI.py1)return;UI.py=y;UI.py1=STG.y1;r.style.top=y+'px';r.style.height=Math.max(160,STG.y1-y)+'px'}
+    if(y===UI.py&&STG.y1===UI.py1&&VW===UI.pw)return;UI.py=y;UI.py1=STG.y1;UI.pw=VW;r.style.top=y+'px';r.style.height=Math.max(120,STG.y1-y)+'px';fit()}
   /* ===================== the world ===================== */
   function enter(){build();on=true;UI.root.hidden=false;UI.py=-1;place();loadAll();start();rowsBuild();uiSync(true)}
   /* leaving changes nothing that plays: the loops go on in the other worlds */
@@ -3419,14 +3573,12 @@ var MIX=(function(){
     var c=ctx(),o=OV;if(!c||c.state!=='running'||!MIXON)return;var b=beatAt(c.currentTime),f=b-Math.floor(b);
     var R=Math.min(STG.w,STG.h)*(.38+.05*(1-f)),col=MODE==='africa'?'62,240,255':hexRGB(MCOL[MODE]);o.strokeStyle='rgba('+col+','+(.16*(1-f)).toFixed(3)+')';o.lineWidth=1.2;o.beginPath();o.arc(STG.cx,STG.cy,R,0,TAU);o.stroke()}
   function hexRGB(h){var n=parseInt(h.slice(1),16);return ((n>>16)&255)+','+((n>>8)&255)+','+(n&255)}
-  function hud(){
-    var a=TR.filter(function(t){return t.k==='stem'&&t.play>=0}).length,r=TR.filter(function(t){return t.k==='row'&&t.play>=0}).map(function(t){return t.n});
-    return 'tap a loop: in on the next bar, in tune\n'+(pend?'mode: '+modeName(pend)+' on the next bar\n':'')+(a||r.length?(MODE==='africa'?'playing: ':modeName(MODE)+': ')+(a?'the band ('+a+')':'')+(a&&r.length?', ':'')+r.join(', ')+'\nit keeps playing in Smoke and Earth'
-      :'nothing playing: tap the band, or an instrument')}
+  /* no words over it (15 Nov, 22:59: "Remove the writing on the top"): what plays is lit, what waits blinks */
+  function hud(){return ''}
   return {enter:enter,leave:leave,tick:tick,draw:draw,hud:hud,resize:function(){if(UI.root)UI.py=-1;place()},
     /* the band left to itself (04-band.js) brings a player in, or takes one out, while the mixer has it: on the next bar */
     player:function(i,v){var tr=TR[i];if(!tr)return;if(v){if(tr.play<0&&tr.next<0)tr.next=0}else stopT(i)},
-    dbg:function(){var c=ctx(),n=c?c.currentTime:0;return {on:on,want:want,mixon:MIXON,ctx:c?c.state:'none',graph:!!gr,beat:c&&MIXON?beatAt(n):0,mode:MODE,pend:pend,
+    dbg:function(){var c=ctx(),n=c?c.currentTime:0;return {on:on,want:want,mixon:MIXON,ctx:c?c.state:'none',graph:!!gr,bh:UI.bh||0,fits:!!UI.fits,wide:!!(UI.root&&UI.root.classList.contains('mxw')),small:!!(UI.root&&UI.root.classList.contains('mxsm')),beat:c&&MIXON?beatAt(n):0,mode:MODE,pend:pend,
       banks:Object.keys(SND.B).filter(SND.ready),loops:rowsOf(MODE).reduce(function(a,t){return a+t.loops.length},0),rows:rowsOf(MODE).map(function(t){return t.n}),
       fx:gr?{room:+gr.fx.rs.gain.value.toFixed(2),fb:+gr.fx.fb.gain.value.toFixed(2)}:null,
       tracks:TR.map(function(t){return {n:t.n,k:t.k,m:t.mode||'',play:t.play,next:t.next,src:!!t.src}})}},
@@ -3461,7 +3613,8 @@ var OVC=$('ov'),OV=OVC.getContext('2d'),STAGE=$('stage');
    only the music button at the top (13 Nov: "Just the audio remains playing. There is always a small music on off button"; until then
    each world had a row of circles, one for each player) */
 var WORLDS=[
-  {id:'smoke',name:'Smoke',o:DRIFT,sc:[1,1,1,1,1,1,1,1,1],photo:true,ic:'<path d="M8 21c-3-3 3-5 0-8s3-5 0-8M15.5 21c-3-3 3-5 0-8s2.2-4 .6-6.6"/>'},
+  /* paint in water (Smoke until 15 Nov: "Call it paint, not smoke"); a link to #smoke still lands here */
+  {id:'paint',name:'Paint',o:DRIFT,sc:[1,1,1,1,1,1,1,1,1],photo:true,ic:'<path d="M19.6 3.6c-3.4 2.2-6.6 5.2-8.8 8.4"/><path d="M10.6 12.6c-1.9-.4-3.7.9-4 2.9-.2 1.5-.9 2.6-2.4 3.2 2.6 1.4 6.2 1.2 7.6-1.2.9-1.6.6-3.6-1.2-4.9z"/>'},
   /* the Earth: the weather, the satellites and (on the site) the live cameras, each a layer of one globe (13 Nov: "Put them all on the
      same globe as satellites and make that just a layer"); Wind, Orbit and Live were three worlds before */
   {id:'earth',name:'Earth',o:WIND,sc:[1,1,1,1,1,1,1,1,1],ic:'<circle cx="12" cy="12" r="6.6"/><path d="M6.2 10.4c2.4-1.3 4.1 1 6.5-.1 1.5-.7 2.4-.8 3.8-.4"/><ellipse cx="12" cy="12" rx="10.6" ry="3.9" transform="rotate(-22 12 12)"/>'},
@@ -3487,7 +3640,7 @@ function chrome(){
   $('bPhoto').hidden=!w.photo;$('bClear').hidden=!(w.photo&&PHOTO.has);$('bSave').hidden=!DL;$('bNow').hidden=true;
   $('bPhoto').setAttribute('aria-pressed',PHOTO.has?'true':'false');
   try{if(location.hash!=='#'+w.id)history.replaceState(null,'','#'+w.id)}catch(e){}
-  layout();if(CUR&&CUR.resize)safe(function(){CUR.resize(VW,VH)});DATAX='';dataPaint(true)}
+  layout();if(CUR&&CUR.resize)safe(function(){CUR.resize(VW,VH)});DATAX=null;dataPaint(true)}
 function releaseAll(){for(var id in PT){var p=PT[id];delete PT[id];p.down=false;if(CUR&&CUR.up)(function(p){safe(function(){CUR.up(p)})})(p)}PTN=0;GS.a=null;HV=null}
 /* going to another world: the picture dips to black, the band ducks behind a wall for a moment, and its line-up changes */
 function go(i,instant){
@@ -3498,7 +3651,7 @@ function go(i,instant){
   document.body.classList.add('sw');doorDip();GOT=setTimeout(swap,200)}
 function worldsGL(){WORLDS.forEach(function(w){if(w.o.gl)w.o.gl()});PHOTO.tex=null}
 /* links to worlds that have been renamed or have gone still land somewhere sensible */
-var OLDHASH={drift:'smoke',loom:'smoke',bloom:'smoke',band:'smoke',wind:'earth',orbit:'earth',live:'earth'};
+var OLDHASH={drift:'paint',loom:'paint',bloom:'paint',band:'paint',smoke:'paint',wind:'earth',orbit:'earth',live:'earth'};
 function worldOf(h){h=OLDHASH[h]||h;for(var i=0;i<WORLDS.length;i++)if(WORLDS[i].id===h)return i;return -1}
 addEventListener('hashchange',function(){var i=worldOf(location.hash.slice(1));if(i>=0)go(i)});
 
@@ -3517,9 +3670,13 @@ function ptEnd(p){delete PT[p.id];PTN=Math.max(0,PTN-1);eachPT(function(q){q.n=P
 function track(p,x,y,now){var dtm=Math.max(4,now-p.t),dx=x-p.x,dy=y-p.y;p.px=p.x;p.py=p.y;p.x=x;p.y=y;
   p.vx+=(dx/dtm*1000-p.vx)*.55;p.vy+=(dy/dtm*1000-p.vy)*.55;p.spd=Math.hypot(p.vx,p.vy);p.moved+=Math.abs(dx)+Math.abs(dy);p.t=now}
 function newP(id,x,y,now,ghost,mouse,down){return {id:id,x:x,y:y,px:x,py:y,x0:x,y0:y,vx:0,vy:0,spd:0,t0:now,t:now,moved:0,down:down,ghost:ghost,mouse:mouse,n:1}}
+/* how long a finger was down (ms): the shorter of the frames' clock since it was seen to touch and the times the device gave its
+   touching and its lifting (when it gave both), so a slow frame between the two, either way, does not make a quick tap into a long
+   press (15 Nov: the Earth draws more now) */
+function held(p){var f=FT-p.t0;return p.e0!==undefined&&p.e1!==undefined?Math.min(f,p.e1-p.e0):f}
 STAGE.addEventListener('pointerdown',function(e){
   if(e.pointerType==='mouse'&&e.button!==0)return;e.preventDefault();try{STAGE.setPointerCapture(e.pointerId)}catch(x){}
-  var now=performance.now(),p=newP(e.pointerId,e.clientX,e.clientY,now,false,e.pointerType==='mouse',true);
+  var now=performance.now(),p=newP(e.pointerId,e.clientX,e.clientY,now,false,e.pointerType==='mouse',true);if(e.timeStamp>0)p.e0=e.timeStamp;
   ghostsOff(true);if(PT[p.id])ptEnd(PT[p.id]);PT[p.id]=p;PTN++;eachPT(function(q){q.n=PTN});touched[CURI]=true;lastTouch=now;GS.a=null;HV=null;
   if(CUR&&CUR.down)safe(function(){CUR.down(p)});
   try{window.focus()}catch(x2){}});
@@ -3533,6 +3690,7 @@ STAGE.addEventListener('pointermove',function(e){
     if(touched[CURI])lastTouch=now;if(CUR&&CUR.hover)safe(function(){CUR.hover(HV)})}});
 ['pointerup','pointercancel','lostpointercapture'].forEach(function(ev){STAGE.addEventListener(ev,function(e){var p=PT[e.pointerId];if(!p)return;
   if(ev==='pointerup'&&(e.clientX!==p.x||e.clientY!==p.y))track(p,e.clientX,e.clientY,performance.now());
+  if(ev==='pointerup'&&e.timeStamp>0&&p.e0!==undefined&&e.timeStamp>=p.e0)p.e1=e.timeStamp;
   /* a plain tap while the sound is still held back: counted, so the page can stop asking if taps do not free it */
   if(ev==='pointerup'&&performance.now()-p.t0<400&&p.moved<12&&soundHeld())AU.taps=(AU.taps||0)+1;
   ptEnd(p)})});

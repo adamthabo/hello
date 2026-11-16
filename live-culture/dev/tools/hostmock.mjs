@@ -6,7 +6,8 @@
 import http from 'node:http';
 import fs from 'node:fs';
 // dev/ is the folder above this one; the Worker and public/ are beside dev/. The raw sources come from tools/feed.py (into dev/data/live/);
-// the stand-in pictures (testdata/: clouds.jpg, rain.png, blank.png, goes-east.jpg, goes-west.jpg, thumb.jpg) must be made by hand, and the weather
+// the stand-in pictures (testdata/: clouds.jpg, rain.png, blank.png, goes-east.jpg, goes-west.jpg, thumb.jpg) must be made by hand (and
+// testdata/deepstate.geojson is a day's file from cyterat/deepstate-map-data), and the weather
 // model's stand-ins (testdata/gfs_atmos.grib2 and gfs_wave.grib2 with their .idx) by tools/mkgfs.py from a sample GFS file.
 const LC = new URL('..', import.meta.url).pathname, ROOT = new URL('../..', import.meta.url).pathname, PUB = ROOT + 'public/', D = LC + 'data/live/', T = LC + 'testdata/';
 const RAW = 'https://raw.githubusercontent.com/';
@@ -69,6 +70,13 @@ globalThis.fetch = async (u, o) => {
   if ((m = /^https:\/\/www\.youtube\.com\/results\?search_query=([^&]+)/.exec(u))) { const hits = SEARCH[decodeURIComponent(m[1])] || []; return new Response('<html>var ytInitialData = {' + hits.map(h => vr(...h)).join(',') + '};</html>'); }
   if (u === 'https://www.youtube.com/@NASASpaceflight/live') return new Response('<html><link rel="canonical" href="https://www.youtube.com/watch?v=STARBASE001">"playableInEmbed":true "isLiveNow":true</html>');
   if (u.startsWith('https://www.youtube.com/')) return new Response('<html>"channelMetadataRenderer"</html>');
+  // the ground Russia holds in Ukraine (DeepStateMap's daily map, as copied to GitHub): the copy of 15 Nov, whatever the day
+  if (/^https:\/\/raw\.githubusercontent\.com\/cyterat\/deepstate-map-data\/main\/data\/deepstatemap_data_\d{8}\.geojson$/.test(u)) return new Response(fs.readFileSync(T + 'deepstate.geojson'));
+  // IODA's countries with an outage in the last day: made up, in the shape of its summary
+  if (u.startsWith('https://api.ioda.inetintel.cc.gatech.edu/v2/outages/summary?')) return new Response(JSON.stringify({ type: 'outages.summary', data: [
+    { scores: { overall: 41250.5, bgp: 300 }, entity: { code: 'CU', name: 'Cuba', type: 'country' }, event_cnt: 3 },
+    { scores: { overall: 812.2 }, entity: { code: 'SD', name: 'Sudan', type: 'country' }, event_cnt: 1 },
+    { scores: { overall: 'x' }, entity: { code: 'ZZZ', name: 'nowhere', type: 'country' } }] }));
   const f = FILES[u];
   if (!f || !fs.existsSync(f)) return new Response('no', { status: /celestrak|swpc/.test(u) ? 503 : 404 });
   return new Response(fs.readFileSync(f), { headers: { 'last-modified': fs.statSync(f).mtime.toUTCString() } });

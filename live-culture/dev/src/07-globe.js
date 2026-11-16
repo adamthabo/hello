@@ -1,7 +1,8 @@
 /* ---------- the globe, shared by the worlds that show the Earth: NASA's Blue Marble by day and its city lights by night, the line
    between day and night where the Sun has it at the moment asked for; mountains throw their shade when the Sun is low on them,
-   the sea glints under the Sun, the night is a little less dark where the Moon is up. Two more layers can be laid over it:
-   smoke (a picture of the whole Earth unrolled flat, lit where there is smoke) and the aurora (the same, lit where NOAA expects it).
+   the sea glints under the Sun, the night is a little less dark where the Moon is up. Two more layers can be laid over it, each a
+   picture of the whole Earth unrolled flat: the zones (since 15 Nov: red where there is war, dark where a place is cut off, from
+   12-zones.js; the wind's smoke had this place until then) and the aurora (lit where NOAA expects it).
    Where the page is served from the owner's own host it also has the real clouds (GLOBE.cloud: EUMETSAT's world cloud map, white where
    the geostationary satellites see cold cloud tops), lit by the Sun by day and faintly by the Moon and the night sky; and (14 Nov,
    night: "Doesn't noa have live weather?!") the live view: the Earth as NOAA's GOES-19 and GOES-18 see it now, each full-disk picture
@@ -15,7 +16,7 @@ var GLOBE=(function(){
   var VS='attribute vec2 a_p;void main(){gl_Position=vec4(a_p,0.0,1.0);}';
   function fsrc(){return (GLX.deriv?'#extension GL_OES_standard_derivatives : enable\n#define DERIV\n':'')+
     'precision highp float;uniform sampler2D uDet;uniform vec4 uDetR;uniform float uDetK;uniform vec2 uC;uniform float uR;uniform mat3 uM;uniform vec3 uSun;uniform vec3 uSunV;uniform vec3 uMoon;uniform float uMoonK;uniform float uReady;uniform vec3 uBg;\n'+
-    'uniform sampler2D uDay;uniform sampler2D uLit;uniform sampler2D uWater;uniform sampler2D uTopo;uniform sampler2D uFlow;uniform sampler2D uAur;uniform float uFlowK;uniform float uAurK;uniform float uDim;uniform float uTime;uniform sampler2D uCld;uniform float uCldK;uniform sampler2D uRain;uniform float uRainK;uniform float uSunK;uniform sampler2D uWindF;uniform float uFlowA;uniform float uFlowT;\n'+
+    'uniform sampler2D uDay;uniform sampler2D uLit;uniform sampler2D uWater;uniform sampler2D uTopo;uniform sampler2D uZone;uniform sampler2D uAur;uniform vec2 uZoneK;uniform float uAurK;uniform float uDim;uniform float uTime;uniform sampler2D uCld;uniform float uCldK;uniform sampler2D uRain;uniform float uRainK;uniform float uSunK;uniform sampler2D uWindF;uniform float uFlowA;uniform float uFlowT;\n'+
     'uniform sampler2D uWx;uniform float uHeatK;uniform float uWaveK;uniform float uIsoK;uniform float uWindK;uniform sampler2D uGeoE;uniform sampler2D uGeoW;uniform vec2 uGeoH;uniform float uGeoK;\n'+
     /* the shader's colours are worked out before a last curve brings them into the screen's range: a colour meant to be seen as it is
        is first taken back through that curve */
@@ -76,11 +77,14 @@ var GLOBE=(function(){
     /* the Sun: a warm light where it shines on clear ground, the point it stands straight over, and where dusk is six, twelve and eighteen degrees deep */
     'float sk=uSunK*(1.0-wsat*0.85)*(1.0-colK*0.6);if(sk>0.0){col+=vec3(1.0,0.74,0.36)*(1.0-cw)*pow(max(d,0.0),1.6)*0.3*sk*mix(uDim,1.0,0.5);col+=vec3(1.0,0.86,0.6)*exp(-(1.0-d)*110.0)*0.9*sk;\n'+
     'col+=(vec3(1.0,0.55,0.25)*(1.0-smoothstep(0.0,0.006,abs(d+0.1045)))*0.34+vec3(0.75,0.45,1.0)*(1.0-smoothstep(0.0,0.006,abs(d+0.2079)))*0.22+vec3(0.45,0.40,1.0)*(1.0-smoothstep(0.0,0.006,abs(d+0.3090)))*0.16)*sk;}\n'+
+    /* the zones: a place cut off goes dark, its lights out; a war glows red, beating slowly and hatched; the ground held in Ukraine
+       glows a deeper red */
+    'if(uZoneK.x+uZoneK.y>0.0){vec3 zn=texture2D(uZone,uv).rgb;col*=1.0-zn.b*uZoneK.y;\n'+
+    'float pu=0.5+0.5*sin(uTime*2.1-(lat+lon)*5.0);float hh=smoothstep(0.55,0.8,abs(fract((lon+lat)*28.6479+uTime*0.3)-0.5)*2.0);\n'+
+    'col+=(vec3(1.0,0.14,0.08)*zn.r*(0.2+0.12*pu+0.16*hh)+vec3(1.0,0.42,0.12)*zn.g*(0.3+0.1*pu))*uZoneK.x;}\n'+
     /* the aurora: where it is expected, a green that leans to violet where it is strongest, shimmering along its length; plainest at night */
     'float au=texture2D(uAur,uv).r*2.55;float ak=smoothstep(0.012,0.34,au)*uAurK;\n'+
     'float sh=0.72+0.28*sin(lon*46.0+uTime*1.7+sin(lat*38.0+uTime*0.6)*2.2);col+=mix(vec3(0.08,1.0,0.46),vec3(0.62,0.34,1.0),clamp(au*1.6-0.1,0.0,0.75))*ak*sh*(0.3+0.9*night);\n'+
-    /* the smoke: its own light, over day and night alike */
-    'vec3 fl=texture2D(uFlow,vec2(u,0.5+lat*0.31830989)).rgb;col+=fl*uFlowK;\n'+
     /* the air: blue at the edge by day, red where day meets night */
     'float fr=pow(1.0-n.z,3.0);float dayA=smoothstep(-0.28,0.25,d);col+=vec3(0.22,0.50,1.0)*fr*(0.07+0.95*dayA);col+=vec3(1.0,0.40,0.14)*exp(-d*d/0.010)*(0.05+0.55*fr);\n'+
     /* a faint grid every thirty degrees */
@@ -108,16 +112,16 @@ var GLOBE=(function(){
   /* the place on the Earth under a point of the screen (latitude, longitude in degrees), or null off the globe */
   function at(x,y,g){var px=(x-g.cx)/g.R,py=-(y-g.cy)/g.R,r2=px*px+py*py;if(r2>=1)return null;var pz=Math.sqrt(1-r2),
     ex=g.E[0]*px+g.N[0]*py+g.C[0]*pz,ey=g.E[1]*px+g.N[1]*py+g.C[1]*pz,ez=g.E[2]*px+g.N[2]*py+g.C[2]*pz;return {lat:Math.asin(clamp(ez,-1,1))/AS.D,lon:Math.atan2(ey,ex)/AS.D,z:pz}}
-  /* g: cx, cy, R (CSS pixels) and E, N, C from basis(); o: sun and moon as unit vectors on the Earth, moonK, bg, dim, flow and aur textures (or null), their strengths, time */
+  /* g: cx, cy, R (CSS pixels) and E, N, C from basis(); o: sun and moon as unit vectors on the Earth, moonK, bg, dim, the zone and aur textures (or null), their strengths, time */
   function draw(g,o){
     if(!GLX.ok||GLX.lost)return false;if(gen!==GLX.gen)glSetup();if(!P)return false;
     var gl=GLX.gl,u,bg=o.bg,E3=g.E,N3=g.N,C3=g.C,cx=g.cx,cy=g.cy,R=g.R;glAttrOff();gl.disable(gl.BLEND);u=glUse(P,null);gl.uniform2f(u.uC,cx*DPR,(VH-cy)*DPR);gl.uniform1f(u.uR,R*DPR);
     gl.uniformMatrix3fv(u.uM,false,[E3[0],E3[1],E3[2],N3[0],N3[1],N3[2],C3[0],C3[1],C3[2]]);gl.uniform3f(u.uSun,o.sun[0],o.sun[1],o.sun[2]);
     gl.uniform3f(u.uSunV,dot(o.sun,E3),dot(o.sun,N3),dot(o.sun,C3));gl.uniform3f(u.uMoon,o.moon[0],o.moon[1],o.moon[2]);gl.uniform1f(u.uMoonK,o.moonK||0);
     gl.uniform3f(u.uBg,bg[0],bg[1],bg[2]);gl.uniform1f(u.uReady,ready?1:0);gl.uniform1f(u.uDim,o.dim===undefined?1:o.dim);gl.uniform1f(u.uTime,o.time||0);
-    gl.uniform1f(u.uFlowK,o.flow?(o.flowK===undefined?1:o.flowK):0);gl.uniform1f(u.uAurK,o.aur?(o.aurK===undefined?1:o.aurK):0);
+    gl.uniform2f(u.uZoneK,o.zone?o.warK||0:0,o.zone?o.darkK||0:0);gl.uniform1f(u.uAurK,o.aur?(o.aurK===undefined?1:o.aurK):0);
     glBind(0,(ready?tex.day:dot1).tex,u.uDay);glBind(1,(ready?tex.lit:dot1).tex,u.uLit);glBind(2,(ready?tex.water:dot1).tex,u.uWater);glBind(3,(ready?tex.topo:dot1).tex,u.uTopo);
-    glBind(4,(o.flow||dot1.tex),u.uFlow);glBind(5,(o.aur||dot1.tex),u.uAur);var ck=o.cld&&tex.cld?(o.cldK===undefined?1:o.cldK):0;glBind(6,ck?tex.cld.tex:dot1.tex,u.uCld);gl.uniform1f(u.uCldK,ck);
+    glBind(4,(o.zone||dot1.tex),u.uZone);glBind(5,(o.aur||dot1.tex),u.uAur);var ck=o.cld&&tex.cld?(o.cldK===undefined?1:o.cldK):0;glBind(6,ck?tex.cld.tex:dot1.tex,u.uCld);gl.uniform1f(u.uCldK,ck);
     var rk=o.rain&&tex.rain?(o.rainK===undefined?1:o.rainK):0;glBind(7,rk?tex.rain.tex:dot1.tex,u.uRain);gl.uniform1f(u.uRainK,rk);gl.uniform1f(u.uSunK,o.sunK||0);
     glBind(9,o.windF||dot1.tex,u.uWindF);gl.uniform1f(u.uFlowA,o.windF&&!reduce?1:0);gl.uniform1f(u.uFlowT,(o.time||0)/7);
     glBind(8,o.wx||dot1.tex,u.uWx);gl.uniform1f(u.uHeatK,o.wx?o.heatK||0:0);gl.uniform1f(u.uWaveK,o.wx?o.waveK||0:0);gl.uniform1f(u.uIsoK,o.wx?o.isoK||0:0);gl.uniform1f(u.uWindK,o.windF?o.windK||0:0);

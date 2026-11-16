@@ -44,6 +44,20 @@
 - **How an orbit is carried forward:** the secular J2 terms (Brouwer / Kozai), as in Vallado, "Fundamentals of Astrodynamics and
   Applications"; the same sums a two-line element set is defined for, without SGP4's periodic terms and drag.
 
+- **The war zones (since 15 Nov):** which wars, and their dead in 2026: Wikipedia, "List of ongoing armed conflicts" (its 2026 column,
+  read 15 Nov 2026; CC BY-SA), whose figures come from ACLED, UCDP and the press. The latest line of each, as checked that day: Ukrenergo
+  via the press (strikes on the grid, 7 to 10 Nov), AP (Gaza, 11 Nov; Myanmar, 10 Nov; the Afghanistan-Pakistan border; the UN mission
+  in Goma, 3 Nov), Al Jazeera with UKMTO (Qeshm Island and the ships in the Strait of Hormuz, 7 Nov), Sudan Tribune (West Kordofan,
+  8 Nov). The ground Russia holds in Ukraine: DeepStateMap (deepstatemap.live), as copied each day to GitHub by
+  cyterat/deepstate-map-data (GPL-3.0; the shape in `data/zones.json` is that file simplified, under the same licence).
+- **The places cut off (since 15 Nov):** Internet Society Pulse's Shutdown Tracker (pulse.internetsociety.org/shutdowns: its nine
+  ongoing shutdowns on 15 Nov 2026); North Korea's 1,024 internet addresses and its closed national network, Kwangmyong: RIPE Labs
+  ("The Internet in North Korea"), Wikipedia; Gaza's power: the World Bank via AFP (4 Nov 2026); Cuba's grid: AP (18 Sep 2026);
+  Ukraine's: its energy ministry (Nov 2026); Iran's shutdown and its return with restrictions: NetBlocks, AP (27 May 2026). On the
+  site, live: IODA, Internet Outage Detection and Analysis (Georgia Tech; api.ioda.inetintel.cc.gatech.edu), its summary by country.
+- **The shapes of the zones:** Natural Earth (naturalearthdata.com, public domain): admin-0 countries and map subunits at 1:50m (Gaza
+  is a map subunit), admin-1 provinces at 1:10m. Joined and simplified with shapely (BSD).
+
 ## Checked against
 - satellite.js 7.1.0 (SGP4): the space station's ground position within 15 km after a week and 37 km after two (`tools/test_astro.js`,
   for the single-satellite version in `05-astro.js`; `13-orbit.js` uses the same sums for every satellite).
@@ -68,9 +82,9 @@ Both are used only by `tools/test_astro.js`; neither is in the page.
   checked by its spectrum), trimmed, levelled and joined into `snd/*.mp3` by `tools/snd/build_modes.py`. Played with Mix's own piano,
   shaker and hand drums (VCSL, above). The patterns are written here, after the grooves each style is known for (the one drop and
   steppers, the funk backbeat with ghost notes, the shuffle, four on the floor with an acid line).
-- **The fluid in Smoke:** Jos Stam, "Stable Fluids" (1999), with vorticity confinement, buoyancy, and obstacles as in GPU Gems
+- **The fluid in Paint (Smoke until 15 Nov):** Jos Stam, "Stable Fluids" (1999), with vorticity confinement, buoyancy, and obstacles as in GPU Gems
   (Mark Harris, "Fast Fluid Dynamics Simulation on the GPU", 2004, simplified to masking).
-- **The smoke in Wind:** semi-Lagrangian advection (the same paper) in the real wind field; the way of showing wind owes to
+- **The smoke in Wind (until 15 Nov):** semi-Lagrangian advection (the same paper) in the real wind field; the way of showing wind owes to
   Cameron Beccario's earth.nullschool.net and to Refik Anadol's wind "data paintings".
 
 ## Type

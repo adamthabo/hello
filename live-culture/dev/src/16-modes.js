@@ -1,7 +1,7 @@
 /* ---------- the modes (15 Nov: "The mix is good! Make it able to also cycle through sounds or modes. another layer to change
    globally. five modes. funky, African, bluesy, acid, dub").
    A mode is the whole music's way of playing: its own instruments, written to its own groove, its own room and echo, and the voice
-   every touch has in Smoke and on the Earth. It is chosen in Mix (five buttons) or from the small button beside the note at the top
+   every touch has in Paint and on the Earth. It is chosen in Mix (five buttons) or from the small button beside the note at the top
    of every world (a tap: the next one), comes in on the next bar, and is kept on the device.
    African is the band exactly as it was: the nine players and the ten instruments of 13 and 14 Nov. The other four are new bands of
    recorded instruments (struck or plucked, every note dying away: drums, basses, clavinet, electric piano, guitars, and Mix's own
@@ -192,7 +192,7 @@ var MODEROWS=(function(){
         xs: '......................................................5.........'}}]}]}})();
 /* each mode: who of the band plays when it is chosen (African: all nine), which instruments on which loop, the order the music
    builds in when the page starts in it, its room (how much of the band's reverb), its echo (sixteenths, how much comes back, its
-   filters), and the voice of a touch in Smoke and on the Earth ('glass', the main one; 'tick', the lightning; 'thump', 'tok', 'kal') */
+   filters), and the voice of a touch in Paint and on the Earth ('glass', the main one; 'tick', the lightning; 'thump', 'tok', 'kal') */
 var MODESET={
   africa:{band:[1,1,1,1,1,1,1,1,1],rows:{},room:0,echo:{fb:0}},
   funk:{band:[0,0,0,0,0,0,0,0,0],rows:{drums:0,bass:0,clav:0,guitar:0,perc:0},room:.05,echo:{fb:0},

@@ -39,7 +39,7 @@ var ORBIT=(function(){
      same body at two moments (k runs 0 at the body to 1 at the far end). The body stays where it really is this second; light runs
      along the trail towards it, so that in real time, when a lap takes an hour and a half, the eye still sees which way everything
      is going. (Kepler's equation is solved a step less finely here: the trail is a few pixels wide) */
-  var TN=4,TRAILS=true,LAY=false;
+  var TN=4,TRAILS=true,LAY=false,LAPSE=60;
   var TVS=VS.replace('attribute vec4 a_c;','attribute vec4 a_c;varying float v_ph;')
     .replace('E=E-(E-e*sin(E)-M)/(1.0-e*cos(E));E=E-(E-e*sin(E)-M)/(1.0-e*cos(E));E=E-(E-e*sin(E)-M)/(1.0-e*cos(E));','E=E-(E-e*sin(E)-M)/(1.0-e*cos(E));E=E-(E-e*sin(E)-M)/(1.0-e*cos(E));')
     .replace('v_c=vec4(a_c.rgb*hid*(q.z<0.0?0.5:1.0)*(a_e1.x<1.7?uGain:1.0),1.0-k);}','v_c=vec4(a_c.rgb*hid*(q.z<0.0?0.4:1.0)*(a_e1.x<1.7?uGain:1.0),k);v_ph=fract(a_e3.x*0.1591549+a_e2.x*0.2347);}');
@@ -149,7 +149,7 @@ var ORBIT=(function(){
   function key(e,dn){if(e.key==='ArrowRight')keyRate=dn?1:0;else if(e.key==='ArrowLeft')keyRate=dn?-1:0;else if(dn&&(e.key==='n'||e.key==='N'))toNow();else return false;return true}
   function pan(x){return clamp((x-g.cx)/Math.max(60,VW*.4),-1,1)}
   function up(p){
-    if(p.ghost||FT-p.t0>600||p.moved>12||!EL)return;var i,best=-1,bd=24*24,d;
+    if(p.ghost||held(p)>600||p.moved>12||!EL)return;var i,best=-1,bd=24*24,d;
     for(i=0;i<satN;i++){view(place(i,simMs,tmp),tq);if(!shown(tq))continue;var x=g.cx+tq[0]*g.R-p.x,y=g.cy-tq[1]*g.R-p.y;d=x*x+y*y;if(GRP[i]===7||(FLG[i]&1))d*=.45;if(d<bd){bd=d;best=i}}
     sel=best;path=null;selI=null;if(best>=0){satInfoLoad();tone('glass',pent(clamp(Math.round(14-Math.log(EL[best*11])*9),2,14),52),.45,pan(p.x))}cardBuild()}
   /* is a body in sunlight? (in the frame of the stars; the Earth's shadow taken as a cylinder) */
@@ -205,14 +205,14 @@ var ORBIT=(function(){
       glAttrOff();u=P.sat.u;a=P.sat.a;gl.useProgram(P.sat.p);gl.uniform3f(u.uE,RE3[0],RE3[1],RE3[2]);gl.uniform3f(u.uN,RN3[0],RN3[1],RN3[2]);gl.uniform3f(u.uV,RC3[0],RC3[1],RC3[2]);
       gl.uniform2f(u.uC,g.cx,g.cy);gl.uniform2f(u.uRes,VW,VH);gl.uniform1f(u.uR,g.R);gl.uniform1f(u.uT,(simMs-baseT)/60000);gl.uniform1f(u.uTail,lerp(1.2,3.2,fast));
       /* seen from far off the low swarm is thousands of points in a small disc: it is dimmed there, so the Earth still shows through it */
-      gl.uniform1f(u.uPt,DPR*clamp(.5+.5*zoom,.62,1.5)*(LAY?.8:1)*(1+.1*HIT[4]*G[4]));gl.uniform1f(u.uGain,clamp(.1+zoom*1.05,.2,1)*(LAY?.42:1));
+      gl.uniform1f(u.uPt,DPR*clamp(.5+.5*zoom,.62,1.5)*(LAY?.8:1)*(1+.1*HIT[4]*G[4]));gl.uniform1f(u.uGain,clamp(.1+zoom*1.05,.2,1)*(LAY?.55:1));
       gl.bindBuffer(gl.ARRAY_BUFFER,satB);
       var ptr=function(stride){gl.enableVertexAttribArray(a.a_e1);gl.vertexAttribPointer(a.a_e1,4,gl.FLOAT,false,stride,0);gl.enableVertexAttribArray(a.a_e2);gl.vertexAttribPointer(a.a_e2,4,gl.FLOAT,false,stride,16);
         gl.enableVertexAttribArray(a.a_e3);gl.vertexAttribPointer(a.a_e3,4,gl.FLOAT,false,stride,32);gl.enableVertexAttribArray(a.a_c);gl.vertexAttribPointer(a.a_c,4,gl.FLOAT,false,stride,48)};
       /* the trails, then the bodies (the first entry of each body's run in the same list) */
       if(P.trail&&TRAILS){var tu=P.trail.u,ta=P.trail.a;glAttrOff();gl.useProgram(P.trail.p);
         gl.uniform3f(tu.uE,RE3[0],RE3[1],RE3[2]);gl.uniform3f(tu.uN,RN3[0],RN3[1],RN3[2]);gl.uniform3f(tu.uV,RC3[0],RC3[1],RC3[2]);gl.uniform2f(tu.uC,g.cx,g.cy);gl.uniform2f(tu.uRes,VW,VH);
-        gl.uniform1f(tu.uR,g.R);gl.uniform1f(tu.uT,(simMs-baseT)/60000);gl.uniform1f(tu.uTail,lerp(9,14,fast));gl.uniform1f(tu.uGain,clamp(.1+zoom*1.05,.2,1)*(LAY?.32:1));gl.uniform1f(tu.uPt,1);
+        gl.uniform1f(tu.uR,g.R);gl.uniform1f(tu.uT,(simMs-baseT)/60000);gl.uniform1f(tu.uTail,LAY?lerp(9,6,fast):lerp(9,14,fast));gl.uniform1f(tu.uGain,clamp(.1+zoom*1.05,.2,1)*(LAY?.34:1));gl.uniform1f(tu.uPt,1);
         gl.uniform1f(tu.uLine,clamp(.1+zoom*.12,.12,.3)*(1+.5*fast));gl.uniform1f(tu.uPh,reduce?0:(t*.00055)%1);
         [['a_e1',0],['a_e2',16],['a_e3',32],['a_c',48]].forEach(function(x){var l=ta[x[0]];if(l>=0){gl.enableVertexAttribArray(l);gl.vertexAttribPointer(l,4,gl.FLOAT,false,64,x[1])}});
         gl.drawArrays(gl.LINES,0,n*TN*2);glAttrOff();gl.useProgram(P.sat.p)}
@@ -256,8 +256,12 @@ var ORBIT=(function(){
     layer:{
       on:function(){LAY=true;if(GLX.ok&&gen!==GLX.gen)glSetup();liveLoad()},
       off:function(){if(sel<0)return;sel=-1;path=null;selI=null;cardBuild()},
+      /* (15 Nov, 20:39: "Even just the satellites moving is more fun") on the Earth they fly at sixty times their speed, a minute a
+         second, so the swarm is seen streaming round; one chosen brings the present back (its card's figures are its own, now), and
+         when it is let go they speed up again. Two days ahead, they come back to now and set off again */
       tick:function(dt,t,gx){if(LIVE.sats&&satV!==LIVE.ver.sats)unpack();g.cx=gx.cx;g.cy=gx.cy;g.R=gx.R;for(var k=0;k<3;k++){g.E[k]=gx.E[k];g.N[k]=gx.N[k];g.C[k]=gx.C[k]}
-        zoom=gx.R/Math.max(1,Math.min(STG.w,STG.h)*.3);off=0;want=1;spd=1;ret=false;clock(dt,t)},
+        zoom=gx.R/Math.max(1,Math.min(STG.w,STG.h)*.3);var w=sel>=0||reduce?1:LAPSE;if(w===1&&want!==1&&!ret&&off!==0){ret={t0:FT,from:off};spd=1}want=w;clock(dt,t)},
+      pace:function(){return live()?'satellites now':ret?'satellites back to now':'satellites ×'+(Math.abs(spd-want)<3?want:Math.round(Math.abs(spd)))},
       /* (hide: the Earth's satellites layer is off; the stars are still drawn) */
       draw:function(t,hide){if(!GLX.ok||GLX.lost)return;if(gen!==GLX.gen)glSetup();if(!P)return;sky(t,hide)},
       /* a tap near a satellite: the nearest within reach is chosen (true), or none is (false). Over the Earth's face a tap is for the
@@ -267,5 +271,5 @@ var ORBIT=(function(){
         for(i=0;i<satN;i++){if(on&&GRP[i]!==7&&!(NOTE&&NOTE[i]))continue;view(place(i,simMs,tmp),tq);if(!shown(tq))continue;var x=g.cx+tq[0]*g.R-p.x,y=g.cy-tq[1]*g.R-p.y;d=x*x+y*y;if(GRP[i]===7||(FLG[i]&1))d*=.45;if(d<bd){bd=d;best=i}}
         if(best<0)return false;sel=best;path=null;selI=null;satInfoLoad();tone('glass',pent(clamp(Math.round(14-Math.log(EL[best*11])*9),2,14),52),.45,pan(p.x));cardBuild();return true},
       sel:function(){return sel},
-      hud:function(){var S=LIVE.sats;if(!S||!EL)return LIVE.asked?'reading the orbits':'';return satN.toLocaleString('en-US')+' satellites, where they are now · orbits of '+stampUTC(S.fresh||S.asOf)}}}
+      hud:function(){var S=LIVE.sats;if(!S||!EL)return LIVE.asked?'reading the orbits':'';return satN.toLocaleString('en-US')+' satellites, '+(live()?'where they are now':'at sixty times their speed')+' · orbits of '+stampUTC(S.fresh||S.asOf)}}}
 })();

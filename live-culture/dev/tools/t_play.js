@@ -30,7 +30,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   const sw = () => page.evaluate(() => { const b = document.getElementById('bSound'), L = window.__lc, r = b.getBoundingClientRect(), sl = b.querySelector('.sl');
     return { pressed: b.getAttribute('aria-pressed'), struck: !!sl && getComputedStyle(sl).display !== 'none', live: L.soundLive(), on: L.ON.join(''), top: r.top < 60 && r.right > innerWidth - 60, inHead: !!b.closest('header'), circles: document.querySelectorAll('.dot,#dotrow,#dots').length, label: b.getAttribute('aria-label') }; });
 
-  if (which.includes(0)) { console.log('SMOKE');
+  if (which.includes(0)) { console.log('PAINT');
     await page.evaluate(() => window.__lc.go(0, true)); await sleep(900); s = await S(); ok(s.hint === 1, 'smoke: the hint should be running before any touch');
     let m = await sw(); ok(m.pressed === 'false' && m.struck && m.top && m.inHead && !m.circles, 'music: before any touch the music button, at the top right, is unlit and struck through, and there are no circles: ' + JSON.stringify(m));
     await shot('0a_smoke_hint');
@@ -50,25 +50,35 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   if (which.includes(1)) { console.log('EARTH');
     await page.evaluate(() => window.__lc.go(1, true)); await sleep(5600); s = await S();
     ok(s.dbg.ready, 'earth: the pictures of the Earth should have loaded'); ok(s.dbg.wind && s.dbg.aurora && s.dbg.strikes > 20, 'earth: the wind, the aurora and the lightning should be there: ' + JSON.stringify([s.dbg.wind, s.dbg.aurora, s.dbg.strikes]));
-    ok(s.dbg.fires > 4 && s.dbg.fireGL === s.dbg.fires, 'earth: the fires should be there and feeding the smoke: ' + s.dbg.fires + ', ' + s.dbg.fireGL);
+    ok(s.dbg.fires > 4, 'earth: the fires should be there: ' + s.dbg.fires);
     // (14 Nov, night: "On the earth there should be videos, that's the best part!!! And be able to take on and off layers. The weather is
-    // pretty lame.") Four short lines (what to do; what is happening now; the wind and its hour; the cameras), each one line of the phone;
+    // pretty lame.") Four short lines (what to do; what is happening now; the satellites' pace; the cameras), each one line of the phone;
     // the globe whole under them; under the globe its scale and the row of layers, each a button lit while it shows; the cameras on the
     // Earth as pictures
-    ok(/^drag to turn · tap a video or a place\n(\d+ storms? · )?[\d,]+ fires · [\d,]+ lightning flashes\nwind (now|of \d+ \w+ \d\d:\d\d UTC)( · aurora \w+)?\n\d+ cameras · tap one for YouTube$/.test(s.data), 'earth: four short lines: what to do, what is happening now, the wind and its hour, the cameras: ' + s.data.replace(/\n/g, ' | '));
-    const dock = await page.evaluate(() => [...document.querySelectorAll('#lyd .dk')].map(b => { const r = b.getBoundingClientRect(); return { id: b.id, t: b.textContent, on: b.getAttribute('aria-pressed') === 'true', h: r.height }; }));
+    // (15 Nov, 22:59: "Remove the writing on the top") no words over the Earth until something is read
+    ok(s.data === '', 'earth: no writing at the top: ' + JSON.stringify(s.data));
+    const dock = await page.evaluate(() => [...document.querySelectorAll('#lyd .dk')].map(b => { const r = b.getBoundingClientRect(), e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2), sp = b.lastChild;
+      return { id: b.id, t: b.textContent, on: b.getAttribute('aria-pressed') === 'true', h: r.height, l: r.left, r: r.right, b: r.bottom, top: !!e && b.contains(e), cut: sp.scrollWidth > sp.clientWidth + 1 }; }));
+    // (15 Nov, 23:20: "The list of buttons on the globe hardly work. Make everything work") every button on the screen at once, none
+    // under anything, none with its word cut, and a real tap on each switches it (and a second switches it back)
+    { const vw = await page.evaluate(() => innerWidth), rail = await page.evaluate(() => document.getElementById('rail').getBoundingClientRect().top);
+      ok(dock.every(b => b.l >= 0 && b.r <= vw && b.b <= rail && b.top && !b.cut), 'earth: every layer\'s button on the screen at once, uncovered, its word whole: ' + JSON.stringify(dock.filter(b => !(b.l >= 0 && b.r <= vw && b.b <= rail && b.top && !b.cut)).map(b => [b.id, Math.round(b.l), Math.round(b.r), b.top, b.cut]))); }
     // (a layer with nothing to show has no button: storms when none is turning)
-    ok(dock.map(b => b.id).join() === 'ly_vid,ly_wind,ly_bolt,' + (s.dbg.storms.length ? 'ly_storm,' : '') + 'ly_fire,ly_orbit,ly_aur' && dock.every(b => b.on && b.h >= 40) && dock[0].t === 'videos', 'earth: a row of layers, each named and lit while it shows (here, with the snapshot: videos, wind, lightning, storms if any, fires, satellites, aurora): ' + dock.map(b => b.t + (b.on ? '+' : '-')).join(', '));
-    ok(s.dbg.lgd === 'wind' && await page.evaluate(() => /linear-gradient/.test(document.getElementById('lgb').style.background) && document.getElementById('lgs').childNodes.length === 5), 'earth: the wind\'s speed in colour, its scale over the row');
+    ok(dock.map(b => b.id).join() === 'ly_vid,ly_war,ly_dark,ly_orbit,' + (s.dbg.storms.length ? 'ly_storm,' : '') + 'ly_fire,ly_bolt,ly_aur' && dock.every(b => b.on && b.h >= 40) && dock[0].t === 'videos', 'earth: a row of layers, each named and lit while it shows (here, with the snapshot: videos, wind, lightning, storms if any, fires, satellites, aurora): ' + dock.map(b => b.t + (b.on ? '+' : '-')).join(', '));
+    ok(s.dbg.lgd === '' && s.dbg.col === '' && !s.dbg.LY.wind, 'earth: no wind, and no layer of colour until one is chosen: ' + JSON.stringify([s.dbg.lgd, s.dbg.col]));
     const whole = () => page.evaluate(() => { const d = window.__lc.WIND.dbg(), e = document.getElementById('data'), t = e.getBoundingClientRect(), r = document.getElementById('lgd').hidden ? document.getElementById('lyd').getBoundingClientRect() : document.getElementById('lgd').getBoundingClientRect();
       return { top: Math.round(d.cy - d.R), bottom: Math.round(d.cy + d.R), left: Math.round(d.cx - d.R), right: Math.round(d.cx + d.R), words: Math.round(t.bottom), lines: Math.round(t.height / parseFloat(getComputedStyle(e).lineHeight)), row: Math.round(r.top), w: innerWidth, text: e.textContent.replace(/\n/g, ' | ') }; });
     let gw = await whole();
     // (the hints' ghost finger may have tapped a place by now: its reading is not measured, and may be a line longer)
-    ok((/^drag to turn/.test(gw.text) ? gw.lines === 4 && gw.top >= gw.words : gw.top >= gw.words - 20) && gw.bottom <= gw.row && gw.left >= 0 && gw.right <= gw.w, 'earth: the whole globe shows, under the lines of words (each one line of the phone) and above the scale and the row: ' + JSON.stringify(gw));
+    ok((gw.text === '' ? gw.top >= gw.words : gw.top >= gw.words - 20) && gw.bottom <= gw.row && gw.left >= 0 && gw.right <= gw.w, 'earth: the whole globe shows, under the header (and any words read) and above the scale and the row: ' + JSON.stringify(gw));
     const tapEl = async sel => { const r = await page.evaluate(sel => { const e = document.querySelector(sel); e.scrollIntoView({ block: 'nearest', inline: 'center' }); const q = e.getBoundingClientRect(); return { x: q.left + q.width / 2, y: q.top + q.height / 2 }; }, sel); await sleep(150); await T.tap(r.x, r.y); await sleep(250); };
+    {const flips = []; for (const b of dock) { const k = b.id.slice(3), at = await page.evaluate(id => { const q = document.getElementById(id).getBoundingClientRect(); return [q.left + q.width / 2, q.top + q.height / 2]; }, b.id);
+        const v0 = (await S()).dbg.LY[k]; await T.tap(at[0], at[1]); await sleep(350); const s1 = (await S()).dbg; await T.tap(at[0], at[1]); await sleep(350); const s2 = (await S()).dbg, v2 = s2.LY[k];
+        flips.push(k + ':' + v0 + s1.LY[k] + v2 + ((v0 ? s2.ping : s1.ping) === k ? '*' : '')); }
+      ok(flips.every(f => /^\w+:(101|010)\*$/.test(f)), 'earth: a real tap on each switches its layer, a second switches it back; one switched on shows itself (*): ' + flips.join(' ')); }
     // a layer switched off: its button goes dark, the words say so and stop counting it, and nothing of it is drawn or read
     await tapEl('#ly_fire'); s = await S();
-    ok(s.dbg.LY.fire === 0 && !(await page.evaluate(() => document.getElementById('ly_fire').getAttribute('aria-pressed') === 'true')) && /\nfires off\n/.test(s.data) && !/fires ·/.test(s.data), 'earth: "fires" off: dark, said, no longer counted: ' + s.data.replace(/\n/g, ' | '));
+    ok(s.dbg.LY.fire === 0 && !(await page.evaluate(() => document.getElementById('ly_fire').getAttribute('aria-pressed') === 'true')) && !/fire/.test(s.data), 'earth: "fires" off: its button dark, no words: ' + JSON.stringify(s.data));
     // and on again: the Earth turns to the biggest fire, comes close and reads it
     await tapEl('#ly_fire'); await sleep(1800); s = await S();
     ok(s.dbg.LY.fire === 1 && s.hint === 0 && s.dbg.probe && s.dbg.probe.r.fire && Math.abs(s.dbg.zoom - 2.6) < .05 && /^fire · [\d,]+ MW · seen by /m.test(s.data), 'earth: "fires" on again turns the Earth to the biggest fire, comes close and reads it: ' + s.data.replace(/\n/g, ' | '));
@@ -77,7 +87,27 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     const z1 = s.dbg.zoom; await tapEl('#zOut'); s = await S(); const z2 = s.dbg.zoom; await tapEl('#zIn'); s = await S();
     ok(z2 < z1 / 1.3 && Math.abs(s.dbg.zoom - z1) < .02, 'earth: − goes further out, + comes closer: ' + [z1, z2, s.dbg.zoom].map(z => z.toFixed(2)).join(' → '));
     await T.tap(X(.03), Y(.02)); await sleep(300);
-    ok(s.dbg.ok, 'earth: the smoke should be running'); await shot('1a_earth_home');
+    ok(s.dbg.ok, 'earth: the globe should be drawn'); await shot('1a_earth_home');
+    // (15 Nov, 20:39: "War zones and blacked out zones is good. Gaza, North Korea, ...") the wars of the year by Wikipedia's count (the
+    // deadliest first), the places cut off, the ground Russia holds in Ukraine; a tap on one reads what is known of it and its source
+    { const z = s.dbg.zones; ok(z.war.length >= 15 && z.war[0] === 'ukraine' && z.dark.includes('prk:closed') && z.dark.includes('gaza:power') && z.front && z.front.km2 > 90000, 'earth: the war zones, the places cut off, the front: ' + JSON.stringify({ war: z.war.length, first: z.war[0], dark: z.dark.length, front: z.front })); }
+    const tapMid = async (la, lo, z, want) => { await page.evaluate(([la, lo, z]) => window.__lc.WIND.look(la, lo, z), [la, lo, z]); await sleep(800); s = await S();
+      for (let k = 0; k < 4; k++) { await T.tap(s.dbg.cx, s.dbg.cy); await sleep(500); s = await S(); if (s.dbg.probe && s.dbg.probe.zone && want(s.dbg.probe.zone)) break; } };
+    await page.evaluate(() => { window.__lc.WIND.layer('vid', 0); window.__lc.WIND.layer('orbit', 0); });
+    await tapMid(49.3, 31, 2.4, z => z.w === 'ukraine');
+    ok(s.dbg.probe && s.dbg.probe.zone && s.dbg.probe.zone.w === 'ukraine' && s.dbg.probe.zone.d === 'ukraine' && /^Ukraine · Russo-Ukrainian war, since 2014\n[\d,]+ killed in 2026 \(Wikipedia\)\n/.test(s.data) && /\nno power: .* · Ukraine's energy ministry/.test(s.data), 'earth: a tap on Ukraine reads its war and its blackout: ' + s.data.replace(/\n/g, ' | '));
+    await tapMid(48.1, 37.9, 2.4, z => z.front);
+    ok(s.dbg.probe && s.dbg.probe.zone && s.dbg.probe.zone.front && /\nheld by Russia: [\d,]+ km² \(DeepStateMap, \d{4}-\d\d-\d\d\)\n/.test(s.data), 'earth: a tap on the ground Russia holds says how much: ' + s.data.replace(/\n/g, ' | '));
+    await shot('1a5_earth_war');
+    // North Korea (a tap away from the camera in Seoul): no open internet
+    await tapMid(41.4, 127.6, 2.4, z => z.d === 'prk');
+    ok(s.dbg.probe && s.dbg.probe.zone && s.dbg.probe.zone.d === 'prk' && /^North Korea · no open internet: /.test(s.data), 'earth: a tap on North Korea reads that it has no open internet: ' + s.data.replace(/\n/g, ' | '));
+    // the war zones off: none drawn or counted, said so; on again: the Earth turns to the deadliest of them (first the whole Earth again,
+    // so a tap on the dark is on the dark)
+    await page.evaluate(() => window.__lc.WIND.look(15, -40, 1)); await sleep(400); await T.tap(X(.03), Y(.02)); await sleep(300);
+    await tapEl('#ly_war'); s = await S(); ok(s.dbg.LY.war === 0 && s.data === '' && !(await page.evaluate(() => document.getElementById('ly_war').getAttribute('aria-pressed') === 'true')), 'earth: "war zones" off: its button dark, no words: ' + JSON.stringify(s.data));
+    await tapEl('#ly_war'); await sleep(1400); s = await S(); ok(s.dbg.LY.war === 1 && Math.abs(s.dbg.lat0 - 49.7) < 3 && Math.abs(s.dbg.lon0 - 32.1) < 4, 'earth: "war zones" on again turns the Earth to the deadliest war: ' + s.dbg.lat0.toFixed(1) + ', ' + s.dbg.lon0.toFixed(1));
+    await page.evaluate(() => { window.__lc.WIND.layer('vid', 1); window.__lc.WIND.layer('orbit', 1); }); await sleep(300);
     // the cameras: pictures on the Earth; in the artifact a tap opens a card whose button opens the stream on YouTube
     await page.evaluate(() => window.__lc.WIND.look(30, -80, 1)); await sleep(900);
     let cam = await page.evaluate(() => window.__lc.LIVEW.dbg());
@@ -131,12 +161,16 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await page.evaluate(() => window.__lc.WIND.look(68, -40, 1.4)); await sleep(1500); await shot('1f_earth_aurora');
     // the satellites: a layer of the Earth, on, every one where it is this second
     let o = await page.evaluate(() => window.__lc.ORBIT.dbg()); s = await S();
-    ok(o.n > 10000 && s.dbg.LY.orbit === 1, 'earth: the satellites are on the globe: ' + o.n); ok(o.live && o.want === 1 && Math.abs(o.off) < 1000, 'earth: the satellites are where they are this second (x' + o.spd.toFixed(1) + ')');
+    ok(o.n > 10000 && s.dbg.LY.orbit === 1, 'earth: the satellites are on the globe: ' + o.n);
+    { const pace = await page.evaluate(() => window.__lc.ORBIT.layer.pace());
+      ok(!o.live && o.want === 60 && o.spd > 30 && o.off > 0 && pace === 'satellites ×60', 'earth: the satellites fly, sixty times their speed (15 Nov: "Even just the satellites moving is more fun"): x' + o.spd.toFixed(1) + ', ' + Math.round(o.off / 60000) + ' min ahead, "' + pace + '"'); }
     // a tap on a satellite brings up what is on record about it
     await page.evaluate(() => window.__lc.WIND.look(20, -60, .42)); await sleep(1500); o = await page.evaluate(() => window.__lc.ORBIT.dbg()); const v = o.vis[2] || o.vis[0];
     await T.tap(v[0], v[1]); await sleep(600); o = await page.evaluate(() => window.__lc.ORBIT.dbg()); ok(o.sel >= 0 && o.card && /ORBIT/i.test(o.card) && /NOW OVER/i.test(o.card), 'earth: tapping a satellite should bring up its card: ' + String(o.card).replace(/\n+/g, ' | '));
     for (let k = 0; k < 24 && !o.cat; k++) { await sleep(250); o = await page.evaluate(() => window.__lc.ORBIT.dbg()); } await sleep(700); o = await page.evaluate(() => window.__lc.ORBIT.dbg());
     ok(o.cat && /CATALOGUE/i.test(o.card) && /LAUNCHED/i.test(o.card) && /km up/.test(o.card) && /MEASURED/i.test(o.card), 'earth: the card should fill from the catalogue: ' + String(o.card).replace(/\n+/g, ' | '));
+    for (let k = 0; k < 24 && !o.live; k++) { await sleep(250); o = await page.evaluate(() => window.__lc.ORBIT.dbg()); }
+    ok(o.live && Math.abs(o.off) < 1000 && o.want === 1, 'earth: a satellite chosen brings the present back (a glide of a second and a half), so its card is of now: x' + o.spd.toFixed(1) + ', off ' + Math.round(o.off));
     await shot('1g_earth_satcard'); console.log('  ', String(o.card).replace(/\n+/g, ' | '));
     await page.evaluate(() => window.__lc.ORBIT.pick('ISS (ZARYA)')); await sleep(900); o = await page.evaluate(() => window.__lc.ORBIT.dbg());
     ok(/1998-067A/.test(o.card) && /Baikonur/.test(o.card) && /20 Nov 1998/.test(o.card) && /51\.6°/.test(o.card), 'earth: the space station\'s card should hold its record: ' + String(o.card).replace(/\n+/g, ' | '));
@@ -162,10 +196,21 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       rows: [...document.querySelectorAll('#mix .mxrow')].map(r => r.querySelector('.mxn').textContent + ':' + [...r.querySelectorAll('.mxb')].map(b => b.textContent).join('/')),
       secs: [...document.querySelectorAll('#mix .mxsec')].map(e => e.textContent).join(), stop: [...document.querySelectorAll('#mix .mxstop')].map(b => b.textContent).join(),
       small: [...document.querySelectorAll('#mix .mxb')].filter(b => b.getBoundingClientRect().height < 40).length,
+      fit: (() => { const l = document.querySelector('#mix .mxl'), f = document.querySelector('#mix .mxfoot').getBoundingClientRect(), r = document.getElementById('foot').getBoundingClientRect(); return l.scrollHeight <= l.clientHeight + 1 && f.bottom <= r.top; })(),
       old: !!document.querySelector('#mix .mxg,#mix .mxt,#mix .mxc,#mix .mxd,#mix .mxf,#mix .mxxy,#mix .mxpad,#mix .mxs') }));
-    ok(m.on && m.mixon && ui.band.length === 9 && ui.rows.length === 10 && ui.rows.every(r => r.split('/').length === 2) && m.loops === 20 && ui.secs === 'mode,the band,play along' && ui.stop === 'jam: a new mix,stop the instruments' && !ui.small && !ui.old,
-      'mix: a list: a jam, the band\'s nine, then ten instruments with two loops each, big buttons, one stop, no grid: ' + JSON.stringify(ui));
+    ok(m.on && m.mixon && ui.band.length === 9 && ui.rows.length === 10 && ui.rows.every(r => r.split('/').length === 2) && m.loops === 20 && ui.secs === 'the band,play along' && ui.stop === 'jam: a new mix,stop' && !ui.small && !ui.old && ui.fit,
+      'mix: on one screen (15 Nov: "make it all fit on one page"): the modes, the band\'s nine, ten instruments with two loops each, buttons 40 high, a jam and a stop side by side, no scrolling: ' + JSON.stringify(ui));
     ok(ui.rows.map(r => r.split(':')[0]).join() === 'congas,bongos,shaker,cajon,claps,marimba,xylophone,vibes,piano,glock', 'mix: the instruments: ' + ui.rows.join(' · '));
+    // (15 Nov, 23:20: "make the music buttons always on the page, fit") on any screen: shorter phones (the page in the Claude app has
+    // less height than the phone), a small one, one on its side; every button inside, above the worlds, none under 28, no scrolling
+    { const fits = []; for (const [w, h] of [[390, 750], [390, 660], [375, 560], [360, 520], [844, 390]]) {
+        await page.setViewportSize({ width: w, height: h }); await sleep(500);
+        const f = await page.evaluate(() => { const l = document.querySelector('#mix .mxl'), m = document.getElementById('mix').getBoundingClientRect(), r = document.getElementById('rail').getBoundingClientRect(), d = window.__lc.MIX.dbg();
+          const bs = [...document.querySelectorAll('#mix button')].map(b => b.getBoundingClientRect()); return { n: bs.length, out: bs.filter(q => q.top < m.top - .5 || q.bottom > Math.min(m.bottom, r.top) + .5 || q.left < 0 || q.right > innerWidth).length,
+            min: Math.round(Math.min(...bs.map(q => q.height))), scroll: l.scrollHeight > l.clientHeight + 1, bh: d.bh, wide: d.wide, small: d.small }; });
+        fits.push(w + 'x' + h + ':' + (f.out || f.scroll ? 'NO' : 'ok') + ' ' + f.min + 'px' + (f.wide ? ' wide' : '') + (f.small ? ' small' : '') + (f.min < 28 ? ' LOW' : '')); }
+      await page.setViewportSize({ width: 390, height: 844 }); await sleep(500);
+      ok(fits.every(x => /:ok \d+px/.test(x) && !/LOW/.test(x)), 'mix: every button on the screen, whatever its size: ' + fits.join(', ')); }
     ok(m.tracks.filter(t => t.k === 'stem').every((t, i) => (t.play >= 0) === (s.on[i] === '1')), 'mix: it takes the band over where it was: ' + s.on);
     const top = await page.evaluate(() => ({ mix: document.getElementById('mix').getBoundingClientRect().top, data: document.getElementById('data').getBoundingClientRect().bottom, foot: document.getElementById('foot').getBoundingClientRect().top, mixB: document.getElementById('mix').getBoundingClientRect().bottom }));
     ok(top.mix >= top.data && top.mixB <= top.foot + 1, 'mix: the list sits between the words at the top and the worlds: ' + JSON.stringify(top));
@@ -181,7 +226,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     ok(m.tracks[9].play === 0 && m.tracks[14].play === 1 && m.banks.includes('drums') && m.banks.includes('marimba'), 'mix: the instruments\' loops come in on the bar, their recorded sounds loaded: ' + m.banks.join());
     await sleep(300); const lit = await page.evaluate(() => [...document.querySelectorAll('#mix .mxb.on')].map(b => b.getAttribute('aria-label')));
     ok(lit.some(t => /^congas: /.test(t)) && lit.some(t => /^marimba: /.test(t)), 'mix: what plays is lit: ' + lit.join(', '));
-    s = await S(); ok(/^tap a loop: in on the next bar, in tune\nplaying: the band \(\d\), congas, marimba\nit keeps playing in Smoke and Earth$/.test(s.data), 'mix: the readout says what to do, what plays, and that it plays on: ' + s.data.replace(/\n/g, ' | '));
+    s = await S(); ok(s.data === '', 'mix: no writing at the top (15 Nov, 22:59): what plays is lit: ' + JSON.stringify(s.data));
     await shot('2a_mix_list');
     // the other loop of the same instrument takes over on the bar; tapping what plays stops it on the bar
     await tapB('#mix .mxrow .mxb', 1); m = await waitFor(m => m.tracks[9].play === 1); ok(m.tracks[9].play === 1, 'mix: the congas\' other loop takes over on the bar');
@@ -216,10 +261,12 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await tapText('#mix .mxm', 'dub'); m = await M();
     ok(m.pend === 'dub' && await page.evaluate(() => document.querySelector('#mix .mxm.wait') && document.querySelector('#mix .mxm.wait').textContent === 'dub' && document.getElementById('bMode').classList.contains('wait')), 'modes: dub waits for the bar, its button and the name at the top blinking');
     m = await waitFor(m => m.mode === 'dub' && !m.pend && m.tracks.filter(t => t.m === 'dub' && t.play >= 0).length >= 4, 40);
+    // (the rows are set as the bar is scheduled; the echo turns up on the bar itself, by the sound's own clock: waited for)
+    for (let k = 0; k < 20 && !(m.fx && m.fx.fb > .4); k++) { await sleep(250); m = await M(); }
     const dub = m.tracks.filter(t => t.play >= 0).map(t => (t.m || 'band') + ':' + t.n);
     ok(m.mode === 'dub' && dub.every(x => /^dub:/.test(x)) && ['drums', 'bass', 'skank', 'piano'].every(n => dub.includes('dub:' + n)) && m.fx.fb > .4, 'modes: dub comes in on the bar, its own band (the band\'s players out) and its echo: ' + dub.join(', ') + ' ' + JSON.stringify(m.fx));
     await sleep(300); let rows = await page.evaluate(() => [...document.querySelectorAll('#mix .mxrow .mxn')].map(e => e.textContent).join());
-    s = await S(); ok(rows === 'drums,bass,skank,piano,keys,perc,echo' && /^tap a loop: in on the next bar, in tune\ndub: drums, bass, skank, piano, echo\n/.test(s.data) && await page.evaluate(() => document.getElementById('bMode').textContent === 'dub'),
+    s = await S(); ok(rows === 'drums,bass,skank,piano,keys,perc,echo' && s.data === '' && await page.evaluate(() => document.getElementById('bMode').textContent === 'dub'),
       'modes: the list shows the dub band, the readout what plays: ' + rows + ' | ' + s.data.replace(/\n/g, ' | '));
     await shot('2d_mix_dub');
     // a touch elsewhere has the mode's voice; the pictures move with the mode's notes

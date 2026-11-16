@@ -6,7 +6,8 @@ var OVC=$('ov'),OV=OVC.getContext('2d'),STAGE=$('stage');
    only the music button at the top (13 Nov: "Just the audio remains playing. There is always a small music on off button"; until then
    each world had a row of circles, one for each player) */
 var WORLDS=[
-  {id:'smoke',name:'Smoke',o:DRIFT,sc:[1,1,1,1,1,1,1,1,1],photo:true,ic:'<path d="M8 21c-3-3 3-5 0-8s3-5 0-8M15.5 21c-3-3 3-5 0-8s2.2-4 .6-6.6"/>'},
+  /* paint in water (Smoke until 15 Nov: "Call it paint, not smoke"); a link to #smoke still lands here */
+  {id:'paint',name:'Paint',o:DRIFT,sc:[1,1,1,1,1,1,1,1,1],photo:true,ic:'<path d="M19.6 3.6c-3.4 2.2-6.6 5.2-8.8 8.4"/><path d="M10.6 12.6c-1.9-.4-3.7.9-4 2.9-.2 1.5-.9 2.6-2.4 3.2 2.6 1.4 6.2 1.2 7.6-1.2.9-1.6.6-3.6-1.2-4.9z"/>'},
   /* the Earth: the weather, the satellites and (on the site) the live cameras, each a layer of one globe (13 Nov: "Put them all on the
      same globe as satellites and make that just a layer"); Wind, Orbit and Live were three worlds before */
   {id:'earth',name:'Earth',o:WIND,sc:[1,1,1,1,1,1,1,1,1],ic:'<circle cx="12" cy="12" r="6.6"/><path d="M6.2 10.4c2.4-1.3 4.1 1 6.5-.1 1.5-.7 2.4-.8 3.8-.4"/><ellipse cx="12" cy="12" rx="10.6" ry="3.9" transform="rotate(-22 12 12)"/>'},
@@ -32,7 +33,7 @@ function chrome(){
   $('bPhoto').hidden=!w.photo;$('bClear').hidden=!(w.photo&&PHOTO.has);$('bSave').hidden=!DL;$('bNow').hidden=true;
   $('bPhoto').setAttribute('aria-pressed',PHOTO.has?'true':'false');
   try{if(location.hash!=='#'+w.id)history.replaceState(null,'','#'+w.id)}catch(e){}
-  layout();if(CUR&&CUR.resize)safe(function(){CUR.resize(VW,VH)});DATAX='';dataPaint(true)}
+  layout();if(CUR&&CUR.resize)safe(function(){CUR.resize(VW,VH)});DATAX=null;dataPaint(true)}
 function releaseAll(){for(var id in PT){var p=PT[id];delete PT[id];p.down=false;if(CUR&&CUR.up)(function(p){safe(function(){CUR.up(p)})})(p)}PTN=0;GS.a=null;HV=null}
 /* going to another world: the picture dips to black, the band ducks behind a wall for a moment, and its line-up changes */
 function go(i,instant){
@@ -43,7 +44,7 @@ function go(i,instant){
   document.body.classList.add('sw');doorDip();GOT=setTimeout(swap,200)}
 function worldsGL(){WORLDS.forEach(function(w){if(w.o.gl)w.o.gl()});PHOTO.tex=null}
 /* links to worlds that have been renamed or have gone still land somewhere sensible */
-var OLDHASH={drift:'smoke',loom:'smoke',bloom:'smoke',band:'smoke',wind:'earth',orbit:'earth',live:'earth'};
+var OLDHASH={drift:'paint',loom:'paint',bloom:'paint',band:'paint',smoke:'paint',wind:'earth',orbit:'earth',live:'earth'};
 function worldOf(h){h=OLDHASH[h]||h;for(var i=0;i<WORLDS.length;i++)if(WORLDS[i].id===h)return i;return -1}
 addEventListener('hashchange',function(){var i=worldOf(location.hash.slice(1));if(i>=0)go(i)});
 
@@ -62,9 +63,13 @@ function ptEnd(p){delete PT[p.id];PTN=Math.max(0,PTN-1);eachPT(function(q){q.n=P
 function track(p,x,y,now){var dtm=Math.max(4,now-p.t),dx=x-p.x,dy=y-p.y;p.px=p.x;p.py=p.y;p.x=x;p.y=y;
   p.vx+=(dx/dtm*1000-p.vx)*.55;p.vy+=(dy/dtm*1000-p.vy)*.55;p.spd=Math.hypot(p.vx,p.vy);p.moved+=Math.abs(dx)+Math.abs(dy);p.t=now}
 function newP(id,x,y,now,ghost,mouse,down){return {id:id,x:x,y:y,px:x,py:y,x0:x,y0:y,vx:0,vy:0,spd:0,t0:now,t:now,moved:0,down:down,ghost:ghost,mouse:mouse,n:1}}
+/* how long a finger was down (ms): the shorter of the frames' clock since it was seen to touch and the times the device gave its
+   touching and its lifting (when it gave both), so a slow frame between the two, either way, does not make a quick tap into a long
+   press (15 Nov: the Earth draws more now) */
+function held(p){var f=FT-p.t0;return p.e0!==undefined&&p.e1!==undefined?Math.min(f,p.e1-p.e0):f}
 STAGE.addEventListener('pointerdown',function(e){
   if(e.pointerType==='mouse'&&e.button!==0)return;e.preventDefault();try{STAGE.setPointerCapture(e.pointerId)}catch(x){}
-  var now=performance.now(),p=newP(e.pointerId,e.clientX,e.clientY,now,false,e.pointerType==='mouse',true);
+  var now=performance.now(),p=newP(e.pointerId,e.clientX,e.clientY,now,false,e.pointerType==='mouse',true);if(e.timeStamp>0)p.e0=e.timeStamp;
   ghostsOff(true);if(PT[p.id])ptEnd(PT[p.id]);PT[p.id]=p;PTN++;eachPT(function(q){q.n=PTN});touched[CURI]=true;lastTouch=now;GS.a=null;HV=null;
   if(CUR&&CUR.down)safe(function(){CUR.down(p)});
   try{window.focus()}catch(x2){}});
@@ -78,6 +83,7 @@ STAGE.addEventListener('pointermove',function(e){
     if(touched[CURI])lastTouch=now;if(CUR&&CUR.hover)safe(function(){CUR.hover(HV)})}});
 ['pointerup','pointercancel','lostpointercapture'].forEach(function(ev){STAGE.addEventListener(ev,function(e){var p=PT[e.pointerId];if(!p)return;
   if(ev==='pointerup'&&(e.clientX!==p.x||e.clientY!==p.y))track(p,e.clientX,e.clientY,performance.now());
+  if(ev==='pointerup'&&e.timeStamp>0&&p.e0!==undefined&&e.timeStamp>=p.e0)p.e1=e.timeStamp;
   /* a plain tap while the sound is still held back: counted, so the page can stop asking if taps do not free it */
   if(ev==='pointerup'&&performance.now()-p.t0<400&&p.moved<12&&soundHeld())AU.taps=(AU.taps||0)+1;
   ptEnd(p)})});

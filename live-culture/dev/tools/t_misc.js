@@ -11,8 +11,8 @@ const S = page => page.evaluate(() => { const L = window.__lc, w = L.WORLDS[L.CU
     const { page, errs, ctx } = await open(browser, 'phone', { init: () => { const g = WebGLRenderingContext.prototype.getExtension; WebGLRenderingContext.prototype.getExtension = function (n) { if (/half_float|standard_derivatives|anisotropic/.test(n)) return null; return g.call(this, n); }; } });
     await sleep(900); await page.evaluate(() => { window.__lc.GOV.n = -1e9; });
     for (const i of [0, 1, 2]) { await page.evaluate(i => window.__lc.go(i, true), i); await sleep(i >= 1 ? 6500 : 5000); const s = await S(page); await page.screenshot({ path: `shots/misc_old_${s.id}.png` });
-      if (i === 0) ok(s.dbg.ok && s.dbg.simple && !s.hf, 'smoke falls back to plain ink');
-      if (i === 1) { ok(s.dbg.ok && s.dbg.byte8 && s.dbg.ready && s.dbg.wind && !s.deriv && s.dbg.fireGL > 4, 'the Earth keeps its smoke in plain bytes, feeds it from the fires, and draws the globe without derivatives'); const n = await page.evaluate(() => window.__lc.ORBIT.dbg().n); ok(n > 10000, 'the Earth has its satellites: ' + n); }
+      if (i === 0) ok(s.dbg.ok && s.dbg.simple && !s.hf, 'paint falls back to plain ink');
+      if (i === 1) { ok(s.dbg.ok && s.dbg.ready && s.dbg.wind && !s.deriv && s.dbg.fires > 4 && s.dbg.zones.war.length > 10, 'the Earth draws the globe without derivatives, with its fires and its war zones'); const n = await page.evaluate(() => window.__lc.ORBIT.dbg().n); ok(n > 10000, 'the Earth has its satellites: ' + n); }
       if (i === 2) ok(s.dbg.on && s.dbg.loops === 20, 'the mixer opens: ten instruments, ' + s.dbg.loops + ' loops');
       ok(!s.errs.length, s.id + ' no page errors ' + JSON.stringify(s.errs)); }
     all = all.concat(errs.map(e => 'old: ' + e)); await ctx.close(); }
@@ -23,7 +23,7 @@ const S = page => page.evaluate(() => { const L = window.__lc, w = L.WORLDS[L.CU
       await page.evaluate(() => { const L = window.__lc; L._ext = L.GLX.gl.getExtension('WEBGL_lose_context'); L._ext.loseContext(); }); await sleep(500);
       let s = await S(page); const wasLost = s.lost; await page.evaluate(() => window.__lc._ext.restoreContext()); await sleep(i >= 1 ? 2800 : 1500); s = await S(page);
       ok(wasLost && !s.lost && s.gl && !s.errs.length, s.id + ' survives losing its graphics context ' + JSON.stringify(s.errs));
-      if (i === 1) { ok(s.dbg.ready && s.dbg.wind && s.dbg.aurora && s.dbg.ok && s.dbg.fireGL === s.dbg.fires && s.dbg.fires > 4, 'the Earth has its pictures, its wind, its smoke and its fires back'); const n = await page.evaluate(() => window.__lc.ORBIT.dbg().n); ok(n > 10000, 'and its satellites'); }
+      if (i === 1) { ok(s.dbg.ready && s.dbg.wind && s.dbg.aurora && s.dbg.ok && s.dbg.fires > 4 && await page.evaluate(() => !!window.__lc.ZONES.tex()), 'the Earth has its pictures, its wind (for the clouds), its fires and its war zones back'); const n = await page.evaluate(() => window.__lc.ORBIT.dbg().n); ok(n > 10000, 'and its satellites'); }
       if (i === 2) ok(s.dbg.on, 'the mixer is still there'); await page.screenshot({ path: `shots/misc_restored_${s.id}.png` }); }
     all = all.concat(errs.filter(e => !/CONTEXT_LOST|context lost|WebGL: INVALID_OPERATION|loseContext/i.test(e)).map(e => 'ctx: ' + e)); await ctx.close(); }
   // ---- 3. reduced motion ----
@@ -40,7 +40,7 @@ const S = page => page.evaluate(() => { const L = window.__lc, w = L.WORLDS[L.CU
         onSnapshot: (cb, er) => { window.__subs[p] = d => cb(snap(p, d)); setTimeout(() => cb(snap(p, null)), 30); return () => { }; }, get: () => { window.__gets.push(p); return Promise.resolve(snap(p, window.__docs[p])); } }) } : null), 60)) }; } });
     await sleep(6500); let s = await S(page); ok(s.id === 'earth' && s.hash === '#earth', 'an old link with #wind opens the Earth');
     const subs = await page.evaluate(() => Object.keys(window.__subs)); ok(subs.length === 1 && subs[0] === 'feeds/stamp', 'the page watches one small stamp in its store, nothing more: ' + subs);
-    const at0 = await page.evaluate(() => window.__lc.LIVE.at.wind); ok(at0 > 0 && s.dbg.wind, 'the wind the page was published with is in the air: ' + s.data.split('\n')[1]);
+    const at0 = await page.evaluate(() => window.__lc.LIVE.at.wind); ok(at0 > 0 && s.dbg.wind, 'the wind the page was published with is in the air: ' + new Date(at0).toISOString());
     // the hint taps a place now and then, and its reading stands in for the summary: a tap on the dark puts it away, and the hint is held
     await page.evaluate(() => window.__lc.WIND.look(20, -40, .6)); await sleep(400); await page.mouse.click(12, 200); await sleep(300); await page.evaluate(() => window.__lc.WIND.look(20, -40, .6)); await sleep(300);
     // an older stamp: nothing is fetched
@@ -50,7 +50,7 @@ const S = page => page.evaluate(() => { const L = window.__lc, w = L.WORLDS[L.CU
     await page.evaluate(() => { const n = 360 * 181 * 2, b = new Uint8Array(n); for (let i = 0; i < n; i += 2) { b[i] = 192; b[i + 1] = 128; } let t = ''; for (let i = 0; i < n; i += 8192) t += String.fromCharCode.apply(null, b.subarray(i, i + 8192));
       window.__docs['feeds/wind'] = { asOf: '2030-01-02T06:00:00Z', src: 'NOAA GFS', max: 20, b64: btoa(t) }; window.__subs['feeds/stamp']({ wind: '2030-01-02T06:00:00Z' }); }); await sleep(900);
     s = await S(page); r = await page.evaluate(() => ({ gets: window.__gets.slice(), at: window.__lc.LIVE.at.wind }));
-    ok(r.gets.join() === 'feeds/wind' && r.at === Date.parse('2030-01-02T06:00:00Z') && /\nwind of 2 Jan 06:00 UTC/.test(s.data) && Math.round(await page.evaluate(() => window.__lc.LIVE.wind.max * 3.6)) === 72, 'newer wind in the store takes over at once: ' + s.data.replace(/\n/g, ' | '));
+    ok(r.gets.join() === 'feeds/wind' && r.at === Date.parse('2030-01-02T06:00:00Z') && Math.round(await page.evaluate(() => window.__lc.LIVE.wind.max * 3.6)) === 72, 'newer wind in the store takes over at once (since 15 Nov it carries the clouds and is read where a place is tapped; it is no layer of its own): ' + s.data.replace(/\n/g, ' | '));
     // a broken one, newer still: ignored, and the page is unharmed
     await page.evaluate(() => { window.__docs['feeds/wind'] = { asOf: '2031-01-01T00:00:00Z', b64: 'not the wind' }; window.__docs['feeds/sats'] = { asOf: '2031-01-01T00:00:00Z', b64: 'AAAA', names: 5 }; window.__subs['feeds/stamp']({ wind: '2031-01-01T00:00:00Z', sats: '2031-01-01T00:00:00Z' }); }); await sleep(600);
     s = await S(page); r = await page.evaluate(() => ({ at: window.__lc.LIVE.at.wind, n: window.__lc.LIVE.sats.n })); ok(r.at === Date.parse('2030-01-02T06:00:00Z') && r.n > 10000 && !s.errs.length, 'broken documents are ignored without harm');
@@ -60,7 +60,7 @@ const S = page => page.evaluate(() => { const L = window.__lc, w = L.WORLDS[L.CU
       window.__docs['feeds/storms'] = { asOf: '2030-01-02T06:00:00Z', list: [{ name: 'Zed<script>', cls: 'HU', lat: 12, lon: -40, kmh: 150, hpa: 960, by: 'NOAA NHC', at: '2030-01-02T03:00:00Z' }, { name: 'bad', lat: 999, lon: 0 }] };
       window.__subs['feeds/stamp']({ fires: '2030-01-02T06:00:00Z', storms: '2030-01-02T06:00:00Z' }); }); await sleep(900);
     s = await S(page); r = await page.evaluate(() => { const L = window.__lc.LIVE; return { f: L.fires.list.length, sat: L.fires.list[0].sat, st: L.storms.list.map(x => x.name).join(), gets: window.__gets.slice() }; });
-    ok(r.f === 2 && r.sat === 'Test bSATb' && r.st === 'Zedscript' && s.dbg.fires === 2 && s.dbg.fireGL === 2 && s.dbg.storms.length === 1 && /^1 storm · 2 fires/m.test(s.data) && !s.errs.length, 'newer fires and storms in the store take over, cleaned: ' + JSON.stringify(r) + ' ' + s.data.replace(/\n/g, ' | '));
+    ok(r.f === 2 && r.sat === 'Test bSATb' && r.st === 'Zedscript' && s.dbg.fires === 2 && s.dbg.storms.length === 1 && !s.errs.length, 'newer fires and storms in the store take over, cleaned: ' + JSON.stringify(r) + ' ' + s.data.replace(/\n/g, ' | '));
     const saveShown = await page.evaluate(() => !document.getElementById('bSave').hidden); ok(saveShown, 'the save button shows when the viewer can take a file');
     await page.evaluate(() => document.getElementById('bSave').click()); let saved = null; for (let k = 0; k < 24 && !saved; k++) { await sleep(400); saved = await page.evaluate(() => window.__saved); }
     ok(saved && /^live-culture-earth-\d{8}-\d{6}\.png$/.test(saved.filename) && saved.size > 20000, 'saving hands over a PNG: ' + JSON.stringify(saved));
@@ -73,7 +73,7 @@ const S = page => page.evaluate(() => { const L = window.__lc, w = L.WORLDS[L.CU
     await page.keyboard.press('Space'); await sleep(600); s = await S(page); ok(!s.want, 'the space bar turns the music off');
     await page.keyboard.press('Space'); await sleep(900); s = await S(page); ok(s.want, 'and on again');
     for (const old of ['wind', 'orbit', 'live']) { await page.evaluate(() => window.__lc.go(0, true)); await page.evaluate(h => { location.hash = '#' + h; }, old); await sleep(700); s = await S(page); ok(s.id === 'earth' && s.hash === '#earth', 'the old link #' + old + ' goes to the Earth'); }
-    for (const old of ['drift', 'band', 'bloom', 'loom']) { await page.evaluate(() => window.__lc.go(1, true)); await page.evaluate(h => { location.hash = '#' + h; }, old); await sleep(600); s = await S(page); ok(s.id === 'smoke' && s.hash === '#smoke', 'the old link #' + old + ' goes to Smoke'); }
+    for (const old of ['drift', 'band', 'bloom', 'loom', 'smoke']) { await page.evaluate(() => window.__lc.go(1, true)); await page.evaluate(h => { location.hash = '#' + h; }, old); await sleep(600); s = await S(page); ok(s.id === 'paint' && s.hash === '#paint', 'the old link #' + old + ' goes to Paint'); }
     for (let i = 0; i < 3; i++) { await page.evaluate(i => window.__lc.go(i, true), i); await sleep(i >= 1 ? 4200 : 900); s = await S(page); await page.screenshot({ path: `shots/misc_small_${s.id}.png` }); ok(!s.errs.length && s.stg.h > 300, s.id + ' fits a 360 by 640 phone, stage ' + s.stg.w + ' by ' + s.stg.h); }
     const fits = () => page.evaluate(() => { const c = document.getElementById('card').getBoundingClientRect(), f = document.getElementById('foot').getBoundingClientRect(), L = window.__lc.ORBIT.dbg(); return { hidden: document.getElementById('card').hidden, top: Math.round(c.top), bottom: Math.round(c.bottom), left: Math.round(c.left), right: Math.round(c.right), foot: Math.round(f.top), iw: innerWidth, sw: document.documentElement.scrollWidth, cat: L.cat }; });
     await page.evaluate(() => window.__lc.go(1, true)); await sleep(2500); await page.evaluate(() => window.__lc.ORBIT.pick('ISS (ZARYA)')); await sleep(2200); let c = await fits(); await page.screenshot({ path: 'shots/misc_small_card.png' });

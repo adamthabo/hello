@@ -29,6 +29,10 @@ changes how the page sounds.
 5. **The modes, next (15 Nov).** Hear each by ear on a phone (the acid filter's bite, the dub echo's tail, the shuffle's feel, the
    balance of each band; every level was set by measurement only). If he wants more: a sixth mode, a second set of loops a mode moves
    to every eight bars, the band's own players reworked for a mode (an echo on the talking drum in dub) — ask before touching the band.
+5b. **The zones, next (15 Nov, night).** Keep `data/zones.json` true: wars end and start, shutdowns lift (re-check `WAR` and `DARK` in
+   `tools/gen_zones.py` before each publish, README "Live data"). Check on the site that IODA's summary has the shape the Worker
+   expects (`data[].entity.code`, `data[].scores.overall`; the mock is made up in that shape): if not, nothing is marked and nothing
+   breaks. See whether the sixteen new city cameras find streams (`/api/live?ids=moscow,beijing,...`) and drop those that never do.
 6. **Keep the artifact's data fresh.** Only if he asks: a scheduled task that runs the refresh in README.md. The wind changes every
    6 hours; four runs a day is about what his plan can spare (a night of hourly runs once hit his limit).
 6. **More on the Earth.** The hundred brightest objects (mostly spent rocket stages, not in the active list); a ring on the ground

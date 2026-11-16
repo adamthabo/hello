@@ -1,4 +1,4 @@
-/* ---------- SND: real recorded instruments, for Mix and for Smoke's game.
+/* ---------- SND: real recorded instruments, for Mix and for Paint's game.
    13 Nov, night: "impossible to make good sounds with those noises" (Mix's machine of sounds made on the device). So these are
    recordings: the Versilian Community Sample Library, which its makers put in the public domain (CC0 1.0: no royalties, no credit
    asked; github.com/sgossner/VCSL). Every one is struck or plucked and dies away. They come in eight small MP3 files in snd/, one a

@@ -23,7 +23,7 @@ const clean = errs => [...new Set(errs)].filter(e => !/youtube\.com|requestfaile
     await page.evaluate(() => { window.__lc.GOV.n = -1e9; });
     const snap = await page.evaluate(() => new Promise(r => { const t0 = Date.now(); (function w() { const L = window.__lc.LIVE; if (L.sats || Date.now() - t0 > 9000) r({ at: Object.assign({}, L.at), n: L.sats && L.sats.n }); else setTimeout(w, 100); })(); }));
     let s = null; for (let k = 0; k < 40; k++) { await sleep(500); s = await page.evaluate(() => { const L = window.__lc; return { ok: Object.keys(L.PULL.ok).sort(), err: L.PULL.err, at: Object.assign({}, L.LIVE.at), n: L.LIVE.sats && L.LIVE.sats.n, fresh: L.LIVE.sats && L.LIVE.sats.fresh, live: L.LIVE.sats && L.LIVE.sats.live, cloud: L.GLOBE.hasCloud(), hosted: L.HOSTED, worlds: L.WORLDS.map(w => w.id).join() }; }); if (s.ok.length >= 8 && s.cloud) break; }
-    ok(s.hosted === 1 && s.worlds === 'smoke,earth,mix', 'the hosted page has the same three worlds (its cameras are a layer of the Earth): ' + s.worlds);
+    ok(s.hosted === 1 && s.worlds === 'paint,earth,mix', 'the hosted page has the same three worlds (its cameras are a layer of the Earth): ' + s.worlds);
     for (let k = 0; k < 40 && !s.ok.includes('gfs'); k++) { await sleep(500); s.ok = await page.evaluate(() => Object.keys(window.__lc.PULL.ok).sort()); }
     ok(s.ok.join() === 'aurora,clouds,fires,gfs,goes,rain,sats,storms,strikes,wind', 'every source was read through the Worker: ' + s.ok.join() + ' ' + JSON.stringify(s.err));
     { const wx = await page.evaluate(() => { const X = window.__lc.WX, G = window.__lc.GRIB; return { t: X.t2m && G.at(X.t2m, 40, -40), p: X.mslp && G.at(X.mslp, 40, -40), w: X.wave && G.at(X.wave, 40, -40), land: X.wave && G.at(X.wave, 40, -100), jet: 'jet' in X }; });
@@ -31,6 +31,10 @@ const clean = errs => [...new Set(errs)].filter(e => !/youtube\.com|requestfaile
     ok(s.live > 8000 && s.n > 15000 && s.fresh > 0, 'the live orbit list (' + s.live + ' element sets) was laid over the snapshot: ' + s.n + ' objects');
     ok(s.at.strikes >= snap.at.strikes && s.at.aurora >= snap.at.aurora && s.at.wind >= snap.at.wind, 'nothing older than the snapshot replaced it');
     ok(s.cloud, 'the clouds are on the globe');
+    // (15 Nov, night) the war zones and the places cut off: the file beside the page, then the Worker's day: DeepStateMap's front, IODA's
+    // outages (Cuba, already among the places cut off, gets the word on its own card; Sudan a mark of its own)
+    { let z = null; for (let k = 0; k < 20; k++) { z = await page.evaluate(() => window.__lc.ZONES.dbg()); if (z.ver >= 2) break; await sleep(400); }
+      ok(z.ver >= 2 && z.ioda.join() === 'SD' && z.front && z.front.date === new Date().toISOString().slice(0, 10) && z.front.km2 > 90000 && z.war.length >= 15, 'the war zones on the site, with the day\'s front (DeepStateMap) and IODA\'s outages: ' + JSON.stringify({ ioda: z.ioda, front: z.front })); }
     await page.evaluate(() => window.__lc.WIND.look(12, 130, 1.25)); await sleep(2500);
     // (14 Nov, night: "On the earth there should be videos ... be able to take on and off layers. The weather is pretty lame ... Doesn't noa
     // have live weather?!") a row of layers under the globe; on the site the live view (NOAA's GOES pictures laid on the globe) and the
@@ -39,10 +43,10 @@ const clean = errs => [...new Set(errs)].filter(e => !/youtube\.com|requestfaile
     const ea = await page.evaluate(() => { const L = window.__lc, d = L.WIND.dbg(), e = document.getElementById('data'), t = e.getBoundingClientRect(), r = (document.getElementById('lgd').hidden ? document.getElementById('lyd') : document.getElementById('lgd')).getBoundingClientRect();
       return { dock: d.dock.join(' '), geo: L.GLOBE.hasGeo(), want: L.GEO.want, lgd: d.lgd, windNow: !!L.LIVE.wind.now, cams: d.cams, top: Math.round(d.cy - d.R), bottom: Math.round(d.cy + d.R), words: Math.round(t.bottom),
         lines: Math.round(t.height / parseFloat(getComputedStyle(e).lineHeight)), row: Math.round(r.top), data: e.textContent }; });
-    ok(/^vid\+ sat\+ wind\+ temp- rain\+ cld\+ waves- pres- bolt\+ (storm\+ )?fire\+ orbit\+ aur\+$/.test(ea.dock), 'the row of layers, as they start: ' + ea.dock);
-    ok(ea.geo === 3 && ea.want && ea.lgd === '', 'the live view: both of NOAA\'s pictures on the globe (the wind\'s colours give way to it): ' + JSON.stringify([ea.geo, ea.want, ea.lgd]));
-    ok(ea.windNow && /\nlive view [\w ]+ ago · wind now\n/.test(ea.data), 'the wind is the model\'s forecast for this hour, and said to be now: ' + ea.data.replace(/\n/g, ' | '));
-    ok(ea.lines === 4 && ea.top >= ea.words && ea.bottom <= ea.row && /\ncameras: \d+ of \d+ live · tap one to watch$/.test(ea.data), 'the whole globe shows under four one-line rows of words: ' + JSON.stringify([ea.top, ea.bottom, ea.words, ea.row, ea.lines]) + ' ' + ea.data.replace(/\n/g, ' | '));
+    ok(/^vid\+ war\+ dark\+ orbit\+ sat\+ (storm\+ )?fire\+ bolt\+ rain\+ cld\+ temp- waves- pres- aur\+$/.test(ea.dock), 'the row of layers, as they start (15 Nov: no wind; the war zones and the blackouts after the videos): ' + ea.dock);
+    ok(ea.geo === 3 && ea.want && ea.lgd === '', 'the live view: both of NOAA\'s pictures on the globe: ' + JSON.stringify([ea.geo, ea.want, ea.lgd]));
+    ok(ea.data === '', 'no writing at the top (15 Nov, 22:59: "Remove the writing on the top"): ' + JSON.stringify(ea.data));
+    ok(ea.top >= ea.words && ea.bottom <= ea.row, 'the whole globe shows, under the header and above the row: ' + JSON.stringify([ea.top, ea.bottom, ea.words, ea.row, ea.lines]) + ' ' + ea.data.replace(/\n/g, ' | '));
     { const tm = await page.evaluate(() => fetch('/api/gfs/t2m').then(r => r.headers.get('x-time'))); ok(Math.abs(Date.parse(tm) - Date.now()) < 2 * 3600000, 'the model\'s fields are for the hour nearest now: ' + tm); }
     { const th = await page.evaluate(() => fetch('/api/thumb/gswNWtJlUco').then(r => [r.status, r.headers.get('content-type')])); ok(th[0] === 200 && th[1] === 'image/jpeg', 'a camera\'s picture now, through the Worker: ' + th.join(' ')); }
     await page.screenshot({ path: 'shots/hosted_live_view.png' });
@@ -51,7 +55,7 @@ const clean = errs => [...new Set(errs)].filter(e => !/youtube\.com|requestfaile
     const said = await page.evaluate(() => document.getElementById('data').textContent);
     for (let k = 0; k < 30; k++) { await sleep(300); if ((await page.evaluate(() => window.__lc.WIND.dbg().lgd)) === 'temp') break; }
     let ly = await page.evaluate(() => ({ d: window.__lc.WIND.dbg(), data: document.getElementById('data').textContent, lgn: document.getElementById('lgn').textContent }));
-    ok(ly.d.lgd === 'temp' && ly.d.wx && ly.lgn === 'temperature °C' && /\ntemperature on: blue cold, red hot\n/.test(said), 'temperature on: the words say so, then its colours and its scale: ' + said.replace(/\n/g, ' | '));
+    ok(ly.d.lgd === 'temp' && ly.d.wx && ly.lgn === 'temperature °C' && said === '', 'temperature on: the words say so, then its colours and its scale: ' + said.replace(/\n/g, ' | '));
     await page.screenshot({ path: 'shots/hosted_temperature.png' });
     await page.evaluate(() => { window.__lc.WIND.layer('waves', 1); window.__lc.WIND.layer('pres', 1); }); for (let k = 0; k < 20; k++) { await sleep(300); if ((await page.evaluate(() => window.__lc.WIND.dbg().lgd)) === 'waves') break; }
     await sleep(1500); ly = await page.evaluate(() => ({ d: window.__lc.WIND.dbg(), hl: window.__lc.WX.hl.length }));
@@ -66,12 +70,14 @@ const clean = errs => [...new Set(errs)].filter(e => !/youtube\.com|requestfaile
     // camera's ring is near enough to take the tap first)
     // (a press on the zoom first: a touch of the hand's own stops the hints, whose ghost finger would turn the Earth under the tap)
     await page.click('#zIn'); await page.click('#zOut');
-    await page.evaluate(() => window.__lc.WIND.look(36, -45, 1.4)); await sleep(1500); { const d = await page.evaluate(() => window.__lc.WIND.dbg()); await page.mouse.click(d.cx, d.cy); }
+    // (the satellites put away meanwhile: flying a minute a second, the space station can pass under the finger)
+    await page.evaluate(() => { window.__lc.WIND.layer('orbit', 0); window.__lc.WIND.look(36, -45, 1.4); }); await sleep(1500); { const d = await page.evaluate(() => window.__lc.WIND.dbg()); await page.mouse.click(d.cx, d.cy); }
     let cd = null; for (let k = 0; k < 30; k++) { await sleep(400); cd = await page.evaluate(() => ({ hidden: document.getElementById('card').hidden, t: document.getElementById('card').innerText, radar: !!document.querySelector('#card canvas.cr'), data: document.getElementById('data').textContent })); if (/NOW/.test(cd.t) && cd.radar) break; }
     ok(!cd.hidden && /km from|open sea|, /i.test(cd.t) && /NOW\s+8°C · 47°F/.test(cd.t) && /WIND\s+22 km\/h from northeast/.test(cd.t) && /TODAY 12°\/4°/.test(cd.t) && cd.radar, 'a tap on a place opens its card: ' + cd.t.replace(/\n+/g, ' | ').slice(0, 260));
     ok(/km from \w+|^\w/.test(cd.data.split('\n')[0]) && /°C · \d+ hPa/.test(cd.data), 'and the readout names the place and gives the model\'s figures there: ' + cd.data.replace(/\n/g, ' | '));
     await page.screenshot({ path: 'shots/hosted_wind_card.png' });
     await page.evaluate(() => document.querySelector('#card .cx').click()); await sleep(300); ok(await page.evaluate(() => document.getElementById('card').hidden), 'the card\'s cross puts it away');
+    await page.evaluate(() => window.__lc.WIND.layer('orbit', 1));
     // a storm tapped: the Earth turns to it and comes close
     { const st = await page.evaluate(() => window.__lc.WIND.dbg().storms); if (!st.length) console.log('   (no tropical storm today, in the data fetched)'); else {
       await page.evaluate(s => window.__lc.WIND.look(s.lat, s.lon + 20, 1), st[0]); await sleep(1200); const p0 = (await page.evaluate(() => window.__lc.WIND.dbg().storms))[0];
@@ -79,7 +85,7 @@ const clean = errs => [...new Set(errs)].filter(e => !/youtube\.com|requestfaile
       ok(d2.zoom > 2.5 && Math.hypot(s2.x - d2.cx, s2.y - d2.cy) < 40 && /km\/h/.test(await page.evaluate(() => document.getElementById('data').textContent)), 'a tap on a storm turns the Earth to it and comes close: ' + d2.zoom.toFixed(2) + ' ' + s2.name);
       await page.screenshot({ path: 'shots/hosted_wind_storm.png' }); await page.evaluate(() => window.__lc.WIND.look(20, -40, 1)); } }
     // the satellites: the live list, and the card still works on it
-    const od = await page.evaluate(() => window.__lc.ORBIT.dbg()); ok(od.live && od.want === 1, 'the satellites are where they are this second');
+    const od = await page.evaluate(() => window.__lc.ORBIT.dbg()); ok(!od.live && od.want === 60, 'the satellites fly, sixty times their speed');
     await page.evaluate(() => window.__lc.ORBIT.pick('ISS (ZARYA)')); let card = '';
     for (let k = 0; k < 24; k++) { await sleep(400); card = await page.evaluate(() => window.__lc.ORBIT.dbg().card || ''); if (/1998-067A/.test(card)) break; } ok(/1998-067A/.test(card) && /MEASURED/i.test(card), 'the space station\'s card on the live list: ' + card.replace(/\n+/g, ' | ').slice(0, 200));
     // close up (14 Nov: "can't zoom in close enough"): the Earth comes far closer, and NASA's 500-metre picture of the part in view comes in
@@ -101,7 +107,7 @@ const clean = errs => [...new Set(errs)].filter(e => !/youtube\.com|requestfaile
     ok(s.id === 'earth' && s.hash === '#earth', 'an old link to #live opens the Earth: ' + s.id);
     ok(s.d.on && s.d.cams >= 70 && s.d.themes.length === 8, 'the cameras came from the Worker, in themes: ' + s.d.cams + ' cameras, ' + s.d.themes.join(' '));
     ok(!s.row && s.chips === 'all*,wild,fire,space,city,sea,sky,land,move', 'their themes are a row of their own, shown only while a camera is open (14 Nov): ' + s.chips);
-    ok(s.hidden && s.d.cur < 0 && /\ncameras: \d+ of \d+ live · tap one to watch$/.test(s.data), 'no window until a camera is tapped; the readout counts them: ' + s.data.replace(/\n/g, ' | '));
+    ok(s.hidden && s.d.cur < 0 && s.data === '' && s.d.onair.length > 0, 'no window until a camera is tapped, and no words at the top: ' + s.data.replace(/\n/g, ' | '));
     await page.screenshot({ path: 'shots/hosted_cams_0.png' });
     const cdp = await ctx.newCDPSession(page);
     // (lifted straight away: this browser takes most of a second over a frame of the Earth with its video, and a touch held across two
@@ -122,7 +128,7 @@ const clean = errs => [...new Set(errs)].filter(e => !/youtube\.com|requestfaile
       ok(s.d.cur >= 0 && !s.hidden && s.d.stat === 'live' && s.on, 'a tap on a camera\'s picture opens its window, and it plays: ' + s.d.id + ' (' + s.d.stat + ')'); }
     else ok(false, 'Starbase is not in view');
     ok(s.d.win.x >= 0 && s.d.win.x + s.d.win.w <= s.vw && s.d.win.y + s.d.win.h <= s.foot && s.d.win.w > 160, 'the window sits over the globe, above the rows along the bottom: ' + JSON.stringify(s.d.win) + ' foot ' + s.foot);
-    ok(s.data.split('\n').length === 4 && /^drag to turn/.test(s.data), 'the readout gives the camera, its hour and light, the satellites above: ' + s.data.replace(/\n/g, ' | '));
+    ok(s.data.split('\n').length === 3 && !/^drag to turn/.test(s.data), 'the readout gives the camera, its hour and light, the satellites above: ' + s.data.replace(/\n/g, ' | '));
     // (14 Nov: "Videos doesn't seem to really be working") the window as wide as the phone and at least 200 pixels high, above everything
     // so a tap on the picture reaches the player, with west, east and close over it
     const wb = await page.evaluate(() => { const v = document.getElementById('vidbox').getBoundingClientRect(), c = document.getElementById('vidc'), r = c.getBoundingClientRect(), z = getComputedStyle(document.getElementById('vid')).zIndex, st = getComputedStyle(document.getElementById('stage')).zIndex;

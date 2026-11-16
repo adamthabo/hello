@@ -8,6 +8,8 @@
 //   /api/gfs/<field>  one field of NOAA's weather model, now (temperature, pressure, the jet streams, the waves), as GRIB2
 //   /api/wx?lat=&lon= the weather at one place, now and for the next three days (Open-Meteo)
 //   /api/detail?b=s,w,n,e  a close picture of the ground for the part of the Earth in view (NASA's Blue Marble at 500 m, from NASA GIBS)
+//   /api/zones        what changes by the day in the Earth's war zones and places cut off: DeepStateMap's map of the ground Russia holds
+//                     in Ukraine, and the countries where IODA has seen the internet drop in the last day
 // Nothing else is forwarded and nothing is stored beyond a few minutes in memory. No keys, no accounts, nothing to set up.
 //
 // Every source is public. Each feed lists where to get it, best first: the official source, then public mirrors of it on GitHub.
@@ -116,6 +118,23 @@ const CAMS = [
   { id: 'tokyotower', t: 'city', kind: 'yt', name: 'Tokyo Tower', place: 'Tokyo, Japan', lat: 35.6586, lon: 139.7454, s: ['tokyo tower live camera', 'tokyo tower|東京タワー', '.'], best: 'night' },
   { id: 'sydney', t: 'city', kind: 'yt', name: 'Sydney Harbour', place: 'Sydney, Australia', lat: -33.8568, lon: 151.2153, c: ['webcamsydney'], best: 'any' },
   { id: 'auckland', t: 'city', kind: 'yt', name: 'Viaduct Harbour', place: 'Auckland, New Zealand', lat: -36.8431, lon: 174.759, c: ['UCfNoVlW5-BHsoCKTGs_F0WQ'], best: 'any' },
+  // (15 Nov, night: "Gaza, North Korea, Moscow, Beijing, etc.. major cities live is fun") the great cities, and the cities of the news
+  { id: 'moscow', t: 'city', kind: 'yt', name: 'Red Square', place: 'Moscow, Russia', lat: 55.7539, lon: 37.6208, s: ['moscow live camera red square', 'moscow|москв|kremlin|кремл|red square|красн', '.'], best: 'any' },
+  { id: 'beijing', t: 'city', kind: 'yt', name: 'Beijing', place: 'China', lat: 39.9042, lon: 116.4074, s: ['beijing live cam', 'beijing|北京|peking', '.'], best: 'any' },
+  { id: 'shanghai', t: 'city', kind: 'yt', name: 'The Bund', place: 'Shanghai, China', lat: 31.2400, lon: 121.4900, s: ['shanghai bund live', 'shanghai|上海|bund|外滩', '.'], best: 'night' },
+  { id: 'kyiv', t: 'city', kind: 'yt', name: 'Kyiv', place: 'Ukraine', lat: 50.4501, lon: 30.5234, s: ['kyiv live camera', 'kyiv|kiev|київ|киев', '.'], best: 'any' },
+  { id: 'jerusalem', t: 'city', kind: 'yt', name: 'The Western Wall', place: 'Jerusalem', lat: 31.7767, lon: 35.2345, s: ['western wall live kotel', 'western wall|kotel|כותל|jerusalem', '.'], best: 'any' },
+  { id: 'telaviv', t: 'city', kind: 'yt', name: 'The beach', place: 'Tel Aviv', lat: 32.0800, lon: 34.7670, s: ['tel aviv live cam beach', 'tel aviv|תל אביב', '.'], best: 'day' },
+  { id: 'gaza', t: 'city', kind: 'yt', name: 'Gaza', place: 'the Gaza Strip', lat: 31.5017, lon: 34.4668, s: ['gaza live camera', 'gaza|غزة|עזה', '.'], best: 'any' },
+  { id: 'beirut', t: 'city', kind: 'yt', name: 'Beirut', place: 'Lebanon', lat: 33.8938, lon: 35.5018, s: ['beirut live camera', 'beirut|بيروت', '.'], best: 'any' },
+  { id: 'mecca', t: 'city', kind: 'yt', name: 'The Grand Mosque', place: 'Mecca, Saudi Arabia', lat: 21.4225, lon: 39.8262, s: ['makkah live', 'makkah|mecca|مكة|haram|الحرم', '.'], best: 'any' },
+  { id: 'cairo', t: 'city', kind: 'yt', name: 'The pyramids of Giza', place: 'Cairo, Egypt', lat: 29.9792, lon: 31.1342, s: ['giza pyramids live cam', 'pyramid|giza|cairo|الأهرام', '.'], best: 'day' },
+  { id: 'tehran', t: 'city', kind: 'yt', name: 'Tehran', place: 'Iran', lat: 35.6892, lon: 51.3890, s: ['tehran live camera', 'tehran|تهران', '.'], best: 'any' },
+  { id: 'taipei', t: 'city', kind: 'yt', name: 'Taipei 101', place: 'Taiwan', lat: 25.0339, lon: 121.5645, s: ['taipei 101 live cam', 'taipei|台北|101', '.'], best: 'night' },
+  { id: 'mumbai', t: 'city', kind: 'yt', name: 'Mumbai', place: 'India', lat: 19.0760, lon: 72.8777, s: ['mumbai live cam', 'mumbai|bombay|मुंबई', '.'], best: 'any' },
+  { id: 'bangkok', t: 'city', kind: 'yt', name: 'Bangkok', place: 'Thailand', lat: 13.7563, lon: 100.5018, s: ['bangkok live cam', 'bangkok|กรุงเทพ', '.'], best: 'night' },
+  { id: 'havana', t: 'city', kind: 'yt', name: 'Havana', place: 'Cuba', lat: 23.1136, lon: -82.3666, s: ['havana live cam', 'havana|habana', '.'], best: 'any' },
+  { id: 'berlin', t: 'city', kind: 'yt', name: 'The Brandenburg Gate', place: 'Berlin, Germany', lat: 52.5163, lon: 13.3777, s: ['berlin live cam brandenburg gate', 'berlin|brandenburg', '.'], best: 'any' },
   // sea
   { id: 'monterey', t: 'sea', kind: 'yt', name: 'Sea nettles', place: 'Monterey Bay Aquarium, California', lat: 36.6187, lon: -121.9025, v: ['gswNWtJlUco'], s: ['monterey bay aquarium jelly cam', 'jell|nettle', 'monterey'], best: 'any' },
   { id: 'kelp', t: 'sea', kind: 'yt', name: 'The kelp forest', place: 'Monterey Bay Aquarium, California', lat: 36.618, lon: -121.901, s: ['monterey bay aquarium kelp forest cam', 'kelp', 'monterey'], best: 'any' },
@@ -341,6 +360,85 @@ async function ytNow(cam, B) {
   return out;
 }
 
+// ---- the war zones and the places cut off (15 Nov, night: "War zones and blacked out zones is good"). The page carries what is known of
+// each (data/zones.json, checked by hand the day it was made); this adds what changes by the day: the ground Russia holds in Ukraine, as
+// DeepStateMap draws it (a daily copy on GitHub, cyterat/deepstate-map-data, GPL-3.0), and the countries where IODA (Georgia Tech's
+// Internet Outage Detection and Analysis) has seen the internet drop in the last day ----
+const DSMAP = RAW + 'cyterat/deepstate-map-data/main/data/deepstatemap_data_';
+// a line made simpler: no point kept that is nearer than tol (degrees) to the line between its neighbours that are kept
+function simplify(pts, tol) {
+  if (pts.length < 5) return pts;
+  const keep = new Uint8Array(pts.length), st = [[0, pts.length - 1]]; keep[0] = keep[pts.length - 1] = 1;
+  while (st.length) {
+    const [a, b] = st.pop(); let best = -1, bd = tol * tol;
+    const [x0, y0] = pts[a], [x1, y1] = pts[b], dx = x1 - x0, dy = y1 - y0, L = dx * dx + dy * dy;
+    for (let i = a + 1; i < b; i++) {
+      const [x, y] = pts[i]; let t = L ? ((x - x0) * dx + (y - y0) * dy) / L : 0; t = Math.max(0, Math.min(1, t));
+      const ex = x0 + t * dx - x, ey = y0 + t * dy - y, d = ex * ex + ey * ey;
+      if (d > bd) { bd = d; best = i; }
+    }
+    if (best > 0) { keep[best] = 1; st.push([a, best], [best, b]); }
+  }
+  return pts.filter((p, i) => keep[i]);
+}
+// a ring's area in square kilometres (projected to an equal-area plane about its own middle), and in square degrees
+function km2(ring) {
+  let la0 = 0, lo0 = 0; for (const [x, y] of ring) { lo0 += x; la0 += y; } la0 = la0 / ring.length * Math.PI / 180; lo0 = lo0 / ring.length * Math.PI / 180;
+  const R = 6371.0088, P = ring.map(([x, y]) => { const la = y * Math.PI / 180, lo = x * Math.PI / 180, k = Math.sqrt(2 / (1 + Math.sin(la0) * Math.sin(la) + Math.cos(la0) * Math.cos(la) * Math.cos(lo - lo0)));
+    return [R * k * Math.cos(la) * Math.sin(lo - lo0), R * k * (Math.cos(la0) * Math.sin(la) - Math.sin(la0) * Math.cos(la) * Math.cos(lo - lo0))]; });
+  return Math.abs(deg2(P));
+}
+function deg2(ring) { let a = 0; for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) a += (ring[j][0] + ring[i][0]) * (ring[j][1] - ring[i][1]); return a / 2; }
+async function front() {
+  const m = MEM.get('front'), now = Date.now();
+  if (m && now - m.at < 3 * 3600000) return m.v;
+  for (let k = 0; k < 4; k++) {
+    const ymd = new Date(now - k * 86400000).toISOString().slice(0, 10).replace(/-/g, '');
+    try {
+      const r = await fetch(DSMAP + ymd + '.geojson', { headers: { 'user-agent': UA } });
+      if (!r.ok) continue;
+      const g = await r.json(), geo = g && g.features && g.features[0] && g.features[0].geometry;
+      const polys = !geo ? [] : geo.type === 'MultiPolygon' ? geo.coordinates : geo.type === 'Polygon' ? [geo.coordinates] : [];
+      let area = 0, big = 0; const parts = [];
+      for (const poly of polys) {
+        if (!Array.isArray(poly) || !Array.isArray(poly[0]) || poly[0].length < 4) continue;
+        area += km2(poly[0]); for (const h of poly.slice(1)) if (Array.isArray(h) && h.length >= 4) area -= km2(h);
+        const s = simplify(poly[0].filter(q => Array.isArray(q) && Number.isFinite(q[0]) && Number.isFinite(q[1])), 0.01), a2 = Math.abs(deg2(s));
+        if (s.length >= 4) { parts.push({ s, a2 }); big = Math.max(big, a2); }
+      }
+      // (as the page's own file has it: the small islands and slivers go, the main parts stay)
+      const p = parts.filter(x => x.a2 >= Math.max(0.0025, big * 0.002) || x.a2 === big).map(x => x.s.flatMap(([lo, la]) => [Math.round(lo * 100), Math.round(la * 100)]));
+      if (!p.length || area < 1000) continue;
+      const v = { date: ymd.slice(0, 4) + '-' + ymd.slice(4, 6) + '-' + ymd.slice(6), by: 'DeepStateMap', km2: Math.round(area / 100) * 100, p };
+      MEM.set('front', { at: now, v });
+      return v;
+    } catch (e) { /* the day before, then */ }
+  }
+  return m ? m.v : null;
+}
+async function outages() {
+  const m = MEM.get('ioda'), now = Date.now();
+  if (m && now - m.at < 15 * 60000) return m.v;
+  try {
+    const u = Math.floor(now / 1000), r = await fetch('https://api.ioda.inetintel.cc.gatech.edu/v2/outages/summary?from=' + (u - 86400) + '&until=' + u + '&entityType=country', { headers: { 'user-agent': UA } });
+    if (!r.ok) throw new Error('ioda ' + r.status);
+    // (its summary: a list of { entity: { type, code, name }, scores: { overall, ... }, event_cnt }; read loosely, so a small change
+    // of shape leaves nothing marked rather than something wrong)
+    const d = await r.json(), L = [], seen = {};
+    const rows = Array.isArray(d && d.data) ? d.data.flat() : Array.isArray(d) ? d : [];
+    for (const x of rows) {
+      if (!x || typeof x !== 'object') continue;
+      const e = x.entity || {}, type = String(e.type || x.entityType || 'country').toLowerCase();
+      const cc = String(e.code || x.entityCode || x.entity_code || '').toUpperCase(), sc = +((x.scores && (x.scores.overall ?? x.scores.overall_score)) ?? x.score ?? x.overall);
+      if (type === 'country' && /^[A-Z]{2}$/.test(cc) && sc > 0 && !seen[cc]) { seen[cc] = 1; L.push({ cc, score: Math.round(sc) }); }
+    }
+    L.sort((a, b) => b.score - a.score);
+    const v = { at: new Date(now).toISOString().slice(0, 16).replace('T', ' ') + ' UTC', list: L.slice(0, 8) };
+    MEM.set('ioda', { at: now, v });
+    return v;
+  } catch (e) { return m ? m.v : null; }
+}
+
 const CORS = { 'access-control-allow-origin': '*' };
 function json(o, maxAge) {
   return new Response(JSON.stringify(o), { headers: { 'content-type': 'application/json', 'cache-control': 'public, max-age=' + maxAge, ...CORS } });
@@ -409,6 +507,10 @@ export default {
       } catch (err) { return new Response('Not available just now', { status: 503, headers: { 'retry-after': '60', ...CORS } }); }
     }
     if (p === '/api/cams') return json({ cams: CAMS.map(({ c, s, ...k }) => k), themes: THEMES }, 600);
+    if (p === '/api/zones') {
+      const [f, o] = await Promise.all([front(), outages()]);
+      return json({ front: f, ioda: o ? o.list : [], iodaAt: o ? o.at : '' }, 900);
+    }
     // a camera's picture now (14 Nov, night: "On the earth there should be videos, that's the best part"): YouTube's still of the stream,
     // which it renews every few minutes while the stream is live, for the page to show on the Earth; from here, so the page's own
     // canvas can draw it. Kept five minutes
