@@ -139,7 +139,8 @@ Artifact: https://claude.ai/artifact/PCzaFJH2vjXe4Kv8KK4Xic (publish to this URL
    is open. Smoke's tools are the hand, the wall, the fan and the drain (no prism, no tunnel). The game has more: from round 2 gold
    rings worth three that fade if not filled in nine seconds; rings filled within four seconds of each other count double, treble,
    up to five times (a combo, its points rising from the ring); a drain in the tank from round 5, a current across it from round 7,
-   two rings at once from round 8; each round says what it brings.
+   two rings at once from round 8, one of the two going slowly round a loop from round 9 (17 Nov: its way drawn faintly, the dots
+   moving the way it goes; a finger that follows it fills it); each round says what it brings.
 19. **What his eleventh look (14 Nov, 15:24) settled.** "I don't understand the layers. It doesn't make any sense why that's there.
    They hardly work. Make that go away so you can see the whole globe and all the gameplay." So the Earth has nothing to switch: no
    "layers" button, no list. Everything there is data for is always on the globe (the wind as smoke, the clouds and the rain where
@@ -433,8 +434,10 @@ governor is live in this test and the headless browser draws slowly, so Smoke us
   water's own time, so a phone at thirty frames a second plays it as one at sixty does, only slower). `gmPlan(n)` says what round `n`
   asks (rings, seconds, colours, ring size, drift, a wall); `gmRound` sets it up (`gmPlace`: the tank's walls, the vents along its
   foot as fixed sources pointing up, `VENTX`, `VCOL`, and the wall); `gmClock`, on the water's time, runs the intro (1.8 s), the
-  round and the pause after a win (2.2 s); `gmRing` puts a ring (two from round 8) where the smoke does not go by itself (`gmRingNew`: 32 random places scored: off
-  its vent's column, away from the last ring, the wall, the drain and the other ring; `gmRingSwap` replaces a filled or faded one); `cupsCheck` fills it as before (the ink read back at 64 across, `sample`:
+  round and the pause after a win (2.2 s); `gmRing` puts a ring (two from round 8) where the smoke does not go by itself (`gmRingNew`: 64 random places scored: off
+  its vent's column, away from the last ring, the wall, the drain and the other ring; from round 9 the first of the two goes round
+  a loop, each try its own size, the loop scored all the way round and kept off the wall (`wallD`), `LAP` seconds a lap; a drifting
+  ring drifts away from the other; `moveParts` places both kinds by the water's time; `gmRingSwap` replaces a filled or faded one); `cupsCheck` fills it as before (the ink read back at 64 across, `sample`:
   density times how close the colour, taken all together, is, `LP.fk*(match - LP.f0)`, per ring radius `c.r`) and `gmRingDone` counts
   it; `gmOver` keeps the best. In a game a finger moves the water a little more widely and leaves no ink (`tick`: `fk`, `fr0`), takes the
   stream of the vent it came down nearest (`GV`) and turns it towards itself (`f.a`, clamped above the floor, 7 a second), carries the

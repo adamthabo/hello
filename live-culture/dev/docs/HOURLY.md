@@ -151,3 +151,11 @@ page with features he did not ask for.
 - 2026-11-17 05:07: the front marches, the blackouts breathe (backlog item 5 done). Artifact still behind (runs 1 to 5).
 - 2026-11-17 06:10: the big fires as flames up close (backlog item 6 done). Artifact still behind (runs 1 to 6); 08:00 is next.
 - 2026-11-17 07:14: Mix with the beat (backlog item 7 done). Artifact still behind (runs 1 to 7): the 08:15 run publishes them.
+- 2026-11-17 08:20: the artifact caught up: runs 1 to 7 published together as 1794923329-2956 (his approval came at 08:48), hashes
+  checked. No new piece this hour: the publish took it.
+- 2026-11-17 09:21: Paint's later rounds: from round 9 one of the two rings goes slowly round a loop (9 to 11 s a lap, its way
+  drawn faintly), kept in bounds, off its vent's column and off the wall; a following finger fills it in one push (backlog item 8
+  done). Also: a quick tap on a wall is timed by `held()`, as the lenses are. The first full run failed (the finger was dealt a wall
+  between the vent and the loop), so the test now deals round 9 until the loop's vent reaches it straight. The second failed in
+  `t_lock.js` (the hint's first tap counted late on a slow page): now counted from the page's own frames, and the hint's tap can no
+  longer fall between two slow frames. Shipped after the third. This run ran long: the 10:22 run's message waited for it.

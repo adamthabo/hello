@@ -1,6 +1,13 @@
 # Changelog
 
 ## For the owner
+17 Nov 2026, 09:21 (the ninth hourly run):
+
+- **Paint's later rounds go round.** From round 9, one of the two rings travels slowly round a small loop, about ten seconds a lap,
+  its path drawn faintly with dots that move the way it goes; the other still drifts to and fro. Keep your finger on it as it goes
+  and it fills: a machine playing it that way filled one with a single push. A quick tap on a wall takes it away again even when the
+  phone is busy.
+
 17 Nov 2026, 07:14 (the seventh hourly run):
 
 - **Mix moves with the music.** The buttons that are playing now glow up on every beat and fade until the next, and the mode's colour
@@ -249,6 +256,38 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 17 Nov 2026, 09:21 (New York), the ninth hourly run: a ring that goes round a loop in Paint's later rounds (HOURLY.md item 8)
+
+- `11-drift.js`: `gmPlan` has `loop` from round 9; `NEWS[9]` is 'A LOOP', 'a ring goes round a loop: catch it'. `gmRingNew`: of the
+  two rings at once, the one made while no other loops goes round an oval: each of 64 tries has its own size (`ox` .08 to .13 of the
+  tank's width, .08 over the middle vent; `oy = ox × .64 × .9 to 1.1`, nearly round on the screen), its centre so the whole loop stays
+  where a ring may be (x .14 to .86, y .24 to .62), scored by the loop's nearest approach to its vent's column (−2 within .12), the
+  drain, the other ring and the wall (`wallD`, sixteen points round the loop, −3 within .1); `LAP` 9 + 0 to 2 s a lap, `od` its way
+  round, `a0` where it starts. The best score starts at −1e9 (with the new penalties every try could score under −1, which would
+  have left no place). A drifting ring now drifts the way away from the other ring. `moveParts` puts a loop's ring at
+  `a0 + od·2π·t/lap`; its faint way is a dashed ellipse whose dots move round its way (`lineDashOffset`). Rings carry a number `n`;
+  `GM.loops` counts loops filled; `dbg()` cups have `n`, `mv` ('loop', 'drift' or '') and `loop` (centre, radii, lap, way); test
+  hook `lap(a, b)`.
+- `11-drift.js` `buildUp`: a tap is timed by `held(p)` (`20-ui.js`), as the cameras' lenses are since the second run: on a busy page a
+  quick tap on a wall had counted as long and the wall stayed (`t_smoke.js` failed so once this run).
+- `11-drift.js` `ghost`: the opening hint's tap is never stepped over and is kept apart from its stroke. A slow frame (this machine
+  drew Paint four to seven times a second in the second full run) can fall either side of the tap's quarter second; the tap is then
+  shown on the frame after it (`ghU`, `ghK`: the last call's place in the cycle), and a tap is always lifted for a frame before the
+  stroke begins (`ghT`). At sixty frames a second nothing changes.
+- `t_lock.js`: the hint's touches are counted from the page's own record of every frame (`__gfr`, put in by the init script), over the
+  4.3 s from the hint's own start (`GH.t0`). Counted from outside, from when a read first saw the hint on, a slow page's late reads
+  started the count after its first tap (it counted 1 of 2 and failed the second full run, three times running on its own).
+- `t_smoke.js`: round 9 says 'A LOOP'; one of its two rings loops (nearly round, in the upper part, its lap within `LAP`) and the
+  other drifts; read twice half a second apart, the ring sits on its loop and has moved; `chase()`, a finger from just over the ring's
+  vent drawn to the ring as it moves and kept on it (read every frame), fills the loop in at most three pushes within the round's
+  18 seconds. That finger pushes straight, so it is tried on a deal where the loop's vent reaches the loop's middle straight (the
+  wall and the drain not on the way; round 9 dealt again until so, eight times at most): in the first full run it was dealt a wall
+  between the vent and the loop and failed, and going round the wall is round 6's own difficulty (about half of all loops sit behind
+  the wall from their vent, as other rings do since round 6). `dbg().game.wallXY` gives the wall's ends for this. Measured first with the water stepped as a phone at sixty frames a second steps it: nobody touching, the loop ring's
+  fill stayed 0 for three seconds; the following finger filled it in one push (1.4 s; in the test 0.5 s); round 4's drifting ring in
+  one push (2.2 s). 3000 placements sampled in node: no loop leaves its bounds; 0.3% come within a ring's width of the wall, 0.7% pass
+  over their own vent's column (the old drift is not checked for either).
 
 ## 17 Nov 2026, 07:14 (New York), the seventh hourly run: Mix with the beat (HOURLY.md item 7)
 

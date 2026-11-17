@@ -12,7 +12,8 @@ changes how the page sounds.
    frames a second runs it (`fixdt`): a bot pushing from the side of the plume fills a ring in two to nine seconds; nobody touching
    fills none. Worth watching: whether a person finds round 1 too easy or too hard (`gmPlan`: rings, seconds, ring size), whether the
    held finger's blowing feels right, how a phone at thirty frames a second plays it. Ideas, only if he wants more: a ring that moves
-   along a path, two rings at once of two colours, a short combo for rings filled quickly. (The 24 set-ups of 13 Nov, their tools and
+   along a path, two rings at once of two colours, a short combo for rings filled quickly (all three are in: the combo and two rings
+   at once since 14 Nov, a ring going round a loop from round 9 since 17 Nov). (The 24 set-ups of 13 Nov, their tools and
    what was learnt making them are in the artifact's version 28 and this file's history.)
 3. **Hear it and hold it.** The two things no machine test covers: every voice by ear, and every world on a real iPhone
    (frame rate in Wind and Orbit above all, the first touch starting the band with the ring switch on silent, whether a first stroke

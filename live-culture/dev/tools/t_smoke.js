@@ -62,6 +62,13 @@ const size = process.argv[2] || 'phone';
   const frame = () => page.evaluate(() => new Promise(r => requestAnimationFrame(() => r())));
   const push = async (x0, y0, x1, y1, n, hold) => { await touch([[x0, y0]], 'touchStart'); await frame(); for (let k = 1; k <= n; k++) { await touch([[x0 + (x1 - x0) * k / n, y0 + (y1 - y0) * k / n]], 'touchMove'); await frame(); }
     for (let k = 0; k < hold; k++) await frame(); await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await frame(); };
+  // (17 Nov) a finger drawn from (x0, y0) to ring n as it moves, then kept on it for `hold` frames, as a player follows a moving ring:
+  // the frames it took (it lets go when the ring is filled and gone)
+  const chase = async (x0, y0, n, steps, hold) => { const at = () => page.evaluate(n => new Promise(r => requestAnimationFrame(() => { const c = window.__lc.WORLDS[0].o.dbg().cups.find(c => c.n === n); r(c ? [c.x, c.y] : null); })), n);
+    let fr = 1, q; await touch([[x0, y0]], 'touchStart'); q = await at();
+    for (let k = 1; k <= steps && q; k++) { await touch([[x0 + (q[0] - x0) * k / steps, y0 + (q[1] - y0) * k / steps]], 'touchMove'); q = await at(); fr++; }
+    for (let k = 0; k < hold && q; k++) { await touch([q], 'touchMove'); q = await at(); fr++; }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await frame(); return fr; };
   await page.evaluate(() => { try { localStorage.removeItem('lc.smoke.best'); } catch (e) {} const o = window.__lc.WORLDS[0].o; o.best(0); o.fixdt(1 / 60); });
   s = await D(); ok(await page.evaluate(() => document.getElementById('t_puz').firstChild.textContent) === 'play' && s.data === '', 'out of a game the button reads play, and there are no words over the paint: ' + JSON.stringify(s.data));
   await click('t_puz'); await sleep(300); s = await D();
@@ -119,6 +126,34 @@ const size = process.argv[2] || 'phone';
   { const g0 = s.d.game.got, keep = s.d.cups[1]; await page.evaluate(() => window.__lc.WORLDS[0].o.win()); s = await D();
     ok(s.d.cups.length === 2 && s.d.game.got === g0 + 1 && s.d.cups.some(c => c.c === keep.c && Math.hypot(c.x - keep.x, c.y - keep.y) < 40), 'a ring of the two filled: a new one takes its place, the other stays: ' + JSON.stringify({ g0, got: s.d.game.got, cups: s.d.cups.map(c => c.c) })); }
   await look('game_two');
+  // (17 Nov) from round 9, of the two rings at once one goes slowly round a loop, its way drawn faintly, and the other drifts; a finger
+  // that follows it (from just over its vent, drawn to the ring as it goes and kept on it) fills it well within the round's time
+  await page.evaluate(() => window.__lc.WORLDS[0].o.goRound(9)); await until(s => s.d.game.round === 9 && s.d.game.phase === 'intro', 8000);
+  ok(s.d.game.news === 'A LOOP', 'round 9 says what it brings: ' + s.d.game.news);
+  await until(s => s.d.game.phase === 'play' && s.d.cups.length === 2, 60000); await page.evaluate(() => window.__lc.WORLDS[0].o.left(60));
+  { const LP = await page.evaluate(() => window.__lc.WORLDS[0].o.lap()), L = s.d.cups.filter(c => c.mv === 'loop'), b = s.d.board, l = L[0] && L[0].loop;
+    ok(L.length === 1 && s.d.cups.some(c => c.mv === 'drift') && l.lap >= LP[0] && l.lap <= LP[0] + LP[1] && l.cx - l.rx >= b.x0 + b.w * .13 && l.cx + l.rx <= b.x0 + b.w * .87 &&
+      l.cy - l.ry >= b.y0 + b.h * .23 && l.cy + l.ry <= b.y0 + b.h * .63 && Math.abs(l.rx / l.ry - 1) < .25,
+      'round 9: one of the two rings goes round a loop (nearly round, in the upper part of the tank, ' + (l ? l.lap.toFixed(1) : '?') + ' s a lap), the other drifts: ' + JSON.stringify(l));
+    const p = []; for (let k = 0; k < 2; k++) { if (k) for (let f = 0; f < 30; f++) await frame(); const c = (await D()).d.cups.find(c => c.n === L[0].n); if (c) p.push(c); }
+    const on = q => Math.hypot((q.x - l.cx) / l.rx, (q.y - l.cy) / l.ry);
+    ok(p.length === 2 && p.every(q => Math.abs(on(q) - 1) < .08) && Math.hypot(p[1].x - p[0].x, p[1].y - p[0].y) > 4,
+      'the ring goes round its loop: ' + p.map(q => on(q).toFixed(3) + ' at ' + Math.round(q.x) + ',' + Math.round(q.y)).join(' then '));
+    await look('game_loop'); }
+  // (the finger here pushes straight, so it is tried on a deal where its vent can reach the middle of the loop straight, the wall and
+  // the drain not on the way: going round the wall is round 6's own difficulty, not the loop's; dealt again until so, eight times at most)
+  const sd = (px, py, w) => { const k = 1 / .64, ax = w[0], ay = w[1] * k, ex = w[2] - ax, ey = w[3] * k - ay, qy = py * k, L = ex * ex + ey * ey, u = L ? Math.max(0, Math.min(1, ((px - ax) * ex + (qy - ay) * ey) / L)) : 0; return Math.hypot(px - ax - u * ex, qy - ay - u * ey); };
+  const reach = s => { const b = s.d.board, L = s.d.cups.find(c => c.mv === 'loop'); if (!L) return false; const v = s.d.vents.find(q => q.c === L.c); if (!v) return false;
+    const vx = (v.x - b.x0) / b.w, w = s.d.game.wallXY, dr = s.d.game.drain;
+    for (let j = 0; j <= 40; j++) { const f = j / 40, px = vx + (L.loop.x0 - vx) * f, py = .955 + (L.loop.y0 - .955) * f;
+      if (w && sd(px, py, w) < .06) return false; if (dr && Math.hypot(px - dr[0], (py - dr[1]) / .64) < .08) return false; } return true; };
+  s = await D(); let deals = 1; while (!reach(s) && deals < 8) { deals++; await page.evaluate(() => window.__lc.WORLDS[0].o.goRound(9));
+    await until(s => s.d.game.round === 9 && s.d.game.phase === 'play' && s.d.cups.length === 2, 60000); await page.evaluate(() => window.__lc.WORLDS[0].o.left(60)); s = await D(); }
+  ok(reach(s), 'a deal of round 9 where the looping ring\'s vent can reach it straight (' + deals + ' deal' + (deals > 1 ? 's' : '') + ')');
+  { let fr = 0, np = 0; const l0 = s.d.game.loops;
+    for (let k = 0; k < 3; k++) { s = await D(); if (s.d.game.loops > l0) break; const c = s.d.cups.find(c => c.mv === 'loop'); if (!c) break;
+      const v = s.d.vents.find(q => q.c === c.c) || s.d.vents[0]; np++; fr += await chase(v.x, v.y - 30, c.n, 30, 150); }
+    s = await D(); ok(s.d.game.loops === l0 + 1 && fr < 18 * 60, 'a finger following the looping ring fills it (deal ' + deals + ', ' + np + ' push' + (np > 1 ? 'es' : '') + ', ' + (fr / 60).toFixed(1) + ' s of the round\'s 18)'); }
   // time up: the score stays, the best is kept
   await page.evaluate(() => window.__lc.WORLDS[0].o.goRound(2)); await until(s => s.d.game.phase === 'play', 60000); await page.evaluate(() => window.__lc.WORLDS[0].o.left(.3));
   await until(s => s.d.game.phase === 'over', 30000);

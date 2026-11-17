@@ -5,7 +5,9 @@ const { launch, open } = require('./lib'); const sleep = ms => new Promise(r => 
 const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') + m); if (!c) fail.push(m); };
 const hold = () => { window.__allow = false; const AC = window.AudioContext, R = AC.prototype.resume;
   AC.prototype.resume = function () { return window.__allow ? R.call(this) : Promise.resolve(); };
-  window.AudioContext = function (o) { const c = new AC(o); if (!window.__allow) c.suspend(); return c; }; window.AudioContext.prototype = AC.prototype; };
+  window.AudioContext = function (o) { const c = new AC(o); if (!window.__allow) c.suspend(); return c; }; window.AudioContext.prototype = AC.prototype;
+  // (17 Nov) every frame from the start: its time, whether the hint is on, how many ghost touches, when the hint began
+  window.__gfr = []; const f = t => { const L = window.__lc; if (L && L.GH) window.__gfr.push([t, L.GH.on ? 1 : 0, Object.keys(L.GP).length, L.GH.t0]); if (window.__gfr.length < 3000) requestAnimationFrame(f); }; requestAnimationFrame(f); };
 const S = page => page.evaluate(() => { const L = window.__lc, b = document.getElementById('bSound'); return { want: L.AU.want, state: L.AU.c ? L.AU.c.state : 'none', run: L.AU.run, live: L.AU.live, taps: L.AU.taps || 0,
   pressed: b.getAttribute('aria-pressed'), dim: getComputedStyle(b.querySelector('.sl')).display !== 'none', label: b.getAttribute('aria-label'), mode: L.GH.mode, on: L.GH.on, gp: Object.keys(L.GP).length, held: L.soundHeld(), errs: (L.errs || []).slice(0, 3) }; });
 const stroke = async (page, y) => { await page.mouse.move(90, y); await page.mouse.down(); for (let k = 1; k <= 24; k++) { await page.mouse.move(90 + k * 9, y + 60 * Math.sin(k * .4)); await sleep(14); } await page.mouse.up(); };
@@ -15,7 +17,10 @@ const tap = async (page, x, y) => { await page.mouse.move(x, y); await page.mous
   // the opening hint: a tap before anything else
   // (counted from when the hint starts: on a busy machine the page can take a second or two longer to begin it)
   { const tw = Date.now(); while (Date.now() - tw < 8000 && !(await page.evaluate(() => window.__lc.GH.on))) await sleep(25); }
-  let downs = 0, was = 0; const t0 = Date.now(); while (Date.now() - t0 < 4300) { const n = await page.evaluate(() => Object.keys(window.__lc.GP).length); if (n && !was) downs++; was = n; await sleep(25); }
+  // (17 Nov) the ghost's touches counted from the page's own record of every frame, over the four seconds from when the hint began:
+  // counted from outside, from when a read first saw the hint on, a busy page's slow reads could start counting after its first tap
+  await sleep(4300); const downs = await page.evaluate(() => { const fr = window.__gfr, i0 = fr.findIndex(q => q[1]); if (i0 < 0) return 0;
+    const t0 = fr[i0][3]; let n = 0, was = 0; for (const q of fr.slice(i0)) { if (q[0] - t0 > 4300) break; if (q[2] && !was) n++; was = q[2]; } return n; });
   let s = await S(page); ok(downs >= 2 && s.mode === 1, 'the opening hint taps before it strokes (' + downs + ' ghost touches in the first four seconds)');
   await stroke(page, 330); await sleep(350); s = await S(page);
   ok(s.want && s.state !== 'running', 'after a stroke the music is asked for and the sound is held back (' + s.state + ')');

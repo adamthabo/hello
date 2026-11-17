@@ -1345,7 +1345,7 @@ var DRIFT=(function(){
        GM: the round, the rings it asks for and has, the seconds left (by the water's own clock, so a slow phone is not a harder one),
        the score, the best (kept in this browser), the phase (intro, play, won, over) and when it began, the rings' bursts */
     PZ=-1,pzWon=0,FIXDT=0,SAVED=null,
-    GM={round:0,need:0,got:0,left:0,score:0,best:0,phase:'',phT:0,fx:[],cols:[],lastX:.5,lastC:-1,combo:0,lastT:-99,ringN:0,drain:null,cur:null},
+    GM={round:0,need:0,got:0,left:0,score:0,best:0,phase:'',phT:0,fx:[],cols:[],lastX:.5,lastC:-1,combo:0,lastT:-99,ringN:0,drain:null,cur:null,loops:0},
     RUN=0,TANK=0,TANK0=6,RT=0,EMPTYT=-1,OUTT=0,
     rb=null,rbBuf=null,rbW=0,rbH=0,rbT=0,rbS=0,rbOk=false,simT=0,NOWIN=false,TRACE=null,REC=null,NODRAW=false,want=0,bdrag={},VQ=[],FASTDYE=false,FQ=[],FM=[],GV={};
   /* the five notes of the scale as five inks: E cyan, G green, A amber, B rose, D violet */
@@ -1475,31 +1475,44 @@ var DRIFT=(function(){
      round asks for so many rings in so many seconds: more rings, less time and smaller rings as the rounds go, a second colour from
      the third round and a third from the fifth (a ring wants its own colour: the others spoil it), drifting rings from the fourth, a
      wall in the way from the sixth. A tap blows the smoke away from it. Time running out ends the game; the best score is kept. ===== */
-  var VENTX=[[.5],[.28,.72],[.2,.5,.8]],VCOL=[0,2,3];
+  var VENTX=[[.5],[.28,.72],[.2,.5,.8]],VCOL=[0,2,3],LAP=[9,2];
   /* (14 Nov: "game is getting better. Needs more") each round from the second brings something: gold rings worth three, a second
      colour, rings that move, a drain that swallows smoke, a wall, a current across the tank, two rings at once; and rings filled
-     close together count double, treble and up to five times (a combo) */
+     close together count double, treble and up to five times (a combo); (17 Nov) and from the ninth, of the two rings at once, one goes
+     slowly round a loop (about ten seconds a lap, its way drawn faintly, the dots moving the way it goes) */
   function gmPlan(n){var k=n<3?1:n<5?2:3;return {need:Math.min(8,3+Math.floor((n-1)/2)),secs:Math.max(18,34-2*n),cols:VCOL.slice(0,k),
-    r:Math.max(.7,1.25-.06*(n-1)),drift:n>=4?Math.min(.2,.07+.02*(n-4)):0,wall:n>=6,gold:n>=2,drain:n>=5,cur:n>=7,two:n>=8}}
+    r:Math.max(.7,1.25-.06*(n-1)),drift:n>=4?Math.min(.2,.07+.02*(n-4)):0,wall:n>=6,gold:n>=2,drain:n>=5,cur:n>=7,two:n>=8,loop:n>=9}}
   /* (each short enough for one line of a phone: the words over the tank are kept to three lines, so none of them covers it) */
   var NEWS={2:['GOLD RINGS','gold rings are worth 3, but they fade'],3:['TWO COLOURS','each ring wants its own colour'],
     4:['MOVING RINGS','the rings move: follow them'],5:['A DRAIN','a drain swallows paint: go round it'],6:['A WALL','a wall in the way: go round it'],
-    7:['A CURRENT','a current pushes the paint sideways'],8:['TWO AT ONCE','two rings at once: one of each colour']};
+    7:['A CURRENT','a current pushes the paint sideways'],8:['TWO AT ONCE','two rings at once: one of each colour'],9:['A LOOP','a ring goes round a loop: catch it']};
   function gmPlace(){var n=GM.cols.length,X=VENTX[n-1];FIX.walls=tank();
     FIX.fans=GM.cols.map(function(c,i){return {x:bx(X[i]),y:by(.955),dx:0,dy:-1,c:c,fixed:1,ph:0,a0:-Math.PI/2,sa:0,sp:4,u:X[i]}});
     if(GM.wall){var w=GM.wall;FIX.walls.push([bx(w[0]),by(w[1]),bx(w[2]),by(w[3]),1])}
     FIX.drains=GM.drain?[{x:bx(GM.drain[0]),y:by(GM.drain[1]),ph:0,fixed:1}]:[];FIX.prisms=[];obsDirty=true}
   /* a ring somewhere the smoke will not reach by itself: off its vent's column, in the upper two thirds (under the top, where the smoke
      is let out), not where the last one was, nor by the drain, the wall or the other ring; its colour one the other ring has not got */
-  function gmRingNew(others,plain){var P=gmPlan(GM.round),x,y,k,best=null,bs=-1,X=VENTX[GM.cols.length-1],oc=others.map(function(o){return o.c});
+  function gmRingNew(others,plain){var P=gmPlan(GM.round),x,y,k,best=null,bs=-1e9,X=VENTX[GM.cols.length-1],oc=others.map(function(o){return o.c});
     var cs2=GM.cols.filter(function(q){return oc.indexOf(q)<0});if(cs2.length>1)cs2=cs2.filter(function(q){return q!==GM.lastC});if(!cs2.length)cs2=GM.cols;
     var c=cs2[Math.floor(Math.random()*cs2.length)];GM.lastC=c;var vx=X[GM.cols.indexOf(c)];
-    for(k=0;k<32;k++){x=.14+.72*Math.random();y=.24+.38*Math.random();var sc=Math.min(Math.abs(x-vx),.4)+.6*Math.min(Math.abs(x-GM.lastX),.4)-(GM.wall&&Math.abs(y-GM.wall[1])<.08?1:0);
-      if(Math.abs(x-vx)<.2)sc-=1;if(GM.drain&&Math.hypot(x-GM.drain[0],y-GM.drain[1])<.2)sc-=1;
-      others.forEach(function(o){if(Math.hypot(x-o.x0,y-o.y0)<.28)sc-=1});if(sc>bs){bs=sc;best=[x,y]}}
-    GM.lastX=best[0];var dm=P.drift?(Math.random()<.5?-1:1)*P.drift:0;GM.ringN++;
-    return {x:bx(best[0]),y:by(best[1]),x0:best[0],y0:best[1],mx:dm&&best[0]+dm>.1&&best[0]+dm<.9?dm:-dm,my:0,mp:5+Math.random()*2,c:c,fill:0,match:0,done:false,r:P.r,t0:RT,
+    /* (17 Nov) a ring that goes round a loop (from the ninth round, one of the two at once): the whole loop kept where a ring may be,
+       nearly round on the screen (the tank is .64 as wide as it is high), off its vent's column (smaller over the middle vent), never
+       through the wall; each try its own size, so a smaller loop fits where a big one would not */
+    var lp=P.loop&&!others.some(function(o){return o.ox});
+    for(k=0;k<64;k++){var o1=lp?(Math.abs(vx-.5)<.1?.08:.08+.05*Math.random()):0,o2=o1*.64*(.9+.2*Math.random());
+      x=.14+o1+(.72-2*o1)*Math.random();y=.24+o2+(.38-2*o2)*Math.random();
+      var dv=Math.abs(x-vx)-o1,sc=Math.min(dv,.4)+.6*Math.min(Math.abs(x-GM.lastX),.4)+o1-(GM.wall&&Math.abs(y-GM.wall[1])<.08+o2?1:0);
+      if(dv<.2)sc-=lp&&dv<.12?2:1;if(GM.drain&&Math.hypot(x-GM.drain[0],y-GM.drain[1])<.2+o1)sc-=1;
+      if(lp&&GM.wall){var md=9;for(var j=0;j<16;j++){var aj=j/16*TAU;md=Math.min(md,wallD(x+o1*Math.cos(aj),y+o2*Math.sin(aj),GM.wall))}if(md<.1)sc-=3}
+      others.forEach(function(o){if(Math.hypot(x-o.x0,y-o.y0)<.28+o1+(o.ox||0))sc-=1});if(sc>bs){bs=sc;best=[x,y,o1,o2]}}
+    /* a drifting ring goes the way away from the other ring, unless that takes it out of the tank */
+    var ox=best[2],oy=best[3],sg=others.length?(best[0]<others[0].x0?-1:1):(Math.random()<.5?-1:1);
+    GM.lastX=best[0];var dm=P.drift&&!lp?sg*P.drift:0;GM.ringN++;
+    return {x:bx(best[0]),y:by(best[1]),x0:best[0],y0:best[1],mx:dm&&best[0]+dm>.1&&best[0]+dm<.9?dm:-dm,my:0,mp:lp?LAP[0]+LAP[1]*Math.random():5+Math.random()*2,
+      ox:ox,oy:oy,od:Math.random()<.5?-1:1,a0:TAU*Math.random(),n:GM.ringN,c:c,fill:0,match:0,done:false,r:P.r,t0:RT,
       gold:!plain&&P.gold&&GM.ringN%4===0,life:9}}
+  /* how far a point is from the wall, in the tank's widths (its heights are 1/.64 of them) */
+  function wallD(px,py,w){var k=1/.64,ax=w[0],ay=w[1]*k,ex=w[2]-ax,ey=w[3]*k-ay,qy=py*k,L=ex*ex+ey*ey,u=L?clamp(((px-ax)*ex+(qy-ay)*ey)/L,0,1):0;return Math.hypot(px-ax-u*ex,qy-ay-u*ey)}
   function gmRing(){var P=gmPlan(GM.round);CUPS=[];CUPS.push(gmRingNew([]));if(P.two&&GM.cols.length>1)CUPS.push(gmRingNew(CUPS));moveParts()}
   /* a ring filled (or a gold one faded) gives way to a new one, the other ring left as it is */
   function gmRingSwap(cp,plain){var o=CUPS.filter(function(q){return q!==cp}),n=gmRingNew(o,plain),i=CUPS.indexOf(cp);if(i>=0)CUPS[i]=n;else CUPS.push(n);moveParts()}
@@ -1511,7 +1524,7 @@ var DRIFT=(function(){
     GM.cur=P.cur?{y:.34+.18*Math.random(),dir:Math.random()<.5?-1:1}:null;
     gmPlace();CUPS=[];RUN=0;RT=0;GM.phase='intro';GM.phT=simT;clearInk=true;rbS=simT;toolsSync()}
   function gmStart(){if(PZ<0)SAVED={w:WALLS,f:FANS,d:DRAINS,p:PRISMS,t:TUNNELS};WALLS=[];FANS=[];DRAINS=[];PRISMS=[];TUNNELS=[];
-    PZ=0;pzWon=0;TOOL='ink';GM.best=bestGet();GM.score=0;GM.fx=[];boardFit();TANK=TANK0=1e9;gmRound(1);
+    PZ=0;pzWon=0;TOOL='ink';GM.best=bestGet();GM.score=0;GM.loops=0;GM.fx=[];boardFit();TANK=TANK0=1e9;gmRound(1);
     SND.load(['vibes','marimba','small']);if(AU.auto)musicOn()}
   /* back to playing freely, with whatever was built before the game */
   function gmOff(){PZ=-1;CUPS=[];FIX={walls:[],fans:[],drains:[],prisms:[]};GM.phase='';RUN=0;
@@ -1527,7 +1540,7 @@ var DRIFT=(function(){
   function gmOver(){GM.phase='over';GM.phT=simT;RUN=0;CUPS=[];
     var nb=GM.score>GM.best;if(nb){GM.best=GM.score;bestSet()}GM.newBest=nb&&GM.score>0;chord([52,59,62],.32,'vibes');toolsSync()}
   /* a ring filled: a burst of its colour, a point, a rising chord; the round won when it has its rings */
-  function gmRingDone(cp){GM.combo=simT-GM.lastT<4?Math.min(5,GM.combo+1):1;GM.lastT=simT;var pts=(cp.gold?3:1)*GM.combo;
+  function gmRingDone(cp){GM.combo=simT-GM.lastT<4?Math.min(5,GM.combo+1):1;GM.lastT=simT;var pts=(cp.gold?3:1)*GM.combo;if(cp.ox)GM.loops++;
     GM.got++;GM.score+=pts;GM.fx.push({x:cp.x,y:cp.y,t:simT,c:cp.c,txt:'+'+pts+(cp.gold?' GOLD':'')+(GM.combo>1?' · ×'+GM.combo:'')});
     for(var k=0;k<14;k++){var a=k/14*TAU;push(WX(cp.x)+Math.cos(a)*8,WY(cp.y)+Math.sin(a)*8,Math.cos(a)*700*KS(),Math.sin(a)*700*KS(),INK[cp.c],.35,.0007*KR())}
     var up=[[64,67,71],[67,71,74],[71,74,78],[74,78,81]][Math.min(3,GM.got-1)];chord(up,.36,'marimba');
@@ -1541,7 +1554,8 @@ var DRIFT=(function(){
   var clearInk=false;
   /* the moving parts, where they are at the water's time RT: a sweeping jet's direction, a drifting ring's place */
   function moveParts(){if(PZ<0)return;
-    CUPS.forEach(function(c){var k=.5-.5*Math.cos(TAU*(RT-(c.t0||0))/c.mp);c.x=bx(c.x0+c.mx*k);c.y=by(c.y0+c.my*k)})}
+    CUPS.forEach(function(c){var u=RT-(c.t0||0);if(c.ox){var a=c.a0+c.od*TAU*u/c.mp;c.x=bx(c.x0+c.ox*Math.cos(a));c.y=by(c.y0+c.oy*Math.sin(a));return}
+      var k=.5-.5*Math.cos(TAU*u/c.mp);c.x=bx(c.x0+c.mx*k);c.y=by(c.y0+c.my*k)})}
   function AC(){return AU&&AU.c?AU.c.currentTime:0}
   /* the pieces under a point (pixels) */
   function segD(px,py,w){var ax=WX(w[0]),ay=WY(w[1]),bx=WX(w[2]),by=WY(w[3]),dx=bx-ax,dy=by-ay,L=dx*dx+dy*dy,t=L?clamp(((px-ax)*dx+(py-ay)*dy)/L,0,1):0;return Math.hypot(px-ax-t*dx,py-ay-t*dy)}
@@ -1550,7 +1564,9 @@ var DRIFT=(function(){
   /* a wall's ends find the ends already there, so walls join */
   function snap(x,y){var b=null,bd=14;WALLS.concat(FIX.walls).forEach(function(w){[[w[0],w[1]],[w[2],w[3]]].forEach(function(e){var d=Math.hypot(WX(e[0])-x,WY(e[1])-y);if(d<bd){bd=d;b=e}})});return b?[WX(b[0]),WY(b[1])]:[x,y]}
   function buildUp(p,b){
-    var tap=p.moved<14&&performance.now()-p.t0<800,g=given(),i;
+    /* (17 Nov) how long the finger was down by held() (20-ui.js), as the cameras' lenses are: on a busy page a quick tap on a wall
+       had counted as long, and the wall stayed */
+    var tap=p.moved<14&&held(p)<800,g=given(),i;
     if(b.kind==='wall'){if(tap){i=nearest(WALLS,p.x,p.y,16,segD);if(i>=0){WALLS.splice(i,1);obsDirty=true;hit('tok',.3,pan(p.x))}return}
       if(WALLS.length>=g.w)return;var a=snap(b.x0,b.y0),e=snap(p.x,p.y);if(Math.hypot(e[0]-a[0],e[1]-a[1])<16)return;
       WALLS.push([a[0]/VW,a[1]/VH,e[0]/VW,e[1]/VH,0]);obsDirty=true;hit('thump',.32,pan(p.x));return}
@@ -1793,9 +1809,10 @@ var DRIFT=(function(){
       c.fillStyle='rgba(0,0,0,.5)';c.beginPath();c.arc(ax,ay,R,0,TAU);c.fill();for(k=0;k<2;k++){var w2=((u.ph*.4+k/2)%1),rr=R*(1-w2)+2;c.strokeStyle='rgba(180,107,255,'+(.7*w2).toFixed(3)+')';c.lineWidth=1.2;c.beginPath();c.arc(ax,ay,rr,0,TAU);c.stroke()}
       c.strokeStyle='rgba(180,107,255,.85)';c.lineWidth=1.4;c.beginPath();c.arc(ax,ay,R,0,TAU);c.stroke();c.beginPath();c.arc(bx2,by2,R,0,TAU);c.stroke();
       var ex=bx2+ux*(R+12),ey=by2+uy*(R+12);c.beginPath();c.moveTo(bx2+ux*(R+2),by2+uy*(R+2));c.lineTo(ex,ey);c.moveTo(ex-ux*5-uy*4,ey-uy*5+ux*4);c.lineTo(ex,ey);c.lineTo(ex-ux*5+uy*4,ey-uy*5-ux*4);c.stroke()});
-    /* a ring that drifts: the way it goes, faintly */
-    CUPS.forEach(function(cp){if(!cp.mx&&!cp.my)return;var col=cp.c==='mix'?[.92,.96,1]:INK[cp.c];c.save();c.setLineDash([2,6]);c.strokeStyle=cs(col,.35);c.lineWidth=1.2;
-      c.beginPath();c.moveTo(B.x0+cp.x0*B.w,B.y0+cp.y0*B.h);c.lineTo(B.x0+(cp.x0+cp.mx)*B.w,B.y0+(cp.y0+cp.my)*B.h);c.stroke();c.restore()});
+    /* a ring that drifts: the way it goes, faintly (a loop's dots moving round the way the ring goes) */
+    CUPS.forEach(function(cp){if(!cp.mx&&!cp.my&&!cp.ox)return;var col=cp.c==='mix'?[.92,.96,1]:INK[cp.c];c.save();c.setLineDash([2,6]);c.strokeStyle=cs(col,.35);c.lineWidth=1.2;c.beginPath();
+      if(cp.ox){c.lineDashOffset=-cp.od*((t*.012)%8);c.ellipse(B.x0+cp.x0*B.w,B.y0+cp.y0*B.h,cp.ox*B.w,cp.oy*B.h,0,0,TAU)}
+      else{c.moveTo(B.x0+cp.x0*B.w,B.y0+cp.y0*B.h);c.lineTo(B.x0+(cp.x0+cp.mx)*B.w,B.y0+(cp.y0+cp.my)*B.h)}c.stroke();c.restore()});
     CUPS.forEach(function(cp){var x=WX(cp.x),y=WY(cp.y),col=cp.c==='mix'?[.92,.96,1]:INK[cp.c],s=cpre(col),rr=cr*(cp.r||1),pu=1+.04*Math.sin(t*.008);
       /* a ring waiting for its smoke: its colour, breathing, and a faint fill inside so it reads as a target */
       c.fillStyle=s+(.07+.05*cp.fill).toFixed(3)+')';c.beginPath();c.arc(x,y,rr,0,TAU);c.fill();
@@ -1853,8 +1870,13 @@ var DRIFT=(function(){
   function hud(){return ''}
   /* the hint: a tap (a drop of ink bursts), then one finger drawn across. The tap comes first on purpose: this is the world the page
      opens on, and a tap is the one touch an iPhone will start the sound on */
-  function ghost(t){if(PZ>=0||TOOL!=='ink')return [null];var u=(t*.21)%1,k=Math.floor(t*.21)%2;
-    if(u>.05&&u<.1)return [{x:STG.x0+STG.w*(k?.7:.3),y:STG.cy+STG.h*(k?.16:-.14)}];
+  /* (17 Nov) the hint's tap never stepped over, and kept apart from its stroke: a slow frame (a busy machine draws four a second) can
+     fall either side of the tap's quarter second, so the tap is then shown on the frame after it; a tap is always lifted for a frame
+     before the stroke begins */
+  var ghU=-1,ghK=-1,ghT=false;
+  function ghost(t){if(PZ>=0||TOOL!=='ink')return [null];var u=(t*.21)%1,k=Math.floor(t*.21)%2,miss=ghK===k&&ghU<.05&&u>=.1;ghU=u;ghK=k;
+    if(ghT&&u>=.1){ghT=false;return [null]}
+    if((u>.05&&u<.1)||miss){ghT=true;return [{x:STG.x0+STG.w*(k?.7:.3),y:STG.cy+STG.h*(k?.16:-.14)}]}
     if(u>.2&&u<.84){var e=smooth((u-.2)/.64);return [{x:STG.x0+STG.w*(k?.82-.64*e:.18+.64*e),y:STG.cy+STG.h*(.22*Math.sin(e*5.2+k*2)+(k?-.12:.12))}]}
     return [null]}
   /* pieces put in by a test, in fractions of the tank in a level (of the stage outside one) */
@@ -1865,8 +1887,9 @@ var DRIFT=(function(){
   function U(x){return PZ>=0?bx(x):(STG.x0+x*STG.w)/VW}function V(y){return PZ>=0?by(y):(STG.y0+y*STG.h)/VH}
   return {enter:enter,leave:leave,resize:function(){resize();pzRelayout();obsDirty=true},down:down,up:up,gesture:gesture,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
     dbg:function(){return {ok:!!(P&&dye),simT:simT,simple:simple,sw:sw,sh:sh,dw:dw,dh:dh,lin:GLX.hfLin,tool:TOOL,pz:PZ,won:!!pzWon,walls:WALLS.length,fans:FANS.length,drains:DRAINS.length,prisms:PRISMS.length,tunnels:TUNNELS.length,wn:WN,
-      game:{round:GM.round,need:GM.need,got:GM.got,left:+GM.left.toFixed(2),score:GM.score,best:GM.best,phase:GM.phase,news:NEWS[GM.round]?NEWS[GM.round][0]:'',newBest:!!GM.newBest,cols:GM.cols.slice(),wall:!!GM.wall,combo:GM.combo,drain:GM.drain,cur:GM.cur,ringN:GM.ringN},board:{x0:B.x0,y0:B.y0,w:B.w,h:B.h},run:RUN,rt:RT,
-      cups:CUPS.map(function(c){return {c:c.c,fill:c.fill,match:c.match,done:c.done,x:WX(c.x),y:WY(c.y),r:cupR()*(c.r||1),gold:!!c.gold}}),vents:FIX.fans.map(function(f){return {x:WX(f.x),y:WY(f.y),c:f.c,a:f.a===undefined?-Math.PI/2:f.a}}),fix:{walls:FIX.walls.length,fans:FIX.fans.length,drains:FIX.drains.length,prisms:FIX.prisms.length},rb:rbOk}},
+      game:{round:GM.round,need:GM.need,got:GM.got,left:+GM.left.toFixed(2),score:GM.score,best:GM.best,phase:GM.phase,news:NEWS[GM.round]?NEWS[GM.round][0]:'',newBest:!!GM.newBest,cols:GM.cols.slice(),wall:!!GM.wall,combo:GM.combo,drain:GM.drain,cur:GM.cur,ringN:GM.ringN,loops:GM.loops,wallXY:GM.wall},board:{x0:B.x0,y0:B.y0,w:B.w,h:B.h},run:RUN,rt:RT,
+      cups:CUPS.map(function(c){return {c:c.c,fill:c.fill,match:c.match,done:c.done,x:WX(c.x),y:WY(c.y),r:cupR()*(c.r||1),gold:!!c.gold,n:c.n,mv:c.ox?'loop':c.mx||c.my?'drift':'',
+        loop:c.ox?{cx:B.x0+c.x0*B.w,cy:B.y0+c.y0*B.h,rx:c.ox*B.w,ry:c.oy*B.h,lap:c.mp,dir:c.od,x0:c.x0,y0:c.y0,ox:c.ox,oy:c.oy}:null}}),vents:FIX.fans.map(function(f){return {x:WX(f.x),y:WY(f.y),c:f.c,a:f.a===undefined?-Math.PI/2:f.a}}),fix:{walls:FIX.walls.length,fans:FIX.fans.length,drains:FIX.drains.length,prisms:FIX.prisms.length},rb:rbOk}},
     /* for the tests: how much ink there is around a point (pixels), from the last copy read back; and a level by number */
     sample:function(x,y,r){want=1;return sample(x,y,r,null,false)},
     /* for designing levels: what a ring of a colour would get, at each point of an nx by ny grid over the tank (from the last copy read back) */
@@ -1890,7 +1913,9 @@ var DRIFT=(function(){
       else if(k==='tunnel')TUNNELS.push({ax:U(a[0]),ay:V(a[1]),bx:U(a[2]),by:V(a[3]),ph:0});obsDirty=true},
     /* the ring in play filled at once, as if the smoke had done it */
     win:function(){var c=CUPS[0];if(!c||PZ<0||GM.phase!=='play')return;c.fill=1;c.done=true;gmRingDone(c)},
-    gold:function(){var c=CUPS[0];if(c){c.gold=true;c.t0=RT}}}
+    gold:function(){var c=CUPS[0];if(c){c.gold=true;c.t0=RT}},
+    /* a loop's lap, its shortest and how much longer it may be (seconds), for tuning */
+    lap:function(a,b){if(a)LAP=[+a,+b||0];return LAP.slice()}}
 })();
 
 /* ---------- ZONES: two layers of the Earth (15 Nov, 20:39: "War zones and blacked out zones is good. Gaza, North Korea, Moscow,
