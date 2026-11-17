@@ -1,6 +1,12 @@
 # Changelog
 
 ## For the owner
+17 Nov 2026, 01:49 (the third hourly run):
+
+- **The space stations and the telescopes stand out.** Among the thousands of satellites, the two space stations (the ISS and China's
+  Tiangong) are now gold marks, and the telescopes in low orbit (Hubble and five more) violet ones, each with a short glowing trail
+  behind it as they fly. Tap one and it's yours: its orbit and its card.
+
 16 Nov 2026, 23:38 (the second hourly run):
 
 - **The cameras no longer crowd the Earth.** With the whole globe in view, fewer camera icons show, spread out over it (eight or so
@@ -221,6 +227,19 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 17 Nov 2026, 01:49 (New York), the third hourly run: the space stations and the telescopes as marks with trails (HOURLY.md item 3)
+
+- `13-orbit.js`: `SHOWN` names them (ISS (ZARYA), CSS (TIANHE); HST, NUSTAR, IXPE, XRISM, CHEOPS, EINSTEIN PROBE, as CelesTrak calls
+  them); `unpack()` finds them (`showI`, `SHOWF`) and adds them to `NOTE`, so a tap over the Earth's face can take them. `marks()`,
+  drawn on the overlay by `sky()` while the layer is on the Earth (`LAY`): a trail of fourteen steps back over four minutes of the time
+  shown (`place()` at `simMs - j * 18 s`), fading and thinning, then the mark (a station a body between two panels, gold; a telescope a
+  ring with its tube, violet), bigger as the Earth comes closer. `layer.pick()` weighs their distance by 0.3. `dbg().shows`.
+- `t_play.js`: the stations and telescopes are found (at least six, ISS and HST among them, of both kinds), and a real tap on one in
+  view takes it.
+- `t_smoke.js` reads each score in the same moment as its ring (one evaluate: the score, the gold ring won, the score again): the water
+  had filled a ring on its own between a read and a win, counting it into the gold ring's points (6 → 15 for a combo of 2). The rest
+  of this hour's suite passed; `t_smoke.js` passed alone after.
 
 ## 16 Nov 2026, 23:38 (New York), the second hourly run: fewer lenses, spread out, when the Earth is far (HOURLY.md item 2)
 

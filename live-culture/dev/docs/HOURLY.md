@@ -97,6 +97,10 @@ then the steps below in `/home/claude/live-culture` and `/home/claude/hello`.)
    `edit_version` with `path` (publish_files refuses it); a new `.py` cannot go at all (it lives in the repositories only). Never
    publish `app/local.html`, `app/_fonts`, `app/_check.js`, `shots/`, `data/live/`, `testdata/`, `raw/`, `wav/` or any test photo.
    If the publish is refused because the version moved, list again and retry once. Then list again and check the hashes match.
+   **If the publish waits for an approval** (since the night of 16 Nov a publish asks the owner first) and he is not there to give it,
+   do not ask again every hour through the night: ship to the site and the repositories, say in the log that the artifact is behind,
+   and publish everything that has gathered in the first run after 08:00 New York time or as soon as he writes. One publish brings the
+   artifact up to date.
 
 ## 7. Write it down
 
@@ -138,3 +142,6 @@ page with features he did not ask for.
 - 2026-11-16 23:38: fewer lenses, spread out, when the Earth is far (backlog item 2 done); a tap timed from when the page takes it
   (the site test's camera tap had failed three times running on a slow frame). The first run's artifact publish had waited for an
   approval that never came; it goes with this one.
+- 2026-11-17 01:49: the space stations and the telescopes as marks with trails (backlog item 3 done). The artifact's publish of
+  runs 1 and 2 waited for an approval again at 00:56 and was closed unanswered: the artifact is behind the site by runs 1 to 3; the
+  first run after 08:00 publishes them together.

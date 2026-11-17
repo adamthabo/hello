@@ -176,6 +176,12 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     ok(o.n > 10000 && s.dbg.LY.orbit === 1, 'earth: the satellites are on the globe: ' + o.n);
     { const pace = await page.evaluate(() => window.__lc.ORBIT.layer.pace());
       ok(!o.live && o.want === 60 && o.spd > 30 && o.off > 0 && pace === 'satellites ×60', 'earth: the satellites fly, sixty times their speed (15 Nov: "Even just the satellites moving is more fun"): x' + o.spd.toFixed(1) + ', ' + Math.round(o.off / 60000) + ' min ahead, "' + pace + '"'); }
+    // (17 Nov, the third hourly run) the space stations and the telescopes: marks of their own with a trail; a real tap on one takes it
+    { const sh = o.shows, names = sh.map(x => x.n).join(); ok(sh.length >= 6 && /ISS \(ZARYA\)/.test(names) && /HST/.test(names) && sh.some(x => x.k === 0) && sh.some(x => x.k === 1), 'earth: the space stations and the telescopes found for marks of their own: ' + names);
+      let one = null; for (let k = 0; k < 8 && !one; k++) { const o2 = await page.evaluate(() => window.__lc.ORBIT.dbg()); one = o2.shows.find(x => x.on && x.x > 40 && x.x < 350 && x.y > 160 && x.y < 560); if (!one) { await page.evaluate(() => window.__lc.WIND.look(0, (Date.now() / 1000) % 360 - 180, 1)); await sleep(700); } }
+      if (one) { const w0 = (await page.evaluate(() => window.__lc.ORBIT.dbg().shows)).find(x => x.n === one.n); await T.tap(w0.x, w0.y); await sleep(600); const o3 = await page.evaluate(() => window.__lc.ORBIT.dbg());
+        ok(o3.name === one.n, 'earth: a real tap on one of them takes it: ' + one.n + ' -> ' + o3.name); await T.tap(X(.03), Y(.02)); await sleep(500); }
+      else ok(false, 'earth: none of the stations and telescopes came into view'); }
     // a tap on a satellite brings up what is on record about it
     await page.evaluate(() => window.__lc.WIND.look(20, -60, .42)); await sleep(1500); o = await page.evaluate(() => window.__lc.ORBIT.dbg()); const v = o.vis[2] || o.vis[0];
     await T.tap(v[0], v[1]); await sleep(600); o = await page.evaluate(() => window.__lc.ORBIT.dbg()); ok(o.sel >= 0 && o.card && /ORBIT/i.test(o.card) && /NOW OVER/i.test(o.card), 'earth: tapping a satellite should bring up its card: ' + String(o.card).replace(/\n+/g, ' | '));

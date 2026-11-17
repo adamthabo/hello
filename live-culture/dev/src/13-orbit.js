@@ -13,7 +13,12 @@ var ORBIT=(function(){
     g={cx:0,cy:0,R:100,E:[0,0,0],N:[0,0,0],C:[0,0,0]},lat0=22,lon0=clamp(-(new Date().getTimezoneOffset())/4,-180,180),zoom=.86,vlon=0,vlat=0,idle=0,
     off=0,spd=1,want=1,ret=false,drag=0,keyRate=0,simMs=Date.now(),th=0,RE3=[0,0,0],RN3=[0,0,0],RC3=[0,0,0],
     sunV=[0,0,0],moonV=[0,0,0],sunE=[0,0,0],moonI=null,issI=-1,sel=-1,selQ=[0,0,0],selI=null,path=null,pathAt=0,notable=[],NOTE=null,lit=[],tmp=[0,0,0],tq=[0,0,0],
-    MU=398600.4418,RE=6378.137,J2=1.08262668e-3,WE=0.0043752691;
+    MU=398600.4418,RE=6378.137,J2=1.08262668e-3,WE=0.0043752691,
+    /* (17 Nov, the third hourly run; his words of 15 Nov: "Even just the satellites moving is more fun") the space stations and the
+       telescopes in low orbit are marks of their own over the swarm: the stations gold, the telescopes violet, each with a short glowing
+       trail of where it was in the last four minutes of the time shown. A tap takes one before the satellites round it */
+    SHOWN=[['ISS (ZARYA)',0],['CSS (TIANHE)',0],['HST',1],['NUSTAR',1],['IXPE',1],['XRISM',1],['CHEOPS',1],['EINSTEIN PROBE',1]],showI=[],SHOWF=null,
+    SHC=['255,207,107','195,155,255'],tq2=[0,0,0];
   /* the kinds, their colours and how big a point each is drawn */
   var KIND=['satellite','Starlink','OneWeb','new constellation','navigation','geostationary','Earth-watching','space station','communications','wreckage','military'],
     KCOL=[[.52,.62,.74],[.36,.60,.80],[.62,.38,.95],[1,.22,.56],[1,.72,.30],[1,.86,.62],[.44,1,.66],[1,1,1],[.24,.94,1],[.80,.20,.15],[.85,.85,.9]],
@@ -79,6 +84,7 @@ var ORBIT=(function(){
     for(i=0;i<satN;i++){var nm=S.names[i]||'';if(nm==='ISS (ZARYA)'||nm==='CSS (TIANHE)'){notable.push(i);lit.push(0)}else if(GRP[i]===6&&EL[i*11]<1.3)watch.push(i)}
     for(i=0;i<12&&watch.length;i++){notable.push(watch[Math.floor(i*watch.length/12)]);lit.push(0)}
     issI=-1;for(i=0;i<notable.length;i++){NOTE[notable[i]]=1;if(S.names[notable[i]]==='ISS (ZARYA)')issI=notable[i]}
+    showI=[];SHOWF=new Uint8Array(satN);for(i=0;i<satN;i++){var sn=S.names[i]||'';for(var j=0;j<SHOWN.length;j++)if(sn===SHOWN[j][0]){showI.push([i,SHOWN[j][1]]);SHOWF[i]=1;NOTE[i]=1}}
     sel=-1;path=null;cardBuild();rebase(simMs)}
   /* the chip counts time from a moment not far off, so its numbers stay small and exact: every ten hours of shown time the angles are
      brought forward to a new moment */
@@ -219,14 +225,27 @@ var ORBIT=(function(){
       else if(!P.trail){ptr(64);gl.uniform1f(u.uLine,.34+.3*fast);gl.drawArrays(gl.LINES,0,n*TN*2)}
       gl.bindBuffer(gl.ARRAY_BUFFER,satH);ptr(64);gl.uniform1f(u.uLine,0);gl.drawArrays(gl.POINTS,0,n)}
     gl.disable(gl.BLEND);
+    var c=OV;if(!hide&&LAY)marks(c);
     /* the one that was asked about: its orbit, a ring round it, its name */
-    var c=OV;
     if(sel>=0&&path){c.lineWidth=1;c.strokeStyle='rgba(234,249,255,.36)';c.beginPath();var pen=false;
       for(i=0;i<=96;i++){tmp[0]=path[i*3];tmp[1]=path[i*3+1];tmp[2]=path[i*3+2];view(tmp,tq);if(shown(tq)){var x=g.cx+tq[0]*g.R,y=g.cy-tq[1]*g.R;if(pen)c.lineTo(x,y);else{c.moveTo(x,y);pen=true}}else pen=false}
       c.stroke();
       if(shown(selQ)){var sx=g.cx+selQ[0]*g.R,sy=g.cy-selQ[1]*g.R;c.strokeStyle='rgba(234,249,255,.9)';c.lineWidth=1.1;c.beginPath();c.arc(sx,sy,9,0,TAU);c.stroke();
         c.font='500 9px "JetBrains Mono",ui-monospace,Menlo,monospace';c.textBaseline='middle';var nm=nameOf(sel).toUpperCase(),tw=c.measureText(nm).width,lx=sx+14+tw>VW-8?sx-14-tw:sx+14;
         c.fillStyle='rgba(1,4,10,.6)';c.fillRect(lx-3,sy-7,tw+6,14);c.fillStyle='rgba(234,249,255,.95)';c.fillText(nm,lx,sy+1)}}}
+  /* the stations and the telescopes: a trail of fourteen steps back over four minutes of the time shown (at sixty times their speed,
+     four seconds; the space station's is some 1,900 km of its way), then the mark: a station a body between two wings of panels, a telescope a
+     small ring with its tube. Bigger as the Earth comes closer */
+  function marks(c){if(!EL||!showI.length)return;var k,j,zf=clamp(Math.sqrt(g.R/170),.9,2),step=18000,N=14;c.save();c.lineCap='round';
+    for(k=0;k<showI.length;k++){var i=showI[k][0],kd=showI[k][1],col=SHC[kd],px=null,py=null,x0=null,y0=null;
+      for(j=0;j<=N;j++){view(place(i,simMs-j*step,tmp),tq2);if(!shown(tq2)){px=null;continue}var x=g.cx+tq2[0]*g.R,y=g.cy-tq2[1]*g.R;
+        if(j===0){x0=x;y0=y}else if(px!==null){var f=1-j/(N+1);c.strokeStyle='rgba('+col+','+(.7*f*f).toFixed(3)+')';c.lineWidth=(1+2.2*f)*zf;c.beginPath();c.moveTo(px,py);c.lineTo(x,y);c.stroke()}px=x;py=y}
+      if(x0===null)continue;
+      c.fillStyle='rgba('+col+',.2)';c.beginPath();c.arc(x0,y0,9*zf,0,TAU);c.fill();
+      c.fillStyle='rgba('+col+',.97)';c.strokeStyle='rgba('+col+',.97)';
+      if(kd===0){var w=6*zf,h=3.4*zf;c.fillRect(x0-w-2*zf,y0-h/2,w,h);c.fillRect(x0+2*zf,y0-h/2,w,h);c.lineWidth=1;c.beginPath();c.moveTo(x0-2*zf,y0);c.lineTo(x0+2*zf,y0);c.stroke();c.beginPath();c.arc(x0,y0,2*zf,0,TAU);c.fill()}
+      else{c.lineWidth=1.4*zf;c.beginPath();c.arc(x0,y0,3.4*zf,0,TAU);c.stroke();c.beginPath();c.moveTo(x0+2.4*zf,y0-2.4*zf);c.lineTo(x0+5.6*zf,y0-5.6*zf);c.stroke();c.beginPath();c.arc(x0,y0,1.2*zf,0,TAU);c.fill()}}
+    c.restore()}
   function hud(){
     var S=LIVE.sats;if(!S||!EL)return LIVE.asked?'reading the orbits':'';
     var s=satN.toLocaleString('en-US')+' in orbit · '+stampUTC(simMs,want===1&&off===0),
@@ -235,7 +254,7 @@ var ORBIT=(function(){
   /* the hint: one finger turning the Earth (it no longer winds time: left alone, this is the present) */
   function ghost(t){var u=(t*.12)%1;if(u>.5)return [null];var e=smooth(u/.5),k=Math.floor(t*.12)%2?1:-1;return [{x:g.cx+k*g.R*(.55-1.1*e),y:g.cy+g.R*.2}]}
   return {enter:enter,leave:leave,resize:resize,down:down,move:move,up:up,gesture:gesture,ghostEnd:ghostEnd,wheel:wheel,key:key,seq:seq,tick:tick,draw:draw,hud:hud,ghost:ghost,toNow:toNow,gl:function(){gen=-1},
-    dbg:function(){var o={n:satN,off:off,spd:spd,want:want,live:live(),sel:sel,name:sel>=0?nameOf(sel):null,info:selI,card:$('card')&&!$('card').hidden?$('card').innerText:null,cat:!!SATINFO,zoom:zoom,R:g.R,lat0:lat0,lon0:lon0,stars:starN,notable:notable.length,base:baseT,sim:simMs,vis:[]};
+    dbg:function(){var o={n:satN,off:off,spd:spd,want:want,live:live(),sel:sel,name:sel>=0?nameOf(sel):null,info:selI,card:$('card')&&!$('card').hidden?$('card').innerText:null,cat:!!SATINFO,zoom:zoom,R:g.R,lat0:lat0,lon0:lon0,stars:starN,notable:notable.length,base:baseT,sim:simMs,vis:[],shows:showI.map(function(q){view(place(q[0],simMs,tmp),tq);return {n:nameOf(q[0]),k:q[1],x:Math.round(g.cx+tq[0]*g.R),y:Math.round(g.cy-tq[1]*g.R),on:shown(tq)}})};
       if(EL)for(var i=0;i<satN&&o.vis.length<8;i+=Math.max(1,Math.floor(satN/1600))){view(place(i,simMs,tmp),tq);var hr=Math.hypot(tq[0],tq[1]);if(shown(tq)&&tq[2]>0&&hr<(STG.w/2-20)/g.R&&(hr>1.08||GRP[i]===7||(NOTE&&NOTE[i])))o.vis.push([Math.round(g.cx+tq[0]*g.R),Math.round(g.cy-tq[1]*g.R),i])}return o},
     place:function(i,ms){var p=place(i,ms,[0,0,0]);return [p[0]*RE,p[1]*RE,p[2]*RE]},nameOf:nameOf,
     look:function(la,lo,zm){lat0=la;lon0=lo;if(zm){zoom=zm;geo()}idle=-1e6;vlon=vlat=0},
@@ -268,7 +287,7 @@ var ORBIT=(function(){
          place under it (the swarm is so thick there that a satellite is within reach of every point), so only the space stations and the
          few satellites the sound follows are taken there; in the dark round the Earth, any satellite */
       pick:function(p){if(!EL)return false;var i,best=-1,on=Math.hypot(p.x-g.cx,p.y-g.cy)<g.R,bd=on?20*20:26*26,d;
-        for(i=0;i<satN;i++){if(on&&GRP[i]!==7&&!(NOTE&&NOTE[i]))continue;view(place(i,simMs,tmp),tq);if(!shown(tq))continue;var x=g.cx+tq[0]*g.R-p.x,y=g.cy-tq[1]*g.R-p.y;d=x*x+y*y;if(GRP[i]===7||(FLG[i]&1))d*=.45;if(d<bd){bd=d;best=i}}
+        for(i=0;i<satN;i++){if(on&&GRP[i]!==7&&!(NOTE&&NOTE[i]))continue;view(place(i,simMs,tmp),tq);if(!shown(tq))continue;var x=g.cx+tq[0]*g.R-p.x,y=g.cy-tq[1]*g.R-p.y;d=x*x+y*y;if(SHOWF&&SHOWF[i])d*=.3;else if(GRP[i]===7||(FLG[i]&1))d*=.45;if(d<bd){bd=d;best=i}}
         if(best<0)return false;sel=best;path=null;selI=null;satInfoLoad();tone('glass',pent(clamp(Math.round(14-Math.log(EL[best*11])*9),2,14),52),.45,pan(p.x));cardBuild();return true},
       sel:function(){return sel},
       hud:function(){var S=LIVE.sats;if(!S||!EL)return LIVE.asked?'reading the orbits':'';return satN.toLocaleString('en-US')+' satellites, '+(live()?'where they are now':'at sixty times their speed')+' · orbits of '+stampUTC(S.fresh||S.asOf)}}}

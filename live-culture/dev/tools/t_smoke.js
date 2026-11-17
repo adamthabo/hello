@@ -105,11 +105,13 @@ const size = process.argv[2] || 'phone';
   // together count double, treble; two rings at once from round 8
   await page.evaluate(() => window.__lc.WORLDS[0].o.goRound(2)); await until(s => s.d.game.round === 2 && s.d.game.phase === 'intro', 8000);
   ok(s.d.game.round === 2 && s.d.game.news === 'GOLD RINGS', 'a round says what is new in it (in the tank): ' + JSON.stringify(s.d.game));
-  await until(s => s.d.game.phase === 'play' && s.d.cups.length === 1, 60000); const sc0 = s.d.game.score;
-  // (the points: a gold ring three times the combo, a plain one the combo; the combo one more for each ring filled within four seconds)
-  await page.evaluate(() => { const o = window.__lc.WORLDS[0].o; o.gold(); o.win(); }); s = await D(); const sc1 = s.d.game.score, k1 = s.d.game.combo, g2 = s.d.cups[0].gold;
-  await page.evaluate(() => window.__lc.WORLDS[0].o.win()); s = await D(); const k2 = s.d.game.combo;
-  ok(sc1 - sc0 === 3 * k1 && k2 === Math.min(5, k1 + 1) && s.d.game.score - sc1 === k2 * (g2 ? 3 : 1), 'a gold ring scores three times the combo; the next ring filled straight after, one more in the combo: ' + [sc0, sc1, s.d.game.score, 'combo ' + k1 + ' then ' + k2].join(' → '));
+  // (17 Nov: each score read in the same moment as its ring, before and after: the water could fill a ring on its own between a
+  // read and a win, which once counted that ring into the gold one's points)
+  await until(s => s.d.game.phase === 'play' && s.d.cups.length === 1, 60000);
+  const r1 = await page.evaluate(() => { const o = window.__lc.WORLDS[0].o, a = o.dbg().game.score; o.gold(); o.win(); const d = o.dbg(); return { sc0: a, sc1: d.game.score, k1: d.game.combo, g2: !!(d.cups[0] && d.cups[0].gold) }; });
+  const r2 = await page.evaluate(() => { const o = window.__lc.WORLDS[0].o, b = o.dbg().game, a = b.score, kb = b.combo; o.win(); const d = o.dbg(); return { sc: a, kb, sc2: d.game.score, k2: d.game.combo }; });
+  const sc0 = r1.sc0, sc1 = r1.sc1, k1 = r1.k1, g2 = r1.g2, k2 = r2.k2; s = await D();
+  ok(sc1 - sc0 === 3 * k1 && k2 === Math.min(5, r2.kb + 1) && r2.sc2 - r2.sc === k2 * (g2 ? 3 : 1), 'a gold ring scores three times the combo; the next ring filled straight after, one more in the combo: ' + [sc0, sc1, r2.sc2, 'combo ' + k1 + ' then ' + k2].join(' → '));
   await look('game_gold');
   await page.evaluate(() => window.__lc.WORLDS[0].o.goRound(8)); await until(s => s.d.game.phase === 'play' && s.d.cups.length === 2, 60000);
   ok(s.d.cups.length === 2 && s.d.cups[0].c !== s.d.cups[1].c && s.d.fix.drains === 1 && !!s.d.game.cur, 'round 8: two rings at once, of two colours, with the drain and the current: ' + JSON.stringify(s.d.cups.map(c => c.c)));
