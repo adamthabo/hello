@@ -73,7 +73,8 @@ const size = process.argv[2] || 'phone';
   ok(await page.evaluate(() => document.getElementById('data').getBoundingClientRect().bottom) < s.d.board.y0 + 1, 'the tank sits under the header, clear of it');
   ok(s.d.board.w / s.d.board.h > .6 && s.d.board.w / s.d.board.h < .68, 'a round is played in a tank of fixed shape: ' + Math.round(s.d.board.w) + ' x ' + Math.round(s.d.board.h));
   ok(s.on === ON0, 'a game leaves the music as it is: ' + s.on);
-  await until(s => s.d.game.phase === 'play' && s.d.cups.length === 1, 60000);
+  // (17 Nov: waiting for the clock to have run too: a poll could land on the very frame the round began, its 32 seconds still whole)
+  await until(s => s.d.game.phase === 'play' && s.d.cups.length === 1 && s.d.game.left < 32, 60000);
   ok(s.d.game.phase === 'play' && s.d.cups.length === 1 && s.d.cups[0].c === 0 && s.d.game.left < 32 && s.data === '', 'after a moment the ring is there (cyan) and the clock runs: ' + JSON.stringify(s.d.game));
   await look('game');
   // pushed with real fingers: from just over the vent, up into the ring, again and again, until it fills

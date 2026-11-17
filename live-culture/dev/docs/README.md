@@ -174,6 +174,8 @@ Artifact: https://claude.ai/artifact/PCzaFJH2vjXe4Kv8KK4Xic (publish to this URL
    with its touches on top (`t_levels.js`): a mode's band and its touches share a ceiling of their own, and a touch in a mode lands on
    the next sixteenth, one a sixteenth. (b) **The cameras' icons**: a lens of thin light on a stem with the sign of its kind drawn in it,
    in its kind's colour, a red dot on those on the air (site), names when few or close; no pictures of the streams on the Earth any more.
+   (Since 17 Nov, the second hourly run: the smaller the globe the fewer lenses and the further apart, eight or nine on a phone's whole
+   Earth and up to fourteen close up, so they no longer crowd it; the rest stay rings and a tap still finds them.)
    (c) **Videos one tap away**: the videos button opens a camera at once, playing in its window on the site; in the artifact its card
    (a Claude artifact may not play or embed any outside video: said plainly to him).
 22. **What his fourteenth look (15 Nov, 20:39) settled.** "music is great! I love it, maybe see if you can make it all fit on one page.

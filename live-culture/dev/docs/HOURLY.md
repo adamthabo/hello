@@ -135,3 +135,6 @@ page with features he did not ask for.
   fresh clone set itself up with `fresh.sh` and passed `test_astro.js`, `t_first.js` and `t_hosted.js`. First run: 22:36 (one-shot scheduled message trig_01TqYMnTS23rkNCyz71Vhf7q; each run schedules the next).
 - 2026-11-16 22:36: the card takes its touches (its YouTube button had never worked for a finger), the site's kinds of camera fit one
   row, the zoom steps aside for a tall card, the words give way to a card that reaches them, tonight's data (backlog item 1 done).
+- 2026-11-16 23:38: fewer lenses, spread out, when the Earth is far (backlog item 2 done); a tap timed from when the page takes it
+  (the site test's camera tap had failed three times running on a slow frame). The first run's artifact publish had waited for an
+  approval that never came; it goes with this one.

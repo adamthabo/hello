@@ -113,6 +113,12 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     let cam = await page.evaluate(() => window.__lc.LIVEW.dbg());
     // (15 Nov: "Change their icons on the globe": a lens of thin light on a stem, the sign of its kind drawn in it)
     ok(cam.on && cam.cams > 80 && cam.tiles.length >= 6 && cam.tiles.every(t => t.r >= 9 && t.w === 2 * t.r && /^(wild|fire|space|city|sea|sky|land|move)$/.test(t.t)), 'earth: the cameras are lenses on the Earth, each with its kind\'s sign: ' + cam.tiles.length + ' shown (' + [...new Set(cam.tiles.map(t => t.t))].join(' ') + '), ' + cam.rings + ' as rings');
+    // (17 Nov, the second hourly run) far out they had crowded the Earth: on a phone's whole globe at most nine, never closer than a
+    // lens and a half apart; close up there may be more (up to fourteen), and every lens still opens its camera at the first tap
+    { const far = cam.tiles, md = Math.min(...far.flatMap((a, i) => far.slice(i + 1).map(b => Math.hypot(a.x - b.x, a.y - b.y))));
+      await page.evaluate(() => window.__lc.WIND.look(40, -90, 2.6)); await sleep(900); const near = (await page.evaluate(() => window.__lc.LIVEW.dbg())).tiles;
+      await page.evaluate(() => window.__lc.WIND.look(30, -80, 1)); await sleep(900); cam = await page.evaluate(() => window.__lc.LIVEW.dbg());
+      ok(far.length <= 9 && md >= 2 * far[0].r + 10 && near.length > far.length && near.length <= 14, 'earth: far out fewer lenses, spread out; closer, more: ' + far.length + ' at least ' + Math.round(md) + ' px apart, ' + near.length + ' close up'); }
     const tl = cam.tiles[0]; for (let k = 0; k < 3; k++) { await T.tap(tl.x + tl.w / 2, tl.y + tl.h / 2); await sleep(600); cam = await page.evaluate(() => window.__lc.LIVEW.dbg()); if (cam.card) break; }
     const cardA = await page.evaluate(() => { const c = document.getElementById('card'), a = c.querySelector('a.cy'); return { shown: !c.hidden, text: c.innerText.replace(/\n+/g, ' | '), href: a ? a.href : '', tgt: a ? a.target : '' }; });
     ok(cam.card === tl.id && cardA.shown && /^https:\/\/www\.(youtube\.com|star\.nesdis\.noaa\.gov)\//.test(cardA.href) && cardA.tgt === '_blank' && /watch it live on youtube|see it on noaa/i.test(cardA.text), 'earth: a camera tapped opens its card, with its stream on YouTube: ' + cardA.text.slice(0, 120) + ' -> ' + cardA.href.slice(0, 70));

@@ -189,10 +189,14 @@ var LIVEW=(function(){
   function short(p){var x=String(p||'').split(',')[0].trim();if(x.length<=16)return x;var k=x.lastIndexOf(' ',16);return k>5?x.slice(0,k):x.slice(0,15)+'.'}
   function tiles(t,g){
     var c=OV,i,k,q,zf=clamp(Math.sqrt(g.R/160),.85,2.4),r=Math.round(clamp(9*zf,9,17)),h=Math.round(r*1.7),ord=[];TL.length=0;DOTS.length=0;
+    /* (17 Nov, the second hourly run) far out the lenses had crowded the Earth, fourteen packed edge to edge over the Americas and
+       Europe: the smaller the globe the fewer and the further apart (eight on a phone's whole Earth, fourteen close up), the nearest
+       the middle chosen first, so they spread over it; the rest stay rings, and a tap still finds them */
+    var nMax=Math.round(clamp(g.R/21,7,14)),sp=2*r+clamp(28-g.R/12,4,20);
     for(i=0;i<camP.length;i++){q=camP[i];if(!q||q[2]<=.16||!(inTheme(CAMS[i])||i===cur))continue;ord.push(i)}
     ord.sort(function(a,b){return ((b===cur)-(a===cur))||(onAir(CAMS[b])-onAir(CAMS[a]))||(camP[b][2]-camP[a][2])});
-    for(k=0;k<ord.length;k++){i=ord[k];q=camP[i];var x=q[0],y=q[1]-h-r,free=TL.length<14;
-      for(var j=0;j<TL.length&&free;j++){var o=TL[j],dx=x-o.x,dy=y-o.y;if(dx*dx+dy*dy<(2*r+4)*(2*r+4))free=false}
+    for(k=0;k<ord.length;k++){i=ord[k];q=camP[i];var x=q[0],y=q[1]-h-r,free=TL.length<nMax;
+      for(var j=0;j<TL.length&&free;j++){var o=TL[j],dx=x-o.x,dy=y-o.y;if(dx*dx+dy*dy<sp*sp)free=false}
       if(free)TL.push({i:i,x:x,y:y,r:r,a:clamp((q[2]-.16)*4,0,1)});else DOTS.push(i)}
     var pulse=(t*.00065)%1,names=TL.length<=6||g.R>380;
     /* the names: right of a lens, else left of it, never over another lens or name, nor under the words at the top */

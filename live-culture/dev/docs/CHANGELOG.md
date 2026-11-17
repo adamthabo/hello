@@ -1,6 +1,14 @@
 # Changelog
 
 ## For the owner
+16 Nov 2026, 23:38 (the second hourly run):
+
+- **The cameras no longer crowd the Earth.** With the whole globe in view, fewer camera icons show, spread out over it (eight or so
+  on a phone instead of fourteen packed together over the Americas and Europe); come closer and more appear. The others are still the
+  small rings, and a tap on any of them still opens its camera.
+- **Taps that land.** When the globe was busy drawing, a quick tap on a camera could be taken for a long press and ignored (one tap in
+  three, on a slow machine). Now a tap is timed from when the page takes it, so it counts.
+
 16 Nov 2026, 22:36 (the first of the hourly runs you asked for):
 
 - **The cameras' YouTube button works.** On a camera's card in the app, a tap on "watch it live on YouTube" went straight through to
@@ -213,6 +221,21 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 16 Nov 2026, 23:38 (New York), the second hourly run: fewer lenses, spread out, when the Earth is far (HOURLY.md item 2)
+
+- `tiles()` in `14-live.js`: at most `round(clamp(R / 21, 7, 14))` lenses (R the globe's radius in pixels: nine on a 390 phone at
+  zoom 1, fourteen from about 300), never nearer each other than `2r + clamp(28 - R / 12, 4, 20)`; still chosen greedily, the open one
+  first, then those on the air, then the nearest the middle, so they spread over the globe. The rest are rings (`DOTS`), which
+  `tileAt()` still finds within 22 px.
+- `t_play.js`: at zoom 1 on a phone at most nine lenses, every two at least a lens and a half apart; close up (zoom 2.6) more of them,
+  fourteen at most.
+- `held(p)` in `20-ui.js` is `min(FT - t0, e1 - t0)` (from when the page took the touch to the lift's own timestamp), no longer
+  `e1 - e0`: on a busy page a touch made at `e0` was taken a second or more later, so `e1 - e0` (and `FT - t0`) passed the 600 ms of a
+  tap, and `t_hosted.js`'s tap on Starbase's lens failed all three tries; measured: one tap in three missed before, three in three
+  opened it after. A long press may now and then count as a tap on a busy phone, which only reads a place.
+- `t_smoke.js` waits for round 1's clock to have run before checking that it runs (one poll had landed on the very frame the round
+  began, its 32 seconds still whole: the only failure of this hour's suite, rerun alone afterwards).
 
 ## 16 Nov 2026, 22:36 (New York), the first hourly run: the card takes its touches; the Claude app's heights (HOURLY.md item 1)
 

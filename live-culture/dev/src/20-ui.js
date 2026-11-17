@@ -63,10 +63,11 @@ function ptEnd(p){delete PT[p.id];PTN=Math.max(0,PTN-1);eachPT(function(q){q.n=P
 function track(p,x,y,now){var dtm=Math.max(4,now-p.t),dx=x-p.x,dy=y-p.y;p.px=p.x;p.py=p.y;p.x=x;p.y=y;
   p.vx+=(dx/dtm*1000-p.vx)*.55;p.vy+=(dy/dtm*1000-p.vy)*.55;p.spd=Math.hypot(p.vx,p.vy);p.moved+=Math.abs(dx)+Math.abs(dy);p.t=now}
 function newP(id,x,y,now,ghost,mouse,down){return {id:id,x:x,y:y,px:x,py:y,x0:x,y0:y,vx:0,vy:0,spd:0,t0:now,t:now,moved:0,down:down,ghost:ghost,mouse:mouse,n:1}}
-/* how long a finger was down (ms): the shorter of the frames' clock since it was seen to touch and the times the device gave its
-   touching and its lifting (when it gave both), so a slow frame between the two, either way, does not make a quick tap into a long
-   press (15 Nov: the Earth draws more now) */
-function held(p){var f=FT-p.t0;return p.e0!==undefined&&p.e1!==undefined?Math.min(f,p.e1-p.e0):f}
+/* how long a finger was down (ms): the shorter of the frames' clock since it was seen to touch, and the time from when the page took
+   the touch to the lift's own time (the device's), so a slow frame between the two, either way, does not make a quick tap into a long
+   press (15 Nov: the Earth draws more now). 17 Nov, the second hourly run: it had counted from when the touch was made, not taken, and
+   a touch that reached a busy page late made a quick tap look long (a camera's lens missed in one tap of three on a slow machine) */
+function held(p){var f=FT-p.t0;return p.e1!==undefined?Math.min(f,Math.max(0,p.e1-p.t0)):f}
 STAGE.addEventListener('pointerdown',function(e){
   if(e.pointerType==='mouse'&&e.button!==0)return;e.preventDefault();try{STAGE.setPointerCapture(e.pointerId)}catch(x){}
   var now=performance.now(),p=newP(e.pointerId,e.clientX,e.clientY,now,false,e.pointerType==='mouse',true);if(e.timeStamp>0)p.e0=e.timeStamp;
