@@ -123,8 +123,10 @@ const size = process.argv[2] || 'phone';
   await page.evaluate(() => window.__lc.WORLDS[0].o.goRound(8)); await until(s => s.d.game.phase === 'play' && s.d.cups.length === 2, 60000);
   ok(s.d.cups.length === 2 && s.d.cups[0].c !== s.d.cups[1].c && s.d.fix.drains === 1 && !!s.d.game.cur, 'round 8: two rings at once, of two colours, with the drain and the current: ' + JSON.stringify(s.d.cups.map(c => c.c)));
   // (counted from where it stood: in round 8 the current can carry a vent's smoke into its ring before the hook fills one)
-  { const g0 = s.d.game.got, keep = s.d.cups[1]; await page.evaluate(() => window.__lc.WORLDS[0].o.win()); s = await D();
-    ok(s.d.cups.length === 2 && s.d.game.got === g0 + 1 && s.d.cups.some(c => c.c === keep.c && Math.hypot(c.x - keep.x, c.y - keep.y) < 40), 'a ring of the two filled: a new one takes its place, the other stays: ' + JSON.stringify({ g0, got: s.d.game.got, cups: s.d.cups.map(c => c.c) })); }
+  // (17 Nov, evening: read, filled and read again in one moment, as the gold ring's scores are: between two reads the current once
+  // carried a vent's smoke into the other ring too, and two were counted)
+  { const r = await page.evaluate(() => { const o = window.__lc.WORLDS[0].o, a = o.dbg(), keep = a.cups[1]; o.win(); const d = o.dbg(); return { g0: a.game.got, got: d.game.got, keep, cups: d.cups }; });
+    ok(r.cups.length === 2 && r.got === r.g0 + 1 && r.cups.some(c => c.c === r.keep.c && Math.hypot(c.x - r.keep.x, c.y - r.keep.y) < 40), 'a ring of the two filled: a new one takes its place, the other stays: ' + JSON.stringify({ g0: r.g0, got: r.got, cups: r.cups.map(c => c.c) })); s = await D(); }
   await look('game_two');
   // (17 Nov) from round 9, of the two rings at once one goes slowly round a loop, its way drawn faintly, and the other drifts; a finger
   // that follows it (from just over its vent, drawn to the ring as it goes and kept on it) fills it well within the round's time

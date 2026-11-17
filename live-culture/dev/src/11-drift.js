@@ -59,6 +59,9 @@ var DRIFT=(function(){
       'if(uHO>0.5){float oL=texture2D(uObs,vL).x;float oR=texture2D(uObs,vR).x;float oT=texture2D(uObs,vT).x;float oB=texture2D(uObs,vB).x;if(oL>0.5)L=C;if(oR>0.5)R=C;if(oT>0.5)T=C;if(oB>0.5)B=C;v-=vec2(R-L,T-B);'+
       'if(oL>0.5)v.x=max(v.x,0.0);if(oR>0.5)v.x=min(v.x,0.0);if(oT>0.5)v.y=min(v.y,0.0);if(oB>0.5)v.y=max(v.y,0.0);}else{v-=vec2(R-L,T-B);}gl_FragColor=vec4(v,0.0,1.0);}',
     mul:H+'uniform sampler2D uT;uniform float uK;\nvoid main(){gl_FragColor=uK*texture2D(uT,vUv);}',
+    /* (17 Nov, evening: "slow down the paint. Make it more viscous") the water's own thickness: each pass draws a cell's motion towards
+       its neighbours', so small eddies melt into broad, slow flows, as in honey */
+    vis:H+'uniform sampler2D uT;uniform float uK;\nvoid main(){vec4 c=texture2D(uT,vUv);vec4 n=0.25*(texture2D(uT,vL)+texture2D(uT,vR)+texture2D(uT,vT)+texture2D(uT,vB));gl_FragColor=mix(c,n,uK);}',
     /* the photo's own memory: the ink is drawn back toward the picture, a little each frame (most of the way in about five seconds) */
     heal:H+'uniform sampler2D uT;uniform sampler2D uPh;uniform vec4 uRect;uniform float uK;\n'+
       'void main(){vec3 d=texture2D(uT,vUv).rgb;vec2 q=(vUv-uRect.xy)/uRect.zw;vec3 ph=vec3(0.0);if(q.x>0.0&&q.x<1.0&&q.y>0.0&&q.y<1.0){ph=texture2D(uPh,vec2(q.x,1.0-q.y)).rgb;ph*=ph*1.25;}gl_FragColor=vec4(mix(d,ph,uK),1.0);}',
@@ -125,6 +128,11 @@ var DRIFT=(function(){
   /* the game's water (14 Nov, measured as a phone at sixty frames a second steps it: a finger carrying the smoke fills a ring in two to
      nine seconds; nobody touching fills none in a whole round, the smoke let out at the top of the tank) */
   var LP={buo:.3,dye:.42,vel:.8,ink:.09,fk:12,f0:.055,fr:.0036,carry:.7,mag:.05,reach:3.2};
+  /* (17 Nov, 17:54: "slow down the paint. Make it more viscous") painting freely, the water is thick: its motion spreads to its
+     neighbours (nu, a second's worth, two passes a frame), dies away in about half a second once the finger lifts (vd), curls far less
+     (vort, 20 before), rises at under half the pace (buo) and moves at .6 of the time (ts), and the paint lasts longer (dye). The
+     game keeps its own water (LP), tuned to its rings */
+  var PV={nu:30,vd:1.1,vort:4,buo:.45,ts:.6,dye:.22};
   /* (in a level the water fades by its own time, not the clock's: a phone that steps it thirty times a second plays the level as one that
      steps it sixty times does, only slower, so a level tested once is the same level everywhere) */
   function WX(u){return u*VW}function WY(v){return v*VH}
@@ -428,16 +436,17 @@ var DRIFT=(function(){
     for(i=0;i<FM.length;i++){var fm=FM[i];u=run(P.mag,dye.w,dt2);glBind(0,dye.r.tex,u.uT);gl.uniform2f(u.uF,fm[0],1-fm[1]);gl.uniform2f(u.uWH,VW,VH);gl.uniform1f(u.uR,cupR()*LP.reach);gl.uniform1f(u.uK,LP.mag*Math.min(dt*60,2));glQuad(P.mag);dye.swap()}
     if(!simple){
       u=run(P.curl,curl,vt);glBind(0,vel.r.tex,u.uVel);glQuad(P.curl);
-      u=run(P.vort,vel.w,vt);glBind(0,vel.r.tex,u.uVel);glBind(1,curl.tex,u.uCurl);gl.uniform1f(u.uK,20);gl.uniform1f(u.uDt,dt);glQuad(P.vort);vel.swap();
+      u=run(P.vort,vel.w,vt);glBind(0,vel.r.tex,u.uVel);glBind(1,curl.tex,u.uCurl);gl.uniform1f(u.uK,PZ>=0?20:PV.vort);gl.uniform1f(u.uDt,dt);glQuad(P.vort);vel.swap();
       /* smoke rises (in a level, as fast for the tank's height on any screen) */
-      u=run(P.buo,vel.w,vt);glBind(0,vel.r.tex,u.uVel);glBind(1,dye.r.tex,u.uDye);gl.uniform1f(u.uB,(reduce?18:64)*dt*(PZ>=0?LP.buo*clamp(B.h/VH*sh/197,.5,2):1));glQuad(P.buo);vel.swap();
+      u=run(P.buo,vel.w,vt);glBind(0,vel.r.tex,u.uVel);glBind(1,dye.r.tex,u.uDye);gl.uniform1f(u.uB,(reduce?18:64)*dt*(PZ>=0?LP.buo*clamp(B.h/VH*sh/197,.5,2):PV.buo));glQuad(P.buo);vel.swap();
+      if(PZ<0&&PV.nu>0){var vk=1-Math.exp(-PV.nu*dt);for(var vp=0;vp<2;vp++){u=run(P.vis,vel.w,vt);glBind(0,vel.r.tex,u.uT);gl.uniform1f(u.uK,vk);glQuad(P.vis);vel.swap()}}
       var ho=WN&&obs?1:0;u=run(P.div,div,vt);glBind(0,vel.r.tex,u.uVel);glBind(1,obs?obs.tex:null,u.uObs);gl.uniform1f(u.uHO,ho);glQuad(P.div);
       u=run(P.mul,prs.w,vt);glBind(0,prs.r.tex,u.uT);gl.uniform1f(u.uK,.8);glQuad(P.mul);prs.swap();
       var it=[18,14,10][QL];for(i=0;i<it;i++){u=run(P.prs,prs.w,vt);glBind(0,prs.r.tex,u.uP);glBind(1,div.tex,u.uDiv);glBind(2,obs?obs.tex:null,u.uObs);gl.uniform1f(u.uHO,ho);glQuad(P.prs);prs.swap()}
       u=run(P.grad,vel.w,vt);glBind(0,prs.r.tex,u.uP);glBind(1,vel.r.tex,u.uVel);glBind(2,obs?obs.tex:null,u.uObs);gl.uniform1f(u.uHO,ho);glQuad(P.grad);vel.swap();
       if(WN){u=run(P.msk,vel.w,vt);glBind(0,vel.r.tex,u.uT);glBind(1,obs.tex,u.uObs);glQuad(P.msk);vel.swap()}
-      u=run(P.adv,vel.w,vt);glBind(0,vel.r.tex,u.uVel);glBind(1,vel.r.tex,u.uSrc);glBind(2,obs?obs.tex:null,u.uObs);gl.uniform1f(u.uHO,WN&&obs?1:0);gl.uniform2f(u.uVTexel,vt[0],vt[1]);gl.uniform2f(u.uSTexel,vt[0],vt[1]);gl.uniform1f(u.uDt,dt);gl.uniform1f(u.uDiss,Math.exp(-(PZ>=0?LP.vel*dt:.22*dtr)));glQuad(P.adv);vel.swap();
-      u=run(P.adv,dye.w,dt2);glBind(0,vel.r.tex,u.uVel);glBind(1,dye.r.tex,u.uSrc);glBind(2,obs?obs.tex:null,u.uObs);gl.uniform1f(u.uHO,WN&&obs?1:0);gl.uniform2f(u.uVTexel,vt[0],vt[1]);gl.uniform2f(u.uSTexel,dt2[0],dt2[1]);gl.uniform1f(u.uDt,dt);gl.uniform1f(u.uDiss,ph?1:Math.exp(-(PZ>=0?LP.dye*dt:.36*dtr)));glQuad(P.adv);dye.swap()}
+      u=run(P.adv,vel.w,vt);glBind(0,vel.r.tex,u.uVel);glBind(1,vel.r.tex,u.uSrc);glBind(2,obs?obs.tex:null,u.uObs);gl.uniform1f(u.uHO,WN&&obs?1:0);gl.uniform2f(u.uVTexel,vt[0],vt[1]);gl.uniform2f(u.uSTexel,vt[0],vt[1]);gl.uniform1f(u.uDt,PZ>=0?dt:dt*PV.ts);gl.uniform1f(u.uDiss,Math.exp(-(PZ>=0?LP.vel*dt:PV.vd*dtr)));glQuad(P.adv);vel.swap();
+      u=run(P.adv,dye.w,dt2);glBind(0,vel.r.tex,u.uVel);glBind(1,dye.r.tex,u.uSrc);glBind(2,obs?obs.tex:null,u.uObs);gl.uniform1f(u.uHO,WN&&obs?1:0);gl.uniform2f(u.uVTexel,vt[0],vt[1]);gl.uniform2f(u.uSTexel,dt2[0],dt2[1]);gl.uniform1f(u.uDt,PZ>=0?dt:dt*PV.ts);gl.uniform1f(u.uDiss,ph?1:Math.exp(-(PZ>=0?LP.dye*dt:PV.dye*dtr)));glQuad(P.adv);dye.swap()}
     else{u=run(P.mul,dye.w,dt2);glBind(0,dye.r.tex,u.uT);gl.uniform1f(u.uK,ph?1:Math.exp(-dtr*.5));glQuad(P.mul);dye.swap()}
     if(WN){u=run(P.msk,dye.w,dt2);glBind(0,dye.r.tex,u.uT);glBind(1,obs.tex,u.uObs);glQuad(P.msk);dye.swap()}
     if(ph){u=run(P.heal,dye.w,dt2);glBind(0,dye.r.tex,u.uT);glBind(1,ph.tex,u.uPh);gl.uniform4f(u.uRect,rc[0],rc[1],rc[2],rc[3]);gl.uniform1f(u.uK,1-Math.exp(-dtr/4.5));glQuad(P.heal);dye.swap()}}
@@ -590,6 +599,7 @@ var DRIFT=(function(){
     fastdye:function(b){FASTDYE=!!b;szKey=''},
     /* for the tests: the water stepped as a phone at a given frame rate steps it (1/60, or 1/30 for one saving power), whatever this machine's pace */
     fixdt:function(v){FIXDT=+v||0},phys:function(o){if(o)for(var k in o)LP[k]=o[k];return JSON.parse(JSON.stringify(LP))},
+    visc:function(o){if(o)for(var k in o)PV[k]=o[k];return JSON.parse(JSON.stringify(PV))},
     put:function(k,a){if(k==='wall')WALLS.push([U(a[0]),V(a[1]),U(a[2]),V(a[3]),0]);else if(k==='fan'){var m=Math.hypot(a[2],a[3])||1;FANS.push({x:U(a[0]),y:V(a[1]),dx:a[2]/m,dy:a[3]/m,c:PZ>=0?-1:a[4]||0,ph:0})}
       else if(k==='drain')DRAINS.push({x:U(a[0]),y:V(a[1]),ph:0});else if(k==='prism')PRISMS.push({x:U(a[0]),y:V(a[1]),c:a[2],ph:0});
       else if(k==='tunnel')TUNNELS.push({ax:U(a[0]),ay:V(a[1]),bx:U(a[2]),by:V(a[3]),ph:0});obsDirty=true},

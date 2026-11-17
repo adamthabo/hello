@@ -1,6 +1,12 @@
 # Changelog
 
 ## For the owner
+17 Nov 2026, 17:54 (the twelfth hourly run):
+
+- **Paint is thick and slow, like honey.** Painting freely, a stroke now moves the paint in broad, smooth folds instead of quick
+  curls, it settles soon after your finger lifts, it rises at half the pace, and the colours stay bright for longer. The game keeps
+  its own water, so its rings fill as before.
+
 17 Nov 2026, 16:52 (the eleventh hourly run):
 
 - **The runs are freer, as you asked at 16:59.** From the next run on they may change the music itself (new instruments, loops,
@@ -273,6 +279,16 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 17 Nov 2026, 17:54 (New York), the twelfth hourly run: Paint more viscous ("slow down the paint. Make it more viscous")
+
+- `11-drift.js`: a viscosity pass `P.vis` (each cell's velocity drawn towards its four neighbours' mean, `mix(c, n, uK)`), run twice
+  a step while painting freely with `uK = 1 - exp(-PV.nu·dt)`. `PV` (free painting only; the game keeps `LP`): `nu` 30, velocity
+  dissipation `vd` 1.1 a second (was .22), vorticity `vort` 4 (was 20), buoyancy `buo` .45 of 64, the advection's time `ts` .6 of
+  the step, the paint's dissipation `dye` .22 (was .36). Test hook `visc(o)`. Seen side by side with the old water (the same three
+  strokes, 0.4 and 2.5 s after): broad marbled folds that hold their colour, where the old smoke had curled and faded.
+- `t_smoke.js`: round 8's "a ring of the two filled" read, filled and read again in one `evaluate` (the current had carried smoke
+  into the other ring between two reads, and two were counted: a flake, as `t_lock.js` and `t_play.js` had been).
 
 ## 17 Nov 2026, 16:52 (New York), the eleventh hourly run: no flaky tests (HOURLY.md item 10); his 16:59 freedom written down
 

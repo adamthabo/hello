@@ -181,3 +181,5 @@ not ask for.
   good-sounding, melodic sounds played in time for experimenting) and for Paint slower and more viscous: the next runs' work.
 - 2026-11-17 16:59: he opened the music and prompted words to the runs (README rule 24; the never-list above and the scheduled
   message changed with it). The A. Thabo artifact, Edge Desk and the green suite stay.
+- 2026-11-17 17:54: Paint thick and slow while painting freely (his 17:54 ask): a viscosity pass, more damping, fewer curls, slower
+  time and rising; the game's water untouched. Next: the music (a metronome view of the beat; wild, melodic sounds played in time).
