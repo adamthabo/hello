@@ -189,7 +189,9 @@ Artifact: https://claude.ai/artifact/PCzaFJH2vjXe4Kv8KK4Xic (publish to this URL
    outside a game, and "free" folded into the hand (in a game the hand ends it). (c) **The Earth**: no wind layer (the wind is still read
    where a place is tapped, and still carries the clouds); the satellites fly at sixty times their speed, a minute a second (a satellite
    tapped brings the present back, so its card is of now; let go, they speed up again; since 17 Nov the space stations, gold, and the
-   telescopes in low orbit, violet, are marks of their own with a short glowing trail, and a tap takes them first); two new layers after the videos, **war zones**
+   telescopes in low orbit, violet, are marks of their own with a short glowing trail, and a tap takes them first; since 17 Nov a
+   storm's wheel is bigger and turns faster the stronger it is, white with two arms, amber with three from 119 km/h, red and ringed
+   from 178); two new layers after the videos, **war zones**
    (each war with more than a thousand dead this year by Wikipedia's count, red where its fighting is, brighter the more it has killed,
    beating slowly; the ground Russia holds in Ukraine from DeepStateMap's daily map, its edge, the front, drawn bright) and
    **blackouts** (the places cut off: no open internet, North Korea; the internet switched off, from the Internet Society's Pulse;

@@ -127,6 +127,9 @@ var WIND=(function(){
       storm:'the tropical storms turning now',fire:'the strongest of the last day',orbit:'sixty times their speed',aur:'where NOAA expects it now'},
     LYDEF={vid:1,war:1,dark:1,sat:1,temp:0,rain:1,cld:1,waves:0,pres:0,bolt:1,storm:1,fire:1,orbit:1,aur:1},LY={},lyAv='',lyMsg=null,dkAt=0,lyPing=null,zmOn=false,zmAt=0;
   (function(){var o=null;try{o=JSON.parse(localStorage.getItem('lc-earth-layers')||'null')}catch(e){}for(var k in LYDEF)LY[k]=o&&(o[k]===0||o[k]===1)?o[k]:LYDEF[k]})();
+  /* how a storm looks by its strongest winds: its wheel's size, how fast it turns, its arms and its colour */
+  var STC=['234,249,255','255,179,71','255,98,64'];
+  function stLook(S){var kmh=S.kmh||60,cat=kmh>=178?2:kmh>=119?1:0;return {r:6.5+clamp((kmh-60)/40,0,4.5),sp:clamp(kmh/100,.6,2.6),arms:cat?3:2,col:STC[cat],cat:cat}}
   /* how much of a layer's moment of showing itself is left (1 as it is switched on, 0 two seconds later) */
   function pingK(k){return lyPing&&lyPing.k===k?Math.max(0,1-(FT-lyPing.t)/2000):0}
   function lySave(){try{localStorage.setItem('lc-earth-layers',JSON.stringify(LY))}catch(e){}}
@@ -217,7 +220,9 @@ var WIND=(function(){
     /* a camera, then a satellite (while they are shown), are what a tap meant before the place under it */
     if(!p.ghost)try{LIVEW.layer.cardOff()}catch(e){}
     if(!p.ghost&&camOn&&LIVEW.layer.near(p.x,p.y)>=0){probe=null;cardOff();try{ORBIT.layer.off()}catch(e){}LIVEW.layer.pick(p.x,p.y);return}
-    if(!p.ghost&&LY.orbit&&ORBIT.layer.pick(p)){probe=null;cardOff();return}
+    /* (17 Nov) a storm's wheel right under the finger is what it meant, before any satellite flying over it */
+    var stUnder=false;for(i=0;i<ST.length&&LY.storm;i++){if(ST[i].p[2]>.04&&(ST[i].p[0]-p.x)*(ST[i].p[0]-p.x)+(ST[i].p[1]-p.y)*(ST[i].p[1]-p.y)<16*16)stUnder=true}
+    if(!p.ghost&&LY.orbit&&!stUnder&&ORBIT.layer.pick(p)){probe=null;cardOff();return}
     try{if(!p.ghost)ORBIT.layer.off()}catch(e){}
     if(!w){probe=null;cardOff();return}
     /* a storm's eye or a fire under the finger is what was meant: the reading goes to it */
@@ -377,12 +382,17 @@ var WIND=(function(){
           lo2=lo1+Math.atan2(Math.sin(b)*Math.sin(dist)*Math.cos(la1),Math.cos(dist)-Math.sin(la1)*Math.sin(la2));return GLOBE.pr(AS.llv(la2/AS.D,lo2/AS.D),g,[0,0,0])});
         c.setLineDash([4,5]);c.strokeStyle='rgba(255,179,71,'+(.85*al).toFixed(3)+')';c.lineWidth=1.3;c.beginPath();c.moveTo(k.p[0],k.p[1]);pts.forEach(function(q3){c.lineTo(q3[0],q3[1])});c.stroke();c.setLineDash([]);
         c.font='500 8px '+MONO;c.fillStyle='rgba(255,179,71,'+(.95*al).toFixed(3)+')';pts.forEach(function(q3,dd){if(q3[2]>.1){c.beginPath();c.arc(q3[0],q3[1],2.4,0,TAU);c.fill();c.fillText(dd?'+2 DAYS':'+1 DAY',q3[0]+6,q3[1]-6)}})}}
-    /* the storms: a small wheel turning the way the storm turns (against the clock north of the equator), and its name */
+    /* the storms: a small wheel turning the way the storm turns (against the clock north of the equator), and its name. (17 Nov, the
+       fourth hourly run) the stronger the storm the bigger its wheel and the faster it turns, and its colour says how strong: a tropical
+       storm white with two arms; a hurricane or typhoon (119 km/h and more) amber with three; a major one (178 and more) red, with a
+       ring round it */
     c.font='500 9px "JetBrains Mono",ui-monospace,Menlo,monospace';c.textBaseline='middle';c.textAlign='left';c.lineJoin='round';
-    for(i=0;i<ST.length&&LY.storm;i++){k=ST[i];if(k.p[2]<=.06)continue;var sx=k.p[0],sy=k.p[1],rot=(reduce?0:t*.0016)*(k.s.lat>=0?-1:1),j,nm=k.s.name.toUpperCase();
-      for(j=0;j<2;j++){c.strokeStyle=j?'rgba(234,249,255,.95)':'rgba(1,4,10,.6)';c.lineWidth=j?1.3:3.2;c.beginPath();c.arc(sx,sy,7.5,rot,rot+2.1);c.stroke();c.beginPath();c.arc(sx,sy,7.5,rot+Math.PI,rot+Math.PI+2.1);c.stroke()}
-      c.fillStyle='rgba(234,249,255,.95)';c.beginPath();c.arc(sx,sy,1.5,0,TAU);c.fill();
-      var tw=c.measureText(nm).width,lx=sx+13+tw>VW-8?sx-13-tw:sx+13;c.lineWidth=3;c.strokeStyle='rgba(1,4,10,.7)';c.strokeText(nm,lx,sy);c.fillText(nm,lx,sy)}
+    for(i=0;i<ST.length&&LY.storm;i++){k=ST[i];if(k.p[2]<=.06)continue;var sx=k.p[0],sy=k.p[1],SL=stLook(k.s),rot=(reduce?0:t*.0016*SL.sp)*(k.s.lat>=0?-1:1),j,a2,nm=k.s.name.toUpperCase(),
+        rad=SL.r*clamp(Math.sqrt(g.R/170),.9,1.6);
+      for(j=0;j<2;j++){c.strokeStyle=j?'rgba('+SL.col+',.95)':'rgba(1,4,10,.6)';c.lineWidth=j?1.4:3.4;for(a2=0;a2<SL.arms;a2++){var a0=rot+a2*TAU/SL.arms;c.beginPath();c.arc(sx,sy,rad,a0,a0+TAU/SL.arms*.62);c.stroke()}}
+      if(SL.arms===3&&SL.col===STC[2]){c.strokeStyle='rgba('+SL.col+',.38)';c.lineWidth=1;c.beginPath();c.arc(sx,sy,rad+3.5,0,TAU);c.stroke()}
+      c.fillStyle='rgba('+SL.col+',.95)';c.beginPath();c.arc(sx,sy,1.6,0,TAU);c.fill();c.fillStyle='rgba(234,249,255,.95)';
+      var tw=c.measureText(nm).width,lx=sx+rad+6+tw>VW-8?sx-rad-6-tw:sx+rad+6;c.lineWidth=3;c.strokeStyle='rgba(1,4,10,.7)';c.strokeText(nm,lx,sy);c.fillText(nm,lx,sy)}
     /* the highs and lows of the pressure, while its isobars show */
     if(LY.pres&&wxT&&typeof WX!=='undefined'&&WX.hl&&WX.hl.length){var HL=WX.hl,q4=[0,0,0];c.textAlign='center';c.textBaseline='middle';for(i=0;i<HL.length;i++){var h=HL[i];GLOBE.pr(h.v,g,q4);if(q4[2]<=.15)continue;
       c.font='700 12px '+MONO;c.lineWidth=3;c.strokeStyle='rgba(1,4,10,.75)';c.fillStyle=h.h?'rgba(255,179,71,.95)':'rgba(62,240,255,.95)';c.strokeText(h.h?'H':'L',q4[0],q4[1]);c.fillText(h.h?'H':'L',q4[0],q4[1]);
@@ -427,7 +437,7 @@ var WIND=(function(){
   return {nowGo:function(i){nowGo(NOWL[i])},zoomBy:zoomBy,nowList:function(){return NOWL.map(function(x){return x.k+':'+x.n})},enter:enter,leave:leave,resize:resize,down:down,move:move,up:up,gesture:gesture,wheel:wheel,key:key,seq:seq,step:step,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
     dbg:function(){return {ok:GLX.ok&&gen===GLX.gen,wind:!!windT,aurora:!!aurT,strikes:SK.length,flashes:flashes.length,ready:GLOBE.ready(),lat0:lat0,lon0:lon0,R:g.R,cx:g.cx,cy:g.cy,zoom:zoom,turned:turned,
       LY:LY,ping:lyPing?lyPing.k:'',dock:[].map.call($('lyd').childNodes,function(b){return b.id.slice(3)+(b.getAttribute('aria-pressed')==='true'?'+':'-')}),dockShown:!$('lyd').hidden,lgd:$('lgd').hidden?'':$('lgd').dataset.k,
-      col:colLayer(),wx:!!wxT,geo:GLOBE.hasGeo(),now:NOWL.map(function(x){return x.k+':'+x.n}),cams:camOn,fly:!!FLY,probe:probe?{lat:probe.lat,lon:probe.lon,ghost:probe.ghost,r:reading(),zone:probe.zone?{w:probe.zone.w?probe.zone.w.id:null,d:probe.zone.d?probe.zone.d.id:null,front:probe.zone.front}:null}:null,vis:SK.filter(function(k){return k.p[2]>.3}).length,fires:FR.length,zones:ZONES.dbg(),storms:ST.map(function(k){return {name:k.s.name,lat:k.s.lat,lon:k.s.lon,x:k.p[0],y:k.p[1],z:k.p[2]}}),foc:!!FOC,
+      col:colLayer(),wx:!!wxT,geo:GLOBE.hasGeo(),now:NOWL.map(function(x){return x.k+':'+x.n}),cams:camOn,fly:!!FLY,probe:probe?{lat:probe.lat,lon:probe.lon,ghost:probe.ghost,r:reading(),zone:probe.zone?{w:probe.zone.w?probe.zone.w.id:null,d:probe.zone.d?probe.zone.d.id:null,front:probe.zone.front}:null}:null,vis:SK.filter(function(k){return k.p[2]>.3}).length,fires:FR.length,zones:ZONES.dbg(),storms:ST.map(function(k){var L=stLook(k.s);return {name:k.s.name,lat:k.s.lat,lon:k.s.lon,x:k.p[0],y:k.p[1],z:k.p[2],kmh:k.s.kmh,r:L.r,sp:L.sp,arms:L.arms,cat:L.cat}}),foc:!!FOC,
       fireAt:FR.filter(function(k){return k.p[2]>.3}).slice(0,3).map(function(k){return {x:k.p[0],y:k.p[1],frp:k.f.frp}})}},
     windAt:windAt,
     /* (for the checks) a layer switched as its button would, or read */

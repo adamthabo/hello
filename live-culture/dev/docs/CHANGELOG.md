@@ -1,6 +1,12 @@
 # Changelog
 
 ## For the owner
+17 Nov 2026, 02:51 (the fourth hourly run):
+
+- **Storms show their strength.** Each storm's little wheel on the globe is now bigger and spins faster the stronger the storm is:
+  white with two arms for a tropical storm, amber with three for a hurricane or typhoon, red with a ring for a major one (Xavier, out
+  in the Pacific at 222 km/h, is red right now).
+
 17 Nov 2026, 01:49 (the third hourly run):
 
 - **The space stations and the telescopes stand out.** Among the thousands of satellites, the two space stations (the ISS and China's
@@ -227,6 +233,21 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 17 Nov 2026, 02:51 (New York), the fourth hourly run: a storm's wheel by its strength (HOURLY.md item 4, in part)
+
+- `stLook(S)` in `12-wind.js`: radius `6.5 + clamp((kmh - 60) / 40, 0, 4.5)` (grown a little as the Earth comes closer), speed of turning
+  `clamp(kmh / 100, .6, 2.6)` times the old, two arms below 119 km/h and three from it, white, amber from 119 (a hurricane or typhoon),
+  red from 178 (a major one) with a faint ring round it; the name stands clear of the bigger wheel. `dbg().storms` carries `kmh`, `r`,
+  `sp`, `arms`, `cat`. Close up, the arms of cloud already turned faster for stronger storms (since 14 Nov).
+- The track behind a storm is not drawn: none of the data has one this week (GDACS gives only the present point; NHC's file is empty).
+- `t_play.js`: every storm's wheel matches its strength, and a stronger one is never smaller or slower.
+- `layer.pick()` in `13-orbit.js`: a station's or a telescope's mark within 18 px is taken before any other satellite (the suite's real
+  tap on Tiangong's mark, at the edge of the Earth where every satellite is in reach, had taken a Starlink that flew nearer); the 0.3
+  weight that gave the marks a reach of some 36 px is gone. In `12-wind.js` a storm's wheel within 16 px of the finger comes before any
+  satellite (`t_hosted.js`'s tap on Akvan had taken a telescope passing over it).
+- The suite: all passed but `t_gov.js` once ("after a touch it thins itself" at level 0: on a less busy moment the water was drawn
+  fast enough not to need thinning); alone it passed twice, and `t_lock.js` and `t_smoke.js`, which the stop had skipped, passed after.
 
 ## 17 Nov 2026, 01:49 (New York), the third hourly run: the space stations and the telescopes as marks with trails (HOURLY.md item 3)
 

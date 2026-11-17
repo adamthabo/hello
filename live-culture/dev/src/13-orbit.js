@@ -287,7 +287,12 @@ var ORBIT=(function(){
          place under it (the swarm is so thick there that a satellite is within reach of every point), so only the space stations and the
          few satellites the sound follows are taken there; in the dark round the Earth, any satellite */
       pick:function(p){if(!EL)return false;var i,best=-1,on=Math.hypot(p.x-g.cx,p.y-g.cy)<g.R,bd=on?20*20:26*26,d;
-        for(i=0;i<satN;i++){if(on&&GRP[i]!==7&&!(NOTE&&NOTE[i]))continue;view(place(i,simMs,tmp),tq);if(!shown(tq))continue;var x=g.cx+tq[0]*g.R-p.x,y=g.cy-tq[1]*g.R-p.y;d=x*x+y*y;if(SHOWF&&SHOWF[i])d*=.3;else if(GRP[i]===7||(FLG[i]&1))d*=.45;if(d<bd){bd=d;best=i}}
+        /* (17 Nov) a station's or a telescope's mark within 18 px is what the finger meant, whatever flies nearer (at sixty times their
+           speed one moves a few pixels between the touch and the frame that reads it); a storm's wheel under the finger comes first
+           (12-wind.js) */
+        var bs=18*18,bm=-1;for(var m=0;m<showI.length;m++){view(place(showI[m][0],simMs,tmp),tq);if(!shown(tq))continue;var mx=g.cx+tq[0]*g.R-p.x,my=g.cy-tq[1]*g.R-p.y,md=mx*mx+my*my;if(md<bs){bs=md;bm=showI[m][0]}}
+        if(bm>=0){best=bm;bd=-1}
+        for(i=0;i<satN&&bd>=0;i++){if(on&&GRP[i]!==7&&!(NOTE&&NOTE[i]))continue;view(place(i,simMs,tmp),tq);if(!shown(tq))continue;var x=g.cx+tq[0]*g.R-p.x,y=g.cy-tq[1]*g.R-p.y;d=x*x+y*y;if(GRP[i]===7||(FLG[i]&1))d*=.45;if(d<bd){bd=d;best=i}}
         if(best<0)return false;sel=best;path=null;selI=null;satInfoLoad();tone('glass',pent(clamp(Math.round(14-Math.log(EL[best*11])*9),2,14),52),.45,pan(p.x));cardBuild();return true},
       sel:function(){return sel},
       hud:function(){var S=LIVE.sats;if(!S||!EL)return LIVE.asked?'reading the orbits':'';return satN.toLocaleString('en-US')+' satellites, '+(live()?'where they are now':'at sixty times their speed')+' · orbits of '+stampUTC(S.fresh||S.asOf)}}}
