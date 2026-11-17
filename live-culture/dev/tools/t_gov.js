@@ -7,7 +7,9 @@ const st = page => page.evaluate(() => { const L = window.__lc; return { ql: L.Q
   { console.log('A SLOW WORLD (the water, drawn in software here)');
     const { page, errs, ctx } = await open(browser, 'phone', { hash: '#smoke', dsf: 2 }); await sleep(6000);
     let s = await st(page); ok(s.ql === 0 && !s.woke, 'untouched for six slow seconds: nothing judged, level ' + s.ql + ', canvas at ' + s.dpr + 'x');
-    await page.mouse.click(195, 420); await sleep(9000); s = await st(page);
+    // (17 Nov: the governor judges nothing in a page's first 45 frames, and a busy machine drew the water at three or four frames a
+    // second, so nine seconds were sometimes not enough to see it act: it is given up to thirty)
+    await page.mouse.click(195, 420); for (let k = 0; k < 30; k++) { await sleep(1000); s = await st(page); if (k >= 8 && s.ql >= 1) break; }
     ok(s.ql >= 1 && !s.errs.length, 'after a touch it thins itself: level ' + s.ql + ', canvas at ' + s.dpr + 'x, water ' + s.dbg.sw + ' x ' + s.dbg.sh);
     ok(Math.abs(s.dpr - [2, 1.5, 1.25][s.ql]) < .02, 'the canvas follows the level');
     const lv = s.ql; await page.evaluate(() => window.__lc.go(1, true)); await sleep(3500); s = await st(page); ok(!s.errs.length && s.dbg.ok && Math.abs(s.dpr - [2, 1.5, 1.25][s.ql]) < .02, 'the Earth takes the level it is given: level ' + s.ql + ', canvas at ' + s.dpr + 'x');

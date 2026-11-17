@@ -149,3 +149,4 @@ page with features he did not ask for.
   the tests found taps taken by the wrong thing (a Starlink for Tiangong's mark, a telescope for a storm): fixed, so the run went on
   into the 03:52 hour, shipped at 04:2x. Artifact still behind (runs 1 to 4), for the morning.
 - 2026-11-17 05:07: the front marches, the blackouts breathe (backlog item 5 done). Artifact still behind (runs 1 to 5).
+- 2026-11-17 06:10: the big fires as flames up close (backlog item 6 done). Artifact still behind (runs 1 to 6); 08:00 is next.

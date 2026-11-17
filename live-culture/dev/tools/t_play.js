@@ -82,6 +82,11 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     // and on again: the Earth turns to the biggest fire, comes close and reads it
     await tapEl('#ly_fire'); await sleep(1800); s = await S();
     ok(s.dbg.LY.fire === 1 && s.hint === 0 && s.dbg.probe && s.dbg.probe.r.fire && Math.abs(s.dbg.zoom - 2.6) < .05 && /^fire · [\d,]+ MW · seen by /m.test(s.data), 'earth: "fires" on again turns the Earth to the biggest fire, comes close and reads it: ' + s.data.replace(/\n/g, ' | '));
+    // (17 Nov, the sixth hourly run) close up the big fires burn as small flames; from far off they are embers only
+    { const near = (await S()).dbg.flames; const v = await page.evaluate(() => { const d = window.__lc.WIND.dbg(); return [d.lat0, d.lon0]; });
+      await page.evaluate(v => window.__lc.WIND.look(v[0], v[1], 1), v); await sleep(700); const far = (await S()).dbg.flames;
+      await page.evaluate(v => window.__lc.WIND.look(v[0], v[1], 2.6), v); await sleep(700);
+      ok(near > 0 && far === 0, 'earth: close up the biggest fires are flames (' + near + '), far off none: ' + far); }
     await shot('1a3_earth_name');
     // the zoom buttons
     const z1 = s.dbg.zoom; await tapEl('#zOut'); s = await S(); const z2 = s.dbg.zoom; await tapEl('#zIn'); s = await S();

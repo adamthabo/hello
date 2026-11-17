@@ -125,8 +125,11 @@ var WIND=(function(){
       war:'the wars of 2026, brighter where more have died',dark:'no internet, no power, or blocked',
       rain:'the last half hour, from orbit',cld:'as the weather satellites see them',waves:'their height over the seas',pres:'lines every 4 hPa, H high, L low',bolt:'the flashes of the last half hour',
       storm:'the tropical storms turning now',fire:'the strongest of the last day',orbit:'sixty times their speed',aur:'where NOAA expects it now'},
-    LYDEF={vid:1,war:1,dark:1,sat:1,temp:0,rain:1,cld:1,waves:0,pres:0,bolt:1,storm:1,fire:1,orbit:1,aur:1},LY={},lyAv='',lyMsg=null,dkAt=0,lyPing=null,zmOn=false,zmAt=0;
+    LYDEF={vid:1,war:1,dark:1,sat:1,temp:0,rain:1,cld:1,waves:0,pres:0,bolt:1,storm:1,fire:1,orbit:1,aur:1},LY={},lyAv='',lyMsg=null,dkAt=0,lyPing=null,zmOn=false,zmAt=0,flN=0;
   (function(){var o=null;try{o=JSON.parse(localStorage.getItem('lc-earth-layers')||'null')}catch(e){}for(var k in LYDEF)LY[k]=o&&(o[k]===0||o[k]===1)?o[k]:LYDEF[k]})();
+  /* a flame standing on (x, y): a teardrop h high and 2w wide whose tip sways and whose height flickers (still, under reduced motion) */
+  function flame(c,x,y,h,w,ph,t){var tt=reduce?0:t,sw=(Math.sin(tt*.009+ph)*.35+Math.sin(tt*.023+ph*3)*.15)*w,hh=h*(.85+.15*Math.sin(tt*.017+ph*2));
+    c.beginPath();c.moveTo(x-w,y);c.quadraticCurveTo(x-w*1.05,y-hh*.55,x+sw,y-hh);c.quadraticCurveTo(x+w*1.05,y-hh*.55,x+w,y);c.quadraticCurveTo(x,y+w*.7,x-w,y);c.fill()}
   /* (17 Nov, the fifth hourly run) the places cut off dim and brighten slowly on the globe, about six seconds a breath */
   function darkNow(t){return reduce?1:.74+.26*Math.sin(t*.00105)}
   /* how a storm looks by its strongest winds: its wheel's size, how fast it turns, its arms and its colour */
@@ -365,6 +368,12 @@ var WIND=(function(){
       c.fillStyle='rgba(255,90,30,'+(fa*.3).toFixed(3)+')';c.beginPath();c.arc(k.p[0],k.p[1],fr*3.2,0,TAU);c.fill();
       c.fillStyle='rgba(255,140,60,'+(fa*.45).toFixed(3)+')';c.beginPath();c.arc(k.p[0],k.p[1],fr*1.5,0,TAU);c.fill();
       c.fillStyle='rgba(255,214,150,'+(fa*.95).toFixed(3)+')';c.beginPath();c.arc(k.p[0],k.p[1],fr*.75,0,TAU);c.fill()}
+    /* (17 Nov, the sixth hourly run) close up the big fires burn as small flames over their glow, swaying and flickering, taller the
+       more heat they give off; they come in as the Earth comes close (from twice as close as the whole globe) */
+    var flK=clamp((g.R-330)/160,0,1);flN=0;
+    if(flK>0&&LY.fire)for(i=0;i<FR.length;i++){k=FR[i];if(k.p[2]<=.2||k.s<1.4)continue;var fr2=(.7+k.s*.5)*zf,fh=fr2*6.5,fw=fr2*2.1,fl=flK*clamp(k.p[2]*3,.3,1);flN++;
+      c.fillStyle='rgba(255,96,28,'+(.75*fl).toFixed(3)+')';flame(c,k.p[0],k.p[1],fh,fw,k.ph,t);
+      c.fillStyle='rgba(255,226,160,'+(.85*fl).toFixed(3)+')';flame(c,k.p[0],k.p[1]-fw*.1,fh*.55,fw*.5,k.ph+1.7,t)}
     c.globalCompositeOperation='source-over';
     /* a layer just switched on shows where its things are: for two seconds rings go out from each of them in view */
     if(lyPing&&FT-lyPing.t<2000){var pu=(FT-lyPing.t)/2000,pk=lyPing.k,pl=pk==='fire'&&LY.fire?FR:pk==='storm'&&LY.storm?ST:pk==='bolt'&&LY.bolt?SK:null,
@@ -438,7 +447,7 @@ var WIND=(function(){
     return [null]}
   return {nowGo:function(i){nowGo(NOWL[i])},zoomBy:zoomBy,nowList:function(){return NOWL.map(function(x){return x.k+':'+x.n})},enter:enter,leave:leave,resize:resize,down:down,move:move,up:up,gesture:gesture,wheel:wheel,key:key,seq:seq,step:step,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
     dbg:function(){return {ok:GLX.ok&&gen===GLX.gen,wind:!!windT,aurora:!!aurT,strikes:SK.length,flashes:flashes.length,ready:GLOBE.ready(),lat0:lat0,lon0:lon0,R:g.R,cx:g.cx,cy:g.cy,zoom:zoom,turned:turned,
-      LY:LY,ping:lyPing?lyPing.k:'',darkK:LY.dark?+darkNow(FT).toFixed(3):0,dock:[].map.call($('lyd').childNodes,function(b){return b.id.slice(3)+(b.getAttribute('aria-pressed')==='true'?'+':'-')}),dockShown:!$('lyd').hidden,lgd:$('lgd').hidden?'':$('lgd').dataset.k,
+      LY:LY,ping:lyPing?lyPing.k:'',flames:flN,darkK:LY.dark?+darkNow(FT).toFixed(3):0,dock:[].map.call($('lyd').childNodes,function(b){return b.id.slice(3)+(b.getAttribute('aria-pressed')==='true'?'+':'-')}),dockShown:!$('lyd').hidden,lgd:$('lgd').hidden?'':$('lgd').dataset.k,
       col:colLayer(),wx:!!wxT,geo:GLOBE.hasGeo(),now:NOWL.map(function(x){return x.k+':'+x.n}),cams:camOn,fly:!!FLY,probe:probe?{lat:probe.lat,lon:probe.lon,ghost:probe.ghost,r:reading(),zone:probe.zone?{w:probe.zone.w?probe.zone.w.id:null,d:probe.zone.d?probe.zone.d.id:null,front:probe.zone.front}:null}:null,vis:SK.filter(function(k){return k.p[2]>.3}).length,fires:FR.length,zones:ZONES.dbg(),storms:ST.map(function(k){var L=stLook(k.s);return {name:k.s.name,lat:k.s.lat,lon:k.s.lon,x:k.p[0],y:k.p[1],z:k.p[2],kmh:k.s.kmh,r:L.r,sp:L.sp,arms:L.arms,cat:L.cat}}),foc:!!FOC,
       fireAt:FR.filter(function(k){return k.p[2]>.3}).slice(0,3).map(function(k){return {x:k.p[0],y:k.p[1],frp:k.f.frp}})}},
     windAt:windAt,

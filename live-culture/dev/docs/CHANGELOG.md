@@ -1,6 +1,11 @@
 # Changelog
 
 ## For the owner
+17 Nov 2026, 06:10 (the sixth hourly run):
+
+- **Fires you can see burning.** Come in close and the biggest fires stand up as small flames that sway and flicker over their glow,
+  taller the hotter they burn (from far off they stay glowing embers). Tap "fires" and the Earth flies to the biggest one.
+
 17 Nov 2026, 05:07 (the fifth hourly run):
 
 - **The front line moves, the blackouts breathe.** In Ukraine the front is now a bright dashed line whose dashes march along it, and
@@ -239,6 +244,18 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 17 Nov 2026, 06:10 (New York), the sixth hourly run: the big fires as flames up close (HOURLY.md item 6)
+
+- `12-wind.js`: `flame(c, x, y, h, w, ph, t)` draws a teardrop standing on the fire, its tip swaying (two sines) and its height
+  flickering, still under reduced motion. Fires of strength 1.4 and more (about 300 MW and more) get an orange flame `6.5 r` high and a
+  pale core half its height, over their ember, faded in by `clamp((R - 330) / 160, 0, 1)` (none on a phone's whole globe, all from
+  about zoom 2.7). `dbg().flames` counts them.
+- `t_play.js`: after "fires" turns the Earth to the biggest fire (zoom 2.6) flames burn; at zoom 1 none.
+- Two tests made to wait for what they check rather than a fixed time (HOURLY.md item 10): `t_misc.js`'s old links (`#loom` and the
+  rest) wait up to three seconds for the world to change (600 ms had once not been enough); `t_gov.js` gives the governor up to thirty
+  seconds after the touch (it judges nothing in a page's first 45 frames, and on a busy machine the water ran at three or four frames
+  a second, so nine seconds had twice not been enough). A load in proportion to the canvas's pixels was tried first and made it worse.
 
 ## 17 Nov 2026, 05:07 (New York), the fifth hourly run: the front marches, the blackouts breathe (HOURLY.md item 5)
 
