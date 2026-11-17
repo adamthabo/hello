@@ -291,8 +291,15 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     const md = await page.evaluate(() => ({ b: [...document.querySelectorAll('#mix .mxm')].map(b => b.textContent + (b.classList.contains('on') ? '*' : '')).join(), chip: document.getElementById('bMode').textContent }));
     ok(md.b === 'funky,African*,bluesy,acid,dub' && md.chip === 'African', 'modes: five, African lit, and its name at the top: ' + JSON.stringify(md));
     const tapText = async (sel, t) => { const r = await page.evaluate(a => { const e = [...document.querySelectorAll(a[0])].filter(x => x.textContent === a[1])[0]; e.scrollIntoView({ block: 'center' }); const q = e.getBoundingClientRect(); return { x: q.left + q.width / 2, y: q.top + q.height / 2 }; }, [sel, t]); await sleep(150); await T.tap(r.x, r.y); await sleep(120); };
+    // (17 Nov) the waiting caught by the page itself as it begins (a watch on the buttons' classes): read from outside a moment after
+    // the tap, a tap that landed just before the bar found dub already in, and the check failed though the page was right
+    await page.evaluate(() => { window.__mw = null; const see = () => { const w = document.querySelector('#mix .mxm.wait'); if (!w) return;
+      const chip = document.getElementById('bMode').classList.contains('wait'); if (!window.__mw) window.__mw = { b: w.textContent, chip, pend: window.__lc.MIX.dbg().pend }; else window.__mw.chip = window.__mw.chip || chip; };
+      const mo = new MutationObserver(see); mo.observe(document.getElementById('mix'), { attributes: true, subtree: true, attributeFilter: ['class'] });
+      mo.observe(document.getElementById('bMode'), { attributes: true, attributeFilter: ['class'] }); window.__mo = mo; });
     await tapText('#mix .mxm', 'dub'); m = await M();
-    ok(m.pend === 'dub' && await page.evaluate(() => document.querySelector('#mix .mxm.wait') && document.querySelector('#mix .mxm.wait').textContent === 'dub' && document.getElementById('bMode').classList.contains('wait')), 'modes: dub waits for the bar, its button and the name at the top blinking');
+    const mw = await page.evaluate(() => { window.__mo.disconnect(); return window.__mw; });
+    ok(!!mw && mw.b === 'dub' && mw.chip && mw.pend === 'dub', 'modes: dub waits for the bar, its button and the name at the top blinking: ' + JSON.stringify(mw));
     m = await waitFor(m => m.mode === 'dub' && !m.pend && m.tracks.filter(t => t.m === 'dub' && t.play >= 0).length >= 4, 40);
     // (the rows are set as the bar is scheduled; the echo turns up on the bar itself, by the sound's own clock: waited for)
     for (let k = 0; k < 20 && !(m.fx && m.fx.fb > .4); k++) { await sleep(250); m = await M(); }

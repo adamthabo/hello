@@ -1,6 +1,14 @@
 # Changelog
 
 ## For the owner
+17 Nov 2026, 16:52 (the eleventh hourly run):
+
+- **The runs are freer, as you asked at 16:59.** From the next run on they may change the music itself (new instruments, loops,
+  modes, how it is mixed) and put words anywhere a tap asks for them. Your bans on horns, saxophone, harp and anything loud stay
+  unless you lift them; your other sites stay untouched and nothing broken goes live.
+- **Steadier checks.** The whole set of checks ran three more times; the one that tripped once (Mix's dub waiting for the bar) now
+  watches the page itself, so a well-timed tap can no longer fail it.
+
 17 Nov 2026, 14:43 (the tenth hourly run):
 
 - **Paint's looping ring can always be caught.** In round 9 and on, the ring that goes round now takes the colour of an outer stream
@@ -265,6 +273,20 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 17 Nov 2026, 16:52 (New York), the eleventh hourly run: no flaky tests (HOURLY.md item 10); his 16:59 freedom written down
+
+- The whole suite on the shipped code (5649353): passed, then failed once in `t_play.js` ("modes: dub waits for the bar, its button
+  and the name at the top blinking"). The page was right: `modeSet` sets `pend` and both blinks at once (`chipSync`, `uiSync(true)`),
+  but a tap that lands just before the bar (or with the music off, `asap`) lets the bar take dub in before a read from outside comes.
+  Now a `MutationObserver` on Mix's and the mode chip's classes catches the waiting as it begins (`pend` read then); the same three
+  things are checked. Then the suite again, to green (see the log).
+- Earlier today, the same kind of fix (counted in the page, not by late reads from outside): `t_lock.js` (the hint's touches),
+  `t_smoke.js` (the looping ring in a calm tank), and a wall's tap timed by `held()`.
+- README rule 24 (17 Nov, 16:59, his words): the music may change (instruments, loops, modes, mixes, levels; rule 1 stays, and his
+  band's stems), and words may go anywhere when something the person did asks for them. `HOURLY.md` (its never-list, the note
+  after the backlog, and: once an artifact publish's approval closes unanswered, wait for him to say publish), `ROADMAP.md`, and the
+  scheduled hourly message (its rule 3) changed with it.
 
 ## 17 Nov 2026, 14:43 (New York), the tenth hourly run: how hard each world works a phone, measured (HOURLY.md item 9)
 

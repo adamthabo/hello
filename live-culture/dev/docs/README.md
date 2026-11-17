@@ -219,6 +219,14 @@ Artifact: https://claude.ai/artifact/PCzaFJH2vjXe4Kv8KK4Xic (publish to this URL
    height than the phone: at 390 by 750 the old Mix had run under the worlds. Where the buttons would be lower than 30, the headings go
    and each instrument's name stands beside its loops; a phone on its side puts the instruments beside the modes and the band.
    Measured: 390 by 844, 750, 700, 660, 600; 375 by 560; 360 by 520; 320 by 480; 844 by 390; 667 by 375; 1280 by 800.
+24. **What he opened on 17 Nov, 16:59** (to the hourly runs): "You can change how music sounds, you can do whatever you want with
+   writing, (though only what is prompted ... I want you [quite] untethered." So from then on: (a) **the music may change**: new
+   instruments, loops, modes, mixes and levels, in Mix and in the modes; rule 1 stays (he has asked for it too often to read it as
+   lifted: no horns, saxophone, trumpet-like, blown, bowed or held sound, nothing loud, `LEVELS PASSED` still, no harp), and his
+   band's nine recorded stems stay in the page (rule 2: how they are mixed may change, the recordings are his). (b) **Words may go
+   anywhere, when prompted**: a world may say more than rule 5 allowed, at the top or elsewhere, as long as something the person
+   did asked for them (a tap, a round, a choice in Mix); never standing text that nobody asked for. (c) What keeps his other work safe
+   and the site whole stays: the "A. Thabo" artifact and Edge Desk are never touched, and nothing red is published or pushed.
 
 ## What the page is
 

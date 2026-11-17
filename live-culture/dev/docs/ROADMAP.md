@@ -1,7 +1,7 @@
 # Roadmap
 
-Nothing here is promised or scheduled. These are the next things worth doing, most useful first. Ask the owner before any of them
-changes how the page sounds.
+Nothing here is promised or scheduled. These are the next things worth doing, most useful first. (Until 17 Nov, 16:59 the owner was
+to be asked before any of them changed how the page sounds; since then the music is open: README rule 24.)
 
 1. **See the hosted version run for real.** Deployed on 10 Nov (live at 11:38 at `live-culture.adamthabo.workers.dev`), but not yet
    seen working against the real sources: this session cannot open workers.dev. Ask him for a screenshot of each world, or open it

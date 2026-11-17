@@ -49,10 +49,12 @@ take most of the hour.
 
 ### Never, in a run
 
-- Change how anything sounds: no new instruments, loops, modes or levels, nothing in the band (ROADMAP: ask him first). The Mix's
-  look and its buttons are fine to work on; its sound is not.
-- Bring back what he took away: words across the top of a world (rule 5: nothing written at the top except a reading a tap asks
-  for), the wind, Smoke's name or its explanation, undo, a row of controls that scrolls sideways, knobs, decks, pads, tiles.
+- Break rule 1 (no horns, saxophone, trumpet-like, blown, bowed or held sound, nothing loud, no harp) or take his band's nine stems
+  out. Since 17 Nov, 16:59 (README rule 24) the music itself is open: new instruments, loops, modes, mixes and levels are fine, with
+  `t_levels.js` passing.
+- Put up words nobody asked for: since rule 24 words may go anywhere, but only when something the person did asks for them.
+- Bring back what he took away: the wind, Smoke's name or its explanation, undo, a row of controls that scrolls sideways, knobs,
+  decks, pads, tiles.
 - Take away anything he asked for, or add controls beyond the few named ones (every new control needs a name, a reason and room on a
   390-wide phone).
 - Put anything about him on the page or the site; use the "↗" arrow or any external-link icon; add an outside resource the artifact's
@@ -100,7 +102,8 @@ then the steps below in `/home/claude/live-culture` and `/home/claude/hello`.)
    **If the publish waits for an approval** (since the night of 16 Nov a publish asks the owner first) and he is not there to give it,
    do not ask again every hour through the night: ship to the site and the repositories, say in the log that the artifact is behind,
    and publish everything that has gathered in the first run after 08:00 New York time or as soon as he writes. One publish brings the
-   artifact up to date.
+   artifact up to date. (17 Nov: by day too the approval closed unanswered three times running when a message of his arrived. When
+   the last try closed so, do not ask again until he says to publish: the site and the repositories carry each run meanwhile.)
 
 ## 7. Write it down
 
@@ -130,8 +133,10 @@ then the steps below in `/home/claude/live-culture` and `/home/claude/hello`.)
 10. **No flaky tests.** Run the whole suite twice; make any test that failed once robust (as `t_lock.js` and `t_published.js` were
     on 16 Nov), never by loosening what it checks.
 
-After the backlog: take the most visible flaw you can find in screenshots of every world at both sizes, and fix it. Never pad the
-page with features he did not ask for.
+After the backlog: take the most visible flaw you can find in screenshots of every world at both sizes, and fix it. Since 17 Nov,
+16:59 (rule 24) the music and prompted words are open as well: a run may make the music sound better (how the loops sit together,
+a new struck instrument, a mode that grooves harder) or let what a tap answers say more. Never pad the page with features he did
+not ask for.
 
 ## Log
 
@@ -166,3 +171,13 @@ page with features he did not ask for.
   with every Earth layer on; the rest is the GPU, which the governor already meets; nothing changed in the drawing. `t_cpu.js` and
   `t_fps.js` read the number of worlds again. The suite failed on the round-9 finger (3 pushes, nothing): the loop could sit over
   another colour's stream. Fixed in the game (an outer colour, off every column) and the finger now tried in a calm tank.
+- 2026-11-17 16:24: the run of 14:43 shipped to the site (commit 5649353, Workers Builds success): the looping ring kept off every
+  stream, the finger tried in a calm tank, `t_cpu.js` and `t_fps.js` fixed. Its artifact publish (runs 9 and 10 together) closed
+  unanswered again when a message arrived: the third time. No more asking each hour: the artifact waits until he says to publish.
+- 2026-11-17 16:52: no flaky tests (backlog item 10 done): the whole suite three times on the shipped code: passed; failed once in
+  `t_play.js` (Mix's dub waiting for the bar, read from outside too late), made robust with a watch in the page; passed.
+- 2026-11-17 17:54: he switched this chat to Auto ("Ok you're on auto!"): publishes no longer wait for an approval, so the
+  artifact catches up with this run. He asked for drastic, fun music (a metronome-like view of the beat broken down; wild,
+  good-sounding, melodic sounds played in time for experimenting) and for Paint slower and more viscous: the next runs' work.
+- 2026-11-17 16:59: he opened the music and prompted words to the runs (README rule 24; the never-list above and the scheduled
+  message changed with it). The A. Thabo artifact, Edge Desk and the green suite stay.
