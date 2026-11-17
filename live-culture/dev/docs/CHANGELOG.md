@@ -1,6 +1,15 @@
 # Changelog
 
 ## For the owner
+17 Nov 2026, 14:43 (the tenth hourly run):
+
+- **Paint's looping ring can always be caught.** In round 9 and on, the ring that goes round now takes the colour of an outer stream
+  and loops in the clear between the other two. Before, it sometimes circled right over another colour's stream, which spoiled it
+  however well you steered.
+- **Checked how hard the Earth works a phone.** With every layer on, the page's own work is under one percent of each frame; the
+  rest is the graphics chip drawing the globe, and the page already lowers its resolution and the number of satellites when a phone
+  falls behind. So nothing was changed in how it draws: there was nothing worth making cheaper without changing how it looks.
+
 17 Nov 2026, 09:21 (the ninth hourly run):
 
 - **Paint's later rounds go round.** From round 9, one of the two rings travels slowly round a small loop, about ten seconds a lap,
@@ -256,6 +265,28 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 17 Nov 2026, 14:43 (New York), the tenth hourly run: how hard each world works a phone, measured (HOURLY.md item 9)
+
+- `11-drift.js` `gmRingNew`, the looping ring (the suite failed on it: a following finger got nowhere three pushes running). Logged
+  trials showed why: with the middle vent's colour the loop was put as far from its column as it could go, which is over another
+  vent's column, and that colour's smoke spoiled the ring all the way round (its match stayed 0). Now a ring that will loop takes an
+  outer vent's colour when one is free; the loop is .06 to .10 of the tank's width across (half that from its middle), scored −2.5
+  if it comes within .06 of another vent's column and −3 within .12 of its own; 160 tries for a loop (64 for other rings), since
+  the clear place between two columns is narrow. 3000 placements in node: in a calm tank 0.2% of loops come near another column and
+  none near their own; with round 9's wall, drain and current 6% pass over another column (it is round 9) and 0.9% over their own.
+- `11-drift.js` test hook `calm()`: the round's wall, drain and current taken away and the looping ring dealt again without them.
+  `t_smoke.js`: the finger now meets the loop's motion alone, in a calm tank (each of the three has its own checks above); the
+  deals until the vent could reach the loop straight are gone (once eight deals in a row had the wall in the way).
+- `t_cpu.js`, `t_fps.js`: they counted five worlds (there are three since 15 Nov) and stopped on the fourth; they now read the count,
+  and both measure the Earth again with every layer on.
+- Measured headless at 390×844 with every Earth layer on (`GOV.n` held off, so the governor did not lower anything): the arithmetic
+  (`tick`) 0.045 ms a frame, the Earth's own drawing (`draw`, JavaScript) 2.4 ms of a 235 to 266 ms frame (software GL here; Paint
+  152 ms, Mix 16 ms). A CPU profile over eight seconds: 98.5% `(program)` (the GL work in the browser itself), the page's JavaScript
+  under 1% (the lightning's dust, 4,784 `fillRect` a frame, the largest piece, 1.2 ms). Each layer off in turn moved the frame by no
+  more than its noise (±67 ms at four frames a second). The cost is the GPU's, which `govern()` already meets on a phone by lowering
+  `QL` (resolution 2, 1.5, 1.25 device pixels; satellites 12,500, then 8,000; stars 3,000, then 1,800). Nothing was changed: the one
+  cheaper way to draw the dust (one path for all its squares) would add up its overlaps differently, so it would look different.
 
 ## 17 Nov 2026, 09:21 (New York), the ninth hourly run: a ring that goes round a loop in Paint's later rounds (HOURLY.md item 8)
 

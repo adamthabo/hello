@@ -436,7 +436,8 @@ governor is live in this test and the headless browser draws slowly, so Smoke us
   foot as fixed sources pointing up, `VENTX`, `VCOL`, and the wall); `gmClock`, on the water's time, runs the intro (1.8 s), the
   round and the pause after a win (2.2 s); `gmRing` puts a ring (two from round 8) where the smoke does not go by itself (`gmRingNew`: 64 random places scored: off
   its vent's column, away from the last ring, the wall, the drain and the other ring; from round 9 the first of the two goes round
-  a loop, each try its own size, the loop scored all the way round and kept off the wall (`wallD`), `LAP` seconds a lap; a drifting
+  a loop in an outer vent's colour, each try its own size (160 tries), kept off every vent's column (another colour's smoke spoils
+  it) and off the wall all the way round (`wallD`), `LAP` seconds a lap; a drifting
   ring drifts away from the other; `moveParts` places both kinds by the water's time; `gmRingSwap` replaces a filled or faded one); `cupsCheck` fills it as before (the ink read back at 64 across, `sample`:
   density times how close the colour, taken all together, is, `LP.fk*(match - LP.f0)`, per ring radius `c.r`) and `gmRingDone` counts
   it; `gmOver` keeps the best. In a game a finger moves the water a little more widely and leaves no ink (`tick`: `fk`, `fr0`), takes the

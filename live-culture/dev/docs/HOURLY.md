@@ -159,3 +159,10 @@ page with features he did not ask for.
   between the vent and the loop), so the test now deals round 9 until the loop's vent reaches it straight. The second failed in
   `t_lock.js` (the hint's first tap counted late on a slow page): now counted from the page's own frames, and the hint's tap can no
   longer fall between two slow frames. Shipped after the third. This run ran long: the 10:22 run's message waited for it.
+- 2026-11-17 10:22, 11:30, 12:39, 13:41: no new piece. Run 9 was still testing at 10:22 and shipped to the site at 11:46 (commit
+  2a9e778, Workers Builds success); its artifact publish was asked twice (12:40, 13:42) and each time the approval closed
+  unanswered when a message arrived. The artifact is behind from run 9: publish everything gathered when he can approve.
+- 2026-11-17 14:43: how hard each world works a phone, measured (backlog item 9 done): the page's own work is under 1% of a frame
+  with every Earth layer on; the rest is the GPU, which the governor already meets; nothing changed in the drawing. `t_cpu.js` and
+  `t_fps.js` read the number of worlds again. The suite failed on the round-9 finger (3 pushes, nothing): the loop could sit over
+  another colour's stream. Fixed in the game (an outer colour, off every column) and the finger now tried in a calm tank.

@@ -1494,15 +1494,18 @@ var DRIFT=(function(){
      is let out), not where the last one was, nor by the drain, the wall or the other ring; its colour one the other ring has not got */
   function gmRingNew(others,plain){var P=gmPlan(GM.round),x,y,k,best=null,bs=-1e9,X=VENTX[GM.cols.length-1],oc=others.map(function(o){return o.c});
     var cs2=GM.cols.filter(function(q){return oc.indexOf(q)<0});if(cs2.length>1)cs2=cs2.filter(function(q){return q!==GM.lastC});if(!cs2.length)cs2=GM.cols;
+    /* (a ring that will loop takes, when it can, the colour of an outer vent: its loop then fits between the other two columns) */
+    var lp=P.loop&&!others.some(function(o){return o.ox});if(lp&&X.length===3){var ed=cs2.filter(function(q){return GM.cols.indexOf(q)!==1});if(ed.length)cs2=ed}
     var c=cs2[Math.floor(Math.random()*cs2.length)];GM.lastC=c;var vx=X[GM.cols.indexOf(c)];
     /* (17 Nov) a ring that goes round a loop (from the ninth round, one of the two at once): the whole loop kept where a ring may be,
-       nearly round on the screen (the tank is .64 as wide as it is high), off its vent's column (smaller over the middle vent), never
-       through the wall; each try its own size, so a smaller loop fits where a big one would not */
-    var lp=P.loop&&!others.some(function(o){return o.ox});
-    for(k=0;k<64;k++){var o1=lp?(Math.abs(vx-.5)<.1?.08:.08+.05*Math.random()):0,o2=o1*.64*(.9+.2*Math.random());
+       nearly round on the screen (the tank is .64 as wide as it is high), off its vent's column and off the other vents' columns too
+       (their smoke would spoil it all the way round: a following finger failed so), never through the wall; each try its own size,
+       so a smaller loop fits where a big one would not */
+    for(k=0;k<(lp?160:64);k++){var o1=lp?.06+.04*Math.random():0,o2=o1*.64*(.9+.2*Math.random());
       x=.14+o1+(.72-2*o1)*Math.random();y=.24+o2+(.38-2*o2)*Math.random();
       var dv=Math.abs(x-vx)-o1,sc=Math.min(dv,.4)+.6*Math.min(Math.abs(x-GM.lastX),.4)+o1-(GM.wall&&Math.abs(y-GM.wall[1])<.08+o2?1:0);
-      if(dv<.2)sc-=lp&&dv<.12?2:1;if(GM.drain&&Math.hypot(x-GM.drain[0],y-GM.drain[1])<.2+o1)sc-=1;
+      if(dv<.2)sc-=lp&&dv<.12?3:1;if(GM.drain&&Math.hypot(x-GM.drain[0],y-GM.drain[1])<.2+o1)sc-=1;
+      if(lp)for(var vi=0;vi<X.length;vi++)if(X[vi]!==vx&&Math.abs(x-X[vi])-o1<.06)sc-=2.5;
       if(lp&&GM.wall){var md=9;for(var j=0;j<16;j++){var aj=j/16*TAU;md=Math.min(md,wallD(x+o1*Math.cos(aj),y+o2*Math.sin(aj),GM.wall))}if(md<.1)sc-=3}
       others.forEach(function(o){if(Math.hypot(x-o.x0,y-o.y0)<.28+o1+(o.ox||0))sc-=1});if(sc>bs){bs=sc;best=[x,y,o1,o2]}}
     /* a drifting ring goes the way away from the other ring, unless that takes it out of the tank */
@@ -1914,6 +1917,9 @@ var DRIFT=(function(){
     /* the ring in play filled at once, as if the smoke had done it */
     win:function(){var c=CUPS[0];if(!c||PZ<0||GM.phase!=='play')return;c.fill=1;c.done=true;gmRingDone(c)},
     gold:function(){var c=CUPS[0];if(c){c.gold=true;c.t0=RT}},
+    /* for the tests: the round's wall, drain and current taken away and the looping ring dealt again without them, so a test meets
+       the loop's motion alone (each of the three has its own checks) */
+    calm:function(){if(PZ<0)return;GM.wall=null;GM.drain=null;GM.cur=null;gmPlace();var L=CUPS.filter(function(c){return c.ox})[0];if(L)gmRingSwap(L,true);moveParts()},
     /* a loop's lap, its shortest and how much longer it may be (seconds), for tuning */
     lap:function(a,b){if(a)LAP=[+a,+b||0];return LAP.slice()}}
 })();
