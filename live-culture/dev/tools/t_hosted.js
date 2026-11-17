@@ -65,7 +65,7 @@ const clean = errs => [...new Set(errs)].filter(e => !/youtube\.com|requestfaile
     await page.screenshot({ path: 'shots/hosted_wind_clouds.png' });
     await page.evaluate(() => window.__lc.WIND.look(40, -40, 1)); await sleep(1500); await page.screenshot({ path: 'shots/hosted_wind_atlantic.png' });
     // a place tapped: the card with the weather there now, the next day and three days, and the radar
-    await page.route(/basemaps\.cartocdn\.com|tilecache\.rainviewer\.com/, r => r.fulfill({ status: 200, contentType: 'image/png', body: require('fs').readFileSync('/home/claude/hello/_work/testdata/rain.png') }));
+    await page.route(/basemaps\.cartocdn\.com|tilecache\.rainviewer\.com/, r => r.fulfill({ status: 200, contentType: 'image/png', body: require('fs').readFileSync(require('path').join(__dirname, '..', 'testdata', 'rain.png')) }));
     // (look() holds the hints, so their ghost fingers cannot turn the Earth away before the tap; the place is out at sea, where no
     // camera's ring is near enough to take the tap first)
     // (a press on the zoom first: a touch of the hand's own stops the hints, whose ghost finger would turn the Earth under the tap)

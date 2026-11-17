@@ -2,9 +2,10 @@
 // may not ask the Worker anything, so it has only this list: a picture for each camera on the Earth, and a tap opens the stream on
 // YouTube (its channel's live page; else YouTube's search for it, live streams only; else the last address it was found at). The site
 // shows the same list at once, then the Worker's own (/api/cams).
-// usage: node tools/gen_cams.js   (from lc2/; again whenever a camera is added to the Worker)
+// usage: node tools/gen_cams.js [path/to/worker.js]   (from dev/ in a clone of the site's repository, where it finds ../worker.js itself;
+//        again whenever a camera is added to the Worker)
 const fs = require('fs');
-const W = process.argv[2] || '/home/claude/hello/_work/cf/live-culture/worker.js';
+const W = process.argv[2] || require('path').join(__dirname, '..', '..', 'worker.js');  // (in a clone of the site's repository: dev/tools/ -> worker.js)
 const src = fs.readFileSync(W, 'utf8');
 function grab(name) {
   const i = src.indexOf('const ' + name + ' = [');

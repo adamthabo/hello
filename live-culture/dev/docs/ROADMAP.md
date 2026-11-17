@@ -33,6 +33,8 @@ changes how the page sounds.
    `tools/gen_zones.py` before each publish, README "Live data"). Check on the site that IODA's summary has the shape the Worker
    expects (`data[].entity.code`, `data[].scores.overall`; the mock is made up in that shape): if not, nothing is marked and nothing
    breaks. See whether the sixteen new city cameras find streams (`/api/live?ids=moscow,beijing,...`) and drop those that never do.
+0. **The hourly runs (16 Nov, 21:18: "Work on this hourly it's getting better and better").** A scheduled task runs every hour and
+   follows `HOURLY.md`: one improvement a run from its backlog, tested the whole way, shipped to the artifact and the site.
 6. **Keep the artifact's data fresh.** Only if he asks: a scheduled task that runs the refresh in README.md. The wind changes every
    6 hours; four runs a day is about what his plan can spare (a night of hourly runs once hit his limit).
 6. **More on the Earth.** The hundred brightest objects (mostly spent rocket stages, not in the active list); a ring on the ground

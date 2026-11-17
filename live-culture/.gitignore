@@ -1,0 +1,13 @@
+# what the build, the tests and tools/fresh.sh make in a clone (dev/docs/HOURLY.md): never committed
+dev/app/
+dev/hosted/
+dev/shots/
+dev/raw/
+dev/wav/
+dev/_pub/
+dev/data/live/
+dev/data/db_*.json
+dev/tools/node_modules/
+dev/tools/package-lock.json
+dev/testdata/deepstate.geojson
+node_modules/

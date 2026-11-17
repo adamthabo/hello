@@ -311,6 +311,11 @@ says so; he has run out of usage on scheduled work before, so keep any schedule 
 
 ## Getting the source into a fresh session
 
+**Simplest (since 16 Nov): clone the site's repository.** `adamthabo/live-culture` holds everything: the source in `dev/`, the
+fonts in `dev/fonts/`, the stand-in site's pictures in `dev/testdata/`, the page's pictures, sounds and data in `public/`. In a
+clone, `cd dev && sh tools/fresh.sh` sets it all up, fetches the stand-in site's sources, builds, and starts both servers (it ends
+`FRESH OK`). The hourly runs work this way: `docs/HOURLY.md`. The steps below, from the artifact, still work.
+
 1. `Artifact` `list`, `scope: "files"`, `url` above.
 2. `Artifact` `read` with `paths`: every path under `dev/` (`dev/archive/` only if you need the old worlds), plus `audio/*`, `img/*`, `snd/*`,
    `data/live.json`, `data/satinfo.json` and `data/zones.json`. They land under a folder `$W`. An artifact no longer takes a new `.py`
