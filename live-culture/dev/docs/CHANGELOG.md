@@ -1,6 +1,16 @@
 # Changelog
 
 ## For the owner
+16 Nov 2026, 22:36 (the first of the hourly runs you asked for):
+
+- **The cameras' YouTube button works.** On a camera's card in the app, a tap on "watch it live on YouTube" went straight through to
+  the globe underneath, so the stream never opened. Now the button, and the card's ×, take your tap.
+- **Everything fits the app's shorter screen.** Every world checked at the height the Claude app gives the page. On your site the
+  kinds of camera (all, wild, fire, space…) now all show in one row instead of running off the side, the zoom buttons step aside when
+  a place's card is tall, and the card no longer sits on top of the words.
+- **Tonight's data.** The satellites, wind, aurora, lightning, fires and storms in the app are from tonight (the space station's orbit
+  had gone stale).
+
 15 Nov 2026, late night, after "Almost. The list of buttons on the globe hardly work. Make everything work. And also make the music
 buttons always on the page, fit.":
 
@@ -203,6 +213,22 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 16 Nov 2026, 22:36 (New York), the first hourly run: the card takes its touches; the Claude app's heights (HOURLY.md item 1)
+
+- `.card` had `pointer-events:none`, which its cross and its link inherited: a real touch on "watch it live on YouTube" reached
+  `#stage` (the click's target was the stage, no tab opened, the card closed as a tap on the dark). Now `pointer-events:auto` and
+  `touch-action:manipulation`. Found by an audit of every world at 390×750 and 375×667 (`elementFromPoint` at each button's middle).
+- `#themes`, the site's kinds of camera, is `.lyr.thm` instead of the sideways-scrolling `.lyr.scr`: `thFit()` in `14-live.js` sets
+  `--rw` and `--rm` (as many to a row as fit at 34 px or more, the rows even): the nine fit one row on a 390 phone.
+- `zmSync()` hides `#zm` while `#card` stands where it would be; `zmOn` keeps the wish and the frame re-checks every 300 ms.
+- `cardHigh()` in `12-wind.js`: the words at the top give way to a place's card that reaches within 46 px of their top (on the site
+  at 375×667 the card had covered them, the words showing through it).
+- The artifact's data: `feed.py` and `gen_live.py`, the snapshot of 17 Nov 03:56Z (the space station's element set had passed the two
+  days `t_play.js` allows).
+- Tests: `t_play.js` checks the card's button and cross are what a finger lands on and that a real tap reaches the button, and at
+  390×750 and 375×667 that every button of every world is on the screen, uncovered and at least 24 px. `t_hosted.js` checks every
+  kind of camera is on the screen with its word whole.
 
 ## 15 Nov 2026, late night: every layer's button on the screen, buttons that show what they did, Mix fits any screen (rule 23)
 

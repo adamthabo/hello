@@ -102,7 +102,7 @@ then the steps below in `/home/claude/live-culture` and `/home/claude/hello`.)
 
 - `dev/docs/CHANGELOG.md`, at the top of "For the owner": the date and hour (New York) and one or two plain sentences of what he
   will see or feel, in his terms (no file names). Under the technical part: what changed, in which files, how it was tested.
-- This file's log (below): one line, newest last: `<date hour> <version> <what> (backlog item n done)` or why nothing shipped.
+- This file's log (below): one line, newest last: `<date hour> <what> (backlog item n done)` or why nothing shipped.
 - Publish the docs with the rest (they are part of the same commit and the same publish).
 - End with two or three plain sentences for the owner: what changed and where to look.
 
@@ -132,4 +132,6 @@ page with features he did not ask for.
 ## Log
 
 - 2026-11-16 21:30: set up (this file, `tools/fresh.sh`, `.gitignore`, `dev/fonts/`, `dev/testdata/` in the repository); a
-  fresh clone set itself up with `fresh.sh` and passed `test_astro.js`, `t_first.js` and `t_hosted.js`. First run: 22:40.
+  fresh clone set itself up with `fresh.sh` and passed `test_astro.js`, `t_first.js` and `t_hosted.js`. First run: 22:36 (one-shot scheduled message trig_01TqYMnTS23rkNCyz71Vhf7q; each run schedules the next).
+- 2026-11-16 22:36: the card takes its touches (its YouTube button had never worked for a finger), the site's kinds of camera fit one
+  row, the zoom steps aside for a tall card, the words give way to a card that reaches them, tonight's data (backlog item 1 done).

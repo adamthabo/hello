@@ -102,7 +102,13 @@ var LIVEW=(function(){
   /* ---- the window: in the corner of the stage above the Earth's row, sixteen by nine; tapped, across the top of the stage ---- */
   /* (14 Nov: the kinds of camera shown only while a camera is open: they choose which cameras west and east go through, and the row
      took room from the Earth the rest of the time) */
-  function thRow(v){var r=$e('themes');if(!r||r.hidden===!v)return;r.hidden=!v;try{layout();WIND.resize()}catch(e){}}
+  function thRow(v){var r=$e('themes');if(!r||r.hidden===!v)return;r.hidden=!v;if(v)thFit();try{layout();WIND.resize()}catch(e){}}
+  /* (17 Nov) every kind of camera on the screen: as many to a row as fit at 34 px or more, the rows even (nine on a phone: one row) */
+  function thFit(){var r=$e('themes');if(!r||r.hidden||!r.childNodes.length)return;var f=r.parentNode,cs=getComputedStyle(f),n=r.childNodes.length,gap=3,
+      w=Math.floor(f.clientWidth-(parseFloat(cs.paddingLeft)||0)-(parseFloat(cs.paddingRight)||0)),mc=Math.max(1,Math.floor((w+gap)/(34+gap))),
+      rows=Math.ceil(n/mc),cols=Math.ceil(n/rows),cw=Math.min(64,Math.floor((w-(cols-1)*gap)/cols));
+    r.style.setProperty('--rw',cw+'px');r.style.setProperty('--rm',(cols*cw+(cols-1)*gap)+'px')}
+  addEventListener('resize',function(){thFit()});
   function winOpen(){if(!el)return;el.hidden=false;document.body.classList.add('camw');var b=$e('vidc');if(b)b.hidden=false;ctlWire();thRow(true)}
   function winClose(){cur=-1;seq++;stat='';fade(false);try{if(player)player.pauseVideo()}catch(e){}if(el){el.hidden=true;el.classList.remove('tap')}document.body.classList.remove('camw');big=false;var b=$e('vidc');if(b)b.hidden=true;thRow(false)}
   /* the window (14 Nov): as wide as the stage on a phone, sixteen by nine (YouTube's player will not play smaller than 200 pixels), at the
@@ -125,7 +131,7 @@ var LIVEW=(function(){
   /* ---- the row of themes ---- */
   function themesBuild(){var r=$('themes');if(!r||r.childNodes.length||!THEMES.length)return;
     [['all','all']].concat(THEMES).forEach(function(t){var b=document.createElement('button');b.type='button';b.className='lb';b.id='th_'+t[0];
-      b.textContent=t[0]==='all'?'all':t[0];b.title=t[1];b.addEventListener('click',function(){themeSet(t[0])});r.appendChild(b)});themesSync()}
+      b.textContent=t[0]==='all'?'all':t[0];b.title=t[1];b.addEventListener('click',function(){themeSet(t[0])});r.appendChild(b)});themesSync();thFit()}
   function themesSync(){var r=$('themes');if(!r)return;r.querySelectorAll('.lb').forEach(function(b){b.setAttribute('aria-pressed',b.id==='th_'+TH?'true':'false')})}
   function themeSet(k){TH=k;themesSync();primeTheme();var c=CAMS[cur];if(c&&!inTheme(c))step(1);if(AU.auto)musicOn()}
   function hour(la,lo){if(!sunI)return '';var hr=(((12+AS.n180(lo-sunI.sublon)/15)%24)+24)%24,h=Math.floor(hr),m=Math.floor((hr-h)*60),e=sunAt(la,lo);

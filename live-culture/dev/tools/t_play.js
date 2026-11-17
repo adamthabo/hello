@@ -117,6 +117,12 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     const cardA = await page.evaluate(() => { const c = document.getElementById('card'), a = c.querySelector('a.cy'); return { shown: !c.hidden, text: c.innerText.replace(/\n+/g, ' | '), href: a ? a.href : '', tgt: a ? a.target : '' }; });
     ok(cam.card === tl.id && cardA.shown && /^https:\/\/www\.(youtube\.com|star\.nesdis\.noaa\.gov)\//.test(cardA.href) && cardA.tgt === '_blank' && /watch it live on youtube|see it on noaa/i.test(cardA.text), 'earth: a camera tapped opens its card, with its stream on YouTube: ' + cardA.text.slice(0, 120) + ' -> ' + cardA.href.slice(0, 70));
     await shot('1a4_earth_camera');
+    // (17 Nov, the first hourly run) the card took no touches: a finger on "watch it live on YouTube" went through to the globe, so
+    // the stream never opened. Its button and its cross must be what a finger lands on, and a real tap on the button must reach it
+    { const at = await page.evaluate(() => { const r = q => { const e = document.querySelector(q), b = e.getBoundingClientRect(), x = b.left + b.width / 2, y = b.top + b.height / 2, top = document.elementFromPoint(x, y); return [x, y, !!top && e.contains(top)]; };
+        window.__cyHit = 0; const a = document.querySelector('#card a.cy'); a.addEventListener('click', ev => { window.__cyHit++; ev.preventDefault(); }, { once: true }); return { cy: r('#card a.cy'), cx: r('#card .cx') }; });
+      await T.tap(at.cy[0], at.cy[1]); await sleep(300); const hit = await page.evaluate(() => window.__cyHit);
+      ok(at.cy[2] && at.cx[2] && hit === 1, 'earth: the card\'s button and cross are under the finger, and a real tap reaches the button: ' + JSON.stringify([at.cy[2], at.cx[2], hit])); }
     for (let k = 0; k < 3; k++) { await T.tap(X(.03), Y(.02)); await sleep(400); if (!(await page.evaluate(() => window.__lc.LIVEW.dbg().card))) break; }
     // (the tap may land near a satellite, whose card then opens in its place)
     ok(await page.evaluate(() => { const c = document.getElementById('card'); return (c.hidden || c.dataset.k !== 'cam') && !window.__lc.LIVEW.dbg().card; }), 'earth: a tap off the camera puts its card away: ' + JSON.stringify(await page.evaluate(() => ({ card: window.__lc.LIVEW.dbg().card, hidden: document.getElementById('card').hidden, k: document.getElementById('card').dataset.k, txt: document.getElementById('card').innerText.slice(0, 60), probe: window.__lc.WIND.dbg().probe }))));
@@ -300,6 +306,19 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
   s = await S(); console.log('sound: run=' + s.run + ' state=' + s.state + ' players=' + s.on + ' ql=' + s.ql);
   ok((s.run || await page.evaluate(() => window.__lc.MIXON)) && s.state === 'running', 'the music should be running after touches');
+
+  // (17 Nov, the first hourly run) the heights the page gets in the Claude app on a phone (shorter than the phone): in every world,
+  // every button on the screen, none under anything else, none too small for a finger
+  { const bad = []; for (const [w, h] of [[390, 750], [375, 667]]) { await page.setViewportSize({ width: w, height: h });
+      for (const wd of ['paint', 'earth', 'mix']) { await page.evaluate(id => document.getElementById('w_' + id).click(), wd); await sleep(wd === 'earth' ? 1800 : 900);
+        const out = await page.evaluate(() => { const vis = e => { for (let p = e; p; p = p.parentElement) { if (p.hidden) return false; const cs = getComputedStyle(p); if (cs.display === 'none' || cs.visibility === 'hidden') return false; } const r = e.getBoundingClientRect(); return r.width > 2 && r.height > 2; };
+          const o = []; for (const b of document.querySelectorAll('button, a[href]')) { if (!vis(b)) continue; const r = b.getBoundingClientRect(), nm = b.id || b.className || b.textContent.trim().slice(0, 12);
+            if (r.left < -1 || r.right > innerWidth + 1 || r.top < -1 || r.bottom > innerHeight + 1) { o.push('cut ' + nm); continue; }
+            const e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); if (e && !b.contains(e) && !e.contains(b)) o.push(nm + ' under ' + (e.id || e.className));
+            if (Math.min(r.width, r.height) < 24) o.push('small ' + nm); } return o; });
+        if (out.length) bad.push(w + 'x' + h + ' ' + wd + ': ' + out.join(', ')); } }
+    await page.setViewportSize({ width: 390, height: 844 }); await sleep(500);
+    ok(!bad.length, 'every world at the Claude app\'s heights (390x750, 375x667): every button on the screen and under the finger' + (bad.length ? ': ' + bad.join(' | ') : '')); }
   const clean = [...new Set(errs)]; if (clean.length) { console.log('ERRORS', clean.slice(0, 12)); }
   if (s.errs.length) console.log('PAGE ERRS', s.errs);
   await ctx.close(); await browser.close();

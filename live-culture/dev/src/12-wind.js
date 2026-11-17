@@ -125,7 +125,7 @@ var WIND=(function(){
       war:'the wars of 2026, brighter where more have died',dark:'no internet, no power, or blocked',
       rain:'the last half hour, from orbit',cld:'as the weather satellites see them',waves:'their height over the seas',pres:'lines every 4 hPa, H high, L low',bolt:'the flashes of the last half hour',
       storm:'the tropical storms turning now',fire:'the strongest of the last day',orbit:'sixty times their speed',aur:'where NOAA expects it now'},
-    LYDEF={vid:1,war:1,dark:1,sat:1,temp:0,rain:1,cld:1,waves:0,pres:0,bolt:1,storm:1,fire:1,orbit:1,aur:1},LY={},lyAv='',lyMsg=null,dkAt=0,lyPing=null;
+    LYDEF={vid:1,war:1,dark:1,sat:1,temp:0,rain:1,cld:1,waves:0,pres:0,bolt:1,storm:1,fire:1,orbit:1,aur:1},LY={},lyAv='',lyMsg=null,dkAt=0,lyPing=null,zmOn=false,zmAt=0;
   (function(){var o=null;try{o=JSON.parse(localStorage.getItem('lc-earth-layers')||'null')}catch(e){}for(var k in LYDEF)LY[k]=o&&(o[k]===0||o[k]===1)?o[k]:LYDEF[k]})();
   /* how much of a layer's moment of showing itself is left (1 as it is switched on, 0 two seconds later) */
   function pingK(k){return lyPing&&lyPing.k===k?Math.max(0,1-(FT-lyPing.t)/2000):0}
@@ -184,7 +184,10 @@ var WIND=(function(){
     else{try{ORBIT.layer.off()}catch(e){}probe={lat:it.lat,lon:it.lon,v:AS.llv(it.lat,it.lon),p:[0,0,0],q:[0,0,0],t:FT,ghost:false,fire:it.k==='fire'?it.tg:null,storm:it.k==='storm'?it.tg:null};cardOff()}
     tone('glass',pent(9,40),.4,0)}
   /* ---- the zoom buttons, at the right of the globe ---- */
-  function zmSync(v){var z=$('zm');if(!z)return;z.hidden=!v;if(v){z.style.top=Math.round(g.cy-46)+'px'}}
+  /* (17 Nov) the zoom buttons step aside while a card stands where they would be (a place's card on a short screen is tall) */
+  function zmSync(v){var z=$('zm');if(!z)return;zmOn=v;var top=Math.round(g.cy-46),cd=$('card'),hide=false;
+    if(v&&cd&&!cd.hidden){var r=cd.getBoundingClientRect();hide=r.height>0&&top<r.bottom&&top+92>r.top}
+    z.hidden=!v||hide;if(v&&!hide)z.style.top=top+'px'}
   function zoomBy(k){FOC=null;zoom=clamp(zoom*k,.16,ZMAX);geo();idle=0;zmSync(true)}
   /* how close the Earth can come (14 Nov: "can't zoom in close enough"): on the site, where NASA's 500-metre pictures of the ground come
      in for the part in view, to a few kilometres across the screen; in the artifact, which has only the whole Earth's picture, less */
@@ -202,7 +205,7 @@ var WIND=(function(){
       im.onerror=function(){DET.busy=false;DET.err++;URL.revokeObjectURL(u)};im.src=u}).catch(function(){DET.busy=false;DET.err++})}
   /* the Earth turns to a place over a second (a camera opened, say); a finger on it stops the turning */
   function flyTo(la,lo){FOC=null;FLY={t:FT,a:lat0,b:lon0,la:clamp(la,-70,70),lo:lo};idle=-30}
-  function resize(){GT.on=0;HLH=0;dockFit(true);layout();geo();if(!$('zm').hidden)zmSync(true)}
+  function resize(){GT.on=0;HLH=0;dockFit(true);layout();geo();if(zmOn)zmSync(true)}
   function pan(x){return clamp((x-g.cx)/Math.max(1,g.R)*.8,-1,1)}
   /* one finger turns the globe; let go while moving and it coasts */
   function down(p){if(camOn&&!p.ghost&&LIVEW.layer.hit(p.x,p.y)){p.win=1;return}idle=0;vlon=vlat=0;FLY=null;if(FOC&&FT-FOC.t>1400)FOC=null}
@@ -309,7 +312,8 @@ var WIND=(function(){
       var fh=$('foot').offsetHeight;if(fh!==footH){footH=fh;layout();geo();try{LIVEW.layer.resize()}catch(e){}}}
     /* the words at the top grew or shrank: the globe's place is worked out again, and it glides there (at once in the first moments) */
     var dh=$('data').offsetHeight;if(dh!==dataH){dataH=dh;geo()}
-    if(GT.on&&(Math.abs(GR-GT.R)>.15||Math.abs(GC-GT.cy)>.15)){var ge=FT-entT<700?1:1-Math.exp(-dt*7);GR+=(GT.R-GR)*ge;GC+=(GT.cy-GC)*ge;g.R=GR*zoom;g.cy=GC;if(!$('zm').hidden)zmSync(true)}
+    if(GT.on&&(Math.abs(GR-GT.R)>.15||Math.abs(GC-GT.cy)>.15)){var ge=FT-entT<700?1:1-Math.exp(-dt*7);GR+=(GT.R-GR)*ge;GC+=(GT.cy-GC)*ge;g.R=GR*zoom;g.cy=GC;if(zmOn)zmSync(true)}
+    else if(zmOn&&FT-zmAt>300){zmAt=FT;zmSync(true)}
     if(PCD.on&&PCD.fr.length>1&&FT-PCD.ft>(PCD.fi===PCD.fr.length-1?1500:420)){PCD.ft=FT;PCD.fi=(PCD.fi+1)%PCD.fr.length;radarDraw()}
     if(!PTN){lon0+=vlon*dt;lat0=clamp(lat0+vlat*dt,-80,80);var kk=Math.exp(-dt*2.4);vlon*=kk;vlat*=kk;idle+=dt;if(idle>5&&!reduce&&!probe&&!FOC&&zoom<1.3&&!(ORBIT.layer.sel&&ORBIT.layer.sel()>=0))lon0+=dt*1.3*smooth((idle-5)/4)}else idle=0;
     /* (the last step lands exactly on the storm, however long the frames: a slow phone's last frame of the flight could otherwise end it short) */
@@ -393,7 +397,9 @@ var WIND=(function(){
      read. Nothing for the hints' ghost finger, nothing when a layer is switched (its button says it) */
   function hud(){
     var cam=camOn&&LIVEW.layer.open()?LIVEW.layer.hud():'';if(cam)return cam;
-    return probe&&!probe.ghost?wxHud():''}
+    return probe&&!probe.ghost&&!cardHigh()?wxHud():''}
+  /* (17 Nov) on a short screen a place's card can reach up to the words: then the card says it (the words would show through it) */
+  function cardHigh(){if(!PCD||!PCD.on)return false;var cd=$('card'),dd=$('data');return !!(cd&&!cd.hidden&&dd&&cd.getBoundingClientRect().top<dd.getBoundingClientRect().top+46)}
   function wxHud(){
     var w=LIVE.wind,r=reading();
     /* a war or a place cut off: what is known of it, and where that comes from */

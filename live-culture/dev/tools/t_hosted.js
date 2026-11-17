@@ -136,6 +136,9 @@ const clean = errs => [...new Set(errs)].filter(e => !/youtube\.com|requestfaile
     ok(wb.w >= s.vw - 20 && wb.h >= 200 && wb.bar && wb.btn === 'west,east,close' && wb.above && wb.pe === 'auto', 'the window: the width of the phone, 200 pixels high or more, over the stage and taking taps, its buttons over it: ' + JSON.stringify(wb));
     { const yl = await page.evaluate(() => { const a = document.getElementById('vY'); return a && !a.hidden ? [a.textContent, a.href, a.target] : null; }); ok(yl && yl[0] === 'youtube' && /^https:\/\/www\.youtube\.com\/watch\?v=[\w-]{11}$/.test(yl[1]) && yl[2] === '_blank', 'and a way out to the stream on YouTube, should the player not play: ' + JSON.stringify(yl)); }
     ok(await page.evaluate(() => !document.getElementById('themes').hidden), 'with a camera open, its themes along the bottom');
+    // (17 Nov) all of them on the screen at once, none cut by the side of the phone (the row had run off it and scrolled)
+    { const th = await page.evaluate(() => [...document.querySelectorAll('#themes .lb')].map(b => { const r = b.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth && b.scrollWidth <= b.clientWidth + 1; }));
+      ok(th.length === 9 && th.every(Boolean), 'every kind of camera on the screen, its word whole: ' + JSON.stringify(th)); }
     await page.screenshot({ path: 'shots/hosted_cams_window.png' });
     let wv = s.d.win;
     // to a named camera; the stream address the Worker found is the one played

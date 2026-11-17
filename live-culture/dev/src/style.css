@@ -95,6 +95,10 @@ body.dropping::after{content:"";position:fixed;inset:10px;z-index:30;border:1px 
 /* a row that is wider than the screen scrolls sideways (Live's themes) */
 .lyr.scr{align-self:stretch;max-width:100%;flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;touch-action:pan-x;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:0 12px}
 .lyr.scr::-webkit-scrollbar{display:none}
+/* (17 Nov) the kinds of camera on the site: every one on the screen at once, in as few even rows as fit (as the layers, rule 23);
+   14-live.js sets each one's width (--rw) and the row's (--rm) */
+.lyr.thm{flex-wrap:wrap;justify-content:center;gap:3px;width:100%;max-width:var(--rm,100%);padding:0}
+.lyr.thm .lb{flex:none;width:var(--rw,auto);justify-content:center;padding:0 2px}
 .lyr.scr .lb{flex:none}.lyr.scr .lb:first-child{margin-left:auto}.lyr.scr .lb:last-child{margin-right:auto}
 .lb{display:flex;align-items:center;gap:5px;height:26px;padding:0 10px 0 8px;border-radius:13px;border:1px solid rgba(234,249,255,.14);color:var(--dim);
   font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;transition:color .25s,border-color .25s,background .25s}
@@ -145,7 +149,10 @@ body.camw .zm{display:none}
 /* what is on record about a satellite: plain facts in small type, over the lower part of the world */
 .card{position:fixed;z-index:6;left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));bottom:calc(var(--foot,112px) + 6px);max-width:430px;margin:0 auto;
   padding:11px 13px 9px;border-radius:14px;background:rgba(1,4,10,.74);border:1px solid rgba(234,249,255,.16);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-  font-family:var(--mono);font-size:10px;line-height:1.5;letter-spacing:.03em;color:var(--dim);pointer-events:none}
+  font-family:var(--mono);font-size:10px;line-height:1.5;letter-spacing:.03em;color:var(--dim);pointer-events:auto;touch-action:manipulation}
+/* (17 Nov, the first hourly run) the card took no touches (pointer-events:none, which its buttons inherited): a finger on its cross or
+   on "watch it live on YouTube" went through to the globe under it, so the stream never opened and the card only closed by luck. Now
+   the card takes the touches that land on it */
 .card .cn{margin:0;font-family:var(--display);font-weight:800;font-variation-settings:"wdth" 70;font-size:19px;line-height:1;letter-spacing:.02em;text-transform:uppercase;color:var(--ink);overflow-wrap:anywhere}
 .card .ck{margin:4px 0 7px;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--lume)}
 .card dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:1px 10px}

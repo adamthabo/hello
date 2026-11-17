@@ -237,7 +237,10 @@ designator; launch date and site and years up; perigee and apogee, tilt and peri
 height and speed, sunlit or in shadow (worked out every quarter second); radar cross-section and standard brightness; radio downlinks
 (SatNOGS); the epoch of its element set and how long ago that was. The catalogue part comes from `data/satinfo.json` (published next
 to the page, about 570 KB, read at the first tap; 20 bytes an object, layout in `tools/gen_live.py`). On a wide or a turned screen
-the card stands at the right and the Earth moves over; on a phone it lies above the bottom row and the Earth moves up.
+the card stands at the right and the Earth moves over; on a phone it lies above the bottom row and the Earth moves up. The card takes
+the touches that land on it (until 17 Nov it took none, so its cross and its "watch it live on YouTube" passed a finger through to the
+globe); when it is tall enough to reach the words at the top it stands in for them, and the zoom buttons step aside while it covers
+their place.
 
 Deep links: `#paint #earth #mix` (old links still land: `#smoke`, `#drift`, `#bloom`, `#loom` and `#band` on Paint, `#wind`, `#orbit` and
 `#live` on the Earth). Keys: 1-3 worlds, space music, arrows in the Earth. Kept in the viewer's own browser (`localStorage`), and
