@@ -249,6 +249,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     const pj = m.tracks.findIndex(t => t.k === 'stem' && t.play < 0 && t.next === -1 && t.n !== 'bass'); const pname = m.tracks[pj].n;
     await tapB('#mix .mxband .mxb', pj); m = await M();
     ok(m.tracks[pj].play === 0 || m.tracks[pj].next === 0, 'mix: a tap on one of the band starts it, or sets it waiting for the bar: ' + pname + ' ' + JSON.stringify(m.tracks[pj]));
+    // (17 Nov, the seventh hourly run) what plays glows up on each beat and fades (light only), the mode's colour behind it
+    { const pls = []; let mc = ''; for (let k = 0; k < 16; k++) { const d = await page.evaluate(() => { const x = window.__lc.MIX.dbg(); return [x.pl, x.mc]; }); pls.push(d[0]); mc = d[1]; await sleep(110); }
+      ok(new Set(pls).size >= 3 && Math.max(...pls) >= .3 && /^\d+,\d+,\d+$/.test(mc), 'mix: the lit buttons pulse with the beat, in the mode\'s colour: ' + pls.join(' ') + ' / ' + mc); }
     m = await waitFor(m => m.tracks[pj].play === 0); ok(m.tracks[pj].play === 0 && m.ctx === 'running', 'mix: ' + pname + ' comes in on the bar');
     // an instrument's loop: the congas' first, the marimba's second; in on the bar once their recordings are in
     await tapB('#mix .mxrow .mxb', 0); await tapB('#mix .mxrow .mxb', 2 * 5 + 1);

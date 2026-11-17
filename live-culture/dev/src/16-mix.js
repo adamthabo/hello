@@ -319,15 +319,20 @@ var MIX=(function(){
   function draw(){
     if(GLX.ok&&!GLX.lost)glClear(ABYSS[0],ABYSS[1],ABYSS[2]);
     /* behind the list, the beat as a ring that swells and fades, in the mode's colour */
-    var c=ctx(),o=OV;if(!c||c.state!=='running'||!MIXON)return;var b=beatAt(c.currentTime),f=b-Math.floor(b);
-    var R=Math.min(STG.w,STG.h)*(.38+.05*(1-f)),col=MODE==='africa'?'62,240,255':hexRGB(MCOL[MODE]);o.strokeStyle='rgba('+col+','+(.16*(1-f)).toFixed(3)+')';o.lineWidth=1.2;o.beginPath();o.arc(STG.cx,STG.cy,R,0,TAU);o.stroke()}
+    var c=ctx(),o=OV;if(!c||c.state!=='running'||!MIXON){pulse(0,null);return}var b=beatAt(c.currentTime),f=b-Math.floor(b);
+    var R=Math.min(STG.w,STG.h)*(.38+.05*(1-f)),col=MODE==='africa'?'62,240,255':hexRGB(MCOL[MODE]);o.strokeStyle='rgba('+col+','+(.16*(1-f)).toFixed(3)+')';o.lineWidth=1.2;o.beginPath();o.arc(STG.cx,STG.cy,R,0,TAU);o.stroke();
+    pulse(reduce?0:(1-f)*(1-f),col)}
+  /* (17 Nov, the seventh hourly run) the buttons that play glow up on each beat and fade till the next, and the mode's colour lies
+     faintly over the screen, breathing with them (light only: the sound is untouched). Through two variables on the mixer, changed
+     only when they move a twentieth */
+  function pulse(v,col){if(!UI.root)return;var q=Math.round(v*20)/20;if(q!==UI.pl){UI.pl=q;UI.root.style.setProperty('--pl',q)}if(col&&col!==UI.mc){UI.mc=col;UI.root.style.setProperty('--mc',col)}}
   function hexRGB(h){var n=parseInt(h.slice(1),16);return ((n>>16)&255)+','+((n>>8)&255)+','+(n&255)}
   /* no words over it (15 Nov, 22:59: "Remove the writing on the top"): what plays is lit, what waits blinks */
   function hud(){return ''}
   return {enter:enter,leave:leave,tick:tick,draw:draw,hud:hud,resize:function(){if(UI.root)UI.py=-1;place()},
     /* the band left to itself (04-band.js) brings a player in, or takes one out, while the mixer has it: on the next bar */
     player:function(i,v){var tr=TR[i];if(!tr)return;if(v){if(tr.play<0&&tr.next<0)tr.next=0}else stopT(i)},
-    dbg:function(){var c=ctx(),n=c?c.currentTime:0;return {on:on,want:want,mixon:MIXON,ctx:c?c.state:'none',graph:!!gr,bh:UI.bh||0,fits:!!UI.fits,wide:!!(UI.root&&UI.root.classList.contains('mxw')),small:!!(UI.root&&UI.root.classList.contains('mxsm')),beat:c&&MIXON?beatAt(n):0,mode:MODE,pend:pend,
+    dbg:function(){var c=ctx(),n=c?c.currentTime:0;return {on:on,want:want,mixon:MIXON,ctx:c?c.state:'none',graph:!!gr,bh:UI.bh||0,fits:!!UI.fits,pl:UI.pl||0,mc:UI.mc||'',wide:!!(UI.root&&UI.root.classList.contains('mxw')),small:!!(UI.root&&UI.root.classList.contains('mxsm')),beat:c&&MIXON?beatAt(n):0,mode:MODE,pend:pend,
       banks:Object.keys(SND.B).filter(SND.ready),loops:rowsOf(MODE).reduce(function(a,t){return a+t.loops.length},0),rows:rowsOf(MODE).map(function(t){return t.n}),
       fx:gr?{room:+gr.fx.rs.gain.value.toFixed(2),fb:+gr.fx.fb.gain.value.toFixed(2)}:null,
       tracks:TR.map(function(t){return {n:t.n,k:t.k,m:t.mode||'',play:t.play,next:t.next,src:!!t.src}})}},

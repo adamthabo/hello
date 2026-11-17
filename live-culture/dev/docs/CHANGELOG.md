@@ -1,6 +1,11 @@
 # Changelog
 
 ## For the owner
+17 Nov 2026, 07:14 (the seventh hourly run):
+
+- **Mix moves with the music.** The buttons that are playing now glow up on every beat and fade until the next, and the mode's colour
+  lies faintly over the screen behind them. Only the light changed: the sound is exactly as it was.
+
 17 Nov 2026, 06:10 (the sixth hourly run):
 
 - **Fires you can see burning.** Come in close and the biggest fires stand up as small flames that sway and flicker over their glow,
@@ -244,6 +249,14 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 17 Nov 2026, 07:14 (New York), the seventh hourly run: Mix with the beat (HOURLY.md item 7)
+
+- `16-mix.js`: `draw()` already knew the beat (`beatAt`) for the ring behind the list; `pulse(v, col)` now sets `--pl` (`(1 - f)²` of
+  the beat, 0 under reduced motion or with the music off, changed only by twentieths) and `--mc` (the mode's colour) on `#mix`.
+  `style.css`: `.mxb.on` takes its glow and brightness from `--pl`; `#mix::before` lays a radial wash of `--mc` behind the buttons,
+  `.05 + .07 × --pl` strong. Nothing of the sound is touched. `dbg()` has `pl` and `mc`.
+- `t_play.js`: with the band playing, over sixteen reads `pl` takes three values or more, reaching .3, and `mc` is a colour.
 
 ## 17 Nov 2026, 06:10 (New York), the sixth hourly run: the big fires as flames up close (HOURLY.md item 6)
 

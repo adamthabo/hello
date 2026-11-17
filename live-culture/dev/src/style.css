@@ -223,7 +223,9 @@ body.camw .zm{display:none}
 .mxm{padding:0 2px;letter-spacing:.04em}
 .chip.mode{min-width:56px;padding:0 10px;border-color:var(--mc,#ffb347);color:var(--mc,#ffb347);cursor:pointer}
 .chip.mode.wait{animation:mxblink .5s steps(2) infinite}
-.mxb.on{color:#01040a;background:var(--c);border-color:var(--c);box-shadow:0 0 18px -3px var(--c)}
+.mxb.on{color:#01040a;background:var(--c);border-color:var(--c);box-shadow:0 0 calc(14px + 18px * var(--pl,0)) calc(-4px + 3px * var(--pl,0)) var(--c);filter:brightness(calc(1 + .22 * var(--pl,0)))}
+/* (17 Nov) the mode's colour, faintly over the screen behind the buttons, brighter on the beat (16-mix.js sets --mc and --pl) */
+#mix::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(ellipse at 50% 42%,rgba(var(--mc,62,240,255),calc(.05 + .07 * var(--pl,0))),transparent 72%)}
 .mxb.wait{border-color:var(--c);color:var(--c);animation:mxblink .5s steps(2) infinite}
 .mxb.stopping{background:var(--c);color:#01040a;opacity:.45}
 .mxfoot{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:var(--g)}
