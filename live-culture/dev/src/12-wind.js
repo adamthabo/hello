@@ -127,6 +127,8 @@ var WIND=(function(){
       storm:'the tropical storms turning now',fire:'the strongest of the last day',orbit:'sixty times their speed',aur:'where NOAA expects it now'},
     LYDEF={vid:1,war:1,dark:1,sat:1,temp:0,rain:1,cld:1,waves:0,pres:0,bolt:1,storm:1,fire:1,orbit:1,aur:1},LY={},lyAv='',lyMsg=null,dkAt=0,lyPing=null,zmOn=false,zmAt=0;
   (function(){var o=null;try{o=JSON.parse(localStorage.getItem('lc-earth-layers')||'null')}catch(e){}for(var k in LYDEF)LY[k]=o&&(o[k]===0||o[k]===1)?o[k]:LYDEF[k]})();
+  /* (17 Nov, the fifth hourly run) the places cut off dim and brighten slowly on the globe, about six seconds a breath */
+  function darkNow(t){return reduce?1:.74+.26*Math.sin(t*.00105)}
   /* how a storm looks by its strongest winds: its wheel's size, how fast it turns, its arms and its colour */
   var STC=['234,249,255','255,179,71','255,98,64'];
   function stLook(S){var kmh=S.kmh||60,cat=kmh>=178?2:kmh>=119?1:0;return {r:6.5+clamp((kmh-60)/40,0,4.5),sp:clamp(kmh/100,.6,2.6),arms:cat?3:2,col:STC[cat],cat:cat}}
@@ -344,7 +346,7 @@ var WIND=(function(){
       /* the layers that are on: NOAA's live view (on the site), the cloud map and the rain, one layer of colour, the isobars, the war
          zones and the places cut off. With the clouds or the live view on, the Earth is shown nearer to how it looks from orbit */
       var cl=GLOBE.hasCloud()&&!!LY.cld,rn=GLOBE.hasRain()&&!!LY.rain,gk=HOSTED&&LY.sat&&GLOBE.hasGeo()?1:0,ck=colLayer(),ik=LY.pres&&wxT&&typeof WX!=='undefined'&&WX.mslp?1:0,dim=cl||gk?.64:.38;
-      if(!GLOBE.draw(g,{sun:sunV,moon:moonV,moonK:moonI?moonI.phase:0,bg:bg,dim:dim,zone:LY.war||LY.dark?ZONES.tex():null,warK:LY.war?1+.9*pingK('war'):0,darkK:LY.dark?1:0,aur:LY.aur?aurT:null,aurK:1+.8*pingK('aur'),
+      if(!GLOBE.draw(g,{sun:sunV,moon:moonV,moonK:moonI?moonI.phase:0,bg:bg,dim:dim,zone:LY.war||LY.dark?ZONES.tex():null,warK:LY.war?1+.9*pingK('war'):0,darkK:LY.dark?darkNow(t):0,aur:LY.aur?aurT:null,aurK:1+.8*pingK('aur'),
         cld:cl,cldK:.95,rain:rn,rainK:1,sunK:1,time:t*.001,windF:windT,windK:0,wx:wxT,heatK:ck==='temp'?1:0,waveK:ck==='waves'?1:0,isoK:ik,geoK:gk}))blank();
       /* the satellites over the same Earth: the stars behind, every satellite where it is this second (while they are on), the one tapped
          with its orbit */
@@ -436,7 +438,7 @@ var WIND=(function(){
     return [null]}
   return {nowGo:function(i){nowGo(NOWL[i])},zoomBy:zoomBy,nowList:function(){return NOWL.map(function(x){return x.k+':'+x.n})},enter:enter,leave:leave,resize:resize,down:down,move:move,up:up,gesture:gesture,wheel:wheel,key:key,seq:seq,step:step,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
     dbg:function(){return {ok:GLX.ok&&gen===GLX.gen,wind:!!windT,aurora:!!aurT,strikes:SK.length,flashes:flashes.length,ready:GLOBE.ready(),lat0:lat0,lon0:lon0,R:g.R,cx:g.cx,cy:g.cy,zoom:zoom,turned:turned,
-      LY:LY,ping:lyPing?lyPing.k:'',dock:[].map.call($('lyd').childNodes,function(b){return b.id.slice(3)+(b.getAttribute('aria-pressed')==='true'?'+':'-')}),dockShown:!$('lyd').hidden,lgd:$('lgd').hidden?'':$('lgd').dataset.k,
+      LY:LY,ping:lyPing?lyPing.k:'',darkK:LY.dark?+darkNow(FT).toFixed(3):0,dock:[].map.call($('lyd').childNodes,function(b){return b.id.slice(3)+(b.getAttribute('aria-pressed')==='true'?'+':'-')}),dockShown:!$('lyd').hidden,lgd:$('lgd').hidden?'':$('lgd').dataset.k,
       col:colLayer(),wx:!!wxT,geo:GLOBE.hasGeo(),now:NOWL.map(function(x){return x.k+':'+x.n}),cams:camOn,fly:!!FLY,probe:probe?{lat:probe.lat,lon:probe.lon,ghost:probe.ghost,r:reading(),zone:probe.zone?{w:probe.zone.w?probe.zone.w.id:null,d:probe.zone.d?probe.zone.d.id:null,front:probe.zone.front}:null}:null,vis:SK.filter(function(k){return k.p[2]>.3}).length,fires:FR.length,zones:ZONES.dbg(),storms:ST.map(function(k){var L=stLook(k.s);return {name:k.s.name,lat:k.s.lat,lon:k.s.lon,x:k.p[0],y:k.p[1],z:k.p[2],kmh:k.s.kmh,r:L.r,sp:L.sp,arms:L.arms,cat:L.cat}}),foc:!!FOC,
       fireAt:FR.filter(function(k){return k.p[2]>.3}).slice(0,3).map(function(k){return {x:k.p[0],y:k.p[1],frp:k.f.frp}})}},
     windAt:windAt,

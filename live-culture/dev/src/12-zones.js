@@ -11,7 +11,7 @@
    satellites pass over them); their edges, the front, the small ones and the names are drawn over it on the flat canvas, each edge cut
    where it goes over the horizon ---------- */
 var ZONES=(function(){
-  var W=[],K=[],FR=null,IO=[],CC={},asOf='',ver=0,asked=false,tq=[0,0,0],
+  var W=[],K=[],FR=null,IO=[],CC={},asOf='',ver=0,asked=false,tq=[0,0,0],MARCH=0,
     KW={closed:'no open internet',cut:'internet cut',power:'no power',blocked:'blocked',out:'outage now'};
   function word(v,n){return String(v===undefined||v===null?'':v).replace(/[^\w .,:;'()&%\/À-ſ+\-–]/g,'').slice(0,n||120)}
   /* a shape: its rings as points on the unit sphere, their latitudes and longitudes (for a tap), and a circle round it (to skip it
@@ -79,11 +79,16 @@ var ZONES=(function(){
   var LB=[];
   function draw(c,g,t,war,dark){
     if(!W.length&&!K.length)return;var i,o;LB.length=0;c.save();c.lineJoin='round';
-    if(dark){c.setLineDash([3,3]);for(i=0;i<K.length;i++){o=K[i];if(!shapeOf(c,o,g))continue;c.strokeStyle='rgba(190,205,225,'+(o.kind==='blocked'?.3:.55)+')';c.lineWidth=1;c.stroke();if(o.sz<14)mark(c,o,g,false);LB.push(o)}
+    /* (17 Nov, the fifth hourly run) both alive at a glance on a phone: the places cut off with their dashes slowly crawling round them
+       (and, on the globe, dimming and brightening, 12-wind.js), the front's dashes marching along it */
+    var tt=reduce?0:t;MARCH=tt;
+    if(dark){c.setLineDash([3,3]);c.lineDashOffset=-(tt*.004)%6;for(i=0;i<K.length;i++){o=K[i];if(!shapeOf(c,o,g))continue;c.strokeStyle='rgba(190,205,225,'+(o.kind==='blocked'?.3:.55)+')';c.lineWidth=1;c.stroke();if(o.sz<14)mark(c,o,g,false);LB.push(o)}
+      c.lineDashOffset=0;
       c.setLineDash([]);for(i=0;i<IO.length;i++){o=IO[i];GLOBE.pr(o.lv,g,o.p);if(o.p[2]<=.08)continue;mark(c,o,g,false);LB.push(o)}}
     if(war){for(i=0;i<W.length;i++){o=W[i];if(!shapeOf(c,o,g))continue;c.strokeStyle='rgba(255,72,52,'+(.3+.45*o.k).toFixed(3)+')';c.lineWidth=1.1;c.stroke();if(o.sz<14)mark(c,o,g,true);LB.push(o)}
       /* the front: the edge of the ground Russia holds */
-      if(FR&&shapeOf(c,FR,g)){c.strokeStyle='rgba(1,4,10,.6)';c.lineWidth=3.2;c.stroke();c.strokeStyle='rgba(255,156,100,'+(.78+.18*Math.sin((reduce?0:t)*.004)).toFixed(3)+')';c.lineWidth=1.4;c.stroke()}}
+      if(FR&&shapeOf(c,FR,g)){c.strokeStyle='rgba(1,4,10,.6)';c.lineWidth=3.6;c.stroke();c.strokeStyle='rgba(255,156,100,.42)';c.lineWidth=1.4;c.stroke();
+        c.setLineDash([7,5]);c.lineDashOffset=-(tt*.014)%12;c.strokeStyle='rgba(255,186,140,.97)';c.lineWidth=2;c.stroke();c.setLineDash([]);c.lineDashOffset=0}}
     labels(c,g);c.restore()}
   /* a zone too small to see at this distance (Gaza, an island) is a ring that beats, so it can be seen and tapped */
   function mark(c,o,g,war){GLOBE.pr(o.lv,g,o.p);if(o.p[2]<=.05)return;var u=.5+.5*Math.sin((reduce?0:FT)*.004+o.ph),r=4+2*u;
@@ -122,6 +127,6 @@ var ZONES=(function(){
     has:function(k){return k==='war'?W.length>0:K.length>0||IO.length>0},
     count:function(k){return k==='war'?W.length:K.length+IO.length},
     first:function(k){var o=k==='war'?W[0]:K[0];return o&&o.lab?{lat:o.lab[0],lon:o.lab[1],name:o.name}:null},
-    dbg:function(){return {ver:ver,asOf:asOf,war:W.map(function(o){return o.id}),dark:K.map(function(o){return o.id+':'+o.kind}),ioda:IO.map(function(o){return o.cc}),front:FR?{km2:FR.km2,date:FR.date,rings:FR.R.length}:null,
+    dbg:function(){return {ver:ver,asOf:asOf,march:+(MARCH*.014%12).toFixed(2),war:W.map(function(o){return o.id}),dark:K.map(function(o){return o.id+':'+o.kind}),ioda:IO.map(function(o){return o.cc}),front:FR?{km2:FR.km2,date:FR.date,rings:FR.R.length}:null,
       shown:LB.map(function(o){return {id:o.id,x:Math.round(o.p[0]),y:Math.round(o.p[1]),z:+o.p[2].toFixed(2),sz:Math.round(o.sz||0),war:!!o.war}})}}}
 })();

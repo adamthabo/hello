@@ -1,6 +1,12 @@
 # Changelog
 
 ## For the owner
+17 Nov 2026, 05:07 (the fifth hourly run):
+
+- **The front line moves, the blackouts breathe.** In Ukraine the front is now a bright dashed line whose dashes march along it, and
+  the places cut off (North Korea, Gaza's power, the shutdowns) slowly dim and brighten on the globe, their dashed edges crawling, so
+  both read at a glance on the phone.
+
 17 Nov 2026, 02:51 (the fourth hourly run):
 
 - **Storms show their strength.** Each storm's little wheel on the globe is now bigger and spins faster the stronger the storm is:
@@ -233,6 +239,15 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 17 Nov 2026, 05:07 (New York), the fifth hourly run: the front marches, the blackouts breathe (HOURLY.md item 5)
+
+- `ZONES.draw()` in `12-zones.js`: the front is a dark stroke, a faint orange one, then dashes (7 on, 5 off, 2 px) whose
+  `lineDashOffset` runs with the time (`-(t * .014) % 12`, still under reduced motion); the places cut off keep their 3-3 dashes,
+  crawling slowly (`-(t * .004) % 6`). `dbg().march` is the front's offset.
+- `darkNow(t)` in `12-wind.js`: the globe's darkening of the places cut off (`darkK`) breathes between .48 and 1 (`.74 + .26 sin(t *
+  .00105)`, about six seconds), 1 under reduced motion; `dbg().darkK`.
+- `t_play.js`: over nine tenths of a second the front's offset and the dark both change, the dark staying within .47 to 1.
 
 ## 17 Nov 2026, 02:51 (New York), the fourth hourly run: a storm's wheel by its strength (HOURLY.md item 4, in part)
 

@@ -91,6 +91,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     // (15 Nov, 20:39: "War zones and blacked out zones is good. Gaza, North Korea, ...") the wars of the year by Wikipedia's count (the
     // deadliest first), the places cut off, the ground Russia holds in Ukraine; a tap on one reads what is known of it and its source
     { const z = s.dbg.zones; ok(z.war.length >= 15 && z.war[0] === 'ukraine' && z.dark.includes('prk:closed') && z.dark.includes('gaza:power') && z.front && z.front.km2 > 90000, 'earth: the war zones, the places cut off, the front: ' + JSON.stringify({ war: z.war.length, first: z.war[0], dark: z.dark.length, front: z.front })); }
+    // (17 Nov, the fifth hourly run) both alive: the front's dashes march, the places cut off dim and brighten slowly on the globe
+    { const a = await page.evaluate(() => [window.__lc.ZONES.dbg().march, window.__lc.WIND.dbg().darkK]); await sleep(900); const b = await page.evaluate(() => [window.__lc.ZONES.dbg().march, window.__lc.WIND.dbg().darkK]);
+      ok(a[0] !== b[0] && a[1] !== b[1] && [a[1], b[1]].every(k => k >= .47 && k <= 1.001), 'earth: the front marches and the blackouts breathe: dashes at ' + a[0] + ' then ' + b[0] + ', the dark at ' + a[1] + ' then ' + b[1]); }
     const tapMid = async (la, lo, z, want) => { await page.evaluate(([la, lo, z]) => window.__lc.WIND.look(la, lo, z), [la, lo, z]); await sleep(800); s = await S();
       for (let k = 0; k < 4; k++) { await T.tap(s.dbg.cx, s.dbg.cy); await sleep(500); s = await S(); if (s.dbg.probe && s.dbg.probe.zone && want(s.dbg.probe.zone)) break; } };
     await page.evaluate(() => { window.__lc.WIND.layer('vid', 0); window.__lc.WIND.layer('orbit', 0); });
