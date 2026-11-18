@@ -1,6 +1,12 @@
 # Changelog
 
 ## For the owner
+18 Nov 2026, 00:15 (the seventeenth hourly run):
+
+- **Fill a beat as full as you like, and it stays in balance.** Turning on every step of a beat now plays the filled rows a little
+  lighter, the way a drummer plays a roll softer than the accents. The gamelan's and the basses' notes now stop each other the way a
+  player damps a key before striking the next, so a filled Lancaran rings clean instead of piling up into a roar.
+
 17 Nov 2026, 23:30 (your seven videos; shipped in the sixteenth hourly run):
 
 - **Beat is now the geometry of rhythm, built from your videos.** All seven came through. They're superxeim's "geometry of rhythms"
@@ -330,6 +336,16 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 18 Nov 2026, 00:15 (New York), the seventeenth hourly run: every beat measured with every step on; full rows lighter, tuned rows damped
+
+- `t_levels.js` now renders each of the 34 with every step of every row on (it had only the four with the most steps a second):
+  Lancaran filled came out +0.2 dB over the band (vibraphone rows on every step, ringing 1.3 s, in tune with themselves), and the
+  last run's Samba filled had measured only 1.2 dB under against a louder band render (the room's random echo moves the band by a dB).
+- `17-beat.js`: `part` damps a tuned row's last note on the same bank when it strikes again (`LIVE` per row and bank, cleared on a
+  new beat; an offline context keeps its own), so the gong under the kenong still rings; `dens(R, j, n)`: a row with n strokes where
+  it was written with m plays each sqrt(max(m, 8)/n) as hard (`hitRow`'s new `n`). Measured: Lancaran filled −8.9 dB; the loudest
+  of the 34 filled 2.6 dB under the band (Funk Carioca), with 48 notes and two rolls on top 2.4 under; as written 5.6 to 10 under.
 
 ## 17 Nov 2026, 23:30 (New York): Beat rebuilt from his seven videos, the geometry of rhythm (README rule 27; shipped in the sixteenth hourly run)
 

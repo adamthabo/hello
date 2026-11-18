@@ -193,3 +193,6 @@ not ask for.
 - 2026-11-17 22:04: a finger kept on Beat's rings plays its pitch on every sixteenth (two at most), the loudness test measuring it.
 - 2026-11-18 04:04 (his seven videos came at 22:20 local): Beat rebuilt as the geometry of rhythm, the 34 beats of his videos at
   their own tempi on recorded drums, the band resting in Beat (README rule 27); the 22:04 roll shipped first (03:49).
+- 2026-11-18 05:15: the loudness test now fills every one of the 34 beats (it had four): Lancaran filled was +0.2 dB over the band,
+  and Samba filled had come within 1.2 dB on a louder band render. Fixed in the sound (a tuned row damps its last note; a filled row
+  plays lighter), never by loosening the test.

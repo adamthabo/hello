@@ -131,7 +131,7 @@ var BEAT=(function(){
     if(same)delete ED[R.id];else ED[R.id]=e;save()}
   function muted(j){var m=MU[RHY[I].id];return !!(m&&m[j])}
   /* ---- the sound ---- */
-  var SPC={};
+  var SPC={},LIVE={};
   function spec(s){if(SPC[s])return SPC[s];return SPC[s]=s.split('+').map(function(p){var a=p.split('@');return a.length>1?{bank:a[0],m:a[1].split(',').map(Number)}:{h:a[0]}})}
   function soundsOf(R){var s=[];R.r.forEach(function(row){s.push(row[1]);var a=row[3]&&row[3].a;if(a)for(var k in a)s.push(a[k])});return s}
   function banksOf(R){var b={};soundsOf(R).forEach(function(s){spec(s).forEach(function(p){if(p.bank)b[p.bank]=1;else{var k=SND.bankOf(p.h);if(k)b[k]=1}})});return Object.keys(b)}
@@ -151,15 +151,23 @@ var BEAT=(function(){
   function one(c,dst,b,rate,g,t,pan,d){var s=c.createBufferSource(),gn=c.createGain(),o=gn;s.buffer=b;s.playbackRate.value=clamp(rate,.25,4);gn.gain.value=g;s.connect(gn);
     if(pan&&c.createStereoPanner){var pp=c.createStereoPanner();pp.pan.value=pan;gn.connect(pp);o=pp}o.connect(dst);
     if(d){gn.gain.setTargetAtTime(0,t+d,.07);try{s.stop(t+d+.6)}catch(e){}}
-    if(c===AU.c){VB++;s.onended=function(){VB--;try{o.disconnect()}catch(e){}}}s.start(t)}
-  function part(c,dst,p,v,t,pan){
+    if(c===AU.c){VB++;s.onended=function(){VB--;try{o.disconnect()}catch(e){}}}s.start(t);return gn}
+  function part(c,dst,p,v,t,pan,LS,j){
     if(p.h){var b=SND.hit(p.h);if(b)one(c,dst,b,1,v*(HG[p.h]||.1),t,pan,0);return}
-    var T=TG[p.bank]||{g:.08,d:0};p.m.forEach(function(m,k){var nt=SND.note(p.bank,m);if(nt)one(c,dst,nt.b,nt.rate,v*T.g*(p.m.length>1?.8:1),t+k*.014,pan,T.d)})}
-  /* one row's stroke on a step: how hard (the row, its marks, the ticks' off-beat sixteenths a little softer, a hand's looseness) */
-  function hitRow(c,dst,R,j,q,t,hum){var row=R.r[j],o=row[3]||{},v=ROLE[j]*(LV[R.id]||1)*(o.v||1)*(o.g&&o.g[q+1]?o.g[q+1]:1);
+    /* a tuned row's new note damps that row's last on the same instrument, as a hand does (the gamelan's players damp each key as they
+       strike the next; a bass string stops when it is plucked again), so a row of long notes never piles up in tune with itself */
+    var T=TG[p.bank]||{g:.08,d:0},key=j+':'+p.bank,was=LS&&LS[key],now=[];
+    if(was)was.forEach(function(g){try{g.gain.cancelScheduledValues(t);g.gain.setTargetAtTime(0,t,.03)}catch(e){}});
+    p.m.forEach(function(m,k){var nt=SND.note(p.bank,m);if(nt)now.push(one(c,dst,nt.b,nt.rate,v*T.g*(p.m.length>1?.8:1),t+k*.014,pan,T.d))});if(LS)LS[key]=now}
+  /* one row's stroke on a step: how hard (the row, its marks, the ticks' off-beat sixteenths a little softer, a hand's looseness).
+     (18 Nov) A row filled past its own strokes (and past eight) is played lighter the fuller it is, as a hand plays a roll lighter
+     than its accents: n strokes where it had m, each sqrt(max(m,8)/n) as hard, so a row on every step stays under the band */
+  function cnt(a){var n=0;for(var q=0;q<a.length;q++)if(a[q])n++;return n}
+  function dens(R,j,n){return Math.min(1,Math.sqrt(Math.max(8,R.r[j][2].length)/Math.max(1,n)))}
+  function hitRow(c,dst,R,j,q,t,hum,n){var row=R.r[j],o=row[3]||{},v=ROLE[j]*(LV[R.id]||1)*(o.v||1)*(o.g&&o.g[q+1]?o.g[q+1]:1)*(n?dens(R,j,n):1);
     if(j===0&&R.b===4&&q%2)v*=.72;
     if(hum){v*=.94+.12*Math.random();if(q%R.b)t+=(Math.random()-.5)*.006}
-    var sp=spec((o.a&&o.a[q+1])||row[1]);for(var i=0;i<sp.length;i++)part(c,dst,sp[i],v,t,PAN[j])}
+    var sp=spec((o.a&&o.a[q+1])||row[1]),LS=c===AU.c?LIVE:(c.__ls=c.__ls||{});for(var i=0;i<sp.length;i++)part(c,dst,sp[i],v,t,PAN[j],LS,j)}
   function noteAt(c,B,v,p,vel,t){var nd=MIX.bnode(c,MIX.beatv[SN[v][0]],midiOf(p),vel,t,B.i,B.ein);if(nd&&c===AU.c){VB++;nd.s.onended=function(){VB--}}return nd}
   /* a finger's roll: each stroke damps the one before it, as a hand striking the same bar again does, so a roll never piles up */
   function rollAt(c,B,r,vel,t){if(r.last)try{r.last.g.gain.cancelScheduledValues(t);r.last.g.gain.setTargetAtTime(0,t,.025)}catch(e){}r.last=noteAt(c,B,r.v,r.p,vel,t)}
@@ -173,7 +181,7 @@ var BEAT=(function(){
   function stepOf(n,N){return Math.round(n.u*N)%N}
   var SPY=null;
   function step(k,t){var R=RHY[I],N=R.N,q=k%N,c=AU.c,B=BB,j;if(!B||VB>64)return;
-    for(j=0;j<3;j++)if(H[j][q]&&!muted(j)){hitRow(c,B.i,R,j,q,t,true);PLAYED[j]++;if(SPY)SPY({k:k,q:q,t:t,j:j})}
+    for(j=0;j<3;j++)if(H[j][q]&&!muted(j)){hitRow(c,B.i,R,j,q,t,true,cnt(H[j]));PLAYED[j]++;if(SPY)SPY({k:k,q:q,t:t,j:j})}
     var ns=NT.filter(function(n){return stepOf(n,N)===q}),rk=[],id;for(id in ROLL)if(ROLL[id].on)rk.push(ROLL[id]);
     var n=ns.length+rk.length;if(!n)return;var v=.85*chordK(n);
     ns.forEach(function(nt){noteAt(c,B,nt.v,nt.p,v,t);PN++;if(SPY)SPY({k:k,q:q,t:t,p:nt.p,v:nt.v})});rk.forEach(function(r){r.n++;rollAt(c,B,r,v,t);if(SPY)SPY({k:k,q:q,t:t,p:r.p,v:r.v,roll:1})})}
@@ -181,7 +189,7 @@ var BEAT=(function(){
   /* a stroke or a note put down is heard on the next step, in time (if that is its own step and the clock has not given it out yet, the
      clock plays it) */
   function slot(q){var c=AU.c;if(!BT.run||!c)return null;var k=Math.ceil((c.currentTime+.03-BT.t0)/BT.sd);return {t:BT.t0+k*BT.sd,mine:k%RHY[I].N===q&&k>=BT.k}}
-  function preview(j,q){if(!live()||muted(j))return;var B=bus(),sl=slot(q);if(!B||!sl||sl.mine)return;hitRow(AU.c,B.i,RHY[I],j,q,sl.t,false)}
+  function preview(j,q){if(!live()||muted(j))return;var B=bus(),sl=slot(q);if(!B||!sl||sl.mine)return;hitRow(AU.c,B.i,RHY[I],j,q,sl.t,false,cnt(H[j]))}
   function previewN(n){if(!live())return;var B=bus(),sl=slot(stepOf(n,RHY[I].N));if(!B||!sl||sl.mine)return;noteAt(AU.c,B,n.v,n.p,.7,sl.t)}
   /* ---- the place of everything on the screen: the circle, the grid under it (beside it on a screen on its side), the name above ---- */
   function geo(){var W=STG.w,y0=STG.y0,H0=Math.max(120,STG.y1-y0),N=RHY[I].N,wide=W>H0*1.3&&W>=560,g={wide:wide},rh,gap,gh,R;
@@ -226,7 +234,7 @@ var BEAT=(function(){
   function up(p){if(p&&drag&&drag.id===p.id){if(drag.k==='ring'&&drag.had&&!drag.moved&&held(p)<650)setCell(2,drag.q,false);drag=null}
     if(p)delete ROLL[p.id];mode=null;lastCell=''}
   /* ---- the buttons ---- */
-  function pick(i){i=((i%RHY.length)+RHY.length)%RHY.length;I=i;H=hitsOf(I);save();SND.load(banksOf(RHY[I]));drag=null;
+  function pick(i){i=((i%RHY.length)+RHY.length)%RHY.length;I=i;H=hitsOf(I);LIVE={};save();SND.load(banksOf(RHY[I]));drag=null;
     if(BT.run){var t=BT.t0+BT.k*BT.sd;BT.t0=t;BT.k=0;BT.sd=sdOf(RHY[I]);echo()}CARD.t=performance.now()}
   /* dice: a melody made up in the sound chosen, on the beat's own strokes (its main row's, some of its second's), walking up and down */
   function dice(){var R=RHY[I],N=R.N,D=DICE[cur],pp=Math.round((D[0]+D[1])/2),st=[],q;
@@ -345,7 +353,7 @@ var BEAT=(function(){
        written, or with every step of every row on (o.full); notes ([step, pitch, sound]) and fingers playing ([pitch, sound]) on top */
     offline:function(c,g,dur,o){var B=busOn(c,{comp:g.comp,vs:g.vsend},o),R=RHY[o.i],N=R.N,sd=sdOf(R),rows=R.r.map(function(row){var a=[];for(var q=0;q<N;q++)a.push(!!o.full||row[2].indexOf(q+1)>=0);return a});
       B.dl.delayTime.value=echoT(R);(o.rolls||[]).forEach(function(x){x.r=null});
-      for(var k=0;.05+k*sd<dur;k++){var t=.05+k*sd,q=k%N;for(var j=0;j<3;j++)if(rows[j][q])hitRow(c,B.i,R,j,q,t,false);
+      for(var k=0;.05+k*sd<dur;k++){var t=.05+k*sd,q=k%N;for(var j=0;j<3;j++)if(rows[j][q])hitRow(c,B.i,R,j,q,t,false,cnt(rows[j]));
         var ns=(o.notes||[]).filter(function(n){return n[0]%N===q}),rl=o.rolls||[],n=ns.length+rl.length;if(!n)continue;var v=.85*chordK(n);
         ns.forEach(function(x){noteAt(c,B,x[2],x[1],v,t)});rl.forEach(function(x){x.r=x.r||{p:x[0],v:x[1]};rollAt(c,B,x.r,v,t)})}
       return B}}

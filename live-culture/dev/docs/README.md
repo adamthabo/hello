@@ -541,7 +541,8 @@ governor is live in this test and the headless browser draws slowly, so Smoke us
   on the dotted step); `hushSet(true)` on entering holds the band (`AU.duck`, after the band's bus) and the mixer (`AU.toy`,
   `MIX.hush`) at nothing, `hushSet(false)` on leaving. Notes are `{u: where round the circle 0..1, p: pitch ring, v: sound}` so they
   outlive a change of beat; a finger kept still for a third of a second rolls its pitch on every step, each stroke damping the one
-  before (`rollAt`). `geo()` places the circle, the name over it and the grid under it (beside it on a screen on its side). For the
+  before (`rollAt`); a tuned row's note damps that row's last on the same instrument (`part`, `LIVE`), and a row filled past its own
+  strokes plays lighter (`dens`). `geo()` places the circle, the name over it and the grid under it (beside it on a screen on its side). For the
   tests: `dbg`, `ringAt`, `at`, `cellAt`, `labelAt`, `pick`, `spy` (each stroke as it is given out), `offline` (a beat on an offline
   context, written or with every step on, notes and rolls on top: `t_levels.js`).
 - `20-ui.js` the worlds table, pointers (real fingers `PT`, ghost fingers `GP`, a hovering mouse), two-finger gestures, the hints, the
@@ -590,7 +591,13 @@ every loop and again on every touch. That is the failure this section exists to 
   five sounds alone, full, with two rolls: 4.6 to 6.8 under. (The first measurement had the bells 3.8 dB over the band: an octave
   down, four of their eight pitches were the recording's lowest note played four times slower, so rang as one; and a roll's bells,
   struck on every step at a tempo whose step was a whole number of the bell's periods, piled up in phase. The bells are an octave up
-  now, and each stroke of a roll damps the one before.)
+  now, and each stroke of a roll damps the one before.) Since 18 Nov, the seventeenth hourly run, every one of the 34 is also
+  measured with every step of every row on: that showed Lancaran filled to +0.2 dB over the band (its vibraphone rows, struck on
+  every step and ringing over a second, piled up in tune with themselves). So a tuned row's new note damps that row's last on the
+  same instrument (as a gamelan player damps each key as the next is struck, and a bass string stops when plucked again), and a row
+  filled past its own strokes (and past eight) plays lighter the fuller it is (`dens`: each stroke sqrt(max(m, 8) / n) as hard, as a
+  hand plays a roll lighter than its accents). Measured then: the loudest of the 34 filled 2.6 dB under the band (Funk Carioca),
+  with 48 notes and two rolls on top 2.4 under.
 
 Not measurable here and therefore unknown: how it sounds to an ear, and how an iPhone speaker (which drops everything below about 250 Hz) shifts the balance.
 
