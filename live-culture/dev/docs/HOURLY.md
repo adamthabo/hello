@@ -212,3 +212,6 @@ not ask for.
   two menus, one job each (README rule 30): the page's name opens the four pages only; a button beside it Paint's or Beat's own;
   saving a picture Paint's only. Shipped with the 10:33 run's Paint fix (its suite had failed once at GOV only because a
   screenshot browser ran beside it; GOV alone passed).
+- 2026-11-18 12:37: no new word from him (nothing back on the mode's button). The screenshots' most visible flaw: a dense storm's
+  lightning added up to a white disc over Cuba, hiding it and its name. The dust is now counted into cells and drawn once, and a
+  flash is passed over while a young one glows within its size: violet specks and separate flashes.

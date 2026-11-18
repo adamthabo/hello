@@ -2220,7 +2220,7 @@ var WIND=(function(){
     g={cx:0,cy:0,R:100,E:[0,0,0],N:[0,0,0],C:[0,0,0]},lat0=16,lon0=clamp(-(new Date().getTimezoneOffset())/4,-180,180),zoom=1,idle=0,vlon=0,vlat=0,
     sunV=[0,0,0],moonV=[0,0,0],moonI=null,sunI=null,lastT=0,SK=[],byStep=[],flashes=[],STEPS=256,tmp=[0,0,0],probe=null,turned=0,
     FR=[],frV=-1,ST=[],stV=-1,
-    ftAt=0,cardHt=0,GT={R:0,cy:0,on:0},GR=0,GC=0,dataH=-1,entT=0,HUDB=0,HLH=0,FOC=null,FLY=null,camOn=false,footH=0;
+    ftAt=0,cardHt=0,DUSTC=null,GT={R:0,cy:0,on:0},GR=0,GC=0,dataH=-1,entT=0,HUDB=0,HLH=0,FOC=null,FLY=null,camOn=false,footH=0;
   /* the pictures made here for the chip (the wind, for the clouds to drift on; the aurora) are made again if the chip is lost */
   function glSetup(){if(!GLX.ok)return;gen=GLX.gen;windT=aurT=null;windV=aurV=-1}
   /* a grid of numbers, one per degree from the north pole down and from 0 E round, as a picture the chip can read: 512 x 256,
@@ -2530,7 +2530,13 @@ var WIND=(function(){
   /* the lightning's score: on the sound's clock a little ahead for the ticks, on the picture's clock for the flashes */
   function seq(s,when){if(!LY.bolt)return;var a=byStep[((s%STEPS)+STEPS)%STEPS];if(!a)return;var n=0;
     for(var i=0;i<a.length&&n<2;i++){var k=a[i];if(k.p[2]<=.08)continue;hit('tick',.3+.3*Math.random(),pan(k.p[0]),.8+.5*Math.random(),when+n*.03);n++}}
-  function step(st,ab){if(!LY.bolt)return;var a=byStep[((ab%STEPS)+STEPS)%STEPS];if(!a)return;for(var i=0;i<a.length;i++)if(flashes.length<220)flashes.push({k:a[i],t:0})}
+  /* (18 Nov, the 12:37 run) a storm with thousands of flashes (4,139 within 300 km of Havana in the snapshot) lit a hundred glows at
+     one spot at once, which added up to a white hole over the map. Now a flash is passed over while a young one glows within its own
+     size of it: the storm still flashes on every step it has, as so many separate flashes */
+  function step(st,ab){if(!LY.bolt)return;var a=byStep[((ab%STEPS)+STEPS)%STEPS];if(!a)return;var zf=clamp(Math.sqrt(g.R/170),.9,2.2),rr=12*zf;
+    for(var i=0;i<a.length&&flashes.length<220;i++){var k=a[i],near=false;
+      for(var j=flashes.length-1;j>=0;j--){var f=flashes[j];if(f.t<.6&&Math.abs(f.k.p[0]-k.p[0])<rr&&Math.abs(f.k.p[1]-k.p[1])<rr){near=true;break}}
+      if(!near)flashes.push({k:k,t:0})}}
   function tick(dt,t){
     var i,now=Date.now();feeds();if(FT-ftAt>800){ftAt=FT;
       /* the rows along the bottom can grow (the kinds of camera arrive): the stage is measured again */
@@ -2575,8 +2581,14 @@ var WIND=(function(){
     if(LY.war||LY.dark)try{ZONES.draw(c,g,t,!!LY.war,!!LY.dark)}catch(e){}
     /* the lightning: where the storms are (a faint violet dust), and each flash as its bar comes round */
     /* (15 Nov, 23:20: "Make everything work": the lightning and the fires had been specks; they grow as the Earth comes closer) */
-    var zf=clamp(Math.sqrt(g.R/170),.9,2.2),sq=1.6*zf;c.globalCompositeOperation='lighter';c.fillStyle='rgba(150,120,255,.34)';
-    for(i=0;i<SK.length&&LY.bolt;i++){k=SK[i];if(k.p[2]>.04)c.fillRect(k.p[0]-sq/2,k.p[1]-sq/2,sq,sq)}
+    var zf=clamp(Math.sqrt(g.R/170),.9,2.2),sq=1.6*zf;c.globalCompositeOperation='lighter';
+    /* (18 Nov, the 12:37 run) where a storm has thousands of flashes in a few pixels, the dust drawn one speck over another added up to a
+       white hole over the map (4,139 within 300 km of Havana in the snapshot hid Cuba and its name). Now the specks are counted into
+       cells of their own size and each cell drawn once, denser the more it holds, never brighter than a deep violet */
+    if(LY.bolt&&SK.length){var cs=Math.max(1.5,sq),NX=Math.ceil(VW/cs)+1,cnt=DUSTC&&DUSTC.length>=NX*(Math.ceil(VH/cs)+1)?DUSTC:(DUSTC=new Uint16Array(NX*(Math.ceil(VH/cs)+1))),used=[],ci;
+      for(i=0;i<SK.length;i++){k=SK[i];if(k.p[2]<=.04||k.p[0]<0||k.p[1]<0||k.p[0]>=VW||k.p[1]>=VH)continue;ci=Math.floor(k.p[1]/cs)*NX+Math.floor(k.p[0]/cs);if(!cnt[ci])used.push(ci);if(cnt[ci]<65535)cnt[ci]++}
+      var lv=[[],[],[],[]];for(i=0;i<used.length;i++){ci=used[i];var nn=cnt[ci];cnt[ci]=0;lv[nn<2?0:nn<5?1:nn<15?2:3].push(ci)}
+      for(var q5=0;q5<4;q5++){if(!lv[q5].length)continue;c.fillStyle='rgba(150,120,255,'+[.34,.46,.58,.7][q5]+')';for(i=0;i<lv[q5].length;i++){ci=lv[q5][i];c.fillRect((ci%NX)*cs,Math.floor(ci/NX)*cs,cs,cs)}}}
     for(i=0;i<flashes.length;i++){var f=flashes[i];k=f.k;if(k.p[2]<=.04)continue;var a=(1-f.t)*(1-f.t),z=clamp(k.p[2]*2.5,.35,1);
       c.fillStyle='rgba(190,170,255,'+(a*.24*z).toFixed(3)+')';c.beginPath();c.arc(k.p[0],k.p[1],(4+16*f.t)*zf,0,TAU);c.fill();
       c.fillStyle='rgba(245,240,255,'+(a*.95*z).toFixed(3)+')';c.beginPath();c.arc(k.p[0],k.p[1],2.2*zf,0,TAU);c.fill()}

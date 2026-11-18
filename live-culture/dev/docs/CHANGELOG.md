@@ -1,6 +1,12 @@
 # Changelog
 
 ## For the owner
+18 Nov 2026, 07:40 (the hourly run):
+
+- **Big thunderstorms no longer white out the map.** Where a storm had thousands of lightning flashes, like the one over Cuba this
+  morning, they piled up into a glaring white blob that hid the land and its name. Now a storm shows as violet specks with separate
+  flashes going off in time with the music, and you can see what's underneath.
+
 18 Nov 2026, 06:30 (your 06:04 message):
 
 - **Two menus, one job each.** Tap the page's name and you get the four pages, nothing else. A round button with three sliders
@@ -381,6 +387,15 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 18 Nov 2026, 07:40 (New York), the hourly run: a dense storm's lightning no longer adds up to white
+
+- Seen in this run's screenshots of the Earth (the default view at 390x844, close up at 3x): over Cuba a white disc about 50 px
+  across hid the island and "CUBA · NO POWER" (the snapshot has 4,139 flashes within 300 km of Havana). Two causes, both additive
+  ('lighter') drawing: the dust, one speck per flash, and the flashes, up to a hundred glowing at one spot on a step.
+- `12-wind.js`: the dust is counted into cells the size of a speck (`DUSTC`, reused) and each cell drawn once, in four depths of
+  violet by its count (at most .7), never brighter. `step()` passes over a flash while a young one (`t < .6`) glows within
+  `12 * zf` px of it, so a storm still flashes on every step it has, as separate flashes. The ticks the lightning plays are unchanged.
 
 ## 18 Nov 2026, 06:30 (New York): the pages' menu and each page's own menu apart (README rule 30)
 
