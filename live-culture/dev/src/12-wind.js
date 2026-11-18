@@ -440,6 +440,8 @@ var WIND=(function(){
     /* the place being read: a ring */
     if(probe&&probe.p[2]>.02){var px=probe.p[0],py=probe.p[1],al=clamp((t-probe.t)/250,0,1);c.strokeStyle='rgba(1,4,10,.55)';c.lineWidth=3.4;c.beginPath();c.arc(px,py,8,0,TAU);c.stroke();
       c.strokeStyle='rgba(234,249,255,'+(.92*al).toFixed(3)+')';c.lineWidth=1.2;c.beginPath();c.arc(px,py,8,0,TAU);c.stroke()}
+    /* (18 Nov) the satellite asked about: its ring and its name, over the rest */
+    if(LY.orbit)try{ORBIT.layer.top(c)}catch(e){}
     /* the cameras: a ring for each, and the window of the one playing */
     if(camOn)try{LIVEW.layer.draw(t,g)}catch(e){}}
   /* the words at the top: only what a tap asked for (15 Nov, 22:59: "Remove the writing on the top"; until then four lines stood there:

@@ -217,3 +217,5 @@ not ask for.
   flash is passed over while a young one glows within its size: violet specks and separate flashes.
 - 2026-11-18 13:39: no new word from him. A tap's answer says more (his 02:04 "know what they are"): a satellite's card now says
   in one plain sentence what it is for, where its name or kind tells it for sure, and nothing where nothing is known.
+- 2026-11-18 14:40: no new word from him. The screenshots' most visible flaw: the chosen satellite's name ran under the zones'
+  names on the smaller Earth above its card. It is drawn last now, and the zones' names keep clear of it.

@@ -116,7 +116,7 @@ var ORBIT=(function(){
     /* (18 Nov, 02:04: "Oh and ALL satélites have to be accessible to link and know what they are") the satellites within reach of the
        finger when it tapped, nearest first (HERE), the one of them shown (hereI), and the place under the finger if the tap was on the
        Earth's face (BELOW: the Earth's own reading of a place, given by 12-wind.js) */
-    HERE=[],hereI=0,BELOW=null;
+    HERE=[],hereI=0,BELOW=null,TOPS=null;
   function row(dl,k,v){if(!v)return null;var a=document.createElement('dt'),b=document.createElement('dd');a.textContent=k;b.textContent=v;dl.appendChild(a);dl.appendChild(b);return b}
   function num(x){return Math.round(x).toLocaleString('en-US')}
   function cardBuild(){
@@ -304,13 +304,17 @@ var ORBIT=(function(){
     if(sel>=0&&path){c.lineWidth=1;c.strokeStyle='rgba(234,249,255,.36)';c.beginPath();var pen=false;
       for(i=0;i<=96;i++){tmp[0]=path[i*3];tmp[1]=path[i*3+1];tmp[2]=path[i*3+2];view(tmp,tq);if(shown(tq)){var x=g.cx+tq[0]*g.R,y=g.cy-tq[1]*g.R;if(pen)c.lineTo(x,y);else{c.moveTo(x,y);pen=true}}else pen=false}
       c.stroke();
-      if(shown(selQ)){var sx=g.cx+selQ[0]*g.R,sy=g.cy-selQ[1]*g.R;c.strokeStyle='rgba(234,249,255,.9)';c.lineWidth=1.1;c.beginPath();c.arc(sx,sy,9,0,TAU);c.stroke();
+      TOPS=null;if(shown(selQ)){var sx=g.cx+selQ[0]*g.R,sy=g.cy-selQ[1]*g.R;
         c.font='500 9px "JetBrains Mono",ui-monospace,Menlo,monospace';c.textBaseline='middle';var nm=nameOf(sel).toUpperCase(),tw=c.measureText(nm).width,lx=sx+14,ly=sy;
         /* (18 Nov) the name never runs off the screen: beside the ring on the right, else on the left, else over it (a long name
            shortened to the screen's width) */
         if(tw>VW-22){while(nm.length>4&&c.measureText(nm+'\u2026').width>VW-22)nm=nm.slice(0,-1);nm+='\u2026';tw=c.measureText(nm).width}
         if(lx+tw>VW-8){lx=sx-14-tw;if(lx<8){lx=clamp(sx-tw/2,8,Math.max(8,VW-8-tw));ly=sy>40?sy-18:sy+18}}
-        c.fillStyle='rgba(1,4,10,.6)';c.fillRect(lx-3,ly-7,tw+6,14);c.fillStyle='rgba(234,249,255,.95)';c.fillText(nm,lx,ly+1)}}}
+        /* (18 Nov, the 14:40 run) on the Earth the ring and the name are drawn last, over the names of the wars and the places cut off
+           (which keep clear of it): they are what was asked about */
+        TOPS={sx:sx,sy:sy,nm:nm,tw:tw,lx:lx,ly:ly};if(!LAY)top(c)}}else TOPS=null}
+  function top(c){var T=TOPS;if(!T||sel<0)return;c.save();c.globalCompositeOperation='source-over';c.strokeStyle='rgba(234,249,255,.9)';c.lineWidth=1.1;c.beginPath();c.arc(T.sx,T.sy,9,0,TAU);c.stroke();
+    c.font='500 9px "JetBrains Mono",ui-monospace,Menlo,monospace';c.textBaseline='middle';c.fillStyle='rgba(1,4,10,.72)';c.fillRect(T.lx-3,T.ly-7,T.tw+6,14);c.fillStyle='rgba(234,249,255,.95)';c.fillText(T.nm,T.lx,T.ly+1);c.restore()}
   /* the stations and the telescopes: a trail of fourteen steps back over four minutes of the time shown (at sixty times their speed,
      four seconds; the space station's is some 1,900 km of its way), then the mark: a station a body between two wings of panels, a telescope a
      small ring with its tube. Bigger as the Earth comes closer */
@@ -368,5 +372,7 @@ var ORBIT=(function(){
       /* (for the tests) the satellites a tap at x, y would offer, nearest first */
       near:function(x,y){return EL?nearList({x:x,y:y}):[]},
       sel:function(){return sel},
+      /* the chosen one's ring and name, over everything else on the Earth; and where they are, for the other names to keep clear */
+      top:function(c){top(c)},box:function(){var T=TOPS;if(!T||sel<0)return null;return [Math.min(T.lx-3,T.sx-10),Math.min(T.ly-7,T.sy-10),Math.max(T.lx+T.tw+3,T.sx+10),Math.max(T.ly+7,T.sy+10)]},
       hud:function(){var S=LIVE.sats;if(!S||!EL)return LIVE.asked?'reading the orbits':'';return satN.toLocaleString('en-US')+' satellites, '+(live()?'where they are now':'at sixty times their speed')+' · orbits of '+stampUTC(S.fresh||S.asOf)}}}
 })();

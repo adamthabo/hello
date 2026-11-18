@@ -282,6 +282,8 @@ Artifact: https://claude.ai/artifact/PCzaFJH2vjXe4Kv8KK4Xic (publish to this URL
    internet constellations, the navigation systems, the phone and message networks, the weather and picture-taking fleets, the
    stations and the ships that visit them, the telescopes; by kind the geostationary, the wreckage, the rocket stages, the
    military. Nothing is said where nothing is known. The kind line calls the telescopes and the visiting ships what they are.
+   (The 14:40 run) On the Earth the chosen one's ring and name are drawn last, over everything (`layer.top`), and the names of the
+   wars and the places cut off keep clear of them (`layer.box`), as they keep clear of each other.
 30. **What he asked on 18 Nov, 06:04.** "Still menu issues, why is this so hard? There are only four pages. Each has its own menu
    items. Don't put them on other sections!" Rule 28's one menu held two jobs at once: the four pages, and under them this page's
    things (and "save a picture" on every page). So **two menus, each with one job**: the page's name at the top left opens the four

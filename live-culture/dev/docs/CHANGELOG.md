@@ -1,6 +1,11 @@
 # Changelog
 
 ## For the owner
+18 Nov 2026, 09:50 (the hourly run):
+
+- **The satellite you picked keeps its name readable.** Its name beside the ring on the globe used to get covered by the names of
+  the wars and blackouts ("GAZA · NO POWER" printed right over it). Now it's drawn on top, and the other names move out of its way.
+
 18 Nov 2026, 08:45 (the hourly run):
 
 - **Each satellite says what it's for, in plain words.** Under its kind, a satellite's card now has one sentence: "A GPS satellite:
@@ -395,6 +400,15 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 18 Nov 2026, 09:50 (New York), the hourly run: the chosen satellite's name over the zones' names
+
+- Seen in this run's screenshots at 390x750: with the Earth made smaller above the card, the chosen satellite's name ran under
+  "GAZA · NO POWER" and "THE SAHEL" (the zones are drawn after the satellites).
+- `13-orbit.js`: on the Earth (`LAY`) `sky()` keeps the ring and the name (`TOPS`) instead of drawing them; `layer.top(c)` draws them,
+  `layer.box()` gives the box they take. The standalone world draws them at once, as before.
+- `12-wind.js`: `ORBIT.layer.top(c)` after the place's ring, before the cameras. `12-zones.js`: `labels()` starts its list of taken
+  boxes with the satellite's.
 
 ## 18 Nov 2026, 08:45 (New York), the hourly run: a satellite's card says what it is for (README rule 29)
 

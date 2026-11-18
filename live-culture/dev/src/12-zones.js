@@ -96,6 +96,8 @@ var ZONES=(function(){
     c.lineWidth=1.2;c.stroke()}
   /* the names: the wars by their dead, then the places cut off; none over another */
   function labels(c,g){var box=[],n=0,tw={};c.font='600 9px '+MONO;c.textBaseline='middle';c.lineJoin='round';
+    /* (18 Nov) clear of the satellite asked about, whose name is drawn over everything */
+    try{var sb=ORBIT.layer.box();if(sb)box.push(sb)}catch(e){}
     /* a war first, by its dead; a place both at war and cut off has one name, the war's, with what it is cut off from */
     var L=LB.filter(function(o){return o.war}).concat(LB.filter(function(o){return !o.war}));
     L.forEach(function(o){if(o.war)tw[o.id]=o});L.forEach(function(o){var twin=!o.war&&tw[o.id];if(twin)return;var dk=null;if(o.war)for(var q=0;q<LB.length;q++)if(!LB[q].war&&LB[q].id===o.id)dk=LB[q];
