@@ -1,6 +1,12 @@
 # Changelog
 
 ## For the owner
+17 Nov 2026, 22:04 (the fifteenth hourly run):
+
+- **Keep a finger on Beat's circle to play.** Rest a finger on the outer rings and after a moment its note plays on every beat-step,
+  in time with the band, in the sound you chose. Slide up and down the rings to change the pitch as it plays, then lift to stop. Two
+  fingers can play at once. A quick tap still places a note, and a quick drag still draws a melody.
+
 17 Nov 2026, 21:02 (the fourteenth hourly run):
 
 - **Hold a ring in Beat to explore the beats.** In funky, bluesy, acid or dub, hold an instrument's ring for half a second and it
@@ -303,6 +309,16 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 17 Nov 2026, 22:04 (New York), the fifteenth hourly run: a finger kept on Beat's rings plays on every sixteenth
+
+- `17-beat.js` `ROLL` (two at most, by pointer): a finger on the outer band, kept within 12 px for 330 ms (`tick`), starts playing:
+  `seq` sounds its pitch ring on every sixteenth in the sound chosen when it touched, counted into the sixteenth's chord (`chordK`);
+  once playing, moving it changes the pitch and draws no notes (`mode` cleared); lifted (or its pointer gone), it stops. Drawn as a
+  ring round the finger that beats with the sixteenths. `dbg().rolls`.
+- `t_beat.js`: a finger kept 2.6 s on (2, 6) played its pitch on 18 sixteenths, put its note down once, and stopped when lifted.
+  `t_levels.js`: the full circle now with two fingers playing on every sixteenth: glass −6.6, rubber −6.0, bells −7.8, boom −4.7,
+  pluck −4.5 dB under the band.
 
 ## 17 Nov 2026, 21:02 (New York), the fourteenth hourly run: a ring held in Beat (the classic beats' other loops; a player alone)
 

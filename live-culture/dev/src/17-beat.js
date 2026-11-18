@@ -67,13 +67,23 @@ var BEAT=(function(){
     tapF.push({j:h.j,t:performance.now()});tapF.push({j:h.j,t:performance.now()+260})}
   function down(p){if(p.ghost)return;if(!AU.want)musicOn();mode=null;var h=innerHit(p.x,p.y);
     if(h){if(h.mid)midTap();else if(!h.none)press={h:h,id:p.id,x:p.x,y:p.y,t0:performance.now(),done:false};return}
-    var c=cell(p.x,p.y);if(!c)return;mode=find(c.s,c.p)>=0?'erase':'draw';lastCell='';apply(c,mode)}
-  function move(p){if(p.ghost)return;if(press&&press.id===p.id&&Math.hypot(p.x-press.x,p.y-press.y)>16)press=null;if(!mode)return;var c=cell(p.x,p.y);if(c)apply(c,mode)}
-  function up(p){if(press&&p&&press.id===p.id){if(!press.done)laneTap(press.h);press=null}mode=null;lastCell=''}
+    var c=cell(p.x,p.y);if(!c)return;mode=find(c.s,c.p)>=0?'erase':'draw';lastCell='';apply(c,mode);
+    /* (17 Nov, 22:04) a finger kept on the rings plays: after a third of a second its pitch sounds on every sixteenth, in the sound
+       chosen, for as long as it stays (two fingers at most), following the finger up and down the rings; not kept on the circle */
+    if(Object.keys(ROLL).length<2)ROLL[p.id]={p:c.p,x:p.x,y:p.y,ax:p.x,ay:p.y,t0:performance.now(),on:false,v:cur,n:0,mine:mode==='draw'}}
+  function move(p){if(p.ghost)return;if(press&&press.id===p.id&&Math.hypot(p.x-press.x,p.y-press.y)>16)press=null;
+    /* (a finger still kept for a third of a second starts playing; one moving draws, as before; once playing, moving it changes
+       the pitch it plays and draws nothing) */
+    var rl=ROLL[p.id];if(rl){var c2=cell(p.x,p.y);rl.x=p.x;rl.y=p.y;if(rl.on){if(c2)rl.p=c2.p;return}
+      if(Math.hypot(p.x-rl.ax,p.y-rl.ay)>12){rl.ax=p.x;rl.ay=p.y;rl.t0=performance.now();if(c2)rl.p=c2.p}}
+    if(!mode)return;var c=cell(p.x,p.y);if(c)apply(c,mode)}
+  function up(p){if(press&&p&&press.id===p.id){if(!press.done)laneTap(press.h);press=null}if(p)delete ROLL[p.id];mode=null;lastCell=''}
+  var ROLL={};
   /* the bar's sixteenth: its notes, on time */
   /* (a chord is held together: each of n notes on one sixteenth a little softer, 1.5/√n of one alone, so eight at once stay under the band) */
   function chordK(n){return Math.min(1,1.5/Math.sqrt(Math.max(1,n)))}
-  function seq(s,t){var q=((s%16)+16)%16,n=0,i;for(i=0;i<N.length;i++)if(N[i].s===q)n++;if(!n)return;var v=.85*chordK(n);for(i=0;i<N.length;i++)if(N[i].s===q)note(N[i],t,v)}
+  function seq(s,t){var q=((s%16)+16)%16,n=0,i,rk=[];for(var id in ROLL)if(ROLL[id].on)rk.push(ROLL[id]);for(i=0;i<N.length;i++)if(N[i].s===q)n++;n+=rk.length;if(!n)return;var v=.85*chordK(n);
+    for(i=0;i<N.length;i++)if(N[i].s===q)note(N[i],t,v);rk.forEach(function(r){r.n++;note({s:q,p:r.p,v:r.v},t,v)})}
   /* dice: a melody made up in the sound chosen, a walk up and down its rings, more on the beats than off them */
   function dice(){var D=DICE[cur],lo=D[0],hi=D[1],want=D[2],grid=D[3],pp=Math.floor((lo+hi)/2),i;N=N.filter(function(n){return n.v!==cur});
     var steps=[];for(i=0;i<16;i+=grid/2)steps.push(i);steps.sort(function(a,b){return (b%grid===0?1:0)-(a%grid===0?1:0)||Math.random()-.5});
@@ -94,7 +104,8 @@ var BEAT=(function(){
   function enter(){load();build();on=true;var r=$('btools');if(r)r.hidden=false;sync();SND.load(['glock','marimba','chimes','fbass','gtr']);layout()}
   function leave(){on=false;mode=null;var r=$('btools');if(r)r.hidden=true}
   /* a ring held for half a second */
-  function tick(){if(press&&!press.done&&performance.now()-press.t0>450){press.done=true;laneHold(press.h)}}
+  function tick(){var now=performance.now();if(press&&!press.done&&now-press.t0>450){press.done=true;laneHold(press.h)}
+    for(var id in ROLL){var r=ROLL[id];if(!PTR(id)){delete ROLL[id];continue}if(!r.on&&now-r.t0>330){r.on=true;mode=null}}}
   function draw(t){
     blank();var c=OV,g=geo(),R=g.R,cx=g.cx,cy=g.cy,k=clock(),i,s,col=MODE==='africa'?'62,240,255':MIX.col(MODE),now=performance.now();
     c.save();c.lineCap='round';
@@ -121,6 +132,9 @@ var BEAT=(function(){
     for(i=0;i<N.length;i++){var nt=N[i],a4=ang(nt.s),r4=rp(nt.p,R),ago2=k?((k.s%16)-nt.s+16)%16:9,lt=ago2<1.4?1-ago2/1.4:0,nc=SCOL[nt.v];
       if(lt>0){c.fillStyle='rgba('+nc+','+(.25*lt).toFixed(3)+')';c.beginPath();c.arc(cx+Math.cos(a4)*r4,cy+Math.sin(a4)*r4,7+14*lt,0,TAU);c.fill()}
       c.fillStyle='rgba('+nc+','+(.75+.25*lt).toFixed(3)+')';c.beginPath();c.arc(cx+Math.cos(a4)*r4,cy+Math.sin(a4)*r4,4.2+2.5*lt,0,TAU);c.fill()}
+    /* a finger playing: a ring round it that beats with the sixteenths, in its sound's colour */
+    for(var rid in ROLL){var ro=ROLL[rid];if(!ro.on)continue;var rb=k?1-(k.s-Math.floor(k.s)):.5;c.strokeStyle='rgba('+SCOL[ro.v]+','+(.35+.5*rb).toFixed(3)+')';c.lineWidth=1.5;
+      c.beginPath();c.arc(ro.x,ro.y,16+10*rb,0,TAU);c.stroke()}
     /* a note just put down: a ring going out from it */
     fl=fl.filter(function(f){return now-f.t<600});fl.forEach(function(f){var e=(now-f.t)/600,a5=ang(f.s),r5=rp(f.p,R);c.strokeStyle='rgba('+f.c+','+(.8*(1-e)).toFixed(3)+')';c.lineWidth=1.4;c.beginPath();c.arc(cx+Math.cos(a5)*r5,cy+Math.sin(a5)*r5,5+16*e,0,TAU);c.stroke()});
     /* the hand: once round a bar, in the mode's colour (still, at the top, while the music is off) */
@@ -132,7 +146,7 @@ var BEAT=(function(){
   /* no words over it but what a tap asks for: a sound's name when it is chosen */
   function hud(){return ''}
   return {enter:enter,leave:leave,tick:tick,draw:draw,hud:hud,down:down,move:move,up:up,seq:seq,resize:function(){},
-    dbg:function(){var k=clock(),g=geo();return {on:on,notes:N.map(function(n){return [n.s,n.p,n.v]}),cur:cur,sound:SN[cur][0],clock:k?{bar:k.bar,q:k.q,f:+k.f.toFixed(3)}:null,
+    dbg:function(){var k=clock(),g=geo();return {on:on,rolls:Object.keys(ROLL).map(function(id){var r=ROLL[id];return {p:r.p,on:r.on,n:r.n}}),notes:N.map(function(n){return [n.s,n.p,n.v]}),cur:cur,sound:SN[cur][0],clock:k?{bar:k.bar,q:k.q,f:+k.f.toFixed(3)}:null,
       geo:{cx:g.cx,cy:g.cy,R:g.R},lanes:k?lanes(k.bar).length:0,lane:lanes(k?k.bar:0).map(function(l){return {n:l.n,on:l.on,k:l.k,cur:l.cur}}),max:MAXN,sounds:SN.map(function(s){return s[0]})}},
     /* for the tests: where an instrument's ring is (its top) */
     ringAt:function(j){var g=geo(),k=clock(),n=lanes(k?k.bar:0).length;return {x:g.cx,y:g.cy-laneR(j,n,g.R),n:n}},

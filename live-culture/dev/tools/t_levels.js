@@ -70,9 +70,13 @@ const { launch, open } = require('./lib');
     // (that one is measured, not held under the band)
     await L.SND.load(['glock', 'marimba', 'chimes', 'fbass', 'gtr']);
     const BS = L.BEAT.sounds.map(x => x[0]), sd = L.STEML / 64, FULL = [0, 3, 6, 8, 11, 14];
-    const beatFull = (O, g, G, names) => { for (let t0 = .05; t0 < dur; t0 += 16 * sd) for (const q of FULL) for (let p = 0; p < 8; p++) { const nm = names[(q + p) % names.length]; L.MIX.offbeat(O, { toy: g.toy }, G, nm, L.BEAT.midi(p), .85 * L.BEAT.chord(8), t0 + q * sd + ((q & 1) ? sd * .16 : 0)); } };
-    for (const nm of BS) out['beat: ' + nm + ', the circle full'] = await render(null, null, (O, g) => beatFull(O, g, L.MIX.offline(O, { bus: g.bus, toy: g.toy, comp: g.comp, vs: g.vsend }, 1, {}, 'africa'), [nm]));
-    out['band, all nine, WITH the beat circle full in all five sounds'] = await render(all, null, (O, g) => beatFull(O, g, L.MIX.offline(O, { bus: g.bus, toy: g.toy, comp: g.comp, vs: g.vsend }, 1, {}, 'africa'), BS));
+    // (17 Nov, 22:04: and two fingers kept on the rings, playing on every sixteenth, each sixteenth's notes softer together as the page
+    // plays them: eight and two, or two)
+    const beatFull = (O, g, G, names) => { for (let t0 = .05; t0 < dur; t0 += 16 * sd) for (let q = 0; q < 16; q++) { const full = FULL.includes(q), n = (full ? 8 : 0) + 2, at = t0 + q * sd + ((q & 1) ? sd * .16 : 0);
+      for (let p = 0; p < (full ? 8 : 0); p++) L.MIX.offbeat(O, { toy: g.toy }, G, names[(q + p) % names.length], L.BEAT.midi(p), .85 * L.BEAT.chord(n), at);
+      for (const p of [2, 6]) L.MIX.offbeat(O, { toy: g.toy }, G, names[(q + p) % names.length], L.BEAT.midi(p), .85 * L.BEAT.chord(n), at); } };
+    for (const nm of BS) out['beat: ' + nm + ', the circle full, two fingers playing'] = await render(null, null, (O, g) => beatFull(O, g, L.MIX.offline(O, { bus: g.bus, toy: g.toy, comp: g.comp, vs: g.vsend }, 1, {}, 'africa'), [nm]));
+    out['band, all nine, WITH the beat circle full and two fingers, all five sounds'] = await render(all, null, (O, g) => beatFull(O, g, L.MIX.offline(O, { bus: g.bus, toy: g.toy, comp: g.comp, vs: g.vsend }, 1, {}, 'africa'), BS));
     out.__each = each;
     return out;
   });

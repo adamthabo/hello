@@ -83,10 +83,21 @@ const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') 
   const steps = new Set(sched.map(b => { const x = (b[2] - b[4]) / SD; return ((Math.round(x - .16 * (Math.round(x) & 1)) % 16) + 16) % 16; }));
   ok(sched.length >= drawn.length && onGrid.length === sched.length && drawn.every(n => steps.has(n[0])), 'the notes play in time, each on its sixteenth: ' + sched.length + ' played, steps ' + [...steps].sort((a, b) => a - b).join(','));
   await page.screenshot({ path: 'shots/beat_phone_notes.png' });
+  // (17 Nov, 22:04) a finger kept on the rings plays its pitch on every sixteenth while it stays, then stops; it adds no notes
+  { const n0 = (await D()).d.notes.length, q2 = await at(2, 6); await page.evaluate(() => { window.__bv = []; });
+    await touch([[q2.x, q2.y]], 'touchStart'); await sleep(2600); const mid = await D(); await page.screenshot({ path: 'shots/beat_phone_roll.png' });
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await sleep(150); const nAt = (await page.evaluate(() => window.__bv.length)); await sleep(1200);
+    const bv2 = await page.evaluate(() => window.__bv.slice()), m6 = await page.evaluate(() => window.__lc.BEAT.midi(6)), held = bv2.filter(b => b[1] === m6 && b[2] > 0);
+    const keys = new Set(held.map(b => Math.round((b[2] - b[4]) / SD)));
+    ok(mid.d.rolls.length === 1 && mid.d.rolls[0].on && keys.size >= 6 && (await D()).d.notes.length === n0 + 1 && !(await D()).d.rolls.length,
+      'a finger kept on the rings plays its pitch on every sixteenth (' + keys.size + ' sixteenths in 2.6 s), the note under it put down once, and stops when it lifts');
+    const after = bv2.slice(nAt).filter(b => b[1] === m6 && b[2] > 0 && ((Math.round((b[2] - b[4]) / SD) % 16) + 16) % 16 !== 2);
+    ok(after.length <= 2, 'nothing more of it once lifted (' + after.length + ' already given out; the note it put down plays on its own sixteenth)'); }
   // dice: a melody made up in the sound chosen (glass), the others kept; clear: none
+  const rub0 = (await D()).d.notes.filter(n => n[2] === 1).length;
   { const b = s.tools.find(t => t.id === 'glass'); await tap((b.l + b.r) / 2, (b.t + b.b) / 2); const d = s.tools.find(t => t.id === 'dice'); await tap((d.l + d.r) / 2, (d.t + d.b) / 2); }
   s = await D(); const g1 = s.d.notes.filter(n => n[2] === 0), r1 = s.d.notes.filter(n => n[2] === 1);
-  ok(g1.length >= 5 && r1.length === drawn.length && /melody/.test(s.data), 'dice makes up a melody in glass and keeps the rubber one: ' + g1.length + ' glass, ' + r1.length + ' rubber');
+  ok(g1.length >= 5 && r1.length === rub0 && /melody/.test(s.data), 'dice makes up a melody in glass and keeps the rubber ones: ' + g1.length + ' glass, ' + r1.length + ' rubber');
   // kept after a reload
   await page.reload({ waitUntil: 'load' }); await sleep(1500); cdp = await ctx.newCDPSession(page);
   await page.evaluate(() => { const L = window.__lc; L.go(L.WORLDS.findIndex(w => w.id === 'beat'), true); }); await sleep(600); s = await D();
