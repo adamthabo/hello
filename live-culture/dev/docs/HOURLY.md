@@ -206,3 +206,9 @@ not ask for.
 - 2026-11-18 09:32: no new word from him, the backlog done, so the most visible flaw in the screenshots: the satellite card hid
   the Earth's lower half and often the chosen one, whose long name ran off the screen. The Earth now makes room above the card on
   a phone, and the name stays on the screen.
+- 2026-11-18 10:33: no new word from him; the screenshots of every world at both sizes showed Paint's picture gone after the
+  height changed (a new size gave new, empty water). The picture is now carried over to the new water, each point where it was.
+- 2026-11-18 11:20 (his 06:04 local: "There are only four pages. Each has its own menu items. Don't put them on other sections!"):
+  two menus, one job each (README rule 30): the page's name opens the four pages only; a button beside it Paint's or Beat's own;
+  saving a picture Paint's only. Shipped with the 10:33 run's Paint fix (its suite had failed once at GOV only because a
+  screenshot browser ran beside it; GOV alone passed).

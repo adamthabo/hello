@@ -30,20 +30,30 @@ function dataPaint(force){var n=performance.now();if(!force&&n-DATAT<180)return;
    what it is, and under them what this world can do (Paint's colours, mirror, start over, photo, building and the game; Beat's
    sounds, melody and reset), and saving a picture where the viewer can take one. A touch anywhere else, a world chosen, or Escape
    closes it; the touch that closes it does nothing else. (Until now the worlds were a row of buttons along the bottom, tucked behind
-   a handle in Mix and Beat since 17 Nov, 19:44) ---- */
-function menuOpen(){return !$('menu').hidden}
-function menuShow(on){var m=$('menu'),b=$('wmenu');if(!m)return;on=!!on;if(m.hidden!==!on){m.hidden=!on;b.setAttribute('aria-expanded',on?'true':'false');document.body.classList.toggle('menuon',on)}}
+   a handle in Mix and Beat since 17 Nov, 19:44)
+   (18 Nov, 06:04: "Still menu issues, why is this so hard? There are only four pages. Each has its own menu items. Don't put them on
+   other sections!") Two menus now, each with one job: the page's name opens the four pages and nothing else; the button beside it
+   (on Paint and Beat, the pages with more than their screen shows) opens that page's own menu, under its name, and nothing else.
+   Saving a picture is Paint's. The Earth's layers and all of Mix are on their own screens. Opening one closes the other ---- */
+function menuOpen(){return !$('menu').hidden||!$('pmenu').hidden}
+function menuShow(on,which){var m=$('menu'),pm=$('pmenu'),b=$('wmenu'),t=$('bTools');if(!m)return;var a=!!on&&which!=='page',p=!!on&&which==='page';
+  if(m.hidden!==!a){m.hidden=!a;b.setAttribute('aria-expanded',a?'true':'false')}
+  if(pm&&pm.hidden!==!p){pm.hidden=!p;if(t)t.setAttribute('aria-expanded',p?'true':'false')}
+  document.body.classList.toggle('menuon',a||p)}
 function railBuild(){var r=$('rail');r.innerHTML='';WORLDS.forEach(function(w,i){var b=document.createElement('button');b.type='button';b.className='wb';b.id='w_'+w.id;
   b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+w.ic+'</svg><span class="wn"></span><span class="wd"></span>';b.querySelector('.wn').textContent=w.name;b.querySelector('.wd').textContent=w.d||'';
   b.setAttribute('aria-current','false');b.addEventListener('click',function(){menuShow(false);go(i)});r.appendChild(b)});
   WORLDS.forEach(function(w){if(w.o.menu){var sec=$('ms_'+w.id);if(sec)safe(function(){w.o.menu(sec)})}})}
-$('wmenu').addEventListener('click',function(){menuShow(!menuOpen())});
+$('wmenu').addEventListener('click',function(){menuShow($('menu').hidden)});
+$('bTools').addEventListener('click',function(){menuShow($('pmenu').hidden,'page')});
 /* a press anywhere outside the menu closes it: on another button the button still does its work; on the world the touch only closes it */
-document.addEventListener('pointerdown',function(e){if(!menuOpen())return;var t=e.target;if(t&&t.closest&&(t.closest('#menu')||t.closest('#wmenu')))return;if(t===STAGE)return;menuShow(false)},true);
-addEventListener('keydown',function(e){if(e.key==='Escape'&&menuOpen()){menuShow(false);try{$('wmenu').focus()}catch(x){}}});
+document.addEventListener('pointerdown',function(e){if(!menuOpen())return;var t=e.target;if(t&&t.closest&&(t.closest('#menu')||t.closest('#wmenu')||t.closest('#pmenu')||t.closest('#bTools')))return;if(t===STAGE)return;menuShow(false)},true);
+addEventListener('keydown',function(e){if(e.key==='Escape'&&menuOpen()){var pg=!$('pmenu').hidden;menuShow(false);try{$(pg?'bTools':'wmenu').focus()}catch(x){}}});
 function chrome(){
-  var w=WORLDS[CURI];if(!w)return;$('wname').textContent=w.name;$('wmenu').setAttribute('aria-label',w.name+'. Open the menu: the four worlds, and what this one can do');
+  var w=WORLDS[CURI];if(!w)return;$('wname').textContent=w.name;$('wmenu').setAttribute('aria-label',w.name+'. Open the four pages');
   WORLDS.forEach(function(x,i){var b=$('w_'+x.id);if(b)b.setAttribute('aria-current',i===CURI?'true':'false');var sec=$('ms_'+x.id);if(sec)sec.hidden=i!==CURI||!sec.querySelector('button')});
+  /* the page's own menu: its button only where the page has one, its name over it */
+  var own=$('ms_'+w.id),tb=$('bTools');tb.hidden=!(own&&own.querySelector('button'));tb.setAttribute('aria-label',w.name+': its own menu');$('pmh').textContent=w.name;$('pmenu').setAttribute('aria-label',w.name+': its own menu');
   /* (18 Nov) Beat plays its own beats while the band rests, so the band's mode has no button there */
   $('bMode').hidden=!!w.nomode;$('bClear').hidden=!(w.photo&&PHOTO.has);$('bSave').hidden=!DL;$('bNow').hidden=true;
   $('bPhoto').setAttribute('aria-pressed',PHOTO.has?'true':'false');

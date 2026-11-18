@@ -1,6 +1,21 @@
 # Changelog
 
 ## For the owner
+18 Nov 2026, 06:30 (your 06:04 message):
+
+- **Two menus, one job each.** Tap the page's name and you get the four pages, nothing else. A round button with three sliders
+  beside the name opens that page's own menu, titled with the page's name, holding only that page's things. Only Paint and Beat
+  have one. Earth's layers stay along its bottom, and Mix is all on its screen.
+- **Nothing from one page on another.** "Save a picture" was showing up in every page's menu. Now it's only in Paint's.
+- **Your painting survives the screen changing size** (from the 05:45 run, shipped with this): turning the phone, or the app making
+  the page shorter or taller, no longer wipes Paint clean.
+
+18 Nov 2026, 05:45 (the hourly run):
+
+- **Your painting survives the screen changing size.** Turning the phone, or the Claude app making the page shorter or taller,
+  used to wipe Paint clean. Now the picture is carried over, everything where it was on the screen. A smaller screen cuts off only
+  what falls outside it.
+
 18 Nov 2026, 04:40 (the hourly run):
 
 - **The satellite you tap stays in sight.** On a phone, the Earth now shrinks and moves up above a satellite's card, the way it
@@ -366,6 +381,32 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 18 Nov 2026, 06:30 (New York): the pages' menu and each page's own menu apart (README rule 30)
+
+- `body.html`: `#menu` holds only `#rail` (the four pages); a new `#pmenu` (class `menu pmenu`) holds `#pmh` (the page's name) and
+  the pages' own sections, `#ms_paint` and `#ms_beat` (the empty `#ms_earth` and `#ms_mix` went); `#bSave` moved from the menu's
+  general row (`.mgen`, gone) into `#ms_paint`. The header's left side is `.lead`: `#wmenu` and the new `#bTools` (`.ic.tlb`, three
+  sliders), shown only where the page has a section with buttons.
+- `20-ui.js`: `menuShow(on, which)` opens the pages (`which` left out) or the page's own (`'page'`), never both; `menuShow(false)` closes
+  both, so the worlds' own calls are unchanged; `menuOpen()` is either. The outside-press and Escape rules cover both (Escape gives
+  the focus back to the button that opened it). `chrome()` shows `#bTools` and names it, `#pmh` and `#pmenu` after the page.
+- `11-drift.js`: Paint's section has no heading of its own (the menu's title is the page's name) and takes `#bSave` into its photo row.
+- Tests: `t_smoke.js` (the name opens the four pages and nothing else; the button beside it Paint's own menu, titled, saving in it,
+  the pages closed; a second tap closes it; the section's buttons now include `bSave`), `t_beat.js` (its items through `#bTools`, the
+  menu titled Beat with its seven and no saving), `t_misc.js` (Paint's own menu on a 360-wide screen, nothing touching at the top),
+  `t_published.js` (the game from Paint's own menu; in Mix no menu button, the four pages only, no saving).
+
+## 18 Nov 2026, 05:45 (New York), the hourly run: Paint's picture carried through a new size of the screen
+
+- Found in this run's screenshots of every world at 390x844 and 390x750: Paint painted at one height was empty water at the other.
+  `size()` in `11-drift.js` reallocated every buffer when the size key changed (the screen's aspect or the governor's level) and
+  started from clear water. Now the old dye is kept until the new one is made and carried over by `rsm` (each point at the same
+  place on the screen measured from the middle; what falls outside a smaller screen is cut off, a bigger one has clear water round
+  it); the velocity starts still. A photo in the water is carried with the picture rather than poured in again (`photoVer` kept).
+  `dbg().carried` counts it.
+- `t_smoke.js`: after the stroke that stays, the screen made 94 px shorter, turned, and back: the paint is there each time and was
+  carried three times.
 
 ## 18 Nov 2026, 04:40 (New York), the hourly run: the Earth makes room above a satellite's card; the chosen one's name stays on the screen
 

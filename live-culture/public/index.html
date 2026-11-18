@@ -294,8 +294,14 @@ body.camw .zm{display:none}
 .sw i{display:block;width:100%;height:100%;border-radius:50%;background:var(--c)}
 .sw[aria-pressed=true]{border-color:var(--ink)}
 .sw.auto i{background:conic-gradient(#3ef0ff,#7dffb2,#ffb347,#ff4a3d,#b46bff,#3ef0ff)}
-.mgen{display:flex;flex-wrap:wrap;gap:6px;padding:0 6px 2px}
-.mgen:not(:has(.mb:not([hidden]))){display:none}
+/* (18 Nov, 06:04: "There are only four pages. Each has its own menu items") the page's own menu: the button beside the page's name,
+   its menu under it with the page's name as its title; the four pages' menu has nothing else */
+.lead{min-width:0;display:flex;align-items:flex-end;gap:10px}
+.tlb{flex:none;pointer-events:auto;margin-bottom:1px}
+.tlb svg circle{fill:#050b14}
+.tlb[aria-expanded=true]{border-color:var(--lume);color:var(--lume);box-shadow:0 0 16px -4px var(--lume)}
+.pmh{margin:2px 6px 0;font-family:var(--display);font-weight:800;font-variation-settings:"wdth" 70;font-size:19px;line-height:1;letter-spacing:.02em;text-transform:uppercase;color:var(--lume)}
+.pmenu .msec{border-top:0;padding-top:2px}
 /* the bottom: only what a world is played with (Paint's chip while building or in a game, the Earth's layers, Beat's beat) */
 .tools .tb{height:32px;padding:0 12px 0 9px;font-size:9px;border-radius:16px}
 .tb.done{color:var(--ink);border-color:rgba(234,249,255,.4);background:rgba(1,4,10,.7)}
@@ -316,25 +322,30 @@ body.camw .zm{display:none}
 <div id="stage" role="application" aria-label="The world. Touch it, drag through it, use more than one finger"></div>
 
 <header class="top" id="top">
-  <button class="mark" id="wmenu" type="button" aria-expanded="false" aria-controls="menu" aria-label="Paint. Open the menu: the four worlds, and what this one can do"><span class="mk1">Live Culture</span><span class="mk2"><span class="wname" id="wname">Paint</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5"/></svg></span></button>
+  <div class="lead">
+  <button class="mark" id="wmenu" type="button" aria-expanded="false" aria-controls="menu" aria-label="Paint. Open the four pages"><span class="mk1">Live Culture</span><span class="mk2"><span class="wname" id="wname">Paint</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5"/></svg></span></button>
+  <button class="ic tlb" id="bTools" type="button" hidden aria-expanded="false" aria-controls="pmenu" aria-label="Paint: its own menu"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.4 4.4h11.2M2.4 8h11.2M2.4 11.6h11.2"/><circle cx="5.4" cy="4.4" r="1.6"/><circle cx="10.6" cy="8" r="1.6"/><circle cx="7" cy="11.6" r="1.6"/></svg></button>
+  </div>
   <div class="acts">
     <button class="chip" id="bNow" type="button" hidden aria-label="Return to the present moment">Now</button>
     <button class="chip mode" id="bMode" type="button" aria-label="Music mode: African. Tap for the next mode">African</button>
     <button class="ic mst" id="bSound" type="button" aria-pressed="false" aria-label="Music starts with your first touch. Turn it on now"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6.2 11.6V3.4l6-1.2v8.2"/><circle cx="4.6" cy="11.7" r="1.7"/><circle cx="10.6" cy="10.5" r="1.7"/><path class="sl" d="M2.2 2.2l11.6 11.6"/></svg></button>
   </div>
 </header>
-<!-- (18 Nov, 00:50: "Theres too many confusing menu items at the bottom ... I like clear windows") the worlds and each world's extras
-     live in one menu under the world's name; the bottom keeps only what a world is played with -->
-<div class="menu" id="menu" hidden role="dialog" aria-label="Menu: the worlds, and what this one can do">
-  <nav class="rail" id="rail" aria-label="Worlds"></nav>
+<!-- (18 Nov, 00:50: "Theres too many confusing menu items at the bottom ... I like clear windows"; 06:04: "There are only four pages.
+     Each has its own menu items. Don't put them on other sections!") the page's name opens the four pages and nothing else; the button
+     beside it, on a page that has more than its screen shows, opens that page's own menu and nothing else -->
+<div class="menu" id="menu" hidden role="dialog" aria-label="The four pages">
+  <nav class="rail" id="rail" aria-label="Pages"></nav>
+</div>
+<div class="menu pmenu" id="pmenu" hidden role="dialog" aria-label="This page's own menu">
+  <p class="pmh" id="pmh">Paint</p>
   <section class="msec" id="ms_paint" hidden aria-label="Paint">
     <button class="mb" id="bPhoto" type="button" aria-label="Use a photo of your own as the paint. It stays on this device"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="4" width="13" height="9.5" rx="2"/><circle cx="8" cy="8.8" r="2.6"/><path d="M5.5 4l1-1.8h3l1 1.8"/></svg><span>your photo</span></button>
     <button class="mb" id="bClear" type="button" hidden aria-label="Take the photo away"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg><span>photo away</span></button>
+    <button class="mb" id="bSave" type="button" hidden aria-label="Save a picture of the painting"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8M4.8 7.2L8 10.4l3.2-3.2M2.5 13.5h11"/></svg><span>save a picture</span></button>
   </section>
-  <section class="msec" id="ms_earth" hidden aria-label="Earth"></section>
-  <section class="msec" id="ms_mix" hidden aria-label="Mix"></section>
   <section class="msec" id="ms_beat" hidden aria-label="Beat"></section>
-  <div class="mgen"><button class="mb" id="bSave" type="button" hidden aria-label="Save a picture of what is on the screen now"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8M4.8 7.2L8 10.4l3.2-3.2M2.5 13.5h11"/></svg><span>save a picture</span></button></div>
 </div>
 <p class="data" id="data" aria-live="off"></p>
 
@@ -1409,7 +1420,7 @@ var GLOBE=(function(){
    each round".) ---------- */
 var DRIFT=(function(){
   var P=null,gen=-1,vel=null,dye=null,prs=null,div=null,curl=null,sw=0,sh=0,dw=0,dh=0,type=0,filt=0,simple=false,ql=-1,szKey='',
-    q=[],last={},rows={},photoVer=-1,ink=0,t0=0,
+    q=[],last={},rows={},photoVer=-1,ink=0,t0=0,dVW=0,dVH=0,carried=0,
     /* the machine: walls (segments, in fractions of the screen), fans, prisms, drains, tunnels; in a level also its fixed sources,
        walls, winds, prisms and drains, and its rings. obs is the walls drawn into the water's own grid: 1 where there is wall */
     obs=null,obsDirty=true,WB=null,WN=0,TOOL='ink',WALLS=[],FANS=[],DRAINS=[],PRISMS=[],TUNNELS=[],CUPS=[],FIX={walls:[],fans:[],drains:[],prisms:[]},
@@ -1452,6 +1463,9 @@ var DRIFT=(function(){
       'if(uHO>0.5){float oL=texture2D(uObs,vL).x;float oR=texture2D(uObs,vR).x;float oT=texture2D(uObs,vT).x;float oB=texture2D(uObs,vB).x;if(oL>0.5)L=C;if(oR>0.5)R=C;if(oT>0.5)T=C;if(oB>0.5)B=C;v-=vec2(R-L,T-B);'+
       'if(oL>0.5)v.x=max(v.x,0.0);if(oR>0.5)v.x=min(v.x,0.0);if(oT>0.5)v.y=min(v.y,0.0);if(oB>0.5)v.y=max(v.y,0.0);}else{v-=vec2(R-L,T-B);}gl_FragColor=vec4(v,0.0,1.0);}',
     mul:H+'uniform sampler2D uT;uniform float uK;\nvoid main(){gl_FragColor=uK*texture2D(uT,vUv);}',
+    /* (18 Nov) the picture carried over to water of another size: each point keeps its place on the screen, measured from the middle
+       (what falls outside a smaller screen is cut off; a bigger one has clear water round it) */
+    rsm:H+'uniform sampler2D uT;uniform vec2 uS;uniform vec2 uO;\nvoid main(){vec2 q=vUv*uS+uO;float k=step(0.0,q.x)*step(q.x,1.0)*step(0.0,q.y)*step(q.y,1.0);gl_FragColor=texture2D(uT,clamp(q,0.0,1.0))*k;}',
     /* (17 Nov, evening: "slow down the paint. Make it more viscous") the water's own thickness: each pass draws a cell's motion towards
        its neighbours', so small eddies melt into broad, slow flows, as in honey */
     vis:H+'uniform sampler2D uT;uniform float uK;\nvoid main(){vec4 c=texture2D(uT,vUv);vec4 n=0.25*(texture2D(uT,vL)+texture2D(uT,vR)+texture2D(uT,vT)+texture2D(uT,vB));gl_FragColor=mix(c,n,uK);}',
@@ -1494,9 +1508,17 @@ var DRIFT=(function(){
   function size(){
     if(!P)return;var ar=VW/VH,S=(COARSE?[128,96,64]:[160,128,96])[QL],D=(COARSE?[512,384,256]:[720,512,384])[QL];if(FASTDYE)D=Math.min(D,256);
     var w=Math.round(ar>=1?S*ar:S),h=Math.round(ar>=1?S:S/ar),W=Math.round(ar>=1?D*ar:D),Hh=Math.round(ar>=1?D:D/ar),key=w+'x'+h+'x'+W+'x'+Hh;
-    if(key===szKey&&dye)return;freeAll();szKey=key;ql=QL;sw=w;sh=h;dw=W;dh=Hh;
-    dye=dbl(dw,dh);if(!simple){vel=dbl(sw,sh);prs=dbl(sw,sh);div=glTarget(sw,sh,type,GLX.gl.NEAREST);curl=glTarget(sw,sh,type,GLX.gl.NEAREST);if(!vel||!prs||!div||!curl){freeAll();P=null;return}}
-    if(!dye){P=null;return}photoVer=-1;
+    if(key===szKey&&dye)return;
+    /* (18 Nov) what is painted stays (rule 28), through a new size too: the screen turned, or the app giving the page more or less
+       height, used to give new, empty water. The old picture is carried over, each point where it was on the screen; the water is
+       still after it (the photo, if one is in, is carried with it, not poured in again) */
+    var old=dye&&P.rsm?dye:null,ow=dVW,oh=dVH;if(old)dye=null;
+    freeAll();szKey=key;ql=QL;sw=w;sh=h;dw=W;dh=Hh;
+    dye=dbl(dw,dh);if(!simple){vel=dbl(sw,sh);prs=dbl(sw,sh);div=glTarget(sw,sh,type,GLX.gl.NEAREST);curl=glTarget(sw,sh,type,GLX.gl.NEAREST);if(!vel||!prs||!div||!curl){freeAll();if(old){glFree(old.r);glFree(old.w)}P=null;return}}
+    if(!dye){if(old){glFree(old.r);glFree(old.w)}P=null;return}
+    if(old&&ow>0&&oh>0){var gl0=GLX.gl,ur=run(P.rsm,dye.w,[1/dw,1/dh]),kx=VW/ow,ky=VH/oh;glBind(0,old.r.tex,ur.uT);gl0.uniform2f(ur.uS,kx,ky);gl0.uniform2f(ur.uO,.5-.5*kx,.5-.5*ky);glQuad(P.rsm);dye.swap();carried++}
+    else photoVer=-1;
+    if(old){glFree(old.r);glFree(old.w)}dVW=VW;dVH=VH;
     obs=glTarget(sw,sh,GLX.gl.UNSIGNED_BYTE,GLX.gl.LINEAR);obsDirty=true;
     rbW=64;rbH=Math.max(16,Math.round(64*VH/VW));rb=glTarget(rbW,rbH,GLX.gl.UNSIGNED_BYTE,GLX.gl.LINEAR);rbBuf=new Uint8Array(rbW*rbH*4);rbOk=false}
   function run(prog,target,texel){var u=glUse(prog,target);if(u.uTexel)GLX.gl.uniform2f(u.uTexel,texel[0],texel[1]);return u}
@@ -1725,8 +1747,9 @@ var DRIFT=(function(){
     b.innerHTML='<svg viewBox="0 0 18.4 18.4" aria-hidden="true">'+icon+'</svg><span></span>';b.lastChild.textContent=name;if(lab)b.setAttribute('aria-label',lab);
     b.addEventListener('click',fn);par.appendChild(b);return b}
   function row(par,label){var r=document.createElement('div');r.className='mrw';if(label){var l=document.createElement('span');l.className='ml';l.textContent=label;r.appendChild(l)}par.appendChild(r);return r}
-  function menu(sec){if(sec._built)return;sec._built=1;var ph=$('bPhoto'),pc=$('bClear');
-    var h=document.createElement('div');h.className='mh';h.textContent='paint';sec.insertBefore(h,sec.firstChild);
+  function menu(sec){if(sec._built)return;sec._built=1;var ph=$('bPhoto'),pc=$('bClear'),sv=$('bSave');
+    /* (18 Nov, 06:04) Paint's own menu, under the page's name (the menu's title): nothing of another page's here, and saving a
+       picture, which is the painting's, is here and nowhere else */
     /* the colour: each touch the next of six, or one of them */
     var rc=row(sec,'colour');[-1].concat(PAL.map(function(x,i){return i})).forEach(function(i){var b=document.createElement('button');b.type='button';b.className='sw'+(i<0?' auto':'');b.id='pc_'+(i<0?'auto':i);
       b.innerHTML='<i></i>';if(i>=0)b.firstChild.style.setProperty('--c','rgb('+PAL[i].map(function(v){return Math.round(v*255)}).join(',')+')');
@@ -1734,7 +1757,7 @@ var DRIFT=(function(){
     /* mirror, start over, your photo (and taking it away) */
     var rm=row(sec,'');mbtn(rm,'p_mir','mirror','',function(){MIR=MIR===1?2:MIR===2?4:MIR===4?6:1;menuSync();say(MIR<2?'mirror off':'every stroke '+MIR+' times','')},'Mirror every stroke: off, two, four or six ways');
     mbtn(rm,'p_clear','start over',CLRI,function(){clearInk=true;clearVel=true;MINE=true;menuShow(false);say('clear water','')},'Clear the water and start a new picture');
-    if(ph)rm.appendChild(ph);if(pc)rm.appendChild(pc);
+    if(ph)rm.appendChild(ph);if(pc)rm.appendChild(pc);if(sv)rm.appendChild(sv);
     /* build: the three pieces; the game */
     var rb=row(sec,'build');TOOLS.forEach(function(t){if(t[0]==='ink'||t[0]==='puz')return;mbtn(rb,'t_'+t[0],t[1],t[2],function(){if(PZ>=0)gmOff();TOOL=t[0];toolsSync();menuShow(false)},'Build: '+t[1])});
     var rg=row(sec,'');var g=mbtn(rg,'t_puz','play the game',TOOLS[4][2],function(){gmStart();toolsSync();menuShow(false)},'Play the game: push the paint into the rings');g.classList.add('go');
@@ -2006,7 +2029,7 @@ var DRIFT=(function(){
     R.next=t+R.ev;if(t>=R.until||!RUN)R.done=true}
   function U(x){return PZ>=0?bx(x):(STG.x0+x*STG.w)/VW}function V(y){return PZ>=0?by(y):(STG.y0+y*STG.h)/VH}
   return {enter:enter,leave:leave,menu:menu,resize:function(){resize();pzRelayout();obsDirty=true},down:down,up:up,gesture:gesture,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
-    dbg:function(){return {mine:MINE,mir:MIR,pc:PCI,col:PCK,ok:!!(P&&dye),simT:simT,simple:simple,sw:sw,sh:sh,dw:dw,dh:dh,lin:GLX.hfLin,tool:TOOL,pz:PZ,won:!!pzWon,walls:WALLS.length,fans:FANS.length,drains:DRAINS.length,prisms:PRISMS.length,tunnels:TUNNELS.length,wn:WN,
+    dbg:function(){return {mine:MINE,mir:MIR,pc:PCI,col:PCK,ok:!!(P&&dye),carried:carried,simT:simT,simple:simple,sw:sw,sh:sh,dw:dw,dh:dh,lin:GLX.hfLin,tool:TOOL,pz:PZ,won:!!pzWon,walls:WALLS.length,fans:FANS.length,drains:DRAINS.length,prisms:PRISMS.length,tunnels:TUNNELS.length,wn:WN,
       game:{round:GM.round,need:GM.need,got:GM.got,left:+GM.left.toFixed(2),score:GM.score,best:GM.best,phase:GM.phase,news:NEWS[GM.round]?NEWS[GM.round][0]:'',newBest:!!GM.newBest,cols:GM.cols.slice(),wall:!!GM.wall,combo:GM.combo,drain:GM.drain,cur:GM.cur,ringN:GM.ringN,loops:GM.loops,wallXY:GM.wall},board:{x0:B.x0,y0:B.y0,w:B.w,h:B.h},run:RUN,rt:RT,
       cups:CUPS.map(function(c){return {c:c.c,fill:c.fill,match:c.match,done:c.done,x:WX(c.x),y:WY(c.y),r:cupR()*(c.r||1),gold:!!c.gold,n:c.n,mv:c.ox?'loop':c.mx||c.my?'drift':'',
         loop:c.ox?{cx:B.x0+c.x0*B.w,cy:B.y0+c.y0*B.h,rx:c.ox*B.w,ry:c.oy*B.h,lap:c.mp,dir:c.od,x0:c.x0,y0:c.y0,ox:c.ox,oy:c.oy}:null}}),vents:FIX.fans.map(function(f){return {x:WX(f.x),y:WY(f.y),c:f.c,a:f.a===undefined?-Math.PI/2:f.a}}),fix:{walls:FIX.walls.length,fans:FIX.fans.length,drains:FIX.drains.length,prisms:FIX.prisms.length},rb:rbOk}},
@@ -4299,20 +4322,30 @@ function dataPaint(force){var n=performance.now();if(!force&&n-DATAT<180)return;
    what it is, and under them what this world can do (Paint's colours, mirror, start over, photo, building and the game; Beat's
    sounds, melody and reset), and saving a picture where the viewer can take one. A touch anywhere else, a world chosen, or Escape
    closes it; the touch that closes it does nothing else. (Until now the worlds were a row of buttons along the bottom, tucked behind
-   a handle in Mix and Beat since 17 Nov, 19:44) ---- */
-function menuOpen(){return !$('menu').hidden}
-function menuShow(on){var m=$('menu'),b=$('wmenu');if(!m)return;on=!!on;if(m.hidden!==!on){m.hidden=!on;b.setAttribute('aria-expanded',on?'true':'false');document.body.classList.toggle('menuon',on)}}
+   a handle in Mix and Beat since 17 Nov, 19:44)
+   (18 Nov, 06:04: "Still menu issues, why is this so hard? There are only four pages. Each has its own menu items. Don't put them on
+   other sections!") Two menus now, each with one job: the page's name opens the four pages and nothing else; the button beside it
+   (on Paint and Beat, the pages with more than their screen shows) opens that page's own menu, under its name, and nothing else.
+   Saving a picture is Paint's. The Earth's layers and all of Mix are on their own screens. Opening one closes the other ---- */
+function menuOpen(){return !$('menu').hidden||!$('pmenu').hidden}
+function menuShow(on,which){var m=$('menu'),pm=$('pmenu'),b=$('wmenu'),t=$('bTools');if(!m)return;var a=!!on&&which!=='page',p=!!on&&which==='page';
+  if(m.hidden!==!a){m.hidden=!a;b.setAttribute('aria-expanded',a?'true':'false')}
+  if(pm&&pm.hidden!==!p){pm.hidden=!p;if(t)t.setAttribute('aria-expanded',p?'true':'false')}
+  document.body.classList.toggle('menuon',a||p)}
 function railBuild(){var r=$('rail');r.innerHTML='';WORLDS.forEach(function(w,i){var b=document.createElement('button');b.type='button';b.className='wb';b.id='w_'+w.id;
   b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+w.ic+'</svg><span class="wn"></span><span class="wd"></span>';b.querySelector('.wn').textContent=w.name;b.querySelector('.wd').textContent=w.d||'';
   b.setAttribute('aria-current','false');b.addEventListener('click',function(){menuShow(false);go(i)});r.appendChild(b)});
   WORLDS.forEach(function(w){if(w.o.menu){var sec=$('ms_'+w.id);if(sec)safe(function(){w.o.menu(sec)})}})}
-$('wmenu').addEventListener('click',function(){menuShow(!menuOpen())});
+$('wmenu').addEventListener('click',function(){menuShow($('menu').hidden)});
+$('bTools').addEventListener('click',function(){menuShow($('pmenu').hidden,'page')});
 /* a press anywhere outside the menu closes it: on another button the button still does its work; on the world the touch only closes it */
-document.addEventListener('pointerdown',function(e){if(!menuOpen())return;var t=e.target;if(t&&t.closest&&(t.closest('#menu')||t.closest('#wmenu')))return;if(t===STAGE)return;menuShow(false)},true);
-addEventListener('keydown',function(e){if(e.key==='Escape'&&menuOpen()){menuShow(false);try{$('wmenu').focus()}catch(x){}}});
+document.addEventListener('pointerdown',function(e){if(!menuOpen())return;var t=e.target;if(t&&t.closest&&(t.closest('#menu')||t.closest('#wmenu')||t.closest('#pmenu')||t.closest('#bTools')))return;if(t===STAGE)return;menuShow(false)},true);
+addEventListener('keydown',function(e){if(e.key==='Escape'&&menuOpen()){var pg=!$('pmenu').hidden;menuShow(false);try{$(pg?'bTools':'wmenu').focus()}catch(x){}}});
 function chrome(){
-  var w=WORLDS[CURI];if(!w)return;$('wname').textContent=w.name;$('wmenu').setAttribute('aria-label',w.name+'. Open the menu: the four worlds, and what this one can do');
+  var w=WORLDS[CURI];if(!w)return;$('wname').textContent=w.name;$('wmenu').setAttribute('aria-label',w.name+'. Open the four pages');
   WORLDS.forEach(function(x,i){var b=$('w_'+x.id);if(b)b.setAttribute('aria-current',i===CURI?'true':'false');var sec=$('ms_'+x.id);if(sec)sec.hidden=i!==CURI||!sec.querySelector('button')});
+  /* the page's own menu: its button only where the page has one, its name over it */
+  var own=$('ms_'+w.id),tb=$('bTools');tb.hidden=!(own&&own.querySelector('button'));tb.setAttribute('aria-label',w.name+': its own menu');$('pmh').textContent=w.name;$('pmenu').setAttribute('aria-label',w.name+': its own menu');
   /* (18 Nov) Beat plays its own beats while the band rests, so the band's mode has no button there */
   $('bMode').hidden=!!w.nomode;$('bClear').hidden=!(w.photo&&PHOTO.has);$('bSave').hidden=!DL;$('bNow').hidden=true;
   $('bPhoto').setAttribute('aria-pressed',PHOTO.has?'true':'false');

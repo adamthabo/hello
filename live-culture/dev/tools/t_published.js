@@ -57,10 +57,16 @@ const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') 
   await page.click('#mix .mxrow .mxb >> nth=' + li); await sleep(4500);
   const lit = i => page.evaluate(i => [...document.querySelectorAll('#mix .mxrow .mxb')][i].classList.contains('on'), i);
   ok(await lit(li), 'a loop tapped (the marimba\'s) comes in on the next bar'); await page.screenshot({ path: 'shots/published_2.png' });
+  // (18 Nov, 06:04: "Each has its own menu items. Don't put them on other sections!") Mix has no menu of its own (it is all on its screen),
+  // the page's name opens the four pages and nothing else, and saving a picture (Paint's) is not offered here
+  { const mm = await page.evaluate(async () => { const vis = e => !!e && !e.hidden && e.getClientRects().length > 0; document.getElementById('wmenu').click(); await new Promise(r => setTimeout(r, 300));
+      const o = { own: vis(document.getElementById('bTools')), pages: [...document.querySelectorAll('#menu button')].filter(vis).map(b => b.id).join(), save: vis(document.getElementById('bSave')) }; document.getElementById('wmenu').click(); return o; });
+    ok(!mm.own && mm.pages === 'w_paint,w_earth,w_mix,w_beat' && !mm.save, 'in Mix the page\'s name opens the four pages and nothing else, and there is no menu of Paint\'s things: ' + JSON.stringify(mm)); }
   // Paint: its tools and its game; the loop set in the mixer is still playing when the mixer is opened again
-  ok(await page.evaluate(() => { document.getElementById('w_paint').click(); return new Promise(r => setTimeout(() => r(document.getElementById('tools').hidden && !!document.querySelector('#ms_paint #t_puz') && !!document.querySelector('#ms_paint #p_mir')), 900)); }), 'Paint is a clear window, nothing along the bottom; its tools are in the menu');
+  ok(await page.evaluate(() => { document.getElementById('w_paint').click(); return new Promise(r => setTimeout(() => r(document.getElementById('tools').hidden && !!document.querySelector('#ms_paint #t_puz') && !!document.querySelector('#ms_paint #p_mir')), 900)); }), 'Paint is a clear window, nothing along the bottom; its tools are in its own menu');
+  ok(await page.evaluate(() => !document.getElementById('bTools').hidden && !!document.querySelector('#pmenu #ms_paint #bSave')), 'Paint has its own menu, and saving a picture is in it');
   s = await look(); ok(s.music === 'true', 'and the music plays on in Paint');
-  await page.click('#wmenu'); await sleep(350); await page.click('#t_puz'); await sleep(600);
+  await page.click('#bTools'); await sleep(350); await page.click('#t_puz'); await sleep(600);
   ok(await page.evaluate(() => document.getElementById('data').textContent) === '' && await page.evaluate(() => { const a = document.getElementById('t_again'); return !!a.offsetParent && a.textContent === 'again' && document.getElementById('menu').hidden; }), 'play the game (from the menu) starts a round: what it asks said in the tank, no writing at the top, again and stop along the bottom'); await page.screenshot({ path: 'shots/published_round.png' });
   await page.click('#t_ink'); await sleep(300); ok(await page.evaluate(() => document.getElementById('tools').hidden), 'stop ends the game: the bottom clear again');
   await goW('mix'); await sleep(900); ok(await lit(li), 'back in the mixer, the loop is still playing'); await goW('paint'); await sleep(600);

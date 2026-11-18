@@ -286,8 +286,14 @@ body.camw .zm{display:none}
 .sw i{display:block;width:100%;height:100%;border-radius:50%;background:var(--c)}
 .sw[aria-pressed=true]{border-color:var(--ink)}
 .sw.auto i{background:conic-gradient(#3ef0ff,#7dffb2,#ffb347,#ff4a3d,#b46bff,#3ef0ff)}
-.mgen{display:flex;flex-wrap:wrap;gap:6px;padding:0 6px 2px}
-.mgen:not(:has(.mb:not([hidden]))){display:none}
+/* (18 Nov, 06:04: "There are only four pages. Each has its own menu items") the page's own menu: the button beside the page's name,
+   its menu under it with the page's name as its title; the four pages' menu has nothing else */
+.lead{min-width:0;display:flex;align-items:flex-end;gap:10px}
+.tlb{flex:none;pointer-events:auto;margin-bottom:1px}
+.tlb svg circle{fill:#050b14}
+.tlb[aria-expanded=true]{border-color:var(--lume);color:var(--lume);box-shadow:0 0 16px -4px var(--lume)}
+.pmh{margin:2px 6px 0;font-family:var(--display);font-weight:800;font-variation-settings:"wdth" 70;font-size:19px;line-height:1;letter-spacing:.02em;text-transform:uppercase;color:var(--lume)}
+.pmenu .msec{border-top:0;padding-top:2px}
 /* the bottom: only what a world is played with (Paint's chip while building or in a game, the Earth's layers, Beat's beat) */
 .tools .tb{height:32px;padding:0 12px 0 9px;font-size:9px;border-radius:16px}
 .tb.done{color:var(--ink);border-color:rgba(234,249,255,.4);background:rgba(1,4,10,.7)}

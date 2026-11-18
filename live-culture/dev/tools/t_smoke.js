@@ -24,7 +24,15 @@ const size = process.argv[2] || 'phone';
   await page.evaluate(() => window.__lc.WORLDS[0].o.tool('ink')); s = await D();
   { const m = await page.evaluate(() => ({ ids: [...document.querySelectorAll('#ms_paint button')].map(b => b.id).join(), foot: [...document.querySelectorAll('#foot button')].filter(b => b.offsetParent).length }));
     ok(s.tools === '' && m.foot === 0, 'painting, nothing at all along the bottom: a clear window: ' + JSON.stringify(s.tools));
-    ok(m.ids === 'pc_auto,pc_0,pc_1,pc_2,pc_3,pc_4,pc_5,p_mir,p_clear,bPhoto,bClear,t_wall,t_fan,t_drain,t_puz', 'Paint\'s part of the menu: each touch a new colour or one of six, mirror, start over, your photo, the three pieces, the game: ' + m.ids); }
+    ok(m.ids === 'pc_auto,pc_0,pc_1,pc_2,pc_3,pc_4,pc_5,p_mir,p_clear,bPhoto,bClear,bSave,t_wall,t_fan,t_drain,t_puz', 'Paint\'s part of the menu: each touch a new colour or one of six, mirror, start over, your photo, saving a picture, the three pieces, the game: ' + m.ids); }
+  // (18 Nov, 06:04: "There are only four pages. Each has its own menu items. Don't put them on other sections!") two menus: the page's
+  // name opens the four pages and nothing else; the button beside it opens Paint's own menu under its name, saving a picture in it
+  { const mm = await page.evaluate(async () => { const sl = ms => new Promise(r => setTimeout(r, ms)), vis = e => !!e && !e.hidden && e.getClientRects().length > 0;
+      document.getElementById('wmenu').click(); await sl(250); const pages = [...document.querySelectorAll('#menu button')].filter(vis).map(b => b.id).join(), pagesOnly = vis(document.getElementById('menu')) && !vis(document.getElementById('pmenu'));
+      document.getElementById('bTools').click(); await sl(250); const own = { tb: vis(document.getElementById('bTools')), open: vis(document.getElementById('pmenu')), pagesShut: !vis(document.getElementById('menu')), title: document.getElementById('pmh').textContent, save: !!document.getElementById('bSave').closest('#ms_paint') };
+      document.getElementById('bTools').click(); await sl(200); return { pages, pagesOnly, own, shut: !vis(document.getElementById('pmenu')) && !vis(document.getElementById('menu')) }; });
+    ok(mm.pages === 'w_paint,w_earth,w_mix,w_beat' && mm.pagesOnly, 'the page\'s name opens the four pages and nothing else: ' + mm.pages);
+    ok(mm.own.tb && mm.own.open && mm.own.pagesShut && mm.own.title === 'Paint' && mm.own.save && mm.shut, 'the button beside it opens Paint\'s own menu under its name (saving a picture in it), closing the pages; a second tap closes it: ' + JSON.stringify(mm)); }
   const mid = () => page.evaluate(() => window.__lc.WORLDS[0].o.mid());
   const simT = () => page.evaluate(() => window.__lc.WORLDS[0].o.dbg().simT);
   // a wall: drawn, and taken away with a tap
@@ -63,7 +71,14 @@ const size = process.argv[2] || 'phone';
     await drag(X(s, .2), Y(s, .45), X(s, .8), Y(s, .55), 14); await sleep(1500); await all(); await sleep(300);
     const a0 = await all(), m0 = await mid(); await sleep(3000); await all(); await sleep(300); const a1 = await all(), m1 = await mid();
     ok(z < .002 && a0 > .004 && a1 > a0 * .85 && Math.abs(m1 - m0) < .04, 'start over clears the water (' + z.toFixed(4) + '); a stroke stays as it was put, three seconds on: ' + a0.toFixed(4) + ' then ' + a1.toFixed(4) + ' of the screen, its height ' + (m0 || 0).toFixed(3) + ' then ' + (m1 || 0).toFixed(3));
-    await page.screenshot({ path: `shots/smoke_${size}_still.png` }); }
+    await page.screenshot({ path: `shots/smoke_${size}_still.png` });
+    // (18 Nov, the 10:33 run) and it stays through a new size: the app giving the page less height, the phone turned, and back again
+    // (until then a new size gave new, empty water)
+    { const vp = page.viewportSize(), c0 = (await D()).d.carried;
+      await page.setViewportSize({ width: vp.width, height: vp.height - 94 }); await sleep(900); await all(); await sleep(300); const b0 = await all();
+      await page.setViewportSize({ width: vp.height, height: vp.width }); await sleep(900); await all(); await sleep(300); const b1 = await all();
+      await page.setViewportSize(vp); await sleep(900); await all(); await sleep(300); const b2 = await all(), c1 = (await D()).d.carried;
+      ok(c1 >= c0 + 3 && b0 > a1 * .8 && b1 > .002 && b2 > .002, 'the painting stays through a new size (shorter, turned, back), carried over each time: ' + [a1, b0, b1, b2].map(x => x.toFixed(4)).join(' then ') + ' (' + (c1 - c0) + ' carried)'); } }
   // each touch the next colour; a colour chosen in the menu stays; mirror: a stroke on the left also paints the right
   { const c0 = (await D()).d.col; await tap(X(s, .3), Y(s, .3)); await tap(X(s, .6), Y(s, .3)); const c1 = (await D()).d.col;
     ok(c1 === (c0 + 2) % 6 && (await D()).d.pc === -1, 'each touch takes the next colour of six: ' + c0 + ' then ' + c1);

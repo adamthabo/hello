@@ -14,13 +14,14 @@ const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') 
   const tap = async (x, y) => { await touch([[x, y]], 'touchStart'); await sleep(50); await lift(); await sleep(160); };
   const D = () => page.evaluate(() => { const L = window.__lc, i = L.WORLDS.findIndex(w => w.id === 'beat'), r = document.getElementById('btools');
     return { i, cur: L.CURI, d: L.BEAT.dbg(), errs: (L.errs || []).slice(0, 3), data: document.getElementById('data').textContent, stg: L.STG, rail: { t: innerHeight },
-      menu: !document.getElementById('menu').hidden, mode: document.getElementById('bMode').hidden, shown: !!r && !r.hidden, paintTools: !document.getElementById('tools').hidden,
+      menu: !document.getElementById('menu').hidden, own: !document.getElementById('pmenu').hidden, mode: document.getElementById('bMode').hidden, shown: !!r && !r.hidden, paintTools: !document.getElementById('tools').hidden,
       tools: r ? [...r.querySelectorAll('.tb')].map(b => { const q = b.getBoundingClientRect(); return { id: b.id.slice(2), txt: b.textContent, l: q.left, r: q.right, t: q.top, b: q.bottom }; }) : [] }; });
   const B = (f, a) => page.evaluate(([f, a]) => window.__lc.BEAT[f].apply(null, a || []), [f, a]);
   const btn = async (s, id) => { const b = s.tools.find(t => t.id === id); await tap((b.l + b.r) / 2, (b.t + b.b) / 2); };
-  // (18 Nov) the menu: the world's name at the top left opens it; a button in it pressed as a finger would
+  // (18 Nov) the menus: the world's name at the top left opens the four pages; (06:04: "Each has its own menu items. Don't put them on
+  // other sections!") the button beside it Beat's own menu; a button in either pressed as a finger would
   const at = id => page.evaluate(id => { const q = document.getElementById(id).getBoundingClientRect(); return { x: q.left + q.width / 2, y: q.top + q.height / 2, w: q.width }; }, id);
-  const mtap = async id => { const m = await at('wmenu'); await tap(m.x, m.y); await sleep(250); const q = await at(id); await tap(q.x, q.y); await sleep(200); };
+  const mtap = async id => { const m = await at(/^w_/.test(id) ? 'wmenu' : 'bTools'); await tap(m.x, m.y); await sleep(250); const q = await at(id); await tap(q.x, q.y); await sleep(200); };
   // the worlds: Beat is the fourth, and a real tap on its button opens it
   const rail = await page.evaluate(() => [...document.querySelectorAll('#rail .wb .wn')].map(b => b.textContent));
   ok(rail.join() === 'Paint,Earth,Mix,Beat', 'four worlds in the menu, Beat the last: ' + rail.join());
@@ -63,6 +64,10 @@ const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') 
   ok(s.tools.map(t => t.id).join() === 'prev,name,next' && s.tools[1].txt === 'House' && s.tools.every(t => t.l >= 0 && t.r <= W && t.b <= s.rail.t + 1 && t.r - t.l >= 40),
     'along the bottom: back, the beat\'s name, next, all on the screen: ' + s.tools.map(t => t.id + ':' + t.txt + '@' + Math.round(t.l) + '-' + Math.round(t.r) + '/' + Math.round(t.t)).join(' '));
   ok(await page.evaluate(() => [...document.querySelectorAll('#ms_beat button')].map(b => b.id).join()) === 'b_s0,b_s1,b_s2,b_s3,b_s4,b_dice,b_reset', 'Beat\'s part of the menu: the notes\' five sounds, a melody, the beat as it was');
+  { const m = await at('bTools'); await tap(m.x, m.y); await sleep(300); const o = await page.evaluate(() => { const vis = e => !!e && !e.hidden && e.getClientRects().length > 0, pm = document.getElementById('pmenu');
+      return { own: vis(pm), pages: vis(document.getElementById('menu')), title: document.getElementById('pmh').textContent, items: [...pm.querySelectorAll('button')].filter(vis).map(b => b.id).join(), save: vis(document.getElementById('bSave')) }; });
+    ok(o.own && !o.pages && o.title === 'Beat' && o.items === 'b_s0,b_s1,b_s2,b_s3,b_s4,b_dice,b_reset' && !o.save, 'the button beside the name opens Beat\'s own menu, under its name, with only its own: ' + JSON.stringify(o));
+    await tap(m.x, m.y); await sleep(300); s = await D(); ok(!s.own && !s.menu, 'a second tap on it closes it'); }
   const fits = s => { const g = s.d.geo, top = Math.min(...s.tools.map(t => t.t)), W = s.stg.w; return g.cx - g.R * 1.3 >= 0 && g.cx + g.R * 1.3 <= W && g.cy - g.R * 1.24 >= s.stg.y0 - 1 && g.gy >= g.cy + g.R * 1.2 - (g.wide ? 1e9 : 0) && g.gy + 3 * g.rh + 2 * g.gap + 16 <= top + 1 && g.gx >= 0 && g.gx + g.gw <= W && (g.wide || g.card.y + g.card.h <= g.cy - g.R * 1.2 + 1); };
   ok(s.d.geo.R >= 120 && fits(s), 'the circle (R ' + Math.round(s.d.geo.R) + '), its numbers, the name\'s place over it and the grid under it, all whole above the row');
   // the music on: the beat plays on its own clock, at its own tempo, on its steps; the band rests while Beat is open

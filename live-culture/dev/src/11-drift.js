@@ -16,7 +16,7 @@
    each round".) ---------- */
 var DRIFT=(function(){
   var P=null,gen=-1,vel=null,dye=null,prs=null,div=null,curl=null,sw=0,sh=0,dw=0,dh=0,type=0,filt=0,simple=false,ql=-1,szKey='',
-    q=[],last={},rows={},photoVer=-1,ink=0,t0=0,
+    q=[],last={},rows={},photoVer=-1,ink=0,t0=0,dVW=0,dVH=0,carried=0,
     /* the machine: walls (segments, in fractions of the screen), fans, prisms, drains, tunnels; in a level also its fixed sources,
        walls, winds, prisms and drains, and its rings. obs is the walls drawn into the water's own grid: 1 where there is wall */
     obs=null,obsDirty=true,WB=null,WN=0,TOOL='ink',WALLS=[],FANS=[],DRAINS=[],PRISMS=[],TUNNELS=[],CUPS=[],FIX={walls:[],fans:[],drains:[],prisms:[]},
@@ -59,6 +59,9 @@ var DRIFT=(function(){
       'if(uHO>0.5){float oL=texture2D(uObs,vL).x;float oR=texture2D(uObs,vR).x;float oT=texture2D(uObs,vT).x;float oB=texture2D(uObs,vB).x;if(oL>0.5)L=C;if(oR>0.5)R=C;if(oT>0.5)T=C;if(oB>0.5)B=C;v-=vec2(R-L,T-B);'+
       'if(oL>0.5)v.x=max(v.x,0.0);if(oR>0.5)v.x=min(v.x,0.0);if(oT>0.5)v.y=min(v.y,0.0);if(oB>0.5)v.y=max(v.y,0.0);}else{v-=vec2(R-L,T-B);}gl_FragColor=vec4(v,0.0,1.0);}',
     mul:H+'uniform sampler2D uT;uniform float uK;\nvoid main(){gl_FragColor=uK*texture2D(uT,vUv);}',
+    /* (18 Nov) the picture carried over to water of another size: each point keeps its place on the screen, measured from the middle
+       (what falls outside a smaller screen is cut off; a bigger one has clear water round it) */
+    rsm:H+'uniform sampler2D uT;uniform vec2 uS;uniform vec2 uO;\nvoid main(){vec2 q=vUv*uS+uO;float k=step(0.0,q.x)*step(q.x,1.0)*step(0.0,q.y)*step(q.y,1.0);gl_FragColor=texture2D(uT,clamp(q,0.0,1.0))*k;}',
     /* (17 Nov, evening: "slow down the paint. Make it more viscous") the water's own thickness: each pass draws a cell's motion towards
        its neighbours', so small eddies melt into broad, slow flows, as in honey */
     vis:H+'uniform sampler2D uT;uniform float uK;\nvoid main(){vec4 c=texture2D(uT,vUv);vec4 n=0.25*(texture2D(uT,vL)+texture2D(uT,vR)+texture2D(uT,vT)+texture2D(uT,vB));gl_FragColor=mix(c,n,uK);}',
@@ -101,9 +104,17 @@ var DRIFT=(function(){
   function size(){
     if(!P)return;var ar=VW/VH,S=(COARSE?[128,96,64]:[160,128,96])[QL],D=(COARSE?[512,384,256]:[720,512,384])[QL];if(FASTDYE)D=Math.min(D,256);
     var w=Math.round(ar>=1?S*ar:S),h=Math.round(ar>=1?S:S/ar),W=Math.round(ar>=1?D*ar:D),Hh=Math.round(ar>=1?D:D/ar),key=w+'x'+h+'x'+W+'x'+Hh;
-    if(key===szKey&&dye)return;freeAll();szKey=key;ql=QL;sw=w;sh=h;dw=W;dh=Hh;
-    dye=dbl(dw,dh);if(!simple){vel=dbl(sw,sh);prs=dbl(sw,sh);div=glTarget(sw,sh,type,GLX.gl.NEAREST);curl=glTarget(sw,sh,type,GLX.gl.NEAREST);if(!vel||!prs||!div||!curl){freeAll();P=null;return}}
-    if(!dye){P=null;return}photoVer=-1;
+    if(key===szKey&&dye)return;
+    /* (18 Nov) what is painted stays (rule 28), through a new size too: the screen turned, or the app giving the page more or less
+       height, used to give new, empty water. The old picture is carried over, each point where it was on the screen; the water is
+       still after it (the photo, if one is in, is carried with it, not poured in again) */
+    var old=dye&&P.rsm?dye:null,ow=dVW,oh=dVH;if(old)dye=null;
+    freeAll();szKey=key;ql=QL;sw=w;sh=h;dw=W;dh=Hh;
+    dye=dbl(dw,dh);if(!simple){vel=dbl(sw,sh);prs=dbl(sw,sh);div=glTarget(sw,sh,type,GLX.gl.NEAREST);curl=glTarget(sw,sh,type,GLX.gl.NEAREST);if(!vel||!prs||!div||!curl){freeAll();if(old){glFree(old.r);glFree(old.w)}P=null;return}}
+    if(!dye){if(old){glFree(old.r);glFree(old.w)}P=null;return}
+    if(old&&ow>0&&oh>0){var gl0=GLX.gl,ur=run(P.rsm,dye.w,[1/dw,1/dh]),kx=VW/ow,ky=VH/oh;glBind(0,old.r.tex,ur.uT);gl0.uniform2f(ur.uS,kx,ky);gl0.uniform2f(ur.uO,.5-.5*kx,.5-.5*ky);glQuad(P.rsm);dye.swap();carried++}
+    else photoVer=-1;
+    if(old){glFree(old.r);glFree(old.w)}dVW=VW;dVH=VH;
     obs=glTarget(sw,sh,GLX.gl.UNSIGNED_BYTE,GLX.gl.LINEAR);obsDirty=true;
     rbW=64;rbH=Math.max(16,Math.round(64*VH/VW));rb=glTarget(rbW,rbH,GLX.gl.UNSIGNED_BYTE,GLX.gl.LINEAR);rbBuf=new Uint8Array(rbW*rbH*4);rbOk=false}
   function run(prog,target,texel){var u=glUse(prog,target);if(u.uTexel)GLX.gl.uniform2f(u.uTexel,texel[0],texel[1]);return u}
@@ -332,8 +343,9 @@ var DRIFT=(function(){
     b.innerHTML='<svg viewBox="0 0 18.4 18.4" aria-hidden="true">'+icon+'</svg><span></span>';b.lastChild.textContent=name;if(lab)b.setAttribute('aria-label',lab);
     b.addEventListener('click',fn);par.appendChild(b);return b}
   function row(par,label){var r=document.createElement('div');r.className='mrw';if(label){var l=document.createElement('span');l.className='ml';l.textContent=label;r.appendChild(l)}par.appendChild(r);return r}
-  function menu(sec){if(sec._built)return;sec._built=1;var ph=$('bPhoto'),pc=$('bClear');
-    var h=document.createElement('div');h.className='mh';h.textContent='paint';sec.insertBefore(h,sec.firstChild);
+  function menu(sec){if(sec._built)return;sec._built=1;var ph=$('bPhoto'),pc=$('bClear'),sv=$('bSave');
+    /* (18 Nov, 06:04) Paint's own menu, under the page's name (the menu's title): nothing of another page's here, and saving a
+       picture, which is the painting's, is here and nowhere else */
     /* the colour: each touch the next of six, or one of them */
     var rc=row(sec,'colour');[-1].concat(PAL.map(function(x,i){return i})).forEach(function(i){var b=document.createElement('button');b.type='button';b.className='sw'+(i<0?' auto':'');b.id='pc_'+(i<0?'auto':i);
       b.innerHTML='<i></i>';if(i>=0)b.firstChild.style.setProperty('--c','rgb('+PAL[i].map(function(v){return Math.round(v*255)}).join(',')+')');
@@ -341,7 +353,7 @@ var DRIFT=(function(){
     /* mirror, start over, your photo (and taking it away) */
     var rm=row(sec,'');mbtn(rm,'p_mir','mirror','',function(){MIR=MIR===1?2:MIR===2?4:MIR===4?6:1;menuSync();say(MIR<2?'mirror off':'every stroke '+MIR+' times','')},'Mirror every stroke: off, two, four or six ways');
     mbtn(rm,'p_clear','start over',CLRI,function(){clearInk=true;clearVel=true;MINE=true;menuShow(false);say('clear water','')},'Clear the water and start a new picture');
-    if(ph)rm.appendChild(ph);if(pc)rm.appendChild(pc);
+    if(ph)rm.appendChild(ph);if(pc)rm.appendChild(pc);if(sv)rm.appendChild(sv);
     /* build: the three pieces; the game */
     var rb=row(sec,'build');TOOLS.forEach(function(t){if(t[0]==='ink'||t[0]==='puz')return;mbtn(rb,'t_'+t[0],t[1],t[2],function(){if(PZ>=0)gmOff();TOOL=t[0];toolsSync();menuShow(false)},'Build: '+t[1])});
     var rg=row(sec,'');var g=mbtn(rg,'t_puz','play the game',TOOLS[4][2],function(){gmStart();toolsSync();menuShow(false)},'Play the game: push the paint into the rings');g.classList.add('go');
@@ -613,7 +625,7 @@ var DRIFT=(function(){
     R.next=t+R.ev;if(t>=R.until||!RUN)R.done=true}
   function U(x){return PZ>=0?bx(x):(STG.x0+x*STG.w)/VW}function V(y){return PZ>=0?by(y):(STG.y0+y*STG.h)/VH}
   return {enter:enter,leave:leave,menu:menu,resize:function(){resize();pzRelayout();obsDirty=true},down:down,up:up,gesture:gesture,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
-    dbg:function(){return {mine:MINE,mir:MIR,pc:PCI,col:PCK,ok:!!(P&&dye),simT:simT,simple:simple,sw:sw,sh:sh,dw:dw,dh:dh,lin:GLX.hfLin,tool:TOOL,pz:PZ,won:!!pzWon,walls:WALLS.length,fans:FANS.length,drains:DRAINS.length,prisms:PRISMS.length,tunnels:TUNNELS.length,wn:WN,
+    dbg:function(){return {mine:MINE,mir:MIR,pc:PCI,col:PCK,ok:!!(P&&dye),carried:carried,simT:simT,simple:simple,sw:sw,sh:sh,dw:dw,dh:dh,lin:GLX.hfLin,tool:TOOL,pz:PZ,won:!!pzWon,walls:WALLS.length,fans:FANS.length,drains:DRAINS.length,prisms:PRISMS.length,tunnels:TUNNELS.length,wn:WN,
       game:{round:GM.round,need:GM.need,got:GM.got,left:+GM.left.toFixed(2),score:GM.score,best:GM.best,phase:GM.phase,news:NEWS[GM.round]?NEWS[GM.round][0]:'',newBest:!!GM.newBest,cols:GM.cols.slice(),wall:!!GM.wall,combo:GM.combo,drain:GM.drain,cur:GM.cur,ringN:GM.ringN,loops:GM.loops,wallXY:GM.wall},board:{x0:B.x0,y0:B.y0,w:B.w,h:B.h},run:RUN,rt:RT,
       cups:CUPS.map(function(c){return {c:c.c,fill:c.fill,match:c.match,done:c.done,x:WX(c.x),y:WY(c.y),r:cupR()*(c.r||1),gold:!!c.gold,n:c.n,mv:c.ox?'loop':c.mx||c.my?'drift':'',
         loop:c.ox?{cx:B.x0+c.x0*B.w,cy:B.y0+c.y0*B.h,rx:c.ox*B.w,ry:c.oy*B.h,lap:c.mp,dir:c.od,x0:c.x0,y0:c.y0,ox:c.ox,oy:c.oy}:null}}),vents:FIX.fans.map(function(f){return {x:WX(f.x),y:WY(f.y),c:f.c,a:f.a===undefined?-Math.PI/2:f.a}}),fix:{walls:FIX.walls.length,fans:FIX.fans.length,drains:FIX.drains.length,prisms:FIX.prisms.length},rb:rbOk}},
