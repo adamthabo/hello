@@ -215,3 +215,5 @@ not ask for.
 - 2026-11-18 12:37: no new word from him (nothing back on the mode's button). The screenshots' most visible flaw: a dense storm's
   lightning added up to a white disc over Cuba, hiding it and its name. The dust is now counted into cells and drawn once, and a
   flash is passed over while a young one glows within its size: violet specks and separate flashes.
+- 2026-11-18 13:39: no new word from him. A tap's answer says more (his 02:04 "know what they are"): a satellite's card now says
+  in one plain sentence what it is for, where its name or kind tells it for sure, and nothing where nothing is known.

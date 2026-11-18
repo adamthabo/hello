@@ -160,6 +160,8 @@ body.camw .zm{display:none}
    the card takes the touches that land on it */
 .card .cn{margin:0;font-family:var(--display);font-weight:800;font-variation-settings:"wdth" 70;font-size:19px;line-height:1;letter-spacing:.02em;text-transform:uppercase;color:var(--ink);overflow-wrap:anywhere}
 .card .ck{margin:4px 0 7px;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--lume)}
+/* (18 Nov) what a satellite is for, in one plain sentence, under its kind */
+.card .cdo{margin:-2px 0 8px;font-size:10px;line-height:1.45;letter-spacing:.01em;color:var(--ink);text-transform:none}
 .card dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:1px 10px}
 .card dt{color:rgba(234,249,255,.45);text-transform:uppercase;font-size:8.5px;letter-spacing:.12em;padding-top:1.5px;white-space:nowrap}
 .card dd{margin:0;color:var(--ink);min-width:0;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}

@@ -277,7 +277,11 @@ Artifact: https://claude.ai/artifact/PCzaFJH2vjXe4Kv8KK4Xic (publish to this URL
    where it is on a live map, its passes; no arrow on the link, rule 7), and after a tap on the face "the place below" reads the place
    under the finger, which a tap on the face no longer does by itself while the satellites are shown (with them off it does, as
    before). Marks that stay where they are still come before the swarm: a camera, and over the face a storm's wheel, a fire, a small
-   war's or blackout's ring. A cross puts the card away.
+   war's or blackout's ring. A cross puts the card away. (The 13:39 run, his "know what they are" again) under its kind the card says
+   in one plain sentence what it is for, where its name or its kind tells it for sure (`whatIs`, `WHAT` in `13-orbit.js`): the
+   internet constellations, the navigation systems, the phone and message networks, the weather and picture-taking fleets, the
+   stations and the ships that visit them, the telescopes; by kind the geostationary, the wreckage, the rocket stages, the
+   military. Nothing is said where nothing is known. The kind line calls the telescopes and the visiting ships what they are.
 30. **What he asked on 18 Nov, 06:04.** "Still menu issues, why is this so hard? There are only four pages. Each has its own menu
    items. Don't put them on other sections!" Rule 28's one menu held two jobs at once: the four pages, and under them this page's
    things (and "save a picture" on every page). So **two menus, each with one job**: the page's name at the top left opens the four

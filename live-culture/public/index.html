@@ -168,6 +168,8 @@ body.camw .zm{display:none}
    the card takes the touches that land on it */
 .card .cn{margin:0;font-family:var(--display);font-weight:800;font-variation-settings:"wdth" 70;font-size:19px;line-height:1;letter-spacing:.02em;text-transform:uppercase;color:var(--ink);overflow-wrap:anywhere}
 .card .ck{margin:4px 0 7px;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--lume)}
+/* (18 Nov) what a satellite is for, in one plain sentence, under its kind */
+.card .cdo{margin:-2px 0 8px;font-size:10px;line-height:1.45;letter-spacing:.01em;color:var(--ink);text-transform:none}
 .card dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:1px 10px}
 .card dt{color:rgba(234,249,255,.45);text-transform:uppercase;font-size:8.5px;letter-spacing:.12em;padding-top:1.5px;white-space:nowrap}
 .card dd{margin:0;color:var(--ink);min-width:0;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
@@ -2818,8 +2820,10 @@ var ORBIT=(function(){
       mk('button','st','\u203a','n','The next one',function(){step(1)},cw)}
     mk('button','cx','\u00d7','x','Put the card away',function(){letGo()});
     el=mk('p','cn',nameOf(sel));
-    t=[gr===9?'wreckage':inf&&inf.type===2?'rocket stage':inf&&inf.type===3?'debris':KD[gr]];if(inf&&STAT[inf.stat])t.push(STAT[inf.stat]);if(inf&&inf.owner)t.push(inf.owner);
+    var rn=(S&&S.names[sel])||'',kw=/^(HST$|NUSTAR|IXPE|XRISM|CHEOPS|EINSTEIN PROBE|HXMT)/.test(rn)?'space telescope':/^(TIANZHOU|PROGRESS|CYGNUS)/.test(rn)?'cargo ship':/^(SOYUZ|SHENZHOU|SZ-)|DRAGON/.test(rn)?'spaceship':KD[gr];
+    t=[gr===9?'wreckage':inf&&inf.type===2?'rocket stage':inf&&inf.type===3?'debris':kw];if(inf&&STAT[inf.stat])t.push(STAT[inf.stat]);if(inf&&inf.owner)t.push(inf.owner);
     el=document.createElement('p');el.className='ck';el.textContent=t.join(' · ');c.appendChild(el);
+    var wd=whatIs(sel,inf);if(wd){el=document.createElement('p');el.className='cdo';el.textContent=wd;c.appendChild(el)}
     dl=document.createElement('dl');c.appendChild(dl);
     if(id)row(dl,'catalogue','no. '+id+(inf&&inf.intl?' · '+inf.intl:''));
     if(inf&&inf.launch)row(dl,'launched',inf.launch.getUTCDate()+' '+MONS[inf.launch.getUTCMonth()]+' '+inf.launch.getUTCFullYear()+(inf.site?' from '+inf.site:'')+' · '+((Date.now()-inf.launch.getTime())/31557600000).toFixed(1)+' years up');
@@ -2847,6 +2851,49 @@ var ORBIT=(function(){
   function choose(i,x,k){sel=i;path=null;selI=null;satInfoLoad();tone('glass',pent(clamp(Math.round(14-Math.log(EL[i*11])*9),2,14),52),k,pan(x));cardBuild()}
   function step(k){if(HERE.length<2)return;hereI=(hereI+k+HERE.length)%HERE.length;choose(HERE[hereI],g.cx,.3)}
   function letGo(){sel=-1;path=null;selI=null;HERE=[];BELOW=null;cardBuild()}
+  /* (18 Nov, the 13:39 run; his 02:04: "... know what they are") one plain sentence of what a satellite is for, where its name or its
+     kind tells it for sure: the internet constellations, the navigation systems, the phone and message networks, the weather and
+     picture-taking fleets, the stations and the ships that visit them, the telescopes; by its kind the geostationary, the wreckage, the
+     rocket stages and the military. Nothing is said where nothing is known */
+  var WHAT=[[/^STARLINK/,"One of SpaceX's Starlink satellites, which carry internet to people on the ground."],
+    [/^ONEWEB/,"One of Eutelsat OneWeb's satellites, which carry internet from low orbit."],
+    [/^KUIPER/,"One of Amazon's internet satellites (Project Kuiper)."],[/^QIANFAN/,"One of China's Qianfan (Thousand Sails) internet satellites."],
+    [/^(HULIANWANG|GUOWANG|SATNET)/,"One of China's Guowang internet satellites."],
+    [/^(GPS|NAVSTAR)/,"A GPS satellite: its timing signals let phones, cars and planes work out where they are."],
+    [/^(GALILEO|GSAT0)/,"A Galileo satellite, Europe's navigation system: its timing signals let receivers work out where they are."],
+    [/^BEIDOU/,"A BeiDou satellite, China's navigation system: its timing signals let receivers work out where they are."],
+    [/^IRNSS/,"A NavIC satellite, India's navigation system: its timing signals let receivers work out where they are."],
+    [/^QZS/,"A Michibiki satellite, Japan's navigation system: it sharpens satellite navigation over Japan and the lands round it."],
+    [/^IRIDIUM/,"An Iridium satellite: together they carry phone calls and messages from anywhere on Earth, the poles too."],
+    [/^GLOBALSTAR/,"A Globalstar satellite: it relays satellite phone calls and messages."],[/^ORBCOMM/,"An Orbcomm satellite: it relays short messages from machines, ships and trucks."],
+    [/^GOES/,"A NOAA GOES weather satellite: from 35,786 km up it watches the Americas and the oceans round them."],
+    [/^(NOAA|METOP|METEOSAT|HIMAWARI|FENGYUN|FY-|ELEKTRO|INSAT-3D|TIANMU)/,"A weather satellite: it watches clouds, rain and the air for the forecasts."],
+    [/^FLOCK/,"One of Planet's Flock satellites: each the size of a shoebox, together they photograph the Earth's land every day."],
+    [/^SKYSAT/,"A Planet SkySat: it takes sharp pictures of the ground, and video."],
+    [/^LANDSAT/,"A Landsat satellite (NASA and USGS): Landsat has photographed the Earth's land since 1972."],
+    [/^SENTINEL/,"A Sentinel satellite of Europe's Copernicus programme, watching the land, the seas, the ice or the air."],
+    [/^LEMUR/,"A Spire satellite: it follows ships and planes by their radio signals and measures the air for weather forecasts."],
+    [/^(ICEYE|CAPELLA)/,"A radar satellite: it maps the ground through cloud and in the dark."],
+    [/^ISS \(/,"The International Space Station: people live and work on board, going round the Earth every hour and a half."],
+    [/^CSS \(/,"China's Tiangong space station: astronauts live and work on board."],
+    [/^TIANZHOU/,"A Tianzhou cargo ship, carrying supplies to China's space station."],[/^PROGRESS/,"A Progress cargo ship, carrying supplies to the International Space Station."],
+    [/^SOYUZ/,"A Soyuz spaceship, which carries crews to the International Space Station."],
+    [/^(SHENZHOU|SZ-)/,"A Shenzhou spaceship or a part of one: they carry astronauts to China's space station."],
+    [/DRAGON/,"A SpaceX Dragon, which carries crews or cargo to the International Space Station."],[/^CYGNUS/,"A Cygnus cargo ship, carrying supplies to the International Space Station."],
+    [/^HST$/,"The Hubble Space Telescope: it looks out at the universe, not down at the Earth."],[/^NUSTAR/,"NASA's NuSTAR, a telescope that sees the universe in high-energy X-rays."],
+    [/^IXPE/,"NASA's IXPE, a telescope that studies the X-rays from black holes and dead stars."],[/^XRISM/,"XRISM, an X-ray telescope of Japan's and NASA's."],
+    [/^CHEOPS/,"Europe's CHEOPS, a telescope that measures planets round other stars."],[/^EINSTEIN PROBE/,"China's Einstein Probe, a telescope watching the sky for sudden flashes of X-rays."],
+    [/^HXMT/,"China's Insight (HXMT), an X-ray telescope."]];
+  function whatIs(i,inf){var S=LIVE.sats,nm=(S&&S.names[i])||'',gr=GRP[i],k;
+    if(gr===9)return 'A piece of the satellite that broke up then: nobody steers it, and it can stay up for years.';
+    if(inf&&inf.type===2)return 'The spent upper stage of a rocket, left in orbit after putting its load up: nobody steers it.';
+    if(inf&&inf.type===3)return 'A piece of debris: nobody steers it.';
+    if(gr===1)nm='STARLINK';else if(gr===2)nm='ONEWEB';else if(gr===3&&/^\d+$/.test(nm))nm='KUIPER';
+    if(gr===4&&/^(GLONASS|COSMOS)/.test(nm))return "A GLONASS satellite, Russia's navigation system: its timing signals let receivers work out where they are.";
+    for(k=0;k<WHAT.length;k++)if(WHAT[k][0].test(nm))return WHAT[k][1];
+    if(gr===5)return 'It goes round once a day, keeping pace with the Earth, so from the ground it stays in one place in the sky.';
+    if(gr===10)return 'Run by an armed force: most of what it does is not made public.';
+    return ''}
   function cardLive(t){
     if(sel<0||!selI||!cNow||t-cardAt<240)return;cardAt=t;var la=selI.lat,lo=selI.lon;
     cNow.textContent=Math.abs(la).toFixed(1)+'°'+(la>=0?'N':'S')+' '+Math.abs(lo).toFixed(1)+'°'+(lo>=0?'E':'W')+' · '+num(selI.alt)+' km up · '+num(selI.v)+' km/h';

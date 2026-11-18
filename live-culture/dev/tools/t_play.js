@@ -205,6 +205,11 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await page.evaluate(() => window.__lc.ORBIT.pick('ISS (ZARYA)')); await sleep(900); o = await page.evaluate(() => window.__lc.ORBIT.dbg());
     ok(/1998-067A/.test(o.card) && /Baikonur/.test(o.card) && /20 Nov 1998/.test(o.card) && /51\.6°/.test(o.card), 'earth: the space station\'s card should hold its record: ' + String(o.card).replace(/\n+/g, ' | '));
     const age = /MEASURED\s*orbit of [^·]+ · (\d+) (min|h|days) ago/i.exec(o.card); ok(age && (age[2] !== 'days'), 'earth: the space station\'s orbit should have been measured within two days: ' + (age && age[0]));
+    // (18 Nov, the 13:39 run) what it is for, in one plain sentence, where its name or kind tells it for sure (his 02:04: "know what they are")
+    { const w = await page.evaluate(() => { const L = window.__lc, out = {}, ir = L.LIVE.sats.names.find(n => /^IRIDIUM/.test(n));
+        for (const nm of ['ISS (ZARYA)', 'HST', ir]) { L.ORBIT.pick(nm); const c = document.getElementById('card'); out[nm] = [(c.querySelector('.ck') || {}).textContent || '', (c.querySelector('.cdo') || {}).textContent || '']; }
+        L.ORBIT.pick('ISS (ZARYA)'); return out; });
+      const ks = Object.keys(w); ok(/people live and work on board/.test(w['ISS (ZARYA)'][1]) && /^space telescope/.test(w.HST[0]) && /Hubble/.test(w.HST[1]) && ks.length === 3 && /^An Iridium satellite/.test(w[ks[2]][1]), 'earth: a satellite\'s card says what it is for: ' + JSON.stringify(w)); }
     // (18 Nov, 02:04: "Oh and ALL satélites have to be accessible to link and know what they are") any satellite, over the Earth's face
     // too: a tap there takes the nearest within reach; its card steps through the others, links to N2YO, offers the place below, and its
     // cross puts it away

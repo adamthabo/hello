@@ -1,6 +1,14 @@
 # Changelog
 
 ## For the owner
+18 Nov 2026, 08:45 (the hourly run):
+
+- **Each satellite says what it's for, in plain words.** Under its kind, a satellite's card now has one sentence: "A GPS satellite:
+  its timing signals let phones, cars and planes work out where they are", "One of Planet's Flock satellites: each the size of a
+  shoebox, together they photograph the Earth's land every day", "The Hubble Space Telescope: it looks out at the universe, not
+  down at the Earth". It covers the internet constellations, navigation, phone networks, weather and imaging satellites, the space
+  stations and their supply ships, the telescopes, wreckage and rocket stages. Where nothing certain is known, it says nothing.
+
 18 Nov 2026, 07:40 (the hourly run):
 
 - **Big thunderstorms no longer white out the map.** Where a storm had thousands of lightning flashes, like the one over Cuba this
@@ -387,6 +395,16 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 18 Nov 2026, 08:45 (New York), the hourly run: a satellite's card says what it is for (README rule 29)
+
+- `13-orbit.js`: `whatIs(i, inf)` gives one sentence under the kind line (`p.cdo`): by name (`WHAT`, first match) for Starlink,
+  OneWeb, Kuiper, Qianfan, Guowang; GPS, Galileo, GLONASS (the navigation kind's COSMOS names too), BeiDou, NavIC, Michibiki;
+  Iridium, Globalstar, Orbcomm; GOES and the other weather fleets; Planet's Flock and SkySat, Landsat, Sentinel, Spire, the radar
+  satellites; the two stations, Tianzhou, Progress, Soyuz, Shenzhou, Dragon, Cygnus; Hubble, NuSTAR, IXPE, XRISM, CHEOPS, Einstein
+  Probe, Insight. By kind: wreckage, rocket stages, debris, geostationary, military. Otherwise nothing. The kind line says "space
+  telescope", "cargo ship" or "spaceship" for those (they were "Earth-watching satellite" and "space station").
+- `style.css`: `.card .cdo`. `t_play.js`: the space station's, Hubble's and an Iridium's sentences, and Hubble's kind.
 
 ## 18 Nov 2026, 07:40 (New York), the hourly run: a dense storm's lightning no longer adds up to white
 
