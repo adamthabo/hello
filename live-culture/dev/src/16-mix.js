@@ -357,6 +357,9 @@ var MIX=(function(){
     rowsBar:function(b){var out=[];TR.forEach(function(tr){if(tr.k!=='row'||tr.play<0)return;var lp=tr.loops[tr.play],v=[],q;
       for(q=0;q<16;q++){var ev=lp.at[(((b*16+q)%lp.len)+lp.len)%lp.len],m=0;for(var e=0;e<ev.length;e++)m=Math.max(m,ev[e].v||0);v.push(Math.min(1,m))}
       out.push({col:tr.row.col||MCOL[tr.mode]||'#eaf9ff',v:v})});return out},
+    rowsAll:function(b){var out=[];TR.forEach(function(tr,j){if(tr.k!=='row'||tr.mode!==MODE)return;var on=tr.play>=0?tr.next!==-2:tr.next>=0,
+      lp=tr.loops[tr.play>=0?tr.play:tr.next>=0?tr.next:0],v=[],q;for(q=0;q<16;q++){var ev=lp.at[(((b*16+q)%lp.len)+lp.len)%lp.len],m=0;for(var e=0;e<ev.length;e++)m=Math.max(m,ev[e].v||0);v.push(Math.min(1,m))}
+      out.push({j:j,n:tr.n,col:tr.row.col||MCOL[tr.mode]||'#eaf9ff',on:on,v:v})});return out},
     col:function(k){return hexRGB(MCOL[k]||'#3ef0ff')},bvoice:bvoice,beatv:BEATV,
     launch:launch,stop:stopT,stopAll:stopAll,jam:jam,load:loadAll,rows:ROWS,all:ALL,mode:modeSet,next:next,boot:boot,start:start,voice:voice,chip:chipSync,banks:banksOf,
     tr:function(k,n){return trOf(k,n)},

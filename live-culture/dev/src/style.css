@@ -244,3 +244,14 @@ body.camw .zm{display:none}
 #mix.mxsm .mxn{grid-column:auto;padding:0 1px 0 2px;font-size:7.5px;letter-spacing:0}
 #mix.mxsm .mxrow .mxb{padding:0 2px;font-size:8px;letter-spacing:0}
 @keyframes mxblink{50%{opacity:.25}}
+/* (17 Nov, 19:44) in Mix and Beat the worlds' buttons are tucked behind a handle; a tap brings them up over the bottom of the screen */
+.wgrip{display:flex;align-items:center;gap:5px;height:26px;padding:0 12px;border-radius:13px;border:1px solid rgba(234,249,255,.14);
+  background:rgba(1,4,10,.45);color:var(--dim);pointer-events:auto;font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase}
+.wgrip[hidden]{display:none}
+.wgrip i{width:5px;height:5px;border-radius:50%;background:rgba(234,249,255,.3);flex:none}
+.wgrip i.on{background:var(--lume)}
+.wgrip span{margin-left:4px;line-height:1}
+.foot.railauto .rail{position:absolute;left:50%;bottom:calc(4px + env(safe-area-inset-bottom,0px));transform:translate(-50%,140%);opacity:0;pointer-events:none;
+  visibility:hidden;background:rgba(1,4,10,.92);transition:transform .25s ease,opacity .25s ease,visibility 0s linear .25s}
+.foot.railauto.railup .rail{transform:translate(-50%,0);opacity:1;pointer-events:auto;visibility:visible;transition-delay:0s}
+.foot.railauto.railup .wgrip{visibility:hidden}

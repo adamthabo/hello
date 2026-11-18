@@ -7,7 +7,11 @@
    pitch, the band's key (E, minor pentatonic) from low (inner) to high (outer): a touch puts a note there, at that sixteenth, in the
    sound chosen below; the bar plays it every time round; a touch on a note takes it away, and a finger drawn round leaves a melody.
    Five sounds, each a real instrument bent out of shape (rule 1 holds: struck, dying away, never loud; t_levels.js measures every
-   step and pitch filled at once), "dice" for a melody made up in the sound chosen, and "clear". The notes are kept in the browser. */
+   step and pitch filled at once), "dice" for a melody made up in the sound chosen, and "clear". The notes are kept in the browser.
+   (17 Nov, 19:44: "Yeah but it's not interactive") the inside answers a touch too: a tap on an instrument's ring takes it out of the
+   beat or brings it back (the band's nine players in the African mode, a mode's instruments in the others; one taken out stays as a
+   dim ring), and a tap in the middle brings in the next mode's beat on the bar; a touch with the music off turns it on; a note put
+   down sounds on the next sixteenth, in time. */
 var BEAT=(function(){
   var SN=[['glass','a glockenspiel an octave up, ringing into the echo'],['rubber','a marimba an octave down, through a squelching filter'],
       ['bells','tubular bells, low and long'],['boom','a fingered bass, dark and round'],['pluck','an electric guitar through a wah']],
@@ -29,10 +33,14 @@ var BEAT=(function(){
   function stems(){if(STB)return STB;STB=[];for(var i=0;i<NL;i++){var b=[[],[],[],[]],k;for(k=0;k<4;k++)for(var q=0;q<16;q++)b[k].push(0);
       ONS[i].forEach(function(o){var st=Math.floor(o[0]*64+.5)%64,br=st>>4,q2=st&15;if(o[1]>b[br][q2])b[br][q2]=o[1]});STB.push(b)}return STB}
   /* what plays in this bar: one ring each, inside the circle */
-  function lanes(bar){var L=[],i,S=stems();
-    for(i=0;i<NL;i++){if(!(ON[i]*SC[i]>0))continue;L.push({col:BCOL[i],v:S[i][((bar%4)+4)%4]})}
-    if(MIXON&&MIX.rowsBar)MIX.rowsBar(bar).forEach(function(r){L.push(r)});
+  function lanes(bar){var L=[],i,S=stems(),b4=((bar%4)+4)%4,af=MODE==='africa'||!MIXON;
+    for(i=0;i<NL;i++){var on=ON[i]*SC[i]>0;if(af||on)L.push({col:BCOL[i],v:S[i][b4],on:on,k:'stem',i:i,n:BNAMES[i]})}
+    if(!af&&MIX.rowsAll)MIX.rowsAll(bar).forEach(function(r){L.push({col:r.col,v:r.v,on:r.on,k:'row',j:r.j,n:r.n})});
     return L.slice(0,12)}
+  function laneR(j,n,R){return R*(.16+(.33*(n>1?j/(n-1):.5)))}
+  /* the next sixteenth on the band's grid (with its swing), and whether the band's sequencer has already given it out */
+  function nextSlot(){var c=AU.c;if(!c||c.state!=='running'||!(AU.run||MIXON))return null;var k=Math.ceil((c.currentTime+.03-AU.t0)/SD);
+    return {t:AU.t0+k*SD+((k&1)?SD*SWING:0),q:((k%16)+16)%16,out:AU.sq>=k}}
   function find(s,p){for(var i=0;i<N.length;i++)if(N[i].s===s&&N[i].p===p)return i;return -1}
   function cell(x,y){var g=geo(),dx=x-g.cx,dy=y-g.cy,r=Math.hypot(dx,dy);if(r<g.R*.53||r>g.R*1.14)return null;
     var a=Math.atan2(dy,dx)+Math.PI/2;if(a<0)a+=TAU;return {s:Math.round(a/TAU*16)%16,p:clamp(Math.round((r/g.R-.6)/.4*7),0,7)}}
@@ -40,8 +48,18 @@ var BEAT=(function(){
   /* a touch on the rings: a note put there (heard at once), or one taken away; drawn along, the same for every cell it crosses */
   function apply(c,how){var k=c.s+':'+c.p;if(k===lastCell)return;lastCell=k;var i=find(c.s,c.p);
     if(how==='erase'){if(i>=0){N.splice(i,1);save()}return}
-    if(i>=0||N.length>=MAXN)return;var n={s:c.s,p:c.p,v:cur};N.push(n);save();note(n,0,.7);fl.push({s:c.s,p:c.p,t:performance.now(),c:SCOL[cur]})}
-  function down(p){if(p.ghost)return;var c=cell(p.x,p.y);if(!c){mode=null;return}mode=find(c.s,c.p)>=0?'erase':'draw';lastCell='';apply(c,mode)}
+    if(i>=0||N.length>=MAXN)return;var n={s:c.s,p:c.p,v:cur};N.push(n);save();fl.push({s:c.s,p:c.p,t:performance.now(),c:SCOL[cur]});
+    /* heard on the next sixteenth; if that is its own, the bar plays it (unless the bar has already given that sixteenth out) */
+    var sl=nextSlot();if(!sl)note(n,0,.7);else if(sl.q!==n.s||sl.out)note(n,sl.t,.7)}
+  /* the inside: an instrument's ring in or out of the beat; the middle: the next mode's beat, on the bar */
+  var tapF=[];
+  function inner(x,y){var g=geo(),r=Math.hypot(x-g.cx,y-g.cy);if(r<g.R*.11){MIX.next();var d=MIX.dbg(),k2=d.pend||d.mode,m=MODES.filter(function(q){return q.k===k2})[0];
+      say('next: '+(m?m.n:k2),'');tapF.push({j:-1,t:performance.now()});return true}
+    if(r>=g.R*.53)return false;var k=clock(),Ls=lanes(k?k.bar:0),n=Ls.length;if(!n)return true;
+    var j=clamp(Math.round(n>1?(r/g.R-.16)/.33*(n-1):0),0,n-1),l=Ls[j];if(Math.abs(r-laneR(j,n,g.R))>g.R*.09)return true;
+    if(l.k==='stem')setPlayer(l.i,!l.on);else{if(l.on)MIX.stop(l.j);else MIX.launch(l.j,0);say(l.n+(l.on?' out':' in'),l.col)}
+    tapF.push({j:j,t:performance.now()});return true}
+  function down(p){if(p.ghost)return;if(!AU.want)musicOn();mode=null;if(inner(p.x,p.y))return;var c=cell(p.x,p.y);if(!c)return;mode=find(c.s,c.p)>=0?'erase':'draw';lastCell='';apply(c,mode)}
   function move(p){if(p.ghost||!mode)return;var c=cell(p.x,p.y);if(c)apply(c,mode)}
   function up(){mode=null;lastCell=''}
   /* the bar's sixteenth: its notes, on time */
@@ -79,11 +97,17 @@ var BEAT=(function(){
       c.beginPath();c.moveTo(cx+Math.cos(a)*r0,cy+Math.sin(a)*r0);c.lineTo(cx+Math.cos(a)*r1,cy+Math.sin(a)*r1);c.stroke()}
     c.font='500 10px '+MONO;c.textAlign='center';c.textBaseline='middle';c.fillStyle='rgba(234,249,255,.5)';
     for(s=0;s<4;s++){var a2=ang(s*4);c.fillText(String(s+1),cx+Math.cos(a2)*R*1.15,cy+Math.sin(a2)*R*1.15)}
-    /* inside: what plays, one ring each, its hits on it, lit as the hand passes */
-    if(k){var L=lanes(k.bar),n=L.length,j;for(j=0;j<n;j++){var rr=R*(.16+(.33*(n>1?j/(n-1):.5))),lc=L[j].col;
-        c.strokeStyle=lc.charAt(0)==='#'?hexA(lc,.16):'rgba('+lc+',.16)';c.lineWidth=1;c.beginPath();c.arc(cx,cy,rr,0,TAU);c.stroke();
-        for(s=0;s<16;s++){var v=L[j].v[s];if(!v)continue;var ago=((k.s%16)-s+16)%16,lit=ago<1.6?1-ago/1.6:0,a3=ang(s),dr=1.2+2.2*v+3*lit;
-          c.fillStyle=lc.charAt(0)==='#'?hexA(lc,.35+.65*Math.max(lit,v*.5)):'rgba('+lc+','+(.35+.65*Math.max(lit,v*.5)).toFixed(3)+')';c.beginPath();c.arc(cx+Math.cos(a3)*rr,cy+Math.sin(a3)*rr,dr,0,TAU);c.fill()}}}
+    /* inside: every instrument, one ring each, its hits on it, lit as the hand passes; one taken out of the beat dim; a ring just
+       tapped flares */
+    tapF=tapF.filter(function(q){return now-q.t<700});
+    {var L=lanes(k?k.bar:0),n=L.length,j;for(j=0;j<n;j++){var rr=laneR(j,n,R),lc=L[j].col,lo=L[j].on,tf=0;tapF.forEach(function(q){if(q.j===j)tf=Math.max(tf,1-(now-q.t)/700)});
+        c.strokeStyle=hexA(lc,(lo?.16:.07)+.5*tf);c.lineWidth=1+2*tf;c.beginPath();c.arc(cx,cy,rr,0,TAU);c.stroke();
+        for(s=0;s<16;s++){var v=L[j].v[s];if(!v)continue;var ago=k?((k.s%16)-s+16)%16:9,lit=lo&&ago<1.6?1-ago/1.6:0,a3=ang(s),dr=(lo?1.2+2.2*v:1+1.2*v)+3*lit;
+          c.fillStyle=hexA(lc,lo?.35+.65*Math.max(lit,v*.5):.16);c.beginPath();c.arc(cx+Math.cos(a3)*rr,cy+Math.sin(a3)*rr,dr,0,TAU);c.fill()}}}
+    /* the middle: the mode's name, a tap away from the next */
+    {var mt=MODES.filter(function(q){return q.k===MODE})[0],mf=0;tapF.forEach(function(q){if(q.j===-1)mf=Math.max(mf,1-(now-q.t)/700)});
+      c.strokeStyle='rgba('+col+','+(.28+.5*mf).toFixed(3)+')';c.lineWidth=1+mf;c.beginPath();c.arc(cx,cy,R*.1,0,TAU);c.stroke();
+      c.font='500 8px '+MONO;c.fillStyle='rgba(234,249,255,.62)';c.fillText((mt?mt.n:MODE).toUpperCase(),cx,cy+R*.1+9)}
     /* outside: the notes put there, each in its sound's colour, flaring as they sound */
     for(i=0;i<N.length;i++){var nt=N[i],a4=ang(nt.s),r4=rp(nt.p,R),ago2=k?((k.s%16)-nt.s+16)%16:9,lt=ago2<1.4?1-ago2/1.4:0,nc=SCOL[nt.v];
       if(lt>0){c.fillStyle='rgba('+nc+','+(.25*lt).toFixed(3)+')';c.beginPath();c.arc(cx+Math.cos(a4)*r4,cy+Math.sin(a4)*r4,7+14*lt,0,TAU);c.fill()}
@@ -92,15 +116,17 @@ var BEAT=(function(){
     fl=fl.filter(function(f){return now-f.t<600});fl.forEach(function(f){var e=(now-f.t)/600,a5=ang(f.s),r5=rp(f.p,R);c.strokeStyle='rgba('+f.c+','+(.8*(1-e)).toFixed(3)+')';c.lineWidth=1.4;c.beginPath();c.arc(cx+Math.cos(a5)*r5,cy+Math.sin(a5)*r5,5+16*e,0,TAU);c.stroke()});
     /* the hand: once round a bar, in the mode's colour (still, at the top, while the music is off) */
     var ah=k?-Math.PI/2+k.f*TAU:-Math.PI/2;c.strokeStyle='rgba('+col+',.85)';c.lineWidth=1.6;c.beginPath();c.moveTo(cx+Math.cos(ah)*R*.1,cy+Math.sin(ah)*R*.1);c.lineTo(cx+Math.cos(ah)*R*1.1,cy+Math.sin(ah)*R*1.1);c.stroke();
-    c.fillStyle='rgba('+col+',.9)';c.beginPath();c.arc(cx,cy,3,0,TAU);c.fill();
+    c.fillStyle='rgba('+col+',.9)';c.beginPath();c.arc(cx,cy,3,0,TAU);c.fill();c.textBaseline='middle';
     if(k&&!reduce){var pb=1-(k.s%4)/4;c.strokeStyle='rgba('+col+','+(.35*pb*pb).toFixed(3)+')';c.lineWidth=1;c.beginPath();c.arc(cx,cy,R*1.1+6*pb,0,TAU);c.stroke()}
     c.restore()}
-  function hexA(h,a){var n=parseInt(h.slice(1),16);return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a.toFixed(3)+')'}
+  function hexA(h,a){if(h.charAt(0)!=='#')return 'rgba('+h+','+a.toFixed(3)+')';var n=parseInt(h.slice(1),16);return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a.toFixed(3)+')'}
   /* no words over it but what a tap asks for: a sound's name when it is chosen */
   function hud(){return ''}
   return {enter:enter,leave:leave,tick:tick,draw:draw,hud:hud,down:down,move:move,up:up,seq:seq,resize:function(){},
     dbg:function(){var k=clock(),g=geo();return {on:on,notes:N.map(function(n){return [n.s,n.p,n.v]}),cur:cur,sound:SN[cur][0],clock:k?{bar:k.bar,q:k.q,f:+k.f.toFixed(3)}:null,
-      geo:{cx:g.cx,cy:g.cy,R:g.R},lanes:k?lanes(k.bar).length:0,max:MAXN,sounds:SN.map(function(s){return s[0]})}},
+      geo:{cx:g.cx,cy:g.cy,R:g.R},lanes:k?lanes(k.bar).length:0,lane:lanes(k?k.bar:0).map(function(l){return {n:l.n,on:l.on,k:l.k}}),max:MAXN,sounds:SN.map(function(s){return s[0]})}},
+    /* for the tests: where an instrument's ring is (its top) */
+    ringAt:function(j){var g=geo(),k=clock(),n=lanes(k?k.bar:0).length;return {x:g.cx,y:g.cy-laneR(j,n,g.R),n:n}},
     /* for the tests: where a note sits on the screen, and the notes set at once */
     at:function(s,p){var g=geo(),a=ang(s),r=rp(p,g.R);return {x:g.cx+Math.cos(a)*r,y:g.cy+Math.sin(a)*r}},
     set:function(a){N=(a||[]).map(function(q){return {s:q[0],p:q[1],v:q[2]}});save()},

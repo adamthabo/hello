@@ -185,3 +185,6 @@ not ask for.
   time and rising; the game's water untouched. Next: the music (a metronome view of the beat; wild, melodic sounds played in time).
 - 2026-11-17 18:57: Beat, a fourth world (his 17:54 ask): the bar as a metronome's face with what plays broken down inside, eight
   rings of pitch outside to put notes on in five sounds, dice and clear; `t_beat.js` in the suite; the loudness test measures it.
+- 2026-11-17 19:44: his look at Beat ("not interactive"; world buttons off the music pages; videos he thought he had uploaded never
+  arrived: asked again): Beat's rings and middle answer a touch, the music comes on with a touch, notes heard in time; the worlds
+  tucked behind a handle in Mix and Beat (README rule 26).

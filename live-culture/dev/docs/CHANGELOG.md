@@ -1,6 +1,14 @@
 # Changelog
 
 ## For the owner
+17 Nov 2026, 19:44 (your look at Beat):
+
+- **Beat now plays back.** Tap an instrument's ring inside the circle to drop it out of the beat. Tap it again to bring it back.
+  Tap the middle to swap in the next classic beat: funky, African, bluesy, acid or dub. If the music was off, your first touch turns
+  it on. A note you put down now sounds on the next beat, in time.
+- **Fewer buttons on the music screens.** In Mix and Beat, the world buttons are tucked behind a small "worlds" handle at the bottom.
+  Tap it and they come up for a few seconds, which gives the circle and the mixer more room.
+
 17 Nov 2026, 18:57 (the thirteenth hourly run):
 
 - **A new world, Beat: the bar as a metronome you can play.** One big circle is a bar of music, with a hand sweeping round it in time.
@@ -288,6 +296,24 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 17 Nov 2026, 19:44 (New York): Beat answers a touch inside; the worlds tucked away in Mix and Beat (README rule 26)
+
+- `17-beat.js`: `lanes(bar)` lists every instrument, playing or not (the band's nine in the African mode, from `ONS`; a mode's rows
+  from `MIX.rowsAll(bar)` and any of the band's players in it), with `on`, its kind and its index; drawn dim when out. `inner(x, y)`:
+  inside .11 R the middle (`MIX.next()`, its name said); a ring within .09 R of a touch toggles (`setPlayer` for the band's players,
+  `MIX.stop`/`MIX.launch(j, 0)` for a mode's, its name said), the ring flaring (`tapF`). `down` turns the music on if it was off.
+  A note put down sounds on the next sixteenth (`nextSlot`, swing included), or not at all if that sixteenth is its own and the
+  sequencer has not yet given it out (the bar plays it). The middle shows the mode's name. `ringAt(j)` for the tests.
+- `16-mix.js`: `rowsAll(b)` (the mode's rows with `on`, playing, coming in, or out; their hits from the loop playing, coming, or the
+  first). `20-ui.js`: `tuck` on Mix and Beat; `#wgrip` (a dot a world, its own lit, and "worlds") built with the rail; `chrome()`
+  sets `.railauto` on the footer and shows the handle; `railShow(on)` (`.railup`, back down after 4.5 s, on a world chosen, or on
+  a touch on the stage). `style.css`: the handle; in `.railauto` the rail is laid over the bottom (absolute), hidden below it until
+  `.railup`. The footer is shorter there, so the stage (the circle, the mixer) is taller.
+- Tests: `t_beat.js`: the worlds tucked behind the handle, brought up by a tap and put away by a touch elsewhere, a world chosen from
+  there; with the music off a touch turns it on; a tap on a player's ring takes it out (its name said) and a second brings it back; a
+  tap in the middle brings bluesy in, and its instruments become the rings. `t_published.js`: a world's button pressed through the
+  handle where it is tucked (`goW`).
 
 ## 17 Nov 2026, 18:57 (New York), the thirteenth hourly run: Beat, a fourth world (README rule 25)
 

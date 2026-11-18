@@ -9,8 +9,8 @@ const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') 
   let cdp = await ctx.newCDPSession(page);
   const touch = async (pts, type) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: pts.map((p, i) => ({ x: p[0], y: p[1], id: i + 1 })) });
   const tap = async (x, y) => { await touch([[x, y]], 'touchStart'); await sleep(50); await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await sleep(150); };
-  const D = () => page.evaluate(() => { const L = window.__lc, i = L.WORLDS.findIndex(w => w.id === 'beat'), r = document.getElementById('btools'), f = document.getElementById('rail').getBoundingClientRect();
-    return { i, cur: L.CURI, d: L.WORLDS[i].o.dbg(), errs: (L.errs || []).slice(0, 3), data: document.getElementById('data').textContent, stg: L.STG, rail: { t: f.top },
+  const D = () => page.evaluate(() => { const L = window.__lc, i = L.WORLDS.findIndex(w => w.id === 'beat'), r = document.getElementById('btools'), g = document.getElementById('wgrip'), f = (g && !g.hidden ? g : document.getElementById('rail')).getBoundingClientRect(), rl = document.getElementById('rail').getBoundingClientRect();
+    return { i, cur: L.CURI, d: L.WORLDS[i].o.dbg(), errs: (L.errs || []).slice(0, 3), data: document.getElementById('data').textContent, stg: L.STG, rail: { t: f.top }, grip: g && !g.hidden ? g.textContent : '', railIn: rl.top < innerHeight - 4 && getComputedStyle(document.getElementById('rail')).opacity > .5,
       shown: !!r && !r.hidden, paintTools: !document.getElementById('tools').hidden,
       tools: r ? [...r.querySelectorAll('.tb')].map(b => { const q = b.getBoundingClientRect(); return { id: b.id.slice(2), on: b.getAttribute('aria-pressed'), l: q.left, r: q.right, t: q.top, b: q.bottom }; }) : [] }; });
   const at = (s, p) => page.evaluate(a => window.__lc.BEAT.at(a[0], a[1]), [s, p]);
@@ -20,6 +20,19 @@ const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') 
   { const r = await page.evaluate(() => { const q = document.getElementById('w_beat').getBoundingClientRect(); return { x: q.left + q.width / 2, y: q.top + q.height / 2 }; }); await tap(r.x, r.y); await sleep(900); }
   let s = await D(); ok(s.cur === s.i && s.d.on && s.shown && !s.paintTools && !s.errs.length, 'a tap on Beat opens it: its row of sounds shown, Paint\'s tools not: ' + JSON.stringify({ cur: s.cur, errs: s.errs }));
   await page.evaluate(() => { try { localStorage.removeItem('lc.beat'); } catch (e) {} window.__lc.BEAT.set([]); });
+  // (17 Nov, 19:44: "remove buttons when they are not necessary on the screen (world buttons on music pages)") the worlds' buttons
+  // tucked behind a handle named worlds; a tap brings them up, a touch elsewhere puts them away; a world chosen from there opens
+  await sleep(400); s = await D(); ok(/worlds/.test(s.grip) && !s.railIn, 'in Beat the worlds\' buttons are tucked behind a handle: ' + JSON.stringify(s.grip));
+  { const g = await page.evaluate(() => { const q = document.getElementById('wgrip').getBoundingClientRect(); return { x: q.left + q.width / 2, y: q.top + q.height / 2 }; }); await tap(g.x, g.y); await sleep(450); s = await D();
+    ok(s.railIn, 'a tap on the handle brings them up'); await tap(30, s.stg.y0 + 20); await sleep(450); s = await D(); ok(!s.railIn, 'a touch elsewhere puts them away');
+    await tap(g.x, g.y); await sleep(450); const w = await page.evaluate(() => { const q = document.getElementById('w_mix').getBoundingClientRect(); return { x: q.left + q.width / 2, y: q.top + q.height / 2 }; }); await tap(w.x, w.y); await sleep(900);
+    const m = await page.evaluate(() => { const L = window.__lc; return { id: L.WORLDS[L.CURI].id, grip: !document.getElementById('wgrip').hidden }; });
+    ok(m.id === 'mix' && m.grip, 'from there a world chosen opens (Mix, its buttons tucked too): ' + JSON.stringify(m));
+    await page.evaluate(() => { const L = window.__lc; L.go(L.WORLDS.findIndex(w => w.id === 'beat'), true); }); await sleep(700); }
+  // the music off: a touch on the circle turns it on
+  await page.evaluate(() => window.__lc.musicOff()); await sleep(300);
+  { const q0 = await at(0, 0); await tap(q0.x, q0.y); await tap(q0.x, q0.y); } s = await D();
+  ok(await page.evaluate(() => window.__lc.AU.want) && s.d.notes.length === 0, 'with the music off, a touch on the circle turns it on');
   // its row: five sounds, dice and clear, every one whole on the screen, above the worlds, none narrower than 40
   s = await D(); const W = await page.evaluate(() => innerWidth);
   ok(s.tools.map(t => t.id).join() === 'glass,rubber,bells,boom,pluck,dice,clear' && s.tools.every(t => t.l >= 0 && t.r <= W && t.b <= s.rail.t + 1 && t.r - t.l >= 40),
@@ -31,6 +44,17 @@ const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') 
   const c1 = s.d.clock; await sleep(700); s = await D(); const c2 = s.d.clock;
   ok(!!c1 && !!c2 && (c2.bar * 16 + c2.q) !== (c1.bar * 16 + c1.q), 'the hand goes round with the band: ' + JSON.stringify([c1, c2]));
   ok(s.d.lanes >= 1, 'what plays is broken down round the circle, one ring each: ' + s.d.lanes + ' playing');
+  // ("not interactive") the inside answers: a tap on a player's ring takes it out of the beat, a second brings it back; a tap in the
+  // middle brings the next mode's beat in on the bar, its instruments then the rings
+  { const L0 = s.d.lane, j = L0.findIndex(l => l.on), r = await page.evaluate(j => window.__lc.BEAT.ringAt(j), j); await tap(r.x, r.y); s = await D();
+    const off = s.d.lane[j]; ok(j >= 0 && L0.length === 9 && off && !off.on && new RegExp(L0[j].n.split(' ')[0]).test(s.data), 'a tap on ' + (L0[j] || {}).n + '\'s ring takes it out of the beat, its name said: ' + JSON.stringify(s.data));
+    await tap(r.x, r.y); s = await D(); ok(s.d.lane[j].on, 'a second tap brings it back');
+    await page.screenshot({ path: 'shots/beat_phone_rings.png' });
+    await tap(s.d.geo.cx, s.d.geo.cy); const m1 = await page.evaluate(() => window.__lc.MIX.dbg());
+    ok((m1.pend || m1.mode) === 'blues' && /blues/i.test((await D()).data), 'a tap in the middle: the next beat (bluesy) comes in on the bar: ' + JSON.stringify({ pend: m1.pend, mode: m1.mode }));
+    for (let k = 0; k < 40; k++) { s = await D(); if (s.d.lane.some(l => l.k === 'row' && l.on)) break; await sleep(250); }
+    ok(s.d.lane.filter(l => l.k === 'row').length >= 3, 'and its instruments are the rings now: ' + s.d.lane.map(l => l.n + (l.on ? '' : '(out)')).join(', '));
+    await page.screenshot({ path: 'shots/beat_phone_blues.png' }); }
   // a real tap on the circle puts a note there, heard at once; a second tap takes it away
   await page.evaluate(() => { const L = window.__lc, o = L.MIX.bvoice; window.__bv = []; L.MIX.bvoice = function (n, m, v, p, w) { window.__bv.push([n, m, w, L.AU.c.currentTime, L.AU.t0]); return o.apply(this, arguments); }; });
   let q = await at(4, 3); await tap(q.x, q.y); s = await D();

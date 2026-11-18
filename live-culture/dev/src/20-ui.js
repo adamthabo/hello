@@ -12,9 +12,9 @@ var WORLDS=[
      same globe as satellites and make that just a layer"); Wind, Orbit and Live were three worlds before */
   {id:'earth',name:'Earth',o:WIND,sc:[1,1,1,1,1,1,1,1,1],ic:'<circle cx="12" cy="12" r="6.6"/><path d="M6.2 10.4c2.4-1.3 4.1 1 6.5-.1 1.5-.7 2.4-.8 3.8-.4"/><ellipse cx="12" cy="12" rx="10.6" ry="3.9" transform="rotate(-22 12 12)"/>'},
   /* the mixer: a grid of loops, the band's and a machine's (13 Nov) */
-  {id:'mix',name:'Mix',o:MIX,sc:[1,1,1,1,1,1,1,1,1],ic:'<rect x="3.5" y="3.5" width="4.6" height="4.6" rx="1.1"/><rect x="9.7" y="3.5" width="4.6" height="4.6" rx="1.1"/><rect x="15.9" y="3.5" width="4.6" height="4.6" rx="1.1"/><rect x="3.5" y="9.7" width="4.6" height="4.6" rx="1.1"/><rect x="9.7" y="9.7" width="4.6" height="4.6" rx="1.1"/><rect x="15.9" y="9.7" width="4.6" height="4.6" rx="1.1"/><rect x="3.5" y="15.9" width="4.6" height="4.6" rx="1.1"/><rect x="9.7" y="15.9" width="4.6" height="4.6" rx="1.1"/><rect x="15.9" y="15.9" width="4.6" height="4.6" rx="1.1"/>'},
+  {id:'mix',name:'Mix',o:MIX,tuck:1,sc:[1,1,1,1,1,1,1,1,1],ic:'<rect x="3.5" y="3.5" width="4.6" height="4.6" rx="1.1"/><rect x="9.7" y="3.5" width="4.6" height="4.6" rx="1.1"/><rect x="15.9" y="3.5" width="4.6" height="4.6" rx="1.1"/><rect x="3.5" y="9.7" width="4.6" height="4.6" rx="1.1"/><rect x="9.7" y="9.7" width="4.6" height="4.6" rx="1.1"/><rect x="15.9" y="9.7" width="4.6" height="4.6" rx="1.1"/><rect x="3.5" y="15.9" width="4.6" height="4.6" rx="1.1"/><rect x="9.7" y="15.9" width="4.6" height="4.6" rx="1.1"/><rect x="15.9" y="15.9" width="4.6" height="4.6" rx="1.1"/>'},
   /* (17 Nov, 17:54) the bar as a metronome's face: what plays broken down round it, and notes of your own put on it in five sounds */
-  {id:'beat',name:'Beat',o:BEAT,sc:[1,1,1,1,1,1,1,1,1],ic:'<circle cx="12" cy="12" r="8.8"/><path d="M12 12l4.6-4.6"/><path d="M12 3.2v1.6M20.8 12h-1.6M12 20.8v-1.6M3.2 12h1.6"/><circle cx="12" cy="12" r="1.1" fill="currentColor"/>'},
+  {id:'beat',name:'Beat',o:BEAT,tuck:1,sc:[1,1,1,1,1,1,1,1,1],ic:'<circle cx="12" cy="12" r="8.8"/><path d="M12 12l4.6-4.6"/><path d="M12 3.2v1.6M20.8 12h-1.6M12 20.8v-1.6M3.2 12h1.6"/><circle cx="12" cy="12" r="1.1" fill="currentColor"/>'},
 ];
 var CUR=null,CURI=-1,PT={},PTN=0,GP={},PS=[],HV=null,touched={},lastTouch=-1e9,SAYT=0,SAYX='',SAYC='',swT=0,GOT=0,FDT=.016;
 function safe(f){try{f()}catch(e){if(window.__lc){window.__lc.errs=(window.__lc.errs||[]);window.__lc.errs.push(String(e&&e.stack||e))}}}
@@ -26,12 +26,20 @@ function dataPaint(force){var n=performance.now();if(!force&&n-DATAT<180)return;
   if(tx!==DATAX){DATAX=tx;el.textContent=tx}if(el._c!==c){el._c=c;el.style.setProperty('--c',c||'')}}
 
 /* ---- the worlds along the bottom ---- */
-function railBuild(){var r=$('rail');r.innerHTML='';WORLDS.forEach(function(w,i){var b=document.createElement('button');b.type='button';b.className='wb';b.id='w_'+w.id;
+/* (17 Nov, 19:44: "remove buttons when they are not necessary on the screen (world buttons on music pages)") in Mix and Beat the worlds'
+   buttons are tucked away behind a small handle named "worlds" (a dot for each world, its own lit); a tap on it brings them up over
+   the bottom of the screen for a few seconds, a touch anywhere else or a world chosen puts them away */
+var RAILT=0;
+function railShow(on){var f=$('foot');if(!f)return;f.classList.toggle('railup',!!on);clearTimeout(RAILT);if(on)RAILT=setTimeout(function(){railShow(false)},4500)}
+function gripBuild(){var g=$('wgrip');if(!g)return;g.innerHTML='';WORLDS.forEach(function(w,i){var d=document.createElement('i');d.id='gd_'+w.id;g.appendChild(d)});
+  var s=document.createElement('span');s.textContent='worlds';g.appendChild(s);if(!g._on){g._on=1;g.addEventListener('click',function(){railShow(!$('foot').classList.contains('railup'))})}}
+function railBuild(){gripBuild();var r=$('rail');r.innerHTML='';WORLDS.forEach(function(w,i){var b=document.createElement('button');b.type='button';b.className='wb';b.id='w_'+w.id;
   b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+w.ic+'</svg><span></span>';b.lastChild.textContent=w.name;b.setAttribute('aria-current','false');
   b.addEventListener('click',function(){go(i)});r.appendChild(b)})}
 function chrome(){
   var w=WORLDS[CURI];if(!w)return;$('wname').textContent=w.name;
-  WORLDS.forEach(function(x,i){var b=$('w_'+x.id);if(b)b.setAttribute('aria-current',i===CURI?'true':'false')});
+  WORLDS.forEach(function(x,i){var b=$('w_'+x.id);if(b)b.setAttribute('aria-current',i===CURI?'true':'false');var d=$('gd_'+x.id);if(d)d.className=i===CURI?'on':''});
+  var ft=$('foot'),gp=$('wgrip');if(ft)ft.classList.toggle('railauto',!!w.tuck);if(gp)gp.hidden=!w.tuck;railShow(false);
   $('bPhoto').hidden=!w.photo;$('bClear').hidden=!(w.photo&&PHOTO.has);$('bSave').hidden=!DL;$('bNow').hidden=true;
   $('bPhoto').setAttribute('aria-pressed',PHOTO.has?'true':'false');
   try{if(location.hash!=='#'+w.id)history.replaceState(null,'','#'+w.id)}catch(e){}
@@ -73,7 +81,7 @@ function held(p){var f=FT-p.t0;return p.e1!==undefined?Math.min(f,Math.max(0,p.e
 STAGE.addEventListener('pointerdown',function(e){
   if(e.pointerType==='mouse'&&e.button!==0)return;e.preventDefault();try{STAGE.setPointerCapture(e.pointerId)}catch(x){}
   var now=performance.now(),p=newP(e.pointerId,e.clientX,e.clientY,now,false,e.pointerType==='mouse',true);if(e.timeStamp>0)p.e0=e.timeStamp;
-  ghostsOff(true);if(PT[p.id])ptEnd(PT[p.id]);PT[p.id]=p;PTN++;eachPT(function(q){q.n=PTN});touched[CURI]=true;lastTouch=now;GS.a=null;HV=null;
+  ghostsOff(true);if($('foot').classList.contains('railup'))railShow(false);if(PT[p.id])ptEnd(PT[p.id]);PT[p.id]=p;PTN++;eachPT(function(q){q.n=PTN});touched[CURI]=true;lastTouch=now;GS.a=null;HV=null;
   if(CUR&&CUR.down)safe(function(){CUR.down(p)});
   try{window.focus()}catch(x2){}});
 STAGE.addEventListener('pointermove',function(e){
