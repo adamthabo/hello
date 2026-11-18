@@ -126,7 +126,7 @@ export function placeTraffic(W) {
     W.addBox(x, z, cs, -sn, d[0], d[1], kind === 'bus' || kind === 'truck' || kind === 'ambulance' ? h : Math.min(h, 1.42), F_COVER | (h < 1.8 ? F_LOW : 0));
     keep(x, z, rad); return true;
   };
-  const pick = (big) => { const q = R(); if (big && q < 0.07) return 'bus'; if (q < 0.3) return 'sedan'; if (q < 0.48) return 'hatch'; if (q < 0.6) return 'estate'; if (q < 0.7) return 'suv'; if (q < 0.79) return 'van'; if (q < 0.85) return 'taxi'; if (q < 0.9) return 'trabi'; if (q < 0.94) return 'police'; if (q < 0.97) return 'ambulance'; return 'truck'; };
+  const pick = (big) => { const q = R(); if (big && q < 0.025) return 'bus'; if (q < 0.3) return 'sedan'; if (q < 0.48) return 'hatch'; if (q < 0.6) return 'estate'; if (q < 0.7) return 'suv'; if (q < 0.79) return 'van'; if (q < 0.85) return 'taxi'; if (q < 0.9) return 'trabi'; if (q < 0.94) return 'police'; if (q < 0.97) return 'ambulance'; return 'truck'; };
   // parked cars from the map
   for (const cr of map.cars) {
     const [x, z, a, type, seed] = cr, kind = type === 3 ? 'bus' : type === 2 ? (R() < 0.5 ? 'van' : R() < 0.5 ? 'ambulance' : 'police') : type === 1 ? (R() < 0.5 ? 'suv' : 'estate') : pick(false);

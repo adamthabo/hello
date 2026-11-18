@@ -56,7 +56,7 @@ export class Game {
     this.en = []; this.loot = []; this.nades = []; this.turret = null; this.t = 0; this.paused = true; this.inp = null; this.ui = null;
     this.cam = { yaw: 2.4, pitch: -0.08, dist: 3.1, sh: 1, shT: 1, fov: 58, shake: 0, kick: 0 };
     this.cap = gfx.tier === 'low' ? 12 : 18; this.prompt = null; this.aimT = null; this.combatT = 0; this.wp = null;
-    this.autoAim = IS_TOUCH; this.sens = 1; this.invY = false; this.fovBase = 56; this.assist = 1; this.motion = 1; this.diff = 1; this.diffHp = 1; this.haptics = true;
+    this.autoAim = IS_TOUCH; this.autoCover = false; this.sens = 1; this.invY = false; this.fovBase = 56; this.assist = 1; this.motion = 1; this.diff = 1; this.diffHp = 1; this.haptics = true;
     this.load();
     const P = this.P = { x: 0, z: 0, yaw: 0, hp: 1, arm: 1, st: 'free', cov: null, peek: false, roll: 0, rdx: 0, rdz: 0, vault: 0, vx0: 0, vz0: 0, vx1: 0, vz1: 0, fireT: 0, relT: 0, relD: 1, bloom: 0, lastHit: -99, lastShot: -99, moving: 0, vx: 0, vz: 0, dead: 0, sprint: false, aim: false, crouch: false, kitT: 0, hotT: 0, sk: [0, 0], nadeT: 0, markT: 0, covT: 0, h: 1.75, spd: 0 };
     P.rig = new Rig(gfx, this.playerLook(), this.curW().cls); this.scene.add(P.rig.root);
@@ -72,7 +72,7 @@ export class Game {
     if (!S || S.v !== SYS.VERSION) S = SYS.newSave();
     let mx = 1; for (const it of [...S.wpn, ...S.inv, ...Object.values(S.gear)]) if (it && it.id >= mx) mx = it.id + 1; SYS.setUid(mx);
     this.S = S; this.D = SYS.derive(S);
-    if (S.opt.autoAim != null) this.autoAim = S.opt.autoAim; if (S.opt.sens) this.sens = S.opt.sens; this.invY = !!S.opt.invY;
+    if (S.opt.autoAim != null) this.autoAim = S.opt.autoAim; if (S.opt.autoCover != null) this.autoCover = S.opt.autoCover; if (S.opt.sens) this.sens = S.opt.sens; this.invY = !!S.opt.invY;
   }
   save() { if (this.noSave) { const sv = store.get('save', null) || SYS.newSave(); sv.opt = this.S.opt; sv.look = this.S.look; if (this.S.tag) sv.tag = this.S.tag; this.saved = store.set('save', sv); return; } const S = this.S, P = this.P; S.pos = P.dead ? null : [Math.round(P.x * 10) / 10, Math.round(P.z * 10) / 10]; S.time = this.gfx.time; this.saved = store.set('save', S); }
   wipe() { store.del('save'); }
@@ -121,7 +121,11 @@ export class Game {
     if (!P.roll && !P.vault && !(P.mel > 0)) { let bd = 2.6; const f = this.fwd(V, true); for (const e of this.en) { if (e.dead || e.isRemote) continue; const ex = e.x - P.x, ez = e.z - P.z, d = hyp(ex, ez); if (d < bd && (ex * f.x + ez * f.z) / (d || 1) > 0.4) { bd = d; this.meleeTgt = e; } } }
     if (this.meleeTgt && I.was('use')) { const e = this.meleeTgt; P.mel = 1e-4; P.melE = e; if (P.st === 'cover') this.leaveCover(); P.yaw = Math.atan2(e.x - P.x, e.z - P.z); this.audio.play('melee', 0.25, 1.7); }
     if (I.was('kit')) this.useKit(); if (I.was('nade')) this.throwNade(); if (I.was('s1')) this.skillPulse(); if (I.was('s2')) this.skillTurret();
-    if (I.was('roll') && !P.roll && !P.vault && P.st !== 'vault') this.startRoll(ml > 0.2 ? mx / (ml || 1) : -fx, ml > 0.2 ? mz / (ml || 1) : -fz);
+    if (I.was('roll') && !P.roll && !P.vault && P.st !== 'vault') {
+      const rd = I.rollDir; I.rollDir = null; let ax = mx, az = mz, al = ml;
+      if (rd) { ax = rd[0] * rx + rd[1] * fx; az = rd[0] * rz + rd[1] * fz; al = hyp(ax, az); }
+      this.startRoll(al > 0.2 ? ax / al : rd ? fx : -fx, al > 0.2 ? az / al : rd ? fz : -fz);
+    }
     const coverKey = I.was('cover');
     let speed = 0;
     if (P.roll > 0) {
@@ -136,7 +140,10 @@ export class Game {
       const cv = P.cov, s = cv.s; P.peek = P.aim; P.covT += dt; P.vx = damp(P.vx || 0, 0, 12, dt); P.vz = damp(P.vz || 0, 0, 12, dt);
       const along = mx * cv.dx + mz * cv.dz, away = mx * cv.nx + mz * cv.nz;
       if (coverKey) { if (cv.low && away < -0.5) this.tryVault(); else if (!this.coverToCover()) this.leaveCover(); }
-      else if (away > 0.75 && ml > 0.7) { P.awayT = (P.awayT || 0) + dt; if (P.awayT > 0.22) this.leaveCover(); } else P.awayT = 0;
+      else if (I.sprint && ml > 0.5) this.leaveCover();
+      else if (away > 0.35 && ml > 0.5) { P.awayT = (P.awayT || 0) + dt; if (P.awayT > 0.1) this.leaveCover(); }
+      else if (Math.abs(along) > 0.6 && (cv.t <= 0.02 + 0.25 / cv.len || cv.t >= 0.98 - 0.25 / cv.len) && Math.sign(along) === (cv.t > 0.5 ? 1 : -1)) { P.awayT = (P.awayT || 0) + dt; if (P.awayT > 0.3) this.leaveCover(); }   // keep pushing past the end: step out round the corner
+      else P.awayT = 0;
       if (P.st === 'cover') {
         const L = cv.len; cv.t = clamp(cv.t + (along * (P.peek ? 1.4 : 2.6) * dt) / L, 0.25 / L > 0.5 ? 0.5 : 0.25 / L, 1 - (0.25 / L > 0.5 ? 0.5 : 0.25 / L));
         const off = PR + 0.1 + (P.peek && !cv.low ? 0.5 : 0);
@@ -156,19 +163,20 @@ export class Game {
       } else {
         let hd = Math.atan2(vx, vz); const dA = angDiff(hd, Math.atan2(mx, mz));
         if (Math.abs(dA) > 2.6) { cur = Math.max(0, cur - 20 * dt); if (cur < 0.7) hd += dA; }
-        else { const rate = P.sprint ? 4.2 : 8.5; hd += clamp(dA, -rate * dt, rate * dt); cur = damp(cur, want, want > cur ? (P.sprint ? 3.2 : 6.5) : 9, dt); }
+        else { const rate = P.sprint ? 4.2 : 8.5 + 6 * clamp(1 - cur / 3.5, 0, 1); hd += clamp(dA, -rate * dt, rate * dt); /* slow: turn on a sixpence; fast: carve */ cur = damp(cur, want, want > cur ? (P.sprint ? 3.2 : 6.5) : 9, dt); }
         vx = Math.sin(hd) * cur; vz = Math.cos(hd) * cur;
       }
       P.vx = vx; P.vz = vz;
-      const ox = P.x, oz = P.z; P.x += P.vx * dt; P.z += P.vz * dt;
-      const hitWall = W.collide(P, PR); if (dt > 0 && hitWall) { P.vx = (P.x - ox) / dt; P.vz = (P.z - oz) / dt; }
+      const ox = P.x, oz = P.z;
+      const hitWall = W.slide(P, P.vx * dt, P.vz * dt, PR); if (dt > 0 && hitWall) { const nvx = (P.x - ox) / dt, nvz = (P.z - oz) / dt, k = hyp(P.vx, P.vz) > 0.1 ? Math.min(1, hyp(nvx, nvz) / hyp(P.vx, P.vz)) : 0; P.vx = nvx; P.vz = nvz; P.snag = k; }
       speed = hyp(P.vx, P.vz);
       if (P.aim) P.yaw = dampAng(P.yaw, c.yaw, 16, dt); else if (speed > 0.5) P.yaw = dampAng(P.yaw, Math.atan2(P.vx, P.vz), P.sprint ? 10 : 13, dt);
-      if (coverKey) this.enterCover(mx || fx, mz || fz, true); else if (this.autoAim && hitWall && this.combatT > 0 && ml > 0.6 && !P.aim && !P.sprint) this.enterCover(mx, mz, false, true);
+      if (coverKey) this.enterCover(mx || fx, mz || fz, true); else if (this.autoCover && hitWall && this.combatT > 0 && ml > 0.6 && !P.aim && !P.sprint) { P.pushT = (P.pushT || 0) + dt; if (P.pushT > 0.35) { P.pushT = 0; this.enterCover(mx, mz, false, true); } } else P.pushT = 0;
     }
     const b = W.core, bm = W.coreMargin; P.x = clamp(P.x, b[0] + bm[0], b[2] - bm[2]); P.z = clamp(P.z, b[1] + bm[1], b[3] - bm[3]);
     P.spd = speed; P.moving = speed > 0.5 ? 1 : 0;
     P.crouch = P.st === 'cover' && P.cov.low && !P.peek; P.h = P.crouch ? 1.0 : P.roll ? 0.9 : 1.75;
+    this.covNT = (this.covNT || 0) - dt; if (this.covNT <= 0) { this.covNT = 0.2; const cv = P.st === 'free' && !P.roll ? W.cover(P.x, P.z, 2.2, fx, fz, this.threat()) : null; this.coverNear = !!cv && cv.len >= 0.9; }   // lights the COVER button
     // weapon
     const w = this.curW(), Wd = WPN[w.cls]; P.fireT -= dt; P.bloom = damp(P.bloom, 0, 5, dt);
     if (P.relT > 0) { P.relT -= dt; if (P.relT <= 0) this.finishReload(); }
@@ -223,28 +231,28 @@ export class Game {
   finishReload() { const w = this.curW(), W = WPN[w.cls], i = this.S.cur, need = this.magSize(w) - this.mags[i]; if (W.side) this.mags[i] += need; else { const n = Math.min(need, this.S.res[w.cls] || 0); this.mags[i] += n; this.S.res[w.cls] -= n; } this.audio.play('cock', 0.45); }
 
   pickTarget() {
-    const P = this.P, c = this.cam, cp = this.gfx.camera.position, f = this.fwd(V), W = WPN[this.curW().cls]; let best = null, bs = 1e9; const cone = this.autoAim ? 0.4 * this.assist : 0.07 * this.assist;
+    const P = this.P, c = this.cam, cp = this.gfx.camera.position, f = this.fwd(V), W = WPN[this.curW().cls]; let best = null, bs = 1e9; const cone = this.autoAim ? (this.inp.aim ? 0.55 : 0.36) * this.assist : (this.inp.aim ? 0.1 : 0.07) * this.assist;
     for (const e of this.en) {
       if (e.dead || e.noLock) continue; const dx = e.x - cp.x, dy = e.aimY() - cp.y, dz = e.z - cp.z, d = Math.hypot(dx, dy, dz); if (d > W.range * 1.25 || d < 0.5) continue;
       const ang = Math.acos(clamp((dx * f.x + dy * f.y + dz * f.z) / d, -1, 1)); if (ang > cone) continue; const sc = ang * (1 + d / 50) + (e === this.aimT ? -0.06 : 0); if (sc < bs) { bs = sc; best = e; }
     }
     if (best && !this.world.los(P.x, P.h * 0.88, P.z, best.x, best.aimY(), best.z)) best = null;
     this.aimT = best;
-    if (best && this.autoAim && P.aim) {         // ease the camera onto the target
-      const dx = best.x - cp.x, dy = best.aimY() - cp.y, dz = best.z - cp.z, ty = Math.atan2(dx, dz), tp = Math.atan2(dy, hyp(dx, dz)), k = 1 - Math.exp(-7 * (1 / 60));
+    if (best && this.autoAim && (this.inp.aim || P.aim)) {         // aiming locks the view on hard; hip fire only nudges it
+      const dx = best.x - cp.x, dy = (this.inp.aim ? best.headY() * 0.35 + best.aimY() * 0.65 : best.aimY()) - cp.y, dz = best.z - cp.z, ty = Math.atan2(dx, dz), tp = Math.atan2(dy, hyp(dx, dz)), k = 1 - Math.exp(-(this.inp.aim ? 9 : 2.5) * (1 / 60));
       c.yaw += angDiff(c.yaw, ty) * k; c.pitch += (tp - c.pitch) * k;
     }
   }
   fire() {
     const P = this.P, w = this.curW(), W = WPN[w.cls], cam = this.gfx.camera, cp = cam.position, f = this.fwd(V), i = this.S.cur;
     this.mags[i]--; P.fireT = 60 / W.rpm; P.lastShot = this.t; this.combatT = 8;
-    const sp = W.spread * (hasPerk(w, 'stab') ? 0.7 : 1) * (this.inp.aim ? 0.55 : 1) * (1 + P.bloom * 2.2) * (P.moving ? 1.25 : 1) * (this.autoAim && this.aimT && this.aimT.isRemote ? 1.8 : 1);
+    const sp = W.spread * (hasPerk(w, 'stab') ? 0.7 : 1) * (this.inp.aim ? 0.45 : this.autoAim ? 1.15 : 1) * (1 + P.bloom * (this.inp.aim ? 1.4 : 2.2)) * (P.moving ? 1.25 : 1) * (this.autoAim && this.aimT && this.aimT.isRemote ? 1.8 : 1);
     P.bloom = Math.min(1.6, P.bloom + 0.16); P.rig.kick = Math.min(1, P.rig.kick + 0.5); this.cam.kick += W.kick * (this.autoAim ? 0.4 : 1);
     const mz = P.rig.muzzle(V2).clone(), base = SYS.wpnDmg(w) * w.q * this.D.dmgMul * (this.D.flood && this.world.power[this.world.district(P.x, P.z)] > 0.5 ? 1.1 : 1);
     const T = this.aimT, n = W.pellets || 1; let any = false;
     for (let k = 0; k < n; k++) {
       let dx = f.x, dy = f.y, dz = f.z;
-      if (T && this.autoAim) { const hs = Math.random() < 0.14; dx = T.x - cp.x; dy = (hs ? T.headY() : T.aimY()) - cp.y; dz = T.z - cp.z; const l = Math.hypot(dx, dy, dz); dx /= l; dy /= l; dz /= l; }
+      if (T && this.autoAim) { const hs = Math.random() < (this.inp.aim ? 0.32 : 0.08); dx = T.x - cp.x; dy = (hs ? T.headY() : T.aimY()) - cp.y; dz = T.z - cp.z; const l = Math.hypot(dx, dy, dz); dx /= l; dy /= l; dz /= l; }
       const s1 = (Math.random() + Math.random() - 1) * sp, s2 = (Math.random() + Math.random() - 1) * sp;
       dx += s1 * Math.cos(this.cam.yaw) * 1 + 0; dz += -s1 * Math.sin(this.cam.yaw); dy += s2; const l = Math.hypot(dx, dy, dz); dx /= l; dy /= l; dz /= l;
       const maxT = W.range * 1.7, hw = this.world.ray(cp.x, cp.y, cp.z, dx, dy, dz, maxT); let bt = hw ? hw.t : maxT, he = null, head = false;
@@ -254,7 +262,7 @@ export class Game {
       if (block && !block.ground) { hx = block.x; hy = block.y; hz = block.z; he = null; }
       this.fx.tracer(mz, V3.set(hx, hy, hz), [1.0, 0.78, 0.42], 0.06, 2.2);
       if (he) {
-        const dist = hyp(he.x - P.x, he.z - P.z), fall = dist > W.range ? clamp(1 - (dist - W.range) / (W.range * 0.7), 0.25, 1) : 1;
+        const rng = W.range * (this.inp.aim ? 1.25 : 0.85), dist = hyp(he.x - P.x, he.z - P.z), fall = dist > rng ? clamp(1 - (dist - rng) / (rng * 0.7), 0.25, 1) : 1;   // aimed shots carry further
         const crit = Math.random() * 100 < this.D.crit + (hasPerk(w, 'crit') ? 15 : 0) + (he.mark > 0 ? this.D.markCrit : 0);
         he.damage(base * fall * (head ? (W.hs || 1.6) * (1 + this.D.hs / 100) : 1) * (crit ? 1.5 : 1) * (he.mark > 0 ? 1.15 : 1), { head, crit, pierce: hasPerk(w, 'arm') ? 1.2 : 1, x: hx, y: hy, z: hz }); any = true;
       } else if (hw || block) { const nx = (block || hw).nx || 0, nz = (block || hw).nz || 0; this.fx.puff(hx + nx * 0.05, hy, hz + nz * 0.05, 4, (hw && hw.ground) ? [0.75, 0.8, 0.86] : [0.55, 0.5, 0.45], 0.1, 1.6, 0.4, 0.5, -3, 0.6); this.fx.puff(hx, hy, hz, 2, [3, 2, 0.8], 0.04, 3, 0.12, -1, -6, 0.5); }

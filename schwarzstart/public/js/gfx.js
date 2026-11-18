@@ -30,6 +30,7 @@ const SKY = [
 // and the light that the fog scatters around every point light and along the head lamp's beam (single scattering,
 // closed form for point lights, five equiangular samples for the spot cone).
 THREE.ShaderChunk.fog_pars_fragment += `
+uniform float uAirOn;
 #ifndef ATMO_K
 #define ATMO_K 0.032
 #define ATMO_AIR 0.3
@@ -51,6 +52,7 @@ THREE.ShaderChunk.fog_fragment = /* glsl */`
   gl_FragColor.rgb = mix( gl_FragColor.rgb, fc_, fogFactor );
   vec3 air_ = vec3( 0.0 );
   #ifndef NO_AIRLIGHT
+  if ( uAirOn > 0.001 ) {
   #if NUM_POINT_LIGHTS > 0
   {
     PointLight pl_;
@@ -80,8 +82,9 @@ THREE.ShaderChunk.fog_fragment = /* glsl */`
     #pragma unroll_loop_end
   }
   #endif
+  }
   #endif
-  gl_FragColor.rgb += air_ * ( fogDensity * 0.75 + 0.0011 ) * ATMO_AIR;
+  gl_FragColor.rgb += air_ * ( fogDensity * 0.75 + 0.0011 ) * ATMO_AIR * uAirOn;
 }
 #elif defined( FOG_EXP2 )
   float fogFactor = 1.0 - exp( - fogDensity * fogDensity * vFogDepth * vFogDepth * 0.7 );
@@ -270,7 +273,7 @@ export class Gfx {
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(58, 1, 0.12, this.q.far);
     this.scene.add(this.camera);
-    this.U = { uTime: { value: 0 }, uSnowAmt: { value: 0.72 }, uWet: { value: 0.6 }, uNight: { value: 0 }, uNoise: { value: null }, uPower: { value: new Float32Array(16) } };
+    this.U = { uTime: { value: 0 }, uSnowAmt: { value: 0.72 }, uWet: { value: 0.6 }, uNight: { value: 0 }, uAirOn: { value: 1 }, uNoise: { value: null }, uPower: { value: new Float32Array(16) } };
     this.tex = {}; this.matCache = {};
     this.time = 15.75; this.timeScale = 1 / 110;        // game hours per real second (one day ~ 44 min)
     this.weather = { snow: 0.4, fog: 0.16, cloud: 0.45, tSnow: 0.4, tFog: 0.16, tCloud: 0.45, timer: 150 };
@@ -597,7 +600,7 @@ export class Gfx {
     const gz = g(zen), gh = g(hor), cz = [0.74, 0.93, 1.38], ch = [0.84, 0.97, 1.2];
     zen = zen.map((v, k) => lerp(v, (gz * 1.45 + gh * 0.22) * cz[k], oc * 0.88)); hor = hor.map((v, k) => lerp(v, gh * 0.92 * ch[k], oc * 0.84));
     const day = smooth(0.2, 1.0, sp); sp *= 1 - oc * 0.72; amb *= 1 - oc * 0.18;
-    const night = U.uNight.value = 1 - smooth(0.12, 1.2, lerp(A[4], B[4], f));
+    const night = U.uNight.value = 1 - smooth(0.12, 1.2, lerp(A[4], B[4], f)); U.uAirOn.value = smooth(0.06, 0.32, night);   /* light scattering in the haze only once it gets dark: by day the GPU skips it */
     // low winter sun: rises SE, peaks 14 degrees above the southern horizon, sets SW. At night the moon takes over.
     const dn = clamp((this.time - 8.1) / 8.2, 0, 1), isDay = this.time > 7.9 && this.time < 16.5;
     const az = isDay ? lerp(0.95, -0.95, dn) : -0.6, el = isDay ? Math.max(0.035, Math.sin(dn * Math.PI) * 0.245 + 0.02) : 0.62;

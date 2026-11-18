@@ -50,18 +50,22 @@ export class Input {
         return;
       }
       if (e.target !== canvas) return; e.preventDefault();
-      if (e.clientX < innerWidth * 0.42 && !this.joy) { this.joy = { id: e.pointerId, x: e.clientX, y: e.clientY }; joyEl.style.left = e.clientX + 'px'; joyEl.style.top = e.clientY + 'px'; joyEl.classList.add('on'); knob.style.transform = ''; }
-      else this.look.set(e.pointerId, [e.clientX, e.clientY, 'look']);
+      // a quick double-tap, on either side, rolls: toward where the stick points (or last pointed), forward if it never moved
+      const now = performance.now(), left = e.clientX < innerWidth * 0.42 && !this.joy, tp = left ? this.tapL : this.tapR;
+      if (tp && tp.short && now - tp.up < 320) { this.tapL = this.tapR = null; const d = this.joy ? [this.mx, this.my] : now - (this.dirT || 0) < 700 ? this.lastDir : null; this.rollDir = d && hyp(d[0], d[1]) > 0.3 ? d.slice() : [0, 0]; this.pressed.add('roll'); }
+      if (left) { this.joy = { id: e.pointerId, x: e.clientX, y: e.clientY, t0: now, far: 0 }; joyEl.style.left = e.clientX + 'px'; joyEl.style.top = e.clientY + 'px'; joyEl.classList.add('on'); knob.style.transform = ''; }
+      else this.look.set(e.pointerId, [e.clientX, e.clientY, 'look', now, e.clientX, e.clientY, 0]);
     };
     const move = (e) => {
       if (e.pointerType === 'mouse' || !this.on) return;
-      if (this.joy && e.pointerId === this.joy.id) { let dx = e.clientX - this.joy.x, dy = e.clientY - this.joy.y; const l = hyp(dx, dy), m = 50; if (l > m) { dx *= m / l; dy *= m / l; } this.mx = dx / m; this.my = -dy / m; this.sprint = l > m * 1.15 && this.my > 0.5; knob.style.transform = `translate(${dx}px,${dy}px)`; return; }
-      const p = this.look.get(e.pointerId); if (p) { const k = 2.6 * (820 / Math.max(innerWidth, innerHeight)); this.lx += (e.clientX - p[0]) * k; this.ly += (e.clientY - p[1]) * k; p[0] = e.clientX; p[1] = e.clientY; }
+      if (this.joy && e.pointerId === this.joy.id) { let dx = e.clientX - this.joy.x, dy = e.clientY - this.joy.y; const l = hyp(dx, dy), m = 50; this.joy.far = Math.max(this.joy.far, l); if (l > m) { dx *= m / l; dy *= m / l; } this.mx = dx / m; this.my = -dy / m; this.sprint = l > m * 1.15 && this.my > 0.5; if (l > 15) { this.lastDir = [this.mx, this.my]; this.dirT = performance.now(); } knob.style.transform = `translate(${dx}px,${dy}px)`; return; }
+      const p = this.look.get(e.pointerId); if (p) { const k = 2.6 * (820 / Math.max(innerWidth, innerHeight)); this.lx += (e.clientX - p[0]) * k; this.ly += (e.clientY - p[1]) * k; p[0] = e.clientX; p[1] = e.clientY; if (p[2] === 'look') p[6] = Math.max(p[6], hyp(e.clientX - p[4], e.clientY - p[5])); }
     };
     const up = (e) => {
       if (e.pointerType === 'mouse') { this.use = this.keys.has('KeyF'); return; }
-      if (this.joy && e.pointerId === this.joy.id) { this.joy = null; this.mx = this.my = 0; this.sprint = false; joyEl.classList.remove('on'); }
-      const p = this.look.get(e.pointerId); if (p) { if (p[2] === 'fire') this.fire = false; if (p[2] === 'use') this.use = false; this.look.delete(e.pointerId); }
+      const now = performance.now();
+      if (this.joy && e.pointerId === this.joy.id) { this.tapL = { up: now, short: now - this.joy.t0 < 240 && this.joy.far < 22 }; this.joy = null; this.mx = this.my = 0; this.sprint = false; joyEl.classList.remove('on'); }
+      const p = this.look.get(e.pointerId); if (p) { if (p[2] === 'fire') this.fire = false; if (p[2] === 'use') this.use = false; if (p[2] === 'look') this.tapR = { up: now, short: now - p[3] < 240 && p[6] < 22 }; this.look.delete(e.pointerId); }
       const b = e.target.closest && e.target.closest('[data-act]'); if (b) b.classList.remove('down'); document.querySelectorAll('.tb.down').forEach((x) => { if (!(this.fire && x.id === 'bFire')) x.classList.remove('down'); });
     };
     app.addEventListener('pointerdown', down, { passive: false }); addEventListener('pointermove', move, { passive: false }); addEventListener('pointerup', up); addEventListener('pointercancel', up);
@@ -126,7 +130,7 @@ export class UI {
       set('lootB', nn + '|' + br + '|' + bu, () => { const b = el('bLoot'); b.classList.toggle('hidden', !nn); b.classList.toggle('up', bu); if (nn) { b.style.setProperty('--rc', RAR[br].c); el('bLootN').textContent = nn; } });
     }
     const pr = G.prompt, pe = el('prompt'); set('pr', pr ? pr.text + pr.sub + (pr.bad ? 1 : 0) + (pr.hot ? 'h' : '') : '', () => { pe.classList.toggle('hidden', !pr); pe.classList.toggle('hot', !!(pr && pr.hot)); if (pr) { el('prT').textContent = pr.text; el('prS').textContent = pr.sub; pe.classList.toggle('bad', !!pr.bad); } }); if (pr) el('prP').style.transform = `scaleX(${clamp(pr.prog, 0, 1)})`;
-    const sp = 9 + P.bloom * 16 + (P.moving ? 4 : 0) + (G.inp.aim ? -4 : 0); el('cross').style.setProperty('--g', sp + 'px'); set('lock', !!G.aimT, (v) => el('lock').classList.toggle('on', v));
+    const sp = 9 + P.bloom * 16 + (P.moving ? 4 : 0) + (G.inp.aim ? -4 : 0); el('cross').style.setProperty('--g', sp + 'px'); set('lock', !!G.aimT, (v) => el('lock').classList.toggle('on', v)); set('cov', P.st === 'cover' ? 2 : G.coverNear ? 1 : 0, (v) => { const b = el('bCover'); b.classList.toggle('ctx', v > 0); b.classList.toggle('inc', v === 2); });
     if (this.hintT > 0) { this.hintT -= dt; if (this.hintT <= 0) el('hint').classList.add('hidden'); }
     this.overlay(dt); this.mmT = (this.mmT || 0) - dt; if (this.mmT <= 0) { this.mmT = 0.05; this.minimap(); }
   }

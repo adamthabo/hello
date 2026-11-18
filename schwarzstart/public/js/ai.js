@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { Rig, FACTION_LOOKS } from './rig.js';
 import * as SYS from './systems.js';
-import { clamp, dampAng, angDiff, hyp, R } from './util.js';
+import { clamp, damp, dampAng, angDiff, hyp, R } from './util.js';
 import { F_LOW } from './geom.js';
 
 const V = new THREE.Vector3(), V2 = new THREE.Vector3();
@@ -58,7 +58,9 @@ export class Enemy {
     if (this.det) { this.det.t -= dt; if (this.det.t <= 0 || hyp(this.det.x - this.x, this.det.z - this.z) < 0.6) this.det = null; else wp = [this.det.x, this.det.z]; }   // a step aside after getting stuck
     let dx = wp[0] - this.x, dz = wp[1] - this.z; const l = hyp(dx, dz) || 1; dx /= l; dz /= l;
     for (const e of G.en) { if (e === this || e.dead) continue; const ex = this.x - e.x, ez = this.z - e.z, ed = ex * ex + ez * ez; if (ed < 1.3 && ed > 1e-4) { const k = (1.3 - ed) * 0.9; dx += (ex / Math.sqrt(ed)) * k; dz += (ez / Math.sqrt(ed)) * k; } }
-    W.slide(this, dx * speed * dt, dz * speed * dt, 0.34); this.spd = speed; this.mvx = dx; this.mvz = dz;
+    // no teleporting turns: this only says where the body wants to go; update() eases the velocity toward it, so corners become curves
+    const dl = hyp(dx, dz) || 1, want = speed * Math.min(1, 0.4 + (d - stop) / 2.4); this.dvx = (dx / dl) * want; this.dvz = (dz / dl) * want; this.steered = true;
+    this.spd = speed; this.mvx = dx / dl; this.mvz = dz / dl;
     this.stuckT += dt; if (this.stuckT > 0.9) { if (hyp(this.x - this.px, this.z - this.pz) < 0.3) { this.path = null; this.repT = 0; this.strafe = -this.strafe; const f = W.findWalk(this.x, this.z, 1.5, 4, R, 12); if (f) this.det = { x: f[0], z: f[1], t: 1.1 }; } this.px = this.x; this.pz = this.z; this.stuckT = 0; }
     return false;
   }
@@ -92,7 +94,7 @@ export class Enemy {
     if (this.despawn && !this.aware && d > 60) { this.gone = true; return; }
     if (d > 240) { this.gone = true; return; }
     if (this.mark > 0) { this.mark -= dt; if (this.mark <= 0) rig.setHighlight(false); }
-    this.fireT -= dt; this.meleeT -= dt; this.nadeCd -= dt; this.covAge += dt;
+    this.fireT -= dt; this.meleeT -= dt; this.nadeCd -= dt; this.covAge += dt; this.steered = false; const x0 = this.x, z0 = this.z;
     if (this.kvx || this.kvz) { this.x += this.kvx * dt; this.z += this.kvz * dt; const k = Math.exp(-7 * dt); this.kvx *= k; this.kvz *= k; if (Math.abs(this.kvx) + Math.abs(this.kvz) < 0.05) this.kvx = this.kvz = 0; W.collide(this, 0.32); }   // shoved
     if (d < 0.75 && !P.dead) { this.x -= (dx / (d || 1)) * (0.75 - d); this.z -= (dz / (d || 1)) * (0.75 - d); W.collide(this, 0.32); }   // never inside you
     // perception
@@ -125,8 +127,9 @@ export class Enemy {
       } else if (this.seen && !P.dead && this.meleeT <= 0 && d < (this.arch === 'rush' ? 2.2 : 1.9)) {
         this.mel = 1e-4; this.meleeT = 1.25 + R() * 0.7; faceT = tA; if (R() < 0.5) G.audio.playAt('shout', this.x, this.z, 0.55, 1.1 + R() * 0.2);
       } else if (this.arch === 'rush') {
-        if (d > 1.6) { const sx = P.x + (d < 9 && los ? Math.cos(tA) * this.strafe * 4 : 0), sz = P.z - (d < 9 && los ? Math.sin(tA) * this.strafe * 4 : 0); this.moveTo(sx, sz, run * (d < 6 ? 0.7 : 1), dt, 1.2); speed = this.spd; }
-        if (R() < dt * 0.4) this.strafe = -this.strafe;
+        this.strafeS = damp(this.strafeS ?? this.strafe, d < 9 && los ? this.strafe : 0, 1.6, dt);   // the weave swings across, it doesn't jump
+        if (d > 1.6) { const sx = P.x + Math.cos(tA) * this.strafeS * 3.5, sz = P.z - Math.sin(tA) * this.strafeS * 3.5; this.moveTo(sx, sz, run * (0.72 + 0.28 * clamp((d - 4) / 5, 0, 1)), dt, 1.2); speed = this.spd; }
+        if (R() < dt * 0.22) this.strafe = -this.strafe;
         if (los && inRange) { aim = true; faceT = tA; this.fireBurst(dt); } else faceT = Math.atan2(this.mvx || dx, this.mvz || dz);
       } else if (this.arch === 'heavy') {
         if (!los || d > 16) { this.moveTo(los ? P.x : this.lsx, los ? P.z : this.lsz, run, dt, 3); speed = this.spd; }
@@ -152,7 +155,13 @@ export class Enemy {
       }
       if (since > 25 && d > 70) { this.aware = false; this.mode = 'idle'; this.cov = null; this.crouch = false; }
     }
-    if (faceT != null) this.yaw = dampAng(this.yaw, faceT, this.arch === 'heavy' ? 5 : 10, dt);
+    { // steering: the velocity follows the wish with a little inertia (rushers are nimbler, heavies lumber); with no wish it coasts to rest
+      const k = this.steered ? (this.arch === 'rush' ? 6.5 : this.arch === 'heavy' ? 4 : 5.5) : 9;
+      this.vx = damp(this.vx || 0, this.steered ? this.dvx : 0, k, dt); this.vz = damp(this.vz || 0, this.steered ? this.dvz : 0, k, dt);
+      if (Math.abs(this.vx) + Math.abs(this.vz) > 0.02) { const bx = this.x, bz = this.z; W.slide(this, this.vx * dt, this.vz * dt, 0.34); if (dt > 0) { const ax = (this.x - bx) / dt, az = (this.z - bz) / dt; if (hyp(ax, az) < hyp(this.vx, this.vz) * 0.5) { this.vx = ax; this.vz = az; } } }
+      const as = dt > 0 ? hyp(this.x - x0, this.z - z0) / dt : 0; this.aspd = damp(this.aspd || 0, Math.min(as, 9), 12, dt); speed = this.aspd;
+    }
+    if (faceT != null) this.yaw = dampAng(this.yaw, faceT, this.arch === 'heavy' ? 5 : this.arch === 'rush' ? 8 : 10, dt);
     this.pitch = aim ? clamp(Math.atan2(P.h * 0.62 - 1.35, Math.max(1, d)), -0.6, 0.6) : 0;
     const far = d > 120; rig.root.position.set(this.x, 0, this.z); rig.root.rotation.y = this.yaw; rig.root.visible = !far || this.aware;
     const vx = (this.x - (this._lx ?? this.x)) / Math.max(dt, 1e-3), vz = (this.z - (this._lz ?? this.z)) / Math.max(dt, 1e-3), vl = Math.hypot(vx, vz), cy = Math.cos(this.yaw), sy = Math.sin(this.yaw); this._lx = this.x; this._lz = this.z;

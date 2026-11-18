@@ -95,20 +95,22 @@ body:not(.touch) .tb.sk { position: static; width: 54px; height: 44px; border-ra
 body:not(.touch) #pad { display: flex; gap: 5px; position: absolute; inset: auto calc(var(--sar) + 14px) calc(var(--sab) + 14px) auto; }
 body:not(.touch) #joy { display: none; }
 body:not(.touch) .tb.sk span { transform: translateY(-5px); }
-body.touch #bFire { right: calc(var(--sar) + 26px); bottom: calc(var(--sab) + 58px); }
-body.touch #bAim { right: calc(var(--sar) + 122px); bottom: calc(var(--sab) + 40px); }
-body.touch #bCover { right: calc(var(--sar) + 116px); bottom: calc(var(--sab) + 104px); }
-body.touch #bReload { right: calc(var(--sar) + 62px); bottom: calc(var(--sab) + 152px); width: 46px; height: 46px; font-size: 8.5px; }
-body.touch #bRoll { right: calc(var(--sar) + 180px); bottom: calc(var(--sab) + 30px); width: 44px; height: 44px; }
-body.touch #bSwap { right: calc(var(--sar) + 174px); bottom: calc(var(--sab) + 88px); width: 44px; height: 44px; }
-body.touch .tb.sk { width: 46px; height: 46px; right: calc(var(--sar) + 8px); }
-body.touch #bS1 { bottom: calc(var(--sab) + 300px); } body.touch #bS2 { bottom: calc(var(--sab) + 250px); } body.touch #bNade { bottom: calc(var(--sab) + 200px); } body.touch #bKit { bottom: calc(var(--sab) + 150px); }
+/* phone: one thumb cluster (FIRE, AIM, RELOAD, and COVER only when there is cover to take); skills sit in a row up top; roll is a double-tap, swap is a tap on the ammo */
+body.touch #bFire { right: calc(var(--sar) + 26px); bottom: calc(var(--sab) + 54px); }
+body.touch #bAim { right: calc(var(--sar) + 122px); bottom: calc(var(--sab) + 30px); width: 62px; height: 62px; font-size: 11px; }
+body.touch #bAim.on { background: rgba(255, 170, 60, .3); border-color: var(--amb); color: #fff; }
+body.touch #bReload { right: calc(var(--sar) + 40px); bottom: calc(var(--sab) + 150px); width: 44px; height: 44px; font-size: 8.5px; }
+body.touch #bCover { right: calc(var(--sar) + 118px); bottom: calc(var(--sab) + 108px); width: 56px; height: 56px; opacity: 0; transform: scale(.7); pointer-events: none; transition: opacity .15s, transform .15s; }
+body.touch #bCover.ctx { opacity: 1; transform: none; pointer-events: auto; border-color: var(--ice); }
+body.touch #bCover.inc { background: rgba(143, 216, 255, .32); }
+body.touch #bRoll, body.touch #bSwap { display: none; }
+body.touch #ammo { pointer-events: auto; cursor: pointer; }
+body.touch .tb.sk { width: 42px; height: 42px; font-size: 8.5px; bottom: auto; top: calc(var(--sat) + 60px); }
+body.touch #bS1 { right: calc(var(--sar) + 8px); } body.touch #bS2 { right: calc(var(--sar) + 56px); } body.touch #bNade { right: calc(var(--sar) + 104px); } body.touch #bKit { right: calc(var(--sar) + 152px); }
 body.touch #vit { bottom: calc(var(--sab) + 8px); }
 @media (max-height: 430px) {
-  body.touch #bS1 { bottom: auto; top: calc(var(--sat) + 62px); right: calc(var(--sar) + 8px); } body.touch #bS2 { bottom: auto; top: calc(var(--sat) + 62px); right: calc(var(--sar) + 60px); }
-  body.touch #bNade { bottom: calc(var(--sab) + 204px); } body.touch #bKit { bottom: calc(var(--sab) + 152px); right: calc(var(--sar) + 8px); } body.touch #bReload { right: calc(var(--sar) + 66px); bottom: calc(var(--sab) + 150px); }
   #mm { width: 104px; height: 104px; } #loc, #obj { left: calc(var(--sal) + 124px); } #obj { top: calc(var(--sat) + 56px); } #toasts { top: calc(var(--sat) + 116px); }
-  #prompt { bottom: calc(var(--sab) + 64px); } #hint { bottom: calc(var(--sab) + 118px); }
+  #prompt { bottom: calc(var(--sab) + 64px); } #hint { bottom: auto; top: calc(var(--sat) + 62px); max-width: min(340px, 40vw); font-size: 11px; padding: 5px 9px; opacity: .92; }
 }
 @media (orientation: portrait) { #obj { max-width: 52vw; } #bars { width: 34vw; } #banner { top: 24%; } body.touch #vit { bottom: calc(var(--sab) + 210px); left: calc(var(--sal) + 12px); transform: none; } }
 
