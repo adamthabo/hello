@@ -77,6 +77,21 @@ const clean = errs => [...new Set(errs)].filter(e => !/youtube\.com|requestfaile
     ok(/km from \w+|^\w/.test(cd.data.split('\n')[0]) && /°C · \d+ hPa/.test(cd.data), 'and the readout names the place and gives the model\'s figures there: ' + cd.data.replace(/\n/g, ' | '));
     await page.screenshot({ path: 'shots/hosted_wind_card.png' });
     await page.evaluate(() => document.querySelector('#card .cx').click()); await sleep(300); ok(await page.evaluate(() => document.getElementById('card').hidden), 'the card\'s cross puts it away');
+    // (18 Nov, 11:31: "Also, give me access to localized weather") the Earth's own menu: "where I am" asks the phone where it is (here a
+    // stand-in: Providence) and opens the weather there, the Earth flown there and close; a town typed (Durban) does the same
+    { const d180 = (a, b) => Math.abs(((a - b + 540) % 360) - 180);
+      await ctx.grantPermissions(['geolocation'], { origin: BASE.replace(/\/$/, '') }); await ctx.setGeolocation({ latitude: 41.82, longitude: -71.42 });
+      await page.click('#bTools'); await sleep(350); const hd = await page.evaluate(() => ({ here: !!document.getElementById('e_here'), head: document.querySelector('#ms_earth .mh').textContent }));
+      await page.click('#e_here'); let wc = null; for (let k = 0; k < 30; k++) { await sleep(400); wc = await page.evaluate(() => { const c = document.getElementById('card'); return { k: c.dataset.k, hidden: c.hidden, t: c.innerText }; }); if (/NOW/.test(wc.t)) break; }
+      ok(hd.here && hd.head === 'the weather in a town or city' && !wc.hidden && wc.k === 'place' && /Providence/i.test(wc.t) && /NOW\s+8°C · 47°F/.test(wc.t), '"where I am", in the Earth\'s own menu, asks the phone and opens the weather there: ' + wc.t.replace(/\n+/g, ' | ').slice(0, 140));
+      await sleep(1600); const nr = await page.evaluate(() => { const d = window.__lc.WIND.dbg(); return { lat0: d.lat0, lon0: d.lon0, zoom: d.zoom }; });
+      ok(Math.abs(nr.lat0 - 41.82) < .6 && d180(nr.lon0, -71.42) < .6 && nr.zoom >= 2.5, 'and the Earth flies there and comes close: ' + JSON.stringify(nr));
+      await page.screenshot({ path: 'shots/hosted_weather_here.png' });
+      await page.evaluate(() => document.querySelector('#card .cx').click()); await sleep(300);
+      await page.click('#bTools'); await sleep(350); await page.fill('#e_town', 'durban'); await sleep(300); await page.click('#e_t0');
+      let dt = ''; for (let k = 0; k < 30; k++) { await sleep(400); dt = await page.evaluate(() => document.getElementById('card').innerText); if (/NOW/.test(dt) && /Durban/i.test(dt)) break; }
+      ok(/Durban/i.test(dt) && /NOW\s+8°C/.test(dt), 'a town typed there (Durban) opens the weather there: ' + dt.replace(/\n+/g, ' | ').slice(0, 120));
+      await page.evaluate(() => document.querySelector('#card .cx').click()); await sleep(300); }
     await page.evaluate(() => window.__lc.WIND.layer('orbit', 1));
     // (18 Nov) with the satellites shown a tap on the Earth takes the nearest satellite; its card's "the place below" opens the place's card
     { await page.evaluate(() => window.__lc.WIND.look(36, -45, 1.4)); await sleep(1200); const d = await page.evaluate(() => window.__lc.WIND.dbg()); let sc = null;

@@ -56,9 +56,9 @@ function toolIconSync(){var b=$('bTools'),w=WORLDS[CURI];if(!b||!w)return;var ic
   var h='<svg viewBox="'+(ic?'0 0 18.4 18.4':'0 0 16 16')+'" aria-hidden="true">'+(ic||SLI)+'</svg>';if(b._ic!==h){b._ic=h;b.innerHTML=h;b.classList.toggle('tl2',!!ic)}}
 function chrome(){
   var w=WORLDS[CURI];if(!w)return;$('wname').textContent=w.name;$('wmenu').setAttribute('aria-label',w.name+'. Open the four pages');
-  WORLDS.forEach(function(x,i){var b=$('w_'+x.id);if(b)b.setAttribute('aria-current',i===CURI?'true':'false');var sec=$('ms_'+x.id);if(sec)sec.hidden=i!==CURI||!sec.querySelector('button')});
+  WORLDS.forEach(function(x,i){var b=$('w_'+x.id);if(b)b.setAttribute('aria-current',i===CURI?'true':'false');var sec=$('ms_'+x.id);if(sec)sec.hidden=i!==CURI||!sec.querySelector('button,input')});
   /* the page's own menu: its button only where the page has one, its name over it */
-  var own=$('ms_'+w.id),tb=$('bTools');tb.hidden=!(own&&own.querySelector('button'));toolIconSync();tb.setAttribute('aria-label',w.name+': its own menu');$('pmh').textContent=w.name;$('pmenu').setAttribute('aria-label',w.name+': its own menu');
+  var own=$('ms_'+w.id),tb=$('bTools');tb.hidden=!(own&&own.querySelector('button,input'));toolIconSync();tb.setAttribute('aria-label',w.name+': its own menu');$('pmh').textContent=w.name;$('pmenu').setAttribute('aria-label',w.name+': its own menu');
   /* (18 Nov) Beat plays its own beats while the band rests, so the band's mode has no button there */
   $('bMode').hidden=!!w.nomode;$('bClear').hidden=!(w.photo&&PHOTO.has);$('bSave').hidden=!DL;$('bNow').hidden=true;
   $('bPhoto').setAttribute('aria-pressed',PHOTO.has?'true':'false');
@@ -213,7 +213,9 @@ function doSave(){
 /* ---- keys: 1 to 3 for the worlds, the space bar for the music ---- */
 addEventListener('keydown',function(e){
   if(e.metaKey||e.ctrlKey||e.altKey)return;var tg=e.target,onBtn=tg&&tg.closest&&tg.closest('button');
+  /* (18 Nov) keys typed into a box (the Earth's town) are the box's, not the page's */
+  if(tg&&(tg.tagName==='INPUT'||tg.tagName==='TEXTAREA'||tg.isContentEditable))return;
   if(e.key>='1'&&e.key<=String(WORLDS.length)){if(!e.repeat)go(+e.key-1);return}
   if(e.key===' '&&!onBtn){e.preventDefault();if(e.repeat)return;if(soundLive())musicOff();else musicOn();return}
   if(CUR&&CUR.key&&CUR.key(e,true))e.preventDefault()});
-addEventListener('keyup',function(e){if(CUR&&CUR.key)CUR.key(e,false)});
+addEventListener('keyup',function(e){var tg=e.target;if(tg&&(tg.tagName==='INPUT'||tg.tagName==='TEXTAREA'))return;if(CUR&&CUR.key)CUR.key(e,false)});

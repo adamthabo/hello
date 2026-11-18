@@ -47,10 +47,10 @@ Take, in this order: anything a previous run logged as broken; then anything new
 marked done. One thing, done properly and seen working, beats three half-done. Size it to build in about fifteen minutes: the tests
 take most of the hour.
 
-**Still to do from the owner** (his 18 Nov, 11:31 message, README rule 31; the sketchbook and the music following the map are
-done), before the backlog:
+**His 18 Nov, 11:31 message is done** (README rule 31: the sketchbook, the music following the map, local weather; the notes that
+led to the weather are kept here):
 
-1. **Local weather.** "Give me access to localized weather." A button on the Earth that goes to where you are, or a town you
+1. **Local weather** (done, the 20:02 run). "Give me access to localized weather." A button on the Earth that goes to where you are, or a town you
    type, and shows its weather (on the site the forecast and radar; in the artifact what it can have). What each can have, found
    on 18 Nov: on the site, the phone's location (`navigator.geolocation`, asked once) and the place card's `/api/wx` forecast and
    `/api/feed/radar`; a typed town from `CITIES` (`09-cities.js`) works everywhere, offline. The artifact has no location (no
@@ -244,3 +244,6 @@ not ask for.
   sixteenth, where the place was looked at; now the place is looked at on the first sixteenth seen of each bar. The first suite
   failed four of PLAY's readings: the beat's name, said when a tap's flight brought a new place, covered the reading. Now it is
   never said over a reading, a card or a flight, and a finger's reading clears a passing line.
+- 2026-11-18 20:02: his 11:31 message, part three: local weather. The Earth has its own menu: a town typed (7,342 now, from
+  Natural Earth's 1:10m places; the old list had no Providence) or, on the site, "where I am"; the Earth flies there and opens its
+  weather card on the site, its reading (sun, wind) in the artifact. His 11:31 message is done.

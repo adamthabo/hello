@@ -1,6 +1,15 @@
 # Changelog
 
 ## For the owner
+18 Nov 2026, 16:10 (your 11:31 message, part three):
+
+- **Local weather.** The Earth now has its own menu, the round button beside its name, like Paint and Beat. Type a town or city
+  ("provid" finds Providence; there are 7,342 to choose from, Providence among them now) and the globe flies there, comes close and
+  opens its weather. On your site that's the weather now, the next day, three days and the last hour of rain radar. On your site
+  there's also "where I am", which asks your phone where it is. In the artifact the Claude app can't reach weather services or
+  your location, so the town shows its local time by the sun and its wind only, and the menu just says "go to a town or city".
+- That finishes your 11:31 message: the sketchbook, the music following the map, and local weather.
+
 18 Nov 2026, 14:20 (your 11:31 message, part two):
 
 - **The music follows the map.** On the Earth, with the music on, the band is joined by the rhythm of the part of the world facing
@@ -427,6 +436,20 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 18 Nov 2026, 16:10 (New York), the hourly run: local weather; the Earth's own menu; 7,342 towns (README rule 31)
+
+- `09-cities.js` from Natural Earth's 1:10m populated places (`tools/gen_cities.py`, the file from
+  `raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_populated_places_simple.geojson`): 7,342 rows
+  `name|country|lat|lon|size` (size 0 to 9, two steps a tenfold of the population) and the province where a country has two of a
+  name; `CITIES.find(q, k)` (begins with, then a word begins with; the bigger first; accents and capitals folded). 250 KB, the page
+  854 KB. The nearest town a tap names is from the bigger list too.
+- `12-wind.js`: `menu(sec)` (the Earth's own menu, `#ms_earth`: a heading, the box `#e_town`, the towns found `#e_found` as
+  buttons, a line `#e_said`; on the site `#e_here`, `navigator.geolocation.getCurrentPosition`), `visit(la, lo)` (read as a tap
+  would, off the screen, so the card opens on the site; then a flight to it and close, `FOC` to `max(zoom, 2.6)`).
+- `20-ui.js`: a page's menu button shows where its menu has a box as well as buttons; keys typed into a box are not the page's.
+  `style.css`: `.mi`, `.mst`.
+- Tests: `t_weather.js` (new, WEATHER in `check.sh`); `t_hosted.js` ("where I am" with a stand-in location, the card; a town typed).
 
 ## 18 Nov 2026, 14:20 (New York), the hourly run: the music follows the map (README rule 31)
 

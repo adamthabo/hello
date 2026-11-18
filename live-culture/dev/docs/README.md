@@ -320,8 +320,15 @@ Artifact: https://claude.ai/artifact/PCzaFJH2vjXe4Kv8KK4Xic (publish to this URL
    beat comes in at the bar; where a place has more than one, the next comes every eight bars. Over the seas, and where none of the 34
    comes from (Europe, Japan, Australia), the band plays alone. As the globe turns by itself the rhythms go by; turned by a hand, it
    names the beat that comes in and its place for a moment ("Son Clave · Cuba"), but never over a place's reading, a card or a
-   flight to a place a finger asked for, and a reading a finger asks for shows at once over any passing line. Still to do: local
-   weather (HOURLY section 3).
+   flight to a place a finger asked for, and a reading a finger asks for shows at once over any passing line. **Local weather**
+   (the 20:02 run): the Earth has its own menu now (the button beside its name, as Paint and Beat have): a town or city typed (any of
+   Natural Earth's 7,342 populated places at 1:10 million, `CITIES.find` in `09-cities.js`: the names it begins with first, then a
+   word of them, the bigger first, accents and capitals no matter; until now the 1:50 million list of 1,251, which had no Providence),
+   and on the site "where I am" (the phone asked once). The Earth flies there, comes close and reads it as a tap would: on the site
+   its card has the weather now, the next day, three days and the last hour of rain radar; in the artifact, which can reach no
+   weather service and cannot know where the phone is (no such capability), the reading has the town, its sun and its wind (the
+   wind from the published snapshot), and the menu says "go to a town or city" rather than promise weather. Keys typed into the
+   box are the box's (a "2" opens no page, a space starts no music).
 
 ## What the page is
 

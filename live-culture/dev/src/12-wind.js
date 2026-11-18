@@ -193,6 +193,35 @@ var WIND=(function(){
     if(it.k==='iss'){probe=null;cardOff();try{ORBIT.pick('ISS (ZARYA)')}catch(e){}}
     else{try{ORBIT.layer.off()}catch(e){}probe={lat:it.lat,lon:it.lon,v:AS.llv(it.lat,it.lon),p:[0,0,0],q:[0,0,0],t:FT,ghost:false,fire:it.k==='fire'?it.tg:null,storm:it.k==='storm'?it.tg:null};cardOff()}
     tone('glass',pent(9,40),.4,0)}
+  /* ---- (18 Nov, 11:31: "Also, give me access to localized weather") the Earth's own menu: a town or city found by its name (any of
+     Natural Earth's 7,342), or, on the site, where the phone is (asked once, by the phone). The Earth flies there, comes close and reads
+     it as a tap would: on the site its card has the weather now, the next day, the next three and the last hour of rain radar; in the
+     artifact, which can reach no weather service and cannot know where the phone is, the reading has the town, its sun and its wind ---- */
+  function visit(la,lo){try{ORBIT.layer.off()}catch(e){}read({x:-1e4,y:-1e4,ghost:false},{lat:la,lon:lo});
+    FLY=null;FOC={s:{lat:la,lon:lo},t:FT,lat:lat0,lon:lon0,z:zoom,tz:Math.min(ZMAX,Math.max(zoom,2.6))};idle=0;vlon=vlat=0;turned=1}
+  function menu(sec){if(sec._built)return;sec._built=1;
+    var h=document.createElement('div');h.className='mh';h.textContent=HOSTED?'the weather in a town or city':'go to a town or city';sec.appendChild(h);
+    var r=document.createElement('div');r.className='mrw';sec.appendChild(r);
+    var inp=document.createElement('input');inp.type='search';inp.id='e_town';inp.className='mi';inp.placeholder='its name';inp.autocomplete='off';inp.spellcheck=false;
+    inp.setAttribute('enterkeyhint','go');inp.setAttribute('aria-label',HOSTED?'A town or city, for its weather':'A town or city, to go to');r.appendChild(inp);
+    var res=document.createElement('div');res.className='mrw';res.id='e_found';sec.appendChild(res);
+    var st=document.createElement('p');st.className='mst';st.id='e_said';st.hidden=true;sec.appendChild(st);
+    function said(t){st.textContent=t||'';st.hidden=!t}
+    function go2(c){menuShow(false);inp.value='';show();visit(c.lat,c.lon)}
+    var last=[];
+    function show(){var q=inp.value,f=CITIES.find(q,6);last=f;while(res.firstChild)res.removeChild(res.firstChild);said(q.trim()&&!f.length?'no town or city of that name':'');
+      f.forEach(function(c,i){var b=document.createElement('button');b.type='button';b.className='mb';b.id='e_t'+i;var s=document.createElement('span');
+        s.textContent=c.name+' · '+(c.area?c.area+', ':'')+c.country;b.appendChild(s);b.setAttribute('aria-label',(HOSTED?'The weather in ':'Go to ')+c.name+', '+(c.area?c.area+', ':'')+c.country);
+        b.addEventListener('click',function(){go2(c)});res.appendChild(b)})}
+    inp.addEventListener('input',show);
+    inp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();if(last[0])go2(last[0])}});
+    /* where the phone is: only on the site (the artifact's frame refuses it), asked of the phone when this is pressed */
+    if(HOSTED&&navigator.geolocation){var mb=document.createElement('button');mb.type='button';mb.className='mb';mb.id='e_here';
+      mb.innerHTML='<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 14.6s-4.6-4.4-4.6-8a4.6 4.6 0 0 1 9.2 0c0 3.6-4.6 8-4.6 8z"/><circle cx="8" cy="6.4" r="1.6"/></svg><span>where I am</span>';
+      mb.setAttribute('aria-label','The weather where you are: the phone is asked where it is');r.appendChild(mb);
+      mb.addEventListener('click',function(){said('asking the phone where it is…');mb.disabled=true;
+        try{navigator.geolocation.getCurrentPosition(function(p){mb.disabled=false;said('');menuShow(false);visit(p.coords.latitude,p.coords.longitude)},
+          function(){mb.disabled=false;said('the phone did not say where it is')},{enableHighAccuracy:false,timeout:15000,maximumAge:600000})}catch(e){mb.disabled=false;said('the phone did not say where it is')}})}}
   /* ---- the zoom buttons, at the right of the globe ---- */
   /* (17 Nov) the zoom buttons step aside while a card stands where they would be (a place's card on a short screen is tall) */
   /* (18 Nov, the 15:41 run) the zoom's two buttons stand over the right of the globe, and names drawn there went under them ("DARFUR
@@ -484,7 +513,7 @@ var WIND=(function(){
     if(u<.3){var e=smooth(u/.3);return [{x:g.cx+dir*R*(.4-.8*e),y:g.cy+R*.12*Math.sin(e*3.1)}]}
     if(u>.46&&u<.5)return [{x:g.cx-dir*R*.22,y:g.cy-R*.28}];
     return [null]}
-  return {nowGo:function(i){nowGo(NOWL[i])},zoomBy:zoomBy,nowList:function(){return NOWL.map(function(x){return x.k+':'+x.n})},enter:enter,leave:leave,resize:resize,down:down,move:move,up:up,gesture:gesture,wheel:wheel,key:key,seq:seq,step:step,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
+  return {nowGo:function(i){nowGo(NOWL[i])},zoomBy:zoomBy,menu:menu,visit:visit,nowList:function(){return NOWL.map(function(x){return x.k+':'+x.n})},enter:enter,leave:leave,resize:resize,down:down,move:move,up:up,gesture:gesture,wheel:wheel,key:key,seq:seq,step:step,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
     dbg:function(){return {ok:GLX.ok&&gen===GLX.gen,wind:!!windT,aurora:!!aurT,strikes:SK.length,flashes:flashes.length,ready:GLOBE.ready(),lat0:lat0,lon0:lon0,R:g.R,cx:g.cx,cy:g.cy,zoom:zoom,turned:turned,
       LY:LY,ping:lyPing?lyPing.k:'',flames:flN,darkK:LY.dark?+darkNow(FT).toFixed(3):0,dock:[].map.call($('lyd').childNodes,function(b){return b.id.slice(3)+(b.getAttribute('aria-pressed')==='true'?'+':'-')}),dockShown:!$('lyd').hidden,lgd:$('lgd').hidden?'':$('lgd').dataset.k,
       col:colLayer(),wx:!!wxT,geo:GLOBE.hasGeo(),now:NOWL.map(function(x){return x.k+':'+x.n}),cams:camOn,fly:!!FLY,probe:probe?{lat:probe.lat,lon:probe.lon,ghost:probe.ghost,r:reading(),zone:probe.zone?{w:probe.zone.w?probe.zone.w.id:null,d:probe.zone.d?probe.zone.d.id:null,front:probe.zone.front}:null}:null,vis:SK.filter(function(k){return k.p[2]>.3}).length,fires:FR.length,zones:ZONES.dbg(),storms:ST.map(function(k){var L=stLook(k.s);return {name:k.s.name,lat:k.s.lat,lon:k.s.lon,x:k.p[0],y:k.p[1],z:k.p[2],kmh:k.s.kmh,r:L.r,sp:L.sp,arms:L.arms,cat:L.cat}}),foc:!!FOC,
