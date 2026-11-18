@@ -25,8 +25,11 @@ button{font:inherit;color:inherit;-webkit-tap-highlight-color:transparent;margin
 #gl,#ov{position:fixed;inset:0;width:100%;height:100%;display:block;transition:opacity .22s}
 #gl{z-index:1;background:var(--abyss)}
 #ov{z-index:2;pointer-events:none}
+/* (18 Nov) Paint's sheet: what the pen, the pencil and the marker draw, over the water */
+#sk{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:1;pointer-events:none;transition:opacity .22s}
+#sk[hidden]{display:none}
 #stage{position:fixed;inset:0;z-index:3;touch-action:none;cursor:crosshair}
-body.sw #gl,body.sw #ov,body.sw .vid{opacity:0}
+body.sw #gl,body.sw #ov,body.sw #sk,body.sw .vid{opacity:0}
 /* Live: the camera's window, under the overlay and over the Earth. Never touched, except when a stream waits for a tap of its own */
 .vid{position:fixed;inset:0;z-index:2;pointer-events:none;overflow:hidden;transition:opacity .22s}
 .vid .vb{position:absolute;left:0;top:0;opacity:0;transition:opacity .7s;background:#000;will-change:transform}
@@ -172,13 +175,20 @@ body.camw .zm{display:none}
 /* (18 Nov) the satellite card: a cross, as on the others; at the top, when more than one satellite was within reach of the finger, the one
    before and the next one; at the bottom, the satellite on N2YO and the place under the finger */
 .card .cn{padding-right:26px}
+/* (18 Nov) what Claude read on Paint's page, and the picture it drew again */
+.card .ckt{margin:2px 0 4px;max-height:30vh;overflow:auto;font-family:var(--display);font-weight:600;font-size:17px;line-height:1.3;letter-spacing:.01em;color:var(--ink);
+  white-space:pre-wrap;overflow-wrap:anywhere;text-transform:none;-webkit-user-select:text;user-select:text}
+.card img.cpic{display:block;width:100%;height:auto;max-height:36vh;object-fit:contain;margin:4px 0 2px;border-radius:8px;background:#01040a}
+.card .ask{animation:askp 1.4s ease-in-out infinite}
+@keyframes askp{50%{opacity:.4}}
+@media (prefers-reduced-motion:reduce){.card .ask{animation:none}}
 .card .cw{display:flex;align-items:center;gap:4px;height:30px;margin:-9px 0 7px -5px}
 .card .cw .st{width:34px;height:30px;border-radius:15px;border:1px solid rgba(234,249,255,.2);color:var(--ink);font-size:17px;line-height:1;display:grid;place-items:center}
 .card .cw .hn{min-width:84px;text-align:center;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);font-variant-numeric:tabular-nums;white-space:nowrap}
 .card .ca{display:flex;flex-wrap:wrap;gap:6px 8px;margin:9px 0 1px}
 .card .ca a,.card .ca button{display:inline-flex;align-items:center;height:34px;padding:0 14px;border-radius:17px;border:1px solid rgba(234,249,255,.22);background:rgba(234,249,255,.05);
   color:var(--ink);font:500 10px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;text-decoration:none;white-space:nowrap}
-.card .ca a.cl{border-color:rgba(62,240,255,.6);background:rgba(62,240,255,.12)}
+.card .ca a.cl,.card .ca button.cl{border-color:rgba(62,240,255,.6);background:rgba(62,240,255,.12)}
 .card .cw .st:active,.card .ca a:active,.card .ca button:active{background:rgba(62,240,255,.22)}
 @media (max-height:480px){
   .mark .wname{font-size:24px}
@@ -281,9 +291,12 @@ body.camw .zm{display:none}
   color:var(--ink);font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;transition:border-color .2s,background .2s,color .2s}
 .mb svg{width:15px;height:15px;flex:none;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
 .mb[hidden]{display:none}
+.mrw[hidden]{display:none}
 .mb:active{background:rgba(234,249,255,.1)}
 .mb[aria-pressed=true]{color:var(--lume);border-color:rgba(62,240,255,.55);background:rgba(62,240,255,.1)}
 .mb.go{color:var(--warm);border-color:rgba(255,179,71,.45)}
+.mb:disabled{opacity:.35}
+.mb.szb svg{fill:currentColor;stroke:none}
 .sw{width:30px;height:30px;border-radius:50%;border:2px solid transparent;padding:3px;flex:none;transition:border-color .2s}
 .sw i{display:block;width:100%;height:100%;border-radius:50%;background:var(--c)}
 .sw[aria-pressed=true]{border-color:var(--ink)}

@@ -8,7 +8,7 @@ def rd(p): return open(S + p, encoding='utf-8').read()
 #  14-live.js go into both)
 # (15 Nov: the five modes of the music, 16-modes.js, before the mixer that plays them)
 # (15 Nov, night: the war zones and the places cut off, 12-zones.js, layers of the Earth)
-mods = ['00-data.js', '01-core.js', '02-gl.js', '04-band.js', '03-audio.js', '05-astro.js', '08-grib.js', '09-cities.js', '10-camlist.js', '06-live.js', '07-globe.js', '11-drift.js', '12-zones.js', '12-wind.js', '13-orbit.js', '14-live.js', '15-snd.js', '16-modes.js', '16-mix.js', '17-beat.js', '20-ui.js', '21-main.js']
+mods = ['00-data.js', '01-core.js', '02-gl.js', '04-band.js', '03-audio.js', '05-astro.js', '08-grib.js', '09-cities.js', '10-camlist.js', '06-live.js', '07-globe.js', '11-drift.js', '12-zones.js', '12-wind.js', '13-orbit.js', '14-live.js', '15-snd.js', '16-modes.js', '16-mix.js', '17-beat.js', '18-ask.js', '20-ui.js', '21-main.js']
 js = 'var HOSTED=0;\n' + '\n'.join(rd(m) for m in mods)
 hmods = mods
 hjs = 'var HOSTED=1;\n' + '\n'.join(rd(m) for m in hmods)

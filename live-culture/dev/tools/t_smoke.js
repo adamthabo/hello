@@ -24,7 +24,7 @@ const size = process.argv[2] || 'phone';
   await page.evaluate(() => window.__lc.WORLDS[0].o.tool('ink')); s = await D();
   { const m = await page.evaluate(() => ({ ids: [...document.querySelectorAll('#ms_paint button')].map(b => b.id).join(), foot: [...document.querySelectorAll('#foot button')].filter(b => b.offsetParent).length }));
     ok(s.tools === '' && m.foot === 0, 'painting, nothing at all along the bottom: a clear window: ' + JSON.stringify(s.tools));
-    ok(m.ids === 'pc_auto,pc_0,pc_1,pc_2,pc_3,pc_4,pc_5,p_mir,p_clear,bPhoto,bClear,bSave,t_wall,t_fan,t_drain,t_puz', 'Paint\'s part of the menu: each touch a new colour or one of six, mirror, start over, your photo, saving a picture, the three pieces, the game: ' + m.ids); }
+    ok(m.ids === 'pn_paint,pn_pen,pn_pencil,pn_marker,pn_eraser,ps_0,ps_1,ps_2,pc_auto,pc_0,pc_1,pc_2,pc_3,pc_4,pc_5,p_mir,p_clear,bPhoto,bClear,bSave,bText,bPic,t_wall,t_fan,t_drain,t_puz', 'Paint\'s part of the menu: the paint, the pen, the pencil, the marker, the eraser and three sizes (18 Nov), each touch a new colour or one of six, mirror, start over, your photo, saving a picture, asking Claude, the three pieces, the game: ' + m.ids); }
   // (18 Nov, 06:04: "There are only four pages. Each has its own menu items. Don't put them on other sections!") two menus: the page's
   // name opens the four pages and nothing else; the button beside it opens Paint's own menu under its name, saving a picture in it
   { const mm = await page.evaluate(async () => { const sl = ms => new Promise(r => setTimeout(r, ms)), vis = e => !!e && !e.hidden && e.getClientRects().length > 0;

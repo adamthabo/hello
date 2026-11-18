@@ -11,7 +11,7 @@ function frame(t){
     clockSync();bandTick(dt);ghostTick(t);pointersTick(t);
     OV.setTransform(1,0,0,1,0,0);OV.clearRect(0,0,OVC.width,OVC.height);OV.setTransform(DPR,0,0,DPR,0,0);OV.globalAlpha=1;OV.globalCompositeOperation='source-over';OV.textAlign='left';
     if(CUR){if(CUR.tick)CUR.tick(dt,t);if(CUR.draw)CUR.draw(t);ghostDraw()}
-    if(SAVE)doSave();
+    if(SAVE)doSave();if(SHOTQ.length)shotRun();
     dataPaint(false);
   }catch(e){if(window.__lc){window.__lc.errs=(window.__lc.errs||[]);if(window.__lc.errs.length<20)window.__lc.errs.push('frame: '+String(e&&e.stack||e))}}
   finally{requestAnimationFrame(frame)}}
@@ -20,7 +20,7 @@ function start(data){
   if(data&&data.on&&data.on.length===NL){for(i=0;i<NL;i++){ON[i]=data.on[i]?1:0;G[i]=ON[i]}BD.manual=!!data.manual}
   i=worldOf(h);if(i>=0)w=i;if(data&&typeof data.w==='number'&&data.w>=0&&data.w<WORLDS.length)w=data.w;
   railBuild();layout();ovSize();glInit();glResize();
-  go(w,true);swSync();dlInit();audioLoad();setTimeout(synPrepare,900);setTimeout(limCalibrate,1500);
+  go(w,true);swSync();dlInit();askInit();audioLoad();setTimeout(synPrepare,900);setTimeout(limCalibrate,1500);
   /* a page that opens in a mode of its own (15 Nov: kept on the device) fetches that mode's sounds early, so the first touch has them */
   if(MODE!=='africa')setTimeout(function(){try{SND.load(MIX.banks(MODE))}catch(e){}},1200);MIX.chip();
   /* the orbits, the wind, the aurora and the lightning are read once the page has settled, so they are there when a world wants them */

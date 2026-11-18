@@ -1,6 +1,17 @@
 # Changelog
 
 ## For the owner
+18 Nov 2026, 12:55 (your 11:31 message, part one):
+
+- **Paint is a sketchbook now.** Its menu has a pen, a pencil, a marker and an eraser besides the paint, each in three sizes. They
+  draw crisp lines that stay put on a sheet over the water, in the paint's colours, mirrored if the mirror is on. The eraser rubs
+  out lines and the paint under them. The round menu button shows the tool you're holding.
+- **To text and quick image.** In the Claude app, Paint's menu has "ask Claude". "To text" reads what you wrote and shows it as
+  text, to copy, or to type onto the page in place of your handwriting. "Quick image" has Claude redraw your sketch as a clean
+  picture, which you can put on the page and keep drawing on. They use the viewer's own Claude, which asks them to allow it the
+  first time. They don't show on your site: only the Claude app can ask Claude.
+- Next from the same message: the music following the map, then local weather.
+
 18 Nov 2026, 10:50 (the hourly run):
 
 - **No more names hidden behind the zoom buttons.** The + and − buttons sit over the right side of the globe, and names like
@@ -406,6 +417,28 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 18 Nov 2026, 12:55 (New York): Paint's sketchbook, and asking Claude for the text or a quick picture (README rule 31)
+
+- `11-drift.js`: the tool (`PEN`: paint, pen, pencil, marker, eraser) and size (`PSZ`, widths in `PW`) rows of Paint's menu; the sheet
+  `#sk` (2D, density up to 2): `skSize` (carried from the middle on a new size, as the water's picture is), `skClear`, `skShow`
+  (Paint, not the game), `skSeg` (a quadratic through the midpoints; the pen's width by speed, the pencil three jittered pale passes,
+  the marker opaque in a softened colour, the eraser `destination-out` that also lifts the water), `skDot`, every point `mirrors`'d.
+  `SKB` (the ink's box) and `SKCL` (the last colour); `skInk` (dark on white, cut to the ink, 1400 px at most), `skType` (Anybody
+  800, fitted to the box, kept on the screen), `skPicture` (water and sheet cleared, the picture fitted to the screen); `toolIcon()`;
+  `dbg()`: `pen`, `psz`, `skv`, `skh`. The tick and the lift route a drawing tool's finger to the sheet.
+- `18-ask.js` (new): `askInit` (`claude.use('sample')`, shown only where `limits().images`), `askGo` (the ink, or the page as it
+  looks taken in the frame by `SHOTQ`/`shotRun`; the quick tier for the text, the default for the picture; streamed with `onText`, a
+  picture still being written closed and shown once it parses), `svgClean` (DOMParser; drops script, foreignObject, image, iframe,
+  a, the animations, set, audio, video, style, `on*` attributes, outside hrefs and `url()`s), `askCard` (`#card`, kind `sk`),
+  `askWhy` (each error code; the not-allowed ones take the row away), `askOff` (on leaving Paint).
+- `20-ui.js`: `toolIconSync` (the menu button shows the tool); `doSave` draws the sheet. `21-main.js`: `shotRun` in the frame,
+  `askInit` at the start. `style.css`: `#sk`, `.card .ckt/.cpic/.ask`, `.mrw[hidden]`, `.mb:disabled`.
+- Tests: `t_sketch.js` (new; SKETCH in `check.sh`, after SMOKE), with `fake_claude.js` standing in for the Claude app's `sample`;
+  `t_smoke.js`: Paint's menu ids. `t_play.js`: the real tap on a station (it missed one time in two when traced: a fire's or a
+  storm's mark under the station takes the tap, and the zoom's buttons cover the globe's right) is made on a station clear of the
+  buttons, with the fixed marks put away for the moment; ten of ten.
+- The artifact's capabilities: `db` (as before), `downloads`, and `sample` with `images: true`.
 
 ## 18 Nov 2026, 10:50 (New York), the hourly run: the names on the globe keep clear of the zoom buttons
 

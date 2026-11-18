@@ -47,6 +47,14 @@ Take, in this order: anything a previous run logged as broken; then anything new
 marked done. One thing, done properly and seen working, beats three half-done. Size it to build in about fifteen minutes: the tests
 take most of the hour.
 
+**Still to do from the owner** (his 18 Nov, 11:31 message, README rule 31; the sketchbook is done), top first, before the backlog:
+
+1. **The music follows the map.** "Tie the music to the map. The various rhythms of the world." On the Earth, the part of the
+   world in view chooses the rhythm from Beat's 34 (son clave over Cuba, samba over Brazil, gahu over West Africa, teentaal over
+   India, and so on), changing at the bar as the Earth turns.
+2. **Local weather.** "Give me access to localized weather." A button on the Earth that goes to where you are, or a town you
+   type, and shows its weather (on the site the forecast and radar; in the artifact what it can have).
+
 ### Never, in a run
 
 - Break rule 1 (no horns, saxophone, trumpet-like, blown, bowed or held sound, nothing loud, no harp) or take his band's nine stems
@@ -221,3 +229,8 @@ not ask for.
   names on the smaller Earth above its card. It is drawn last now, and the zones' names keep clear of it.
 - 2026-11-18 15:41: no new word from him. The screenshots' most visible flaw: names on the globe under the zoom's buttons
   ("DARFUR AND KORDO"). The zones', the storms' and the chosen satellite's names now keep clear of them.
+- 2026-11-18 16:42: his 11:31 message, part one: Paint is a sketchbook (a pen, a pencil, a marker, an eraser, three sizes, on a
+  sheet over the water), and in the Claude app "ask claude": to text, quick image. Parts two and three are in section 3. The
+  suite's first pass failed once in PLAY: a real tap on a station took nothing. Traced (ten taps): a fire's or a storm's mark under
+  the station takes the tap, as the page means, and the zoom's buttons cover the globe's right; the check now taps a station clear
+  of the buttons with the fixed marks put away for the moment (ten of ten), what it checks unchanged.

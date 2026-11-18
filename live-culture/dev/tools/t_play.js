@@ -196,10 +196,18 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       ok(okL, 'earth: each storm\'s wheel by its strength (' + (st.length ? st.map(x => x.name + ' ' + x.kmh + ' km/h: ' + x.arms + ' arms, r ' + x.r.toFixed(1) + ', x' + x.sp.toFixed(2)).join('; ') : 'no storm in the data') + ')'); }
     // (17 Nov, the third hourly run) the space stations and the telescopes: marks of their own with a trail; a real tap on one takes it
     { const sh = o.shows, names = sh.map(x => x.n).join(); ok(sh.length >= 6 && /ISS \(ZARYA\)/.test(names) && /HST/.test(names) && sh.some(x => x.k === 0) && sh.some(x => x.k === 1), 'earth: the space stations and the telescopes found for marks of their own: ' + names);
-      let one = null; for (let k = 0; k < 8 && !one; k++) { const o2 = await page.evaluate(() => window.__lc.ORBIT.dbg()); one = o2.shows.find(x => x.on && x.x > 40 && x.x < 350 && x.y > 160 && x.y < 560); if (!one) { await page.evaluate(() => window.__lc.WIND.look(0, (Date.now() / 1000) % 360 - 180, 1)); await sleep(700); } }
+      // (18 Nov, the 16:42 run) a tap there missed one time in two, for two reasons the page means: the marks that stay where they are
+      // (a camera, a storm's wheel, a fire, a small war's or blackout's ring) come before a satellite flying over them, as a check below
+      // has it, and over Africa or the Amazon a station is often within reach of a fire; and the zoom's buttons sit over the right of
+      // the globe, where a tap is the button's. So this tap is made with the fixed marks put away for the moment, on a station clear of
+      // the buttons: the station is what is under the finger, and nothing else
+      const keepLy = await page.evaluate(() => { const W = window.__lc.WIND, k = {}; for (const n of ['vid', 'storm', 'fire', 'war', 'dark']) { k[n] = W.layer(n); W.layer(n, false); } return k; });
+      const clear = (x, b) => !b || x.x < b[0] - 20 || x.x > b[2] + 20 || x.y < b[1] - 20 || x.y > b[3] + 20;
+      let one = null; for (let k = 0; k < 8 && !one; k++) { const o2 = await page.evaluate(() => window.__lc.ORBIT.dbg()), zb = await page.evaluate(() => window.__lc.WIND.zmBox()); one = o2.shows.find(x => x.on && x.x > 40 && x.x < 350 && x.y > 160 && x.y < 560 && clear(x, zb)); if (!one) { await page.evaluate(() => window.__lc.WIND.look(0, (Date.now() / 1000) % 360 - 180, 1)); await sleep(700); } }
       if (one) { const w0 = (await page.evaluate(() => window.__lc.ORBIT.dbg().shows)).find(x => x.n === one.n); await T.tap(w0.x, w0.y); await sleep(600); const o3 = await page.evaluate(() => window.__lc.ORBIT.dbg());
         ok(o3.name === one.n, 'earth: a real tap on one of them takes it: ' + one.n + ' -> ' + o3.name); await T.tap(X(.03), Y(.02)); await sleep(500); }
-      else ok(false, 'earth: none of the stations and telescopes came into view'); }
+      else ok(false, 'earth: none of the stations and telescopes came into view');
+      await page.evaluate(k => { const W = window.__lc.WIND; for (const n in k) W.layer(n, k[n]); }, keepLy); await sleep(300); }
     // a tap on a satellite brings up what is on record about it
     await page.evaluate(() => window.__lc.WIND.look(20, -60, .42)); await sleep(1500); o = await page.evaluate(() => window.__lc.ORBIT.dbg()); const v = o.vis[2] || o.vis[0];
     await T.tap(v[0], v[1]); await sleep(600); o = await page.evaluate(() => window.__lc.ORBIT.dbg()); ok(o.sel >= 0 && o.card && /ORBIT/i.test(o.card) && /NOW OVER/i.test(o.card), 'earth: tapping a satellite should bring up its card: ' + String(o.card).replace(/\n+/g, ' | '));

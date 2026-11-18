@@ -153,6 +153,79 @@ var DRIFT=(function(){
   var PAL=[[.24,.94,1],[1,.27,.24],[1,.7,.28],[.49,1,.7],[.7,.42,1],[.92,.95,1]],PCN=['cyan','red','amber','mint','violet','white'],PCI=-1,PCK=-1,MIR=1,MINE=false,clearVel=false;
   function colNext(){if(PCI>=0)return PAL[PCI];PCK=(PCK+1)%PAL.length;return PAL[PCK]}
   /* a finger's paint, mirrored as the menu asks (two: left for right; four: and top for bottom; six: round the middle) */
+  /* ---- (18 Nov, 11:31: "Give me different brushes and pens and pencils and make the first art page a fun sketchbook that you can do
+     anything with. Paint, drew write") the sketchbook: besides the paint in the water, four tools that draw on a sheet laid over it,
+     crisp and still: a pen (finer when fast, like a nib), a pencil (grainy, paler), a marker (broad and soft-coloured) and an eraser
+     (which lifts the paint under it as well). Three sizes each; the colours are the paint's, and the mirror mirrors them too. The sheet
+     keeps its picture through a new size of the screen, as the water does, and goes into a saved picture ---- */
+  var PEN='paint',PSZ=1,SKC=null,SKX=null,SKD=1,SKV=0,PW={pen:[1.6,3.2,6.5],pencil:[1.3,2.6,4.8],marker:[9,16,28],eraser:[12,24,44]},
+    PENS=[['paint','paint','<path d="M12.6 2.4l3.4 3.4-6.6 6.6-3.4-3.4z"/><path d="M5.8 9.4c-1.9.1-3 1.5-3 3.4 0 .9-.5 1.7-1.2 2.2 2.6.6 5.6-.1 6.4-2.8"/>'],
+      ['pen','pen','<path d="M3 15.4l1.2-4.6 7.6-7.6 3.4 3.4-7.6 7.6z"/><path d="M10.4 4.6l3.4 3.4"/>'],
+      ['pencil','pencil','<path d="M3 15.4l.9-3.6 8.4-8.4 2.7 2.7-8.4 8.4z"/><path d="M11 4.7l2.7 2.7M3.9 11.8l2.7 2.7"/>'],
+      ['marker','marker','<path d="M4.6 13l1.8-4.6 5.8-5.8 3.6 3.6-5.8 5.8z"/><path d="M2.6 16h6"/>'],
+      ['eraser','eraser','<path d="M7 15.6h8.6"/><path d="M3 10.8l6.8-6.8a1.6 1.6 0 0 1 2.3 0l3.2 3.2a1.6 1.6 0 0 1 0 2.3l-5.2 5.2H7.4z"/>']];
+  /* where the sheet has ink (a box round every stroke and dot, the mirrored ones too) and the colour drawn in last: what is read as
+     writing, and where typed words go in its place */
+  var SKB=null,SKCL=null;
+  function skGrow(P,r){if(PEN==='eraser')return;for(var i=0;i<P.length;i++){var x=P[i][0],y=P[i][1];
+    if(!SKB)SKB={x0:x-r,y0:y-r,x1:x+r,y1:y+r};else{if(x-r<SKB.x0)SKB.x0=x-r;if(y-r<SKB.y0)SKB.y0=y-r;if(x+r>SKB.x1)SKB.x1=x+r;if(y+r>SKB.y1)SKB.y1=y+r}}}
+  function skOn(){return PZ<0&&TOOL==='ink'&&PEN!=='paint'}
+  function skSize(){var c=SKC||(SKC=$('sk'));if(!c)return;var d=Math.min(DPR||1,2),w=Math.max(1,Math.round(VW*d)),h=Math.max(1,Math.round(VH*d));if(SKX&&c.width===w&&c.height===h)return;
+    var old=null,ow=c.width,oh=c.height,od=SKD;if(SKX&&SKV>0&&ow>1&&oh>1){old=document.createElement('canvas');old.width=ow;old.height=oh;old.getContext('2d').drawImage(c,0,0)}
+    c.width=w;c.height=h;SKX=c.getContext('2d');
+    /* each point where it was on the screen, measured from the middle (as the water's picture is carried) */
+    if(old){var sw2=ow*d/od,sh2=oh*d/od,ox=Math.round((w-sw2)/2),oy=Math.round((h-sh2)/2);SKX.drawImage(old,ox,oy,sw2,sh2);
+      if(SKB){SKB.x0+=ox/d;SKB.x1+=ox/d;SKB.y0+=oy/d;SKB.y1+=oy/d}}
+    SKD=d;SKX.setTransform(d,0,0,d,0,0);SKX.lineCap='round';SKX.lineJoin='round'}
+  function skClear(){if(SKX){SKX.save();SKX.setTransform(1,0,0,1,0,0);SKX.clearRect(0,0,SKC.width,SKC.height);SKX.restore()}SKV=0;SKB=null}
+  function skShow(){var c=SKC||(SKC=$('sk'));if(c)c.hidden=!(on&&PZ<0)}
+  function mirrors(x,y){var o=[[x,y]];if(PZ>=0||MIR<2)return o;var cx=STG.cx,cy=STG.cy,dx=x-cx,dy=y-cy,k;
+    if(MIR===2){o.push([cx-dx,y]);return o}
+    if(MIR===4){o.push([cx-dx,y],[x,cy-dy],[cx-dx,cy-dy]);return o}
+    for(k=1;k<MIR;k++){var a=k/MIR*TAU,ca=Math.cos(a),sa=Math.sin(a);o.push([cx+dx*ca-dy*sa,cy+dx*sa+dy*ca])}return o}
+  function rgbOf(c,a){return 'rgba('+Math.round(c[0]*255)+','+Math.round(c[1]*255)+','+Math.round(c[2]*255)+','+a+')'}
+  /* the marker's colour: the paint's, softened toward the page, so it reads as broad and see-through without beading where it overlaps */
+  function soft(c){return [c[0]*.62+ABYSS[0]*.38,c[1]*.62+ABYSS[1]*.38,c[2]*.62+ABYSS[2]*.38]}
+  /* one step of a stroke: from the last midpoint to this one, curved through the last point (so a quick stroke is round, not a polyline) */
+  function skSeg(p,x0,y0,x1,y1,dt){var X=SKX;if(!X)return;var c=p.col||PAL[0],base=PW[PEN][PSZ],sp=Math.hypot(x1-x0,y1-y0)/Math.max(dt,.008),i,j;
+    var mx=(x0+x1)/2,my=(y0+y1)/2;if(p.qx===undefined){p.qx=x0;p.qy=y0}
+    var A=mirrors(p.qx,p.qy),C=mirrors(x0,y0),B=mirrors(mx,my);p.qx=mx;p.qy=my;skGrow(A,base);skGrow(C,base);skGrow(B,base);if(PEN!=='eraser')SKCL=c;
+    function curve(){for(i=0;i<A.length;i++){X.beginPath();X.moveTo(A[i][0],A[i][1]);X.quadraticCurveTo(C[i][0],C[i][1],B[i][0],B[i][1]);X.stroke()}}
+    X.globalCompositeOperation='source-over';
+    if(PEN==='pen'){var tw=base*clamp(1.25-sp/2600,.55,1.25);p.sw=p.sw===undefined?tw:p.sw+(tw-p.sw)*.35;X.strokeStyle=rgbOf(c,1);X.lineWidth=p.sw;curve()}
+    else if(PEN==='pencil'){var pc=[.42+c[0]*.58,.42+c[1]*.58,.42+c[2]*.58];for(j=0;j<3;j++){var jx=(Math.random()-.5)*base*.8,jy=(Math.random()-.5)*base*.8;
+        X.strokeStyle=rgbOf(pc,(.2+Math.random()*.25).toFixed(2));X.lineWidth=base*(.3+Math.random()*.4);
+        for(i=0;i<A.length;i++){X.beginPath();X.moveTo(A[i][0]+jx,A[i][1]+jy);X.quadraticCurveTo(C[i][0]+jx,C[i][1]+jy,B[i][0]+jx,B[i][1]+jy);X.stroke()}}}
+    else if(PEN==='marker'){X.strokeStyle=rgbOf(soft(c),1);X.lineWidth=base;curve()}
+    else if(PEN==='eraser'){X.globalCompositeOperation='destination-out';X.strokeStyle='#000';X.lineWidth=base;curve();X.globalCompositeOperation='source-over';
+      for(i=0;i<B.length&&VQ.length<20;i++)VQ.push([B[i][0],B[i][1],.55,0,base*base*.5])}
+    SKV++}
+  /* a tap with a drawing tool: a dot of it */
+  function skDot(p){var X=SKX;if(!X)return;var c=p.col||PAL[0],base=PW[PEN][PSZ],P2=mirrors(p.x,p.y),i;skGrow(P2,base);if(PEN!=='eraser')SKCL=c;X.globalCompositeOperation=PEN==='eraser'?'destination-out':'source-over';
+    X.fillStyle=PEN==='eraser'?'#000':PEN==='marker'?rgbOf(soft(c),1):PEN==='pencil'?rgbOf([.42+c[0]*.58,.42+c[1]*.58,.42+c[2]*.58],.45):rgbOf(c,1);
+    for(i=0;i<P2.length;i++){X.beginPath();X.arc(P2[i][0],P2[i][1],Math.max(1,base*(PEN==='pen'?.7:.5)),0,TAU);X.fill();if(PEN==='eraser'&&VQ.length<20)VQ.push([P2[i][0],P2[i][1],.55,0,base*base*.5])}
+    X.globalCompositeOperation='source-over';SKV++}
+  /* (18 Nov) the sheet's ink, dark on white and cut to where the ink is: the page as it is read for writing */
+  function skInk(){if(!SKC||!SKB||SKV<1)return null;var d=SKD,pad=18,x0=Math.max(0,SKB.x0-pad),y0=Math.max(0,SKB.y0-pad),x1=Math.min(VW,SKB.x1+pad),y1=Math.min(VH,SKB.y1+pad);
+    if(x1-x0<6||y1-y0<6)return null;var w=Math.max(1,Math.round((x1-x0)*d)),h=Math.max(1,Math.round((y1-y0)*d)),k=Math.min(1,1400/Math.max(w,h)),c=document.createElement('canvas');
+    c.width=Math.max(1,Math.round(w*k));c.height=Math.max(1,Math.round(h*k));var x=c.getContext('2d');x.drawImage(SKC,Math.round(x0*d),Math.round(y0*d),w,h,0,0,c.width,c.height);
+    x.globalCompositeOperation='source-in';x.fillStyle='#10141c';x.fillRect(0,0,c.width,c.height);x.globalCompositeOperation='destination-over';x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);return c}
+  /* words set in type where the writing was (or in the middle of the page), in the colour last drawn in: the handwriting goes */
+  function skType(t){skSize();if(!SKX)return false;var L=String(t||'').replace(/\r/g,'').split('\n').map(function(s){return s.replace(/\s+/g,' ').trim()}).filter(function(s){return s}).slice(0,14);
+    if(!L.length)return false;var b=SKB,m=18,bx0,by0,bx1,by1;
+    if(b&&b.x1-b.x0>40){bx0=Math.max(m,b.x0);bx1=Math.min(VW-m,b.x1);by0=Math.max(STG.y0,b.y0);by1=Math.min(STG.y1,b.y1)}
+    else{bx0=m+8;bx1=VW-m-8;by0=STG.cy-70;by1=STG.cy+70}
+    if(bx1-bx0<120){var cx=(bx0+bx1)/2;bx0=Math.max(m,cx-90);bx1=Math.min(VW-m,cx+90)}if(by1-by0<44){var cy=(by0+by1)/2;by0=cy-24;by1=cy+24}
+    /* the page's own display type, bold and narrow, as its names are set */
+    var X=SKX,F=function(s){return '800 '+s+'px Anybody, "Arial Narrow", system-ui, sans-serif'},wm=0,i;X.save();try{X.fontStretch='condensed'}catch(e){}X.font=F(100);for(i=0;i<L.length;i++)wm=Math.max(wm,X.measureText(L[i]).width);
+    var fs=Math.min((bx1-bx0)*100/Math.max(wm,1),(by1-by0)/(L.length*1.18),96);fs=Math.max(fs,Math.min(15,(VW-2*m)*100/Math.max(wm,1)));
+    X.restore();skClear();X.save();try{X.fontStretch='condensed'}catch(e){}X.font=F(Math.round(fs*10)/10);X.textAlign='center';X.textBaseline='middle';X.fillStyle=SKCL?rgbOf(SKCL,1):'rgb(234,249,255)';
+    var lh=fs*1.18,hw=wm*fs/200,cx2=clamp((bx0+bx1)/2,Math.min(VW/2,m+hw),Math.max(VW/2,VW-m-hw)),y=(by0+by1)/2-lh*(L.length-1)/2;for(i=0;i<L.length;i++)X.fillText(L[i],cx2,y+i*lh);X.restore();
+    SKB={x0:bx0,y0:y-lh/2,x1:bx1,y1:y+lh*(L.length-.5)};SKV++;skShow();return true}
+  /* a picture on the page in place of what was there: the sheet and the water cleared, the picture laid over the screen */
+  function skPicture(img){skSize();if(!SKX||!img)return false;var iw=img.naturalWidth||img.width,ih=img.naturalHeight||img.height;if(!iw||!ih)return false;
+    skClear();clearInk=true;clearVel=true;MINE=true;var k=Math.min(VW/iw,VH/ih),w=iw*k,h=ih*k,x0=(VW-w)/2,y0=(VH-h)/2;
+    try{SKX.drawImage(img,x0,y0,w,h)}catch(e){return false}SKB={x0:x0,y0:y0,x1:x0+w,y1:y0+h};SKV++;skShow();return true}
   function pushF(x,y,vx,vy,c,amt,rad){push(x,y,vx,vy,c,amt,rad);if(PZ>=0||MIR<2)return;var cx=STG.cx,cy=STG.cy,dx=x-cx,dy=y-cy,k;
     if(MIR===2){push(cx-dx,y,-vx,vy,c,amt,rad);return}
     if(MIR===4){push(cx-dx,y,-vx,vy,c,amt,rad);push(x,cy-dy,vx,-vy,c,amt,rad);push(cx-dx,cy-dy,-vx,-vy,c,amt,rad);return}
@@ -346,19 +419,26 @@ var DRIFT=(function(){
   function menu(sec){if(sec._built)return;sec._built=1;var ph=$('bPhoto'),pc=$('bClear'),sv=$('bSave');
     /* (18 Nov, 06:04) Paint's own menu, under the page's name (the menu's title): nothing of another page's here, and saving a
        picture, which is the painting's, is here and nowhere else */
+    /* (18 Nov, 11:31) what a finger does: paint in the water, or draw on the sheet with a pen, a pencil, a marker, or rub out; and how big */
+    var rt=row(sec,'tool');PENS.forEach(function(t){mbtn(rt,'pn_'+t[0],t[1],t[2],function(){PEN=t[0];if(PZ>=0)gmOff();TOOL='ink';menuSync();toolsSync();menuShow(false);try{toolIconSync()}catch(e){}},'Draw with the '+t[1])});
+    var rz=row(sec,'size');['fine','medium','bold'].forEach(function(nm,i){var b=mbtn(rz,'ps_'+i,nm,'<circle cx="9.2" cy="9.2" r="'+[1.8,3.4,5.4][i]+'"/>',function(){PSZ=i;menuSync();menuShow(false)},'Size: '+nm);b.classList.add('szb')});
     /* the colour: each touch the next of six, or one of them */
     var rc=row(sec,'colour');[-1].concat(PAL.map(function(x,i){return i})).forEach(function(i){var b=document.createElement('button');b.type='button';b.className='sw'+(i<0?' auto':'');b.id='pc_'+(i<0?'auto':i);
       b.innerHTML='<i></i>';if(i>=0)b.firstChild.style.setProperty('--c','rgb('+PAL[i].map(function(v){return Math.round(v*255)}).join(',')+')');
       b.setAttribute('aria-label',i<0?'Each touch the next colour':'Paint in '+PCN[i]);b.addEventListener('click',function(){PCI=i;menuSync();menuShow(false);say(i<0?'each touch a new colour':PCN[i],i<0?'':'rgb('+PAL[i].map(function(v){return Math.round(v*255)}).join(',')+')')});rc.appendChild(b)});
     /* mirror, start over, your photo (and taking it away) */
     var rm=row(sec,'');mbtn(rm,'p_mir','mirror','',function(){MIR=MIR===1?2:MIR===2?4:MIR===4?6:1;menuSync();say(MIR<2?'mirror off':'every stroke '+MIR+' times','')},'Mirror every stroke: off, two, four or six ways');
-    mbtn(rm,'p_clear','start over',CLRI,function(){clearInk=true;clearVel=true;MINE=true;menuShow(false);say('clear water','')},'Clear the water and start a new picture');
+    mbtn(rm,'p_clear','start over',CLRI,function(){clearInk=true;clearVel=true;MINE=true;skClear();menuShow(false);say('a clean page','')},'Clear the page and start a new picture');
     if(ph)rm.appendChild(ph);if(pc)rm.appendChild(pc);if(sv)rm.appendChild(sv);
+    /* (18 Nov) asking Claude about the page: what is written on it, as text; the page drawn again, as a picture. Only where it can */
+    var ta=$('bText'),tp=$('bPic');if(ta&&tp){var rq=row(sec,'ask claude');rq.id='p_ask';rq.appendChild(ta);rq.appendChild(tp);try{askSync()}catch(e){}}
     /* build: the three pieces; the game */
     var rb=row(sec,'build');TOOLS.forEach(function(t){if(t[0]==='ink'||t[0]==='puz')return;mbtn(rb,'t_'+t[0],t[1],t[2],function(){if(PZ>=0)gmOff();TOOL=t[0];toolsSync();menuShow(false)},'Build: '+t[1])});
     var rg=row(sec,'');var g=mbtn(rg,'t_puz','play the game',TOOLS[4][2],function(){gmStart();toolsSync();menuShow(false)},'Play the game: push the paint into the rings');g.classList.add('go');
     menuSync()}
   function menuSync(){var i;for(i=-1;i<PAL.length;i++){var b=$('pc_'+(i<0?'auto':i));if(b)b.setAttribute('aria-pressed',PCI===i?'true':'false')}
+    PENS.forEach(function(t){var b=$('pn_'+t[0]);if(b)b.setAttribute('aria-pressed',PZ<0&&TOOL==='ink'&&PEN===t[0]?'true':'false')});
+    for(i=0;i<3;i++){var bz=$('ps_'+i);if(bz){bz.setAttribute('aria-pressed',PSZ===i?'true':'false');bz.disabled=PEN==='paint'}}
     var m=$('p_mir');if(m){m.lastChild.textContent=MIR<2?'mirror · off':'mirror · '+MIR;m.setAttribute('aria-pressed',MIR>1?'true':'false');m.firstChild.innerHTML=MIRI}
     TOOLS.forEach(function(t){var b=$('t_'+t[0]);if(b&&t[0]!=='puz'&&t[0]!=='ink')b.setAttribute('aria-pressed',PZ<0&&TOOL===t[0]?'true':'false')})}
   /* the bottom: a chip only while a finger does something else than paint */
@@ -366,7 +446,7 @@ var DRIFT=(function(){
     var mk=function(id,icon,fn){var b=document.createElement('button');b.type='button';b.className='tb';b.id=id;b.innerHTML='<span></span><svg viewBox="0 0 18.4 18.4" aria-hidden="true">'+icon+'</svg>';b.addEventListener('click',fn);r.appendChild(b);return b};
     mk('t_again',CLRI,function(){gmStart();toolsSync()});
     mk('t_ink',DONEI,function(){if(PZ>=0){gmOff();return}TOOL='ink';toolsSync()})}
-  function toolsSync(){var r=$('tools'),h0=r?r.offsetHeight:0,a=$('t_again'),k=$('t_ink');
+  function toolsSync(){skShow();var r=$('tools'),h0=r?r.offsetHeight:0,a=$('t_again'),k=$('t_ink');
     if(r&&a&&k){var game=PZ>=0,build=PZ<0&&TOOL!=='ink';
       a.hidden=!game;if(a.firstChild.textContent!=='again')a.firstChild.textContent='again';a.setAttribute('aria-label','Start the game again from round one');
       var kt=game?'stop':TOOL+' · done';if(k.firstChild.textContent!==kt){k.firstChild.textContent=kt;k.lastChild.innerHTML=game?STOPI:DONEI}
@@ -374,17 +454,18 @@ var DRIFT=(function(){
       r.hidden=!on||(!game&&!build)}
     menuSync();if(r&&r.offsetHeight!==h0){layout();pzRelayout()}}
   var on=false;
-  function enter(){if(GLX.ok&&gen!==GLX.gen)glSetup();size();t0=FT;lastT=0;GM.best=bestGet();toolsBuild();on=true;toolsSync()}
-  function leave(){on=false;last={};rows={};q.length=0;bdrag={};var r=$('tools');if(r)r.hidden=true}
+  function enter(){if(GLX.ok&&gen!==GLX.gen)glSetup();size();t0=FT;lastT=0;GM.best=bestGet();toolsBuild();on=true;skSize();skShow();toolsSync()}
+  function leave(){on=false;last={};rows={};q.length=0;bdrag={};var r=$('tools');if(r)r.hidden=true;skShow();try{askOff()}catch(e){}}
   /* (the stage is measured again by the world switch once the row is shown or put away) */
   function down(p){
     if(!p.ghost&&PZ<0&&TOOL!=='ink'&&p.n<2){bdrag[p.id]={kind:TOOL,x0:p.x,y0:p.y};return}
     if(!p.ghost&&PZ<0&&!MINE){MINE=true;if(!PHOTO.has)clearInk=true}
-    p.col=colNext();last[p.id]={x:p.x,y:p.y};rows[p.id]=rowOf(p.y);note(p,.5)}
+    p.col=colNext();p.qx=p.qy=p.sw=undefined;last[p.id]={x:p.x,y:p.y};rows[p.id]=rowOf(p.y);note(p,.5)}
   function up(p){
     var b=bdrag[p.id];if(b){delete bdrag[p.id];buildUp(p,b);toolsSync();return}
     delete GV[p.id];var l=last[p.id];delete last[p.id];delete rows[p.id];if(!l)return;
     if(PZ>=0){if(FT-p.t0<260&&p.moved<14){var ks0=KS();for(var g=0;g<10;g++){var ag=g/10*TAU;push(p.x+Math.cos(ag)*12,p.y+Math.sin(ag)*12,Math.cos(ag)*900*ks0,Math.sin(ag)*900*ks0,[0,0,0],0,.0012*KR())}}return}
+    if(skOn()&&!p.ghost){if(FT-p.t0<260&&p.moved<14)skDot(p);return}
     /* a tap is a drop: the ink bursts outward */
     if(FT-p.t0<260&&p.moved<14){var c=p.col||inkOf(p.y);pushF(p.x,p.y,0,0,c,.5,.0014);for(var k=0;k<8;k++){var a=k/8*TAU+.3;pushF(p.x+Math.cos(a)*10,p.y+Math.sin(a)*10,Math.cos(a)*420,Math.sin(a)*420,c,.3,.0007)}}}
   function tick(dt,t){
@@ -396,6 +477,7 @@ var DRIFT=(function(){
     var fk=PZ>=0?0:1,fr0=PZ>=0?LP.fr:.0011;
     for(i=0;i<ps.length;i++){var p=ps[i];if(!p.down||bdrag[p.id])continue;var l=last[p.id];if(!l){l=last[p.id]={x:p.x,y:p.y};rows[p.id]=rowOf(p.y)}
       var dx=p.x-l.x,dy=p.y-l.y,len=Math.hypot(dx,dy);
+      if(skOn()&&!p.ghost){if(len>.5){skSeg(p,l.x,l.y,p.x,p.y,dt);l.x=p.x;l.y=p.y}continue}
       if(len>.5){var k=1/Math.max(dt,.008),vx=dx*k,vy=dy*k,m=Math.hypot(vx,vy),cap=VW*5;if(m>cap){vx*=cap/m;vy*=cap/m}
         if(PZ>=0&&FQ.length<6)FQ.push([l.x/VW,l.y/VH,p.x/VW,p.y/VH]);
         (PZ<0?pushF:push)(p.x,p.y,vx,vy,p.col||inkOf(p.y),clamp(len/52,.04,.7)*fk,fr0);l.x=p.x;l.y=p.y;
@@ -596,7 +678,7 @@ var DRIFT=(function(){
       for(k=0;k<3;k++){var g2=smooth((e-k*.22)/.9);if(g2<=0||g2>=1)continue;c.strokeStyle='rgba(234,249,255,'+(.7*(1-g2)).toFixed(3)+')';c.lineWidth=2;c.beginPath();c.arc(cx,cy,20+g2*B.w*.42,0,TAU);c.stroke()}}
     else if(GM.phase==='over'){c.fillStyle='rgba(1,4,10,'+(.5*smooth(e/.5)).toFixed(3)+')';c.fillRect(B.x0,B.y0,B.w,B.h);
       big('TIME UP',GM.score+(GM.score===1?' POINT':' POINTS')+(GM.newBest?' · NEW BEST':' · BEST '+GM.best),smooth(e/.4))}}
-  function resize(){if(GLX.ok&&P)size()}
+  function resize(){if(GLX.ok&&P)size();skSize()}
   var CN=['cyan','green','amber','rose','violet'];
   function left(n,one,many){return n+' '+(n===1?one:many)}
   /* the words, three lines at most: what to do; how it is going; what the piece in hand does */
@@ -624,8 +706,8 @@ var DRIFT=(function(){
   function recStep(){var R=REC,t=simT-R.t0;if(t<R.next)return;readBack();if(!rbOk)return;R.T.push(+t.toFixed(3));R.cols.forEach(function(c,k){R.S[k].push(scanAt(c,R.nx,R.ny))});
     R.next=t+R.ev;if(t>=R.until||!RUN)R.done=true}
   function U(x){return PZ>=0?bx(x):(STG.x0+x*STG.w)/VW}function V(y){return PZ>=0?by(y):(STG.y0+y*STG.h)/VH}
-  return {enter:enter,leave:leave,menu:menu,resize:function(){resize();pzRelayout();obsDirty=true},down:down,up:up,gesture:gesture,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
-    dbg:function(){return {mine:MINE,mir:MIR,pc:PCI,col:PCK,ok:!!(P&&dye),carried:carried,simT:simT,simple:simple,sw:sw,sh:sh,dw:dw,dh:dh,lin:GLX.hfLin,tool:TOOL,pz:PZ,won:!!pzWon,walls:WALLS.length,fans:FANS.length,drains:DRAINS.length,prisms:PRISMS.length,tunnels:TUNNELS.length,wn:WN,
+  return {enter:enter,leave:leave,menu:menu,skInk:skInk,skType:skType,skPicture:skPicture,skBox:function(){return SKB?{x0:SKB.x0,y0:SKB.y0,x1:SKB.x1,y1:SKB.y1,n:SKV}:null},toolIcon:function(){for(var i=0;i<PENS.length;i++)if(PENS[i][0]===PEN)return PENS[i][2];return null},resize:function(){resize();pzRelayout();obsDirty=true},down:down,up:up,gesture:gesture,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
+    dbg:function(){return {pen:PEN,psz:PSZ,skv:SKV,skh:SKC?SKC.hidden:null,mine:MINE,mir:MIR,pc:PCI,col:PCK,ok:!!(P&&dye),carried:carried,simT:simT,simple:simple,sw:sw,sh:sh,dw:dw,dh:dh,lin:GLX.hfLin,tool:TOOL,pz:PZ,won:!!pzWon,walls:WALLS.length,fans:FANS.length,drains:DRAINS.length,prisms:PRISMS.length,tunnels:TUNNELS.length,wn:WN,
       game:{round:GM.round,need:GM.need,got:GM.got,left:+GM.left.toFixed(2),score:GM.score,best:GM.best,phase:GM.phase,news:NEWS[GM.round]?NEWS[GM.round][0]:'',newBest:!!GM.newBest,cols:GM.cols.slice(),wall:!!GM.wall,combo:GM.combo,drain:GM.drain,cur:GM.cur,ringN:GM.ringN,loops:GM.loops,wallXY:GM.wall},board:{x0:B.x0,y0:B.y0,w:B.w,h:B.h},run:RUN,rt:RT,
       cups:CUPS.map(function(c){return {c:c.c,fill:c.fill,match:c.match,done:c.done,x:WX(c.x),y:WY(c.y),r:cupR()*(c.r||1),gold:!!c.gold,n:c.n,mv:c.ox?'loop':c.mx||c.my?'drift':'',
         loop:c.ox?{cx:B.x0+c.x0*B.w,cy:B.y0+c.y0*B.h,rx:c.ox*B.w,ry:c.oy*B.h,lap:c.mp,dir:c.od,x0:c.x0,y0:c.y0,ox:c.ox,oy:c.oy}:null}}),vents:FIX.fans.map(function(f){return {x:WX(f.x),y:WY(f.y),c:f.c,a:f.a===undefined?-Math.PI/2:f.a}}),fix:{walls:FIX.walls.length,fans:FIX.fans.length,drains:FIX.drains.length,prisms:FIX.prisms.length},rb:rbOk}},

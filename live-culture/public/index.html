@@ -33,8 +33,11 @@ button{font:inherit;color:inherit;-webkit-tap-highlight-color:transparent;margin
 #gl,#ov{position:fixed;inset:0;width:100%;height:100%;display:block;transition:opacity .22s}
 #gl{z-index:1;background:var(--abyss)}
 #ov{z-index:2;pointer-events:none}
+/* (18 Nov) Paint's sheet: what the pen, the pencil and the marker draw, over the water */
+#sk{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:1;pointer-events:none;transition:opacity .22s}
+#sk[hidden]{display:none}
 #stage{position:fixed;inset:0;z-index:3;touch-action:none;cursor:crosshair}
-body.sw #gl,body.sw #ov,body.sw .vid{opacity:0}
+body.sw #gl,body.sw #ov,body.sw #sk,body.sw .vid{opacity:0}
 /* Live: the camera's window, under the overlay and over the Earth. Never touched, except when a stream waits for a tap of its own */
 .vid{position:fixed;inset:0;z-index:2;pointer-events:none;overflow:hidden;transition:opacity .22s}
 .vid .vb{position:absolute;left:0;top:0;opacity:0;transition:opacity .7s;background:#000;will-change:transform}
@@ -180,13 +183,20 @@ body.camw .zm{display:none}
 /* (18 Nov) the satellite card: a cross, as on the others; at the top, when more than one satellite was within reach of the finger, the one
    before and the next one; at the bottom, the satellite on N2YO and the place under the finger */
 .card .cn{padding-right:26px}
+/* (18 Nov) what Claude read on Paint's page, and the picture it drew again */
+.card .ckt{margin:2px 0 4px;max-height:30vh;overflow:auto;font-family:var(--display);font-weight:600;font-size:17px;line-height:1.3;letter-spacing:.01em;color:var(--ink);
+  white-space:pre-wrap;overflow-wrap:anywhere;text-transform:none;-webkit-user-select:text;user-select:text}
+.card img.cpic{display:block;width:100%;height:auto;max-height:36vh;object-fit:contain;margin:4px 0 2px;border-radius:8px;background:#01040a}
+.card .ask{animation:askp 1.4s ease-in-out infinite}
+@keyframes askp{50%{opacity:.4}}
+@media (prefers-reduced-motion:reduce){.card .ask{animation:none}}
 .card .cw{display:flex;align-items:center;gap:4px;height:30px;margin:-9px 0 7px -5px}
 .card .cw .st{width:34px;height:30px;border-radius:15px;border:1px solid rgba(234,249,255,.2);color:var(--ink);font-size:17px;line-height:1;display:grid;place-items:center}
 .card .cw .hn{min-width:84px;text-align:center;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);font-variant-numeric:tabular-nums;white-space:nowrap}
 .card .ca{display:flex;flex-wrap:wrap;gap:6px 8px;margin:9px 0 1px}
 .card .ca a,.card .ca button{display:inline-flex;align-items:center;height:34px;padding:0 14px;border-radius:17px;border:1px solid rgba(234,249,255,.22);background:rgba(234,249,255,.05);
   color:var(--ink);font:500 10px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;text-decoration:none;white-space:nowrap}
-.card .ca a.cl{border-color:rgba(62,240,255,.6);background:rgba(62,240,255,.12)}
+.card .ca a.cl,.card .ca button.cl{border-color:rgba(62,240,255,.6);background:rgba(62,240,255,.12)}
 .card .cw .st:active,.card .ca a:active,.card .ca button:active{background:rgba(62,240,255,.22)}
 @media (max-height:480px){
   .mark .wname{font-size:24px}
@@ -289,9 +299,12 @@ body.camw .zm{display:none}
   color:var(--ink);font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;transition:border-color .2s,background .2s,color .2s}
 .mb svg{width:15px;height:15px;flex:none;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
 .mb[hidden]{display:none}
+.mrw[hidden]{display:none}
 .mb:active{background:rgba(234,249,255,.1)}
 .mb[aria-pressed=true]{color:var(--lume);border-color:rgba(62,240,255,.55);background:rgba(62,240,255,.1)}
 .mb.go{color:var(--warm);border-color:rgba(255,179,71,.45)}
+.mb:disabled{opacity:.35}
+.mb.szb svg{fill:currentColor;stroke:none}
 .sw{width:30px;height:30px;border-radius:50%;border:2px solid transparent;padding:3px;flex:none;transition:border-color .2s}
 .sw i{display:block;width:100%;height:100%;border-radius:50%;background:var(--c)}
 .sw[aria-pressed=true]{border-color:var(--ink)}
@@ -318,6 +331,7 @@ body.camw .zm{display:none}
 </style>
 
 <canvas id="gl" aria-hidden="true"></canvas>
+<canvas id="sk" aria-hidden="true" hidden></canvas>
 <div class="vid" id="vid" hidden><div class="vb" id="vidbox"><div id="vidp"></div><img id="vidi" alt="" hidden></div></div>
 <div class="vidc" id="vidc" hidden role="group" aria-label="The camera"><button type="button" id="vW" aria-label="The next camera to the west">west</button><button type="button" id="vE" aria-label="The next camera to the east">east</button><a id="vY" target="_blank" rel="noopener noreferrer" hidden>youtube</a><button type="button" id="vX" aria-label="Close the camera">close</button></div>
 <canvas id="ov" aria-hidden="true"></canvas>
@@ -346,6 +360,8 @@ body.camw .zm{display:none}
     <button class="mb" id="bPhoto" type="button" aria-label="Use a photo of your own as the paint. It stays on this device"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="4" width="13" height="9.5" rx="2"/><circle cx="8" cy="8.8" r="2.6"/><path d="M5.5 4l1-1.8h3l1 1.8"/></svg><span>your photo</span></button>
     <button class="mb" id="bClear" type="button" hidden aria-label="Take the photo away"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg><span>photo away</span></button>
     <button class="mb" id="bSave" type="button" hidden aria-label="Save a picture of the painting"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8M4.8 7.2L8 10.4l3.2-3.2M2.5 13.5h11"/></svg><span>save a picture</span></button>
+    <button class="mb" id="bText" type="button" hidden aria-label="Ask Claude to read what is written on the page, as text"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3.4h10M8 3.4v9.8M5.4 13.2h5.2"/></svg><span>to text</span></button>
+    <button class="mb" id="bPic" type="button" hidden aria-label="Ask Claude to draw the page again as a quick picture"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6l1.5 4.3 4.3 1.6-4.3 1.6L8 13.4 6.5 9.1 2.2 7.5l4.3-1.6z"/></svg><span>quick image</span></button>
   </section>
   <section class="msec" id="ms_beat" hidden aria-label="Beat"></section>
 </div>
@@ -1559,6 +1575,79 @@ var DRIFT=(function(){
   var PAL=[[.24,.94,1],[1,.27,.24],[1,.7,.28],[.49,1,.7],[.7,.42,1],[.92,.95,1]],PCN=['cyan','red','amber','mint','violet','white'],PCI=-1,PCK=-1,MIR=1,MINE=false,clearVel=false;
   function colNext(){if(PCI>=0)return PAL[PCI];PCK=(PCK+1)%PAL.length;return PAL[PCK]}
   /* a finger's paint, mirrored as the menu asks (two: left for right; four: and top for bottom; six: round the middle) */
+  /* ---- (18 Nov, 11:31: "Give me different brushes and pens and pencils and make the first art page a fun sketchbook that you can do
+     anything with. Paint, drew write") the sketchbook: besides the paint in the water, four tools that draw on a sheet laid over it,
+     crisp and still: a pen (finer when fast, like a nib), a pencil (grainy, paler), a marker (broad and soft-coloured) and an eraser
+     (which lifts the paint under it as well). Three sizes each; the colours are the paint's, and the mirror mirrors them too. The sheet
+     keeps its picture through a new size of the screen, as the water does, and goes into a saved picture ---- */
+  var PEN='paint',PSZ=1,SKC=null,SKX=null,SKD=1,SKV=0,PW={pen:[1.6,3.2,6.5],pencil:[1.3,2.6,4.8],marker:[9,16,28],eraser:[12,24,44]},
+    PENS=[['paint','paint','<path d="M12.6 2.4l3.4 3.4-6.6 6.6-3.4-3.4z"/><path d="M5.8 9.4c-1.9.1-3 1.5-3 3.4 0 .9-.5 1.7-1.2 2.2 2.6.6 5.6-.1 6.4-2.8"/>'],
+      ['pen','pen','<path d="M3 15.4l1.2-4.6 7.6-7.6 3.4 3.4-7.6 7.6z"/><path d="M10.4 4.6l3.4 3.4"/>'],
+      ['pencil','pencil','<path d="M3 15.4l.9-3.6 8.4-8.4 2.7 2.7-8.4 8.4z"/><path d="M11 4.7l2.7 2.7M3.9 11.8l2.7 2.7"/>'],
+      ['marker','marker','<path d="M4.6 13l1.8-4.6 5.8-5.8 3.6 3.6-5.8 5.8z"/><path d="M2.6 16h6"/>'],
+      ['eraser','eraser','<path d="M7 15.6h8.6"/><path d="M3 10.8l6.8-6.8a1.6 1.6 0 0 1 2.3 0l3.2 3.2a1.6 1.6 0 0 1 0 2.3l-5.2 5.2H7.4z"/>']];
+  /* where the sheet has ink (a box round every stroke and dot, the mirrored ones too) and the colour drawn in last: what is read as
+     writing, and where typed words go in its place */
+  var SKB=null,SKCL=null;
+  function skGrow(P,r){if(PEN==='eraser')return;for(var i=0;i<P.length;i++){var x=P[i][0],y=P[i][1];
+    if(!SKB)SKB={x0:x-r,y0:y-r,x1:x+r,y1:y+r};else{if(x-r<SKB.x0)SKB.x0=x-r;if(y-r<SKB.y0)SKB.y0=y-r;if(x+r>SKB.x1)SKB.x1=x+r;if(y+r>SKB.y1)SKB.y1=y+r}}}
+  function skOn(){return PZ<0&&TOOL==='ink'&&PEN!=='paint'}
+  function skSize(){var c=SKC||(SKC=$('sk'));if(!c)return;var d=Math.min(DPR||1,2),w=Math.max(1,Math.round(VW*d)),h=Math.max(1,Math.round(VH*d));if(SKX&&c.width===w&&c.height===h)return;
+    var old=null,ow=c.width,oh=c.height,od=SKD;if(SKX&&SKV>0&&ow>1&&oh>1){old=document.createElement('canvas');old.width=ow;old.height=oh;old.getContext('2d').drawImage(c,0,0)}
+    c.width=w;c.height=h;SKX=c.getContext('2d');
+    /* each point where it was on the screen, measured from the middle (as the water's picture is carried) */
+    if(old){var sw2=ow*d/od,sh2=oh*d/od,ox=Math.round((w-sw2)/2),oy=Math.round((h-sh2)/2);SKX.drawImage(old,ox,oy,sw2,sh2);
+      if(SKB){SKB.x0+=ox/d;SKB.x1+=ox/d;SKB.y0+=oy/d;SKB.y1+=oy/d}}
+    SKD=d;SKX.setTransform(d,0,0,d,0,0);SKX.lineCap='round';SKX.lineJoin='round'}
+  function skClear(){if(SKX){SKX.save();SKX.setTransform(1,0,0,1,0,0);SKX.clearRect(0,0,SKC.width,SKC.height);SKX.restore()}SKV=0;SKB=null}
+  function skShow(){var c=SKC||(SKC=$('sk'));if(c)c.hidden=!(on&&PZ<0)}
+  function mirrors(x,y){var o=[[x,y]];if(PZ>=0||MIR<2)return o;var cx=STG.cx,cy=STG.cy,dx=x-cx,dy=y-cy,k;
+    if(MIR===2){o.push([cx-dx,y]);return o}
+    if(MIR===4){o.push([cx-dx,y],[x,cy-dy],[cx-dx,cy-dy]);return o}
+    for(k=1;k<MIR;k++){var a=k/MIR*TAU,ca=Math.cos(a),sa=Math.sin(a);o.push([cx+dx*ca-dy*sa,cy+dx*sa+dy*ca])}return o}
+  function rgbOf(c,a){return 'rgba('+Math.round(c[0]*255)+','+Math.round(c[1]*255)+','+Math.round(c[2]*255)+','+a+')'}
+  /* the marker's colour: the paint's, softened toward the page, so it reads as broad and see-through without beading where it overlaps */
+  function soft(c){return [c[0]*.62+ABYSS[0]*.38,c[1]*.62+ABYSS[1]*.38,c[2]*.62+ABYSS[2]*.38]}
+  /* one step of a stroke: from the last midpoint to this one, curved through the last point (so a quick stroke is round, not a polyline) */
+  function skSeg(p,x0,y0,x1,y1,dt){var X=SKX;if(!X)return;var c=p.col||PAL[0],base=PW[PEN][PSZ],sp=Math.hypot(x1-x0,y1-y0)/Math.max(dt,.008),i,j;
+    var mx=(x0+x1)/2,my=(y0+y1)/2;if(p.qx===undefined){p.qx=x0;p.qy=y0}
+    var A=mirrors(p.qx,p.qy),C=mirrors(x0,y0),B=mirrors(mx,my);p.qx=mx;p.qy=my;skGrow(A,base);skGrow(C,base);skGrow(B,base);if(PEN!=='eraser')SKCL=c;
+    function curve(){for(i=0;i<A.length;i++){X.beginPath();X.moveTo(A[i][0],A[i][1]);X.quadraticCurveTo(C[i][0],C[i][1],B[i][0],B[i][1]);X.stroke()}}
+    X.globalCompositeOperation='source-over';
+    if(PEN==='pen'){var tw=base*clamp(1.25-sp/2600,.55,1.25);p.sw=p.sw===undefined?tw:p.sw+(tw-p.sw)*.35;X.strokeStyle=rgbOf(c,1);X.lineWidth=p.sw;curve()}
+    else if(PEN==='pencil'){var pc=[.42+c[0]*.58,.42+c[1]*.58,.42+c[2]*.58];for(j=0;j<3;j++){var jx=(Math.random()-.5)*base*.8,jy=(Math.random()-.5)*base*.8;
+        X.strokeStyle=rgbOf(pc,(.2+Math.random()*.25).toFixed(2));X.lineWidth=base*(.3+Math.random()*.4);
+        for(i=0;i<A.length;i++){X.beginPath();X.moveTo(A[i][0]+jx,A[i][1]+jy);X.quadraticCurveTo(C[i][0]+jx,C[i][1]+jy,B[i][0]+jx,B[i][1]+jy);X.stroke()}}}
+    else if(PEN==='marker'){X.strokeStyle=rgbOf(soft(c),1);X.lineWidth=base;curve()}
+    else if(PEN==='eraser'){X.globalCompositeOperation='destination-out';X.strokeStyle='#000';X.lineWidth=base;curve();X.globalCompositeOperation='source-over';
+      for(i=0;i<B.length&&VQ.length<20;i++)VQ.push([B[i][0],B[i][1],.55,0,base*base*.5])}
+    SKV++}
+  /* a tap with a drawing tool: a dot of it */
+  function skDot(p){var X=SKX;if(!X)return;var c=p.col||PAL[0],base=PW[PEN][PSZ],P2=mirrors(p.x,p.y),i;skGrow(P2,base);if(PEN!=='eraser')SKCL=c;X.globalCompositeOperation=PEN==='eraser'?'destination-out':'source-over';
+    X.fillStyle=PEN==='eraser'?'#000':PEN==='marker'?rgbOf(soft(c),1):PEN==='pencil'?rgbOf([.42+c[0]*.58,.42+c[1]*.58,.42+c[2]*.58],.45):rgbOf(c,1);
+    for(i=0;i<P2.length;i++){X.beginPath();X.arc(P2[i][0],P2[i][1],Math.max(1,base*(PEN==='pen'?.7:.5)),0,TAU);X.fill();if(PEN==='eraser'&&VQ.length<20)VQ.push([P2[i][0],P2[i][1],.55,0,base*base*.5])}
+    X.globalCompositeOperation='source-over';SKV++}
+  /* (18 Nov) the sheet's ink, dark on white and cut to where the ink is: the page as it is read for writing */
+  function skInk(){if(!SKC||!SKB||SKV<1)return null;var d=SKD,pad=18,x0=Math.max(0,SKB.x0-pad),y0=Math.max(0,SKB.y0-pad),x1=Math.min(VW,SKB.x1+pad),y1=Math.min(VH,SKB.y1+pad);
+    if(x1-x0<6||y1-y0<6)return null;var w=Math.max(1,Math.round((x1-x0)*d)),h=Math.max(1,Math.round((y1-y0)*d)),k=Math.min(1,1400/Math.max(w,h)),c=document.createElement('canvas');
+    c.width=Math.max(1,Math.round(w*k));c.height=Math.max(1,Math.round(h*k));var x=c.getContext('2d');x.drawImage(SKC,Math.round(x0*d),Math.round(y0*d),w,h,0,0,c.width,c.height);
+    x.globalCompositeOperation='source-in';x.fillStyle='#10141c';x.fillRect(0,0,c.width,c.height);x.globalCompositeOperation='destination-over';x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);return c}
+  /* words set in type where the writing was (or in the middle of the page), in the colour last drawn in: the handwriting goes */
+  function skType(t){skSize();if(!SKX)return false;var L=String(t||'').replace(/\r/g,'').split('\n').map(function(s){return s.replace(/\s+/g,' ').trim()}).filter(function(s){return s}).slice(0,14);
+    if(!L.length)return false;var b=SKB,m=18,bx0,by0,bx1,by1;
+    if(b&&b.x1-b.x0>40){bx0=Math.max(m,b.x0);bx1=Math.min(VW-m,b.x1);by0=Math.max(STG.y0,b.y0);by1=Math.min(STG.y1,b.y1)}
+    else{bx0=m+8;bx1=VW-m-8;by0=STG.cy-70;by1=STG.cy+70}
+    if(bx1-bx0<120){var cx=(bx0+bx1)/2;bx0=Math.max(m,cx-90);bx1=Math.min(VW-m,cx+90)}if(by1-by0<44){var cy=(by0+by1)/2;by0=cy-24;by1=cy+24}
+    /* the page's own display type, bold and narrow, as its names are set */
+    var X=SKX,F=function(s){return '800 '+s+'px Anybody, "Arial Narrow", system-ui, sans-serif'},wm=0,i;X.save();try{X.fontStretch='condensed'}catch(e){}X.font=F(100);for(i=0;i<L.length;i++)wm=Math.max(wm,X.measureText(L[i]).width);
+    var fs=Math.min((bx1-bx0)*100/Math.max(wm,1),(by1-by0)/(L.length*1.18),96);fs=Math.max(fs,Math.min(15,(VW-2*m)*100/Math.max(wm,1)));
+    X.restore();skClear();X.save();try{X.fontStretch='condensed'}catch(e){}X.font=F(Math.round(fs*10)/10);X.textAlign='center';X.textBaseline='middle';X.fillStyle=SKCL?rgbOf(SKCL,1):'rgb(234,249,255)';
+    var lh=fs*1.18,hw=wm*fs/200,cx2=clamp((bx0+bx1)/2,Math.min(VW/2,m+hw),Math.max(VW/2,VW-m-hw)),y=(by0+by1)/2-lh*(L.length-1)/2;for(i=0;i<L.length;i++)X.fillText(L[i],cx2,y+i*lh);X.restore();
+    SKB={x0:bx0,y0:y-lh/2,x1:bx1,y1:y+lh*(L.length-.5)};SKV++;skShow();return true}
+  /* a picture on the page in place of what was there: the sheet and the water cleared, the picture laid over the screen */
+  function skPicture(img){skSize();if(!SKX||!img)return false;var iw=img.naturalWidth||img.width,ih=img.naturalHeight||img.height;if(!iw||!ih)return false;
+    skClear();clearInk=true;clearVel=true;MINE=true;var k=Math.min(VW/iw,VH/ih),w=iw*k,h=ih*k,x0=(VW-w)/2,y0=(VH-h)/2;
+    try{SKX.drawImage(img,x0,y0,w,h)}catch(e){return false}SKB={x0:x0,y0:y0,x1:x0+w,y1:y0+h};SKV++;skShow();return true}
   function pushF(x,y,vx,vy,c,amt,rad){push(x,y,vx,vy,c,amt,rad);if(PZ>=0||MIR<2)return;var cx=STG.cx,cy=STG.cy,dx=x-cx,dy=y-cy,k;
     if(MIR===2){push(cx-dx,y,-vx,vy,c,amt,rad);return}
     if(MIR===4){push(cx-dx,y,-vx,vy,c,amt,rad);push(x,cy-dy,vx,-vy,c,amt,rad);push(cx-dx,cy-dy,-vx,-vy,c,amt,rad);return}
@@ -1752,19 +1841,26 @@ var DRIFT=(function(){
   function menu(sec){if(sec._built)return;sec._built=1;var ph=$('bPhoto'),pc=$('bClear'),sv=$('bSave');
     /* (18 Nov, 06:04) Paint's own menu, under the page's name (the menu's title): nothing of another page's here, and saving a
        picture, which is the painting's, is here and nowhere else */
+    /* (18 Nov, 11:31) what a finger does: paint in the water, or draw on the sheet with a pen, a pencil, a marker, or rub out; and how big */
+    var rt=row(sec,'tool');PENS.forEach(function(t){mbtn(rt,'pn_'+t[0],t[1],t[2],function(){PEN=t[0];if(PZ>=0)gmOff();TOOL='ink';menuSync();toolsSync();menuShow(false);try{toolIconSync()}catch(e){}},'Draw with the '+t[1])});
+    var rz=row(sec,'size');['fine','medium','bold'].forEach(function(nm,i){var b=mbtn(rz,'ps_'+i,nm,'<circle cx="9.2" cy="9.2" r="'+[1.8,3.4,5.4][i]+'"/>',function(){PSZ=i;menuSync();menuShow(false)},'Size: '+nm);b.classList.add('szb')});
     /* the colour: each touch the next of six, or one of them */
     var rc=row(sec,'colour');[-1].concat(PAL.map(function(x,i){return i})).forEach(function(i){var b=document.createElement('button');b.type='button';b.className='sw'+(i<0?' auto':'');b.id='pc_'+(i<0?'auto':i);
       b.innerHTML='<i></i>';if(i>=0)b.firstChild.style.setProperty('--c','rgb('+PAL[i].map(function(v){return Math.round(v*255)}).join(',')+')');
       b.setAttribute('aria-label',i<0?'Each touch the next colour':'Paint in '+PCN[i]);b.addEventListener('click',function(){PCI=i;menuSync();menuShow(false);say(i<0?'each touch a new colour':PCN[i],i<0?'':'rgb('+PAL[i].map(function(v){return Math.round(v*255)}).join(',')+')')});rc.appendChild(b)});
     /* mirror, start over, your photo (and taking it away) */
     var rm=row(sec,'');mbtn(rm,'p_mir','mirror','',function(){MIR=MIR===1?2:MIR===2?4:MIR===4?6:1;menuSync();say(MIR<2?'mirror off':'every stroke '+MIR+' times','')},'Mirror every stroke: off, two, four or six ways');
-    mbtn(rm,'p_clear','start over',CLRI,function(){clearInk=true;clearVel=true;MINE=true;menuShow(false);say('clear water','')},'Clear the water and start a new picture');
+    mbtn(rm,'p_clear','start over',CLRI,function(){clearInk=true;clearVel=true;MINE=true;skClear();menuShow(false);say('a clean page','')},'Clear the page and start a new picture');
     if(ph)rm.appendChild(ph);if(pc)rm.appendChild(pc);if(sv)rm.appendChild(sv);
+    /* (18 Nov) asking Claude about the page: what is written on it, as text; the page drawn again, as a picture. Only where it can */
+    var ta=$('bText'),tp=$('bPic');if(ta&&tp){var rq=row(sec,'ask claude');rq.id='p_ask';rq.appendChild(ta);rq.appendChild(tp);try{askSync()}catch(e){}}
     /* build: the three pieces; the game */
     var rb=row(sec,'build');TOOLS.forEach(function(t){if(t[0]==='ink'||t[0]==='puz')return;mbtn(rb,'t_'+t[0],t[1],t[2],function(){if(PZ>=0)gmOff();TOOL=t[0];toolsSync();menuShow(false)},'Build: '+t[1])});
     var rg=row(sec,'');var g=mbtn(rg,'t_puz','play the game',TOOLS[4][2],function(){gmStart();toolsSync();menuShow(false)},'Play the game: push the paint into the rings');g.classList.add('go');
     menuSync()}
   function menuSync(){var i;for(i=-1;i<PAL.length;i++){var b=$('pc_'+(i<0?'auto':i));if(b)b.setAttribute('aria-pressed',PCI===i?'true':'false')}
+    PENS.forEach(function(t){var b=$('pn_'+t[0]);if(b)b.setAttribute('aria-pressed',PZ<0&&TOOL==='ink'&&PEN===t[0]?'true':'false')});
+    for(i=0;i<3;i++){var bz=$('ps_'+i);if(bz){bz.setAttribute('aria-pressed',PSZ===i?'true':'false');bz.disabled=PEN==='paint'}}
     var m=$('p_mir');if(m){m.lastChild.textContent=MIR<2?'mirror · off':'mirror · '+MIR;m.setAttribute('aria-pressed',MIR>1?'true':'false');m.firstChild.innerHTML=MIRI}
     TOOLS.forEach(function(t){var b=$('t_'+t[0]);if(b&&t[0]!=='puz'&&t[0]!=='ink')b.setAttribute('aria-pressed',PZ<0&&TOOL===t[0]?'true':'false')})}
   /* the bottom: a chip only while a finger does something else than paint */
@@ -1772,7 +1868,7 @@ var DRIFT=(function(){
     var mk=function(id,icon,fn){var b=document.createElement('button');b.type='button';b.className='tb';b.id=id;b.innerHTML='<span></span><svg viewBox="0 0 18.4 18.4" aria-hidden="true">'+icon+'</svg>';b.addEventListener('click',fn);r.appendChild(b);return b};
     mk('t_again',CLRI,function(){gmStart();toolsSync()});
     mk('t_ink',DONEI,function(){if(PZ>=0){gmOff();return}TOOL='ink';toolsSync()})}
-  function toolsSync(){var r=$('tools'),h0=r?r.offsetHeight:0,a=$('t_again'),k=$('t_ink');
+  function toolsSync(){skShow();var r=$('tools'),h0=r?r.offsetHeight:0,a=$('t_again'),k=$('t_ink');
     if(r&&a&&k){var game=PZ>=0,build=PZ<0&&TOOL!=='ink';
       a.hidden=!game;if(a.firstChild.textContent!=='again')a.firstChild.textContent='again';a.setAttribute('aria-label','Start the game again from round one');
       var kt=game?'stop':TOOL+' · done';if(k.firstChild.textContent!==kt){k.firstChild.textContent=kt;k.lastChild.innerHTML=game?STOPI:DONEI}
@@ -1780,17 +1876,18 @@ var DRIFT=(function(){
       r.hidden=!on||(!game&&!build)}
     menuSync();if(r&&r.offsetHeight!==h0){layout();pzRelayout()}}
   var on=false;
-  function enter(){if(GLX.ok&&gen!==GLX.gen)glSetup();size();t0=FT;lastT=0;GM.best=bestGet();toolsBuild();on=true;toolsSync()}
-  function leave(){on=false;last={};rows={};q.length=0;bdrag={};var r=$('tools');if(r)r.hidden=true}
+  function enter(){if(GLX.ok&&gen!==GLX.gen)glSetup();size();t0=FT;lastT=0;GM.best=bestGet();toolsBuild();on=true;skSize();skShow();toolsSync()}
+  function leave(){on=false;last={};rows={};q.length=0;bdrag={};var r=$('tools');if(r)r.hidden=true;skShow();try{askOff()}catch(e){}}
   /* (the stage is measured again by the world switch once the row is shown or put away) */
   function down(p){
     if(!p.ghost&&PZ<0&&TOOL!=='ink'&&p.n<2){bdrag[p.id]={kind:TOOL,x0:p.x,y0:p.y};return}
     if(!p.ghost&&PZ<0&&!MINE){MINE=true;if(!PHOTO.has)clearInk=true}
-    p.col=colNext();last[p.id]={x:p.x,y:p.y};rows[p.id]=rowOf(p.y);note(p,.5)}
+    p.col=colNext();p.qx=p.qy=p.sw=undefined;last[p.id]={x:p.x,y:p.y};rows[p.id]=rowOf(p.y);note(p,.5)}
   function up(p){
     var b=bdrag[p.id];if(b){delete bdrag[p.id];buildUp(p,b);toolsSync();return}
     delete GV[p.id];var l=last[p.id];delete last[p.id];delete rows[p.id];if(!l)return;
     if(PZ>=0){if(FT-p.t0<260&&p.moved<14){var ks0=KS();for(var g=0;g<10;g++){var ag=g/10*TAU;push(p.x+Math.cos(ag)*12,p.y+Math.sin(ag)*12,Math.cos(ag)*900*ks0,Math.sin(ag)*900*ks0,[0,0,0],0,.0012*KR())}}return}
+    if(skOn()&&!p.ghost){if(FT-p.t0<260&&p.moved<14)skDot(p);return}
     /* a tap is a drop: the ink bursts outward */
     if(FT-p.t0<260&&p.moved<14){var c=p.col||inkOf(p.y);pushF(p.x,p.y,0,0,c,.5,.0014);for(var k=0;k<8;k++){var a=k/8*TAU+.3;pushF(p.x+Math.cos(a)*10,p.y+Math.sin(a)*10,Math.cos(a)*420,Math.sin(a)*420,c,.3,.0007)}}}
   function tick(dt,t){
@@ -1802,6 +1899,7 @@ var DRIFT=(function(){
     var fk=PZ>=0?0:1,fr0=PZ>=0?LP.fr:.0011;
     for(i=0;i<ps.length;i++){var p=ps[i];if(!p.down||bdrag[p.id])continue;var l=last[p.id];if(!l){l=last[p.id]={x:p.x,y:p.y};rows[p.id]=rowOf(p.y)}
       var dx=p.x-l.x,dy=p.y-l.y,len=Math.hypot(dx,dy);
+      if(skOn()&&!p.ghost){if(len>.5){skSeg(p,l.x,l.y,p.x,p.y,dt);l.x=p.x;l.y=p.y}continue}
       if(len>.5){var k=1/Math.max(dt,.008),vx=dx*k,vy=dy*k,m=Math.hypot(vx,vy),cap=VW*5;if(m>cap){vx*=cap/m;vy*=cap/m}
         if(PZ>=0&&FQ.length<6)FQ.push([l.x/VW,l.y/VH,p.x/VW,p.y/VH]);
         (PZ<0?pushF:push)(p.x,p.y,vx,vy,p.col||inkOf(p.y),clamp(len/52,.04,.7)*fk,fr0);l.x=p.x;l.y=p.y;
@@ -2002,7 +2100,7 @@ var DRIFT=(function(){
       for(k=0;k<3;k++){var g2=smooth((e-k*.22)/.9);if(g2<=0||g2>=1)continue;c.strokeStyle='rgba(234,249,255,'+(.7*(1-g2)).toFixed(3)+')';c.lineWidth=2;c.beginPath();c.arc(cx,cy,20+g2*B.w*.42,0,TAU);c.stroke()}}
     else if(GM.phase==='over'){c.fillStyle='rgba(1,4,10,'+(.5*smooth(e/.5)).toFixed(3)+')';c.fillRect(B.x0,B.y0,B.w,B.h);
       big('TIME UP',GM.score+(GM.score===1?' POINT':' POINTS')+(GM.newBest?' · NEW BEST':' · BEST '+GM.best),smooth(e/.4))}}
-  function resize(){if(GLX.ok&&P)size()}
+  function resize(){if(GLX.ok&&P)size();skSize()}
   var CN=['cyan','green','amber','rose','violet'];
   function left(n,one,many){return n+' '+(n===1?one:many)}
   /* the words, three lines at most: what to do; how it is going; what the piece in hand does */
@@ -2030,8 +2128,8 @@ var DRIFT=(function(){
   function recStep(){var R=REC,t=simT-R.t0;if(t<R.next)return;readBack();if(!rbOk)return;R.T.push(+t.toFixed(3));R.cols.forEach(function(c,k){R.S[k].push(scanAt(c,R.nx,R.ny))});
     R.next=t+R.ev;if(t>=R.until||!RUN)R.done=true}
   function U(x){return PZ>=0?bx(x):(STG.x0+x*STG.w)/VW}function V(y){return PZ>=0?by(y):(STG.y0+y*STG.h)/VH}
-  return {enter:enter,leave:leave,menu:menu,resize:function(){resize();pzRelayout();obsDirty=true},down:down,up:up,gesture:gesture,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
-    dbg:function(){return {mine:MINE,mir:MIR,pc:PCI,col:PCK,ok:!!(P&&dye),carried:carried,simT:simT,simple:simple,sw:sw,sh:sh,dw:dw,dh:dh,lin:GLX.hfLin,tool:TOOL,pz:PZ,won:!!pzWon,walls:WALLS.length,fans:FANS.length,drains:DRAINS.length,prisms:PRISMS.length,tunnels:TUNNELS.length,wn:WN,
+  return {enter:enter,leave:leave,menu:menu,skInk:skInk,skType:skType,skPicture:skPicture,skBox:function(){return SKB?{x0:SKB.x0,y0:SKB.y0,x1:SKB.x1,y1:SKB.y1,n:SKV}:null},toolIcon:function(){for(var i=0;i<PENS.length;i++)if(PENS[i][0]===PEN)return PENS[i][2];return null},resize:function(){resize();pzRelayout();obsDirty=true},down:down,up:up,gesture:gesture,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
+    dbg:function(){return {pen:PEN,psz:PSZ,skv:SKV,skh:SKC?SKC.hidden:null,mine:MINE,mir:MIR,pc:PCI,col:PCK,ok:!!(P&&dye),carried:carried,simT:simT,simple:simple,sw:sw,sh:sh,dw:dw,dh:dh,lin:GLX.hfLin,tool:TOOL,pz:PZ,won:!!pzWon,walls:WALLS.length,fans:FANS.length,drains:DRAINS.length,prisms:PRISMS.length,tunnels:TUNNELS.length,wn:WN,
       game:{round:GM.round,need:GM.need,got:GM.got,left:+GM.left.toFixed(2),score:GM.score,best:GM.best,phase:GM.phase,news:NEWS[GM.round]?NEWS[GM.round][0]:'',newBest:!!GM.newBest,cols:GM.cols.slice(),wall:!!GM.wall,combo:GM.combo,drain:GM.drain,cur:GM.cur,ringN:GM.ringN,loops:GM.loops,wallXY:GM.wall},board:{x0:B.x0,y0:B.y0,w:B.w,h:B.h},run:RUN,rt:RT,
       cups:CUPS.map(function(c){return {c:c.c,fill:c.fill,match:c.match,done:c.done,x:WX(c.x),y:WY(c.y),r:cupR()*(c.r||1),gold:!!c.gold,n:c.n,mv:c.ox?'loop':c.mx||c.my?'drift':'',
         loop:c.ox?{cx:B.x0+c.x0*B.w,cy:B.y0+c.y0*B.h,rx:c.ox*B.w,ry:c.oy*B.h,lap:c.mp,dir:c.od,x0:c.x0,y0:c.y0,ox:c.ox,oy:c.oy}:null}}),vents:FIX.fans.map(function(f){return {x:WX(f.x),y:WY(f.y),c:f.c,a:f.a===undefined?-Math.PI/2:f.a}}),fix:{walls:FIX.walls.length,fans:FIX.fans.length,drains:FIX.drains.length,prisms:FIX.prisms.length},rb:rbOk}},
@@ -4368,6 +4466,92 @@ var BEAT=(function(){
       return B}}
 })();
 
+/* ---- (18 Nov, 11:31: "make the first art page a fun sketchbook that you can do anything with. Paint, drew write. And then it can
+   convert to text, give you a quick image") asking Claude about Paint's page: what is written on it, as text (which can then be set in
+   type where the writing was), or the page drawn again as a clean picture (which can then be laid on the page and drawn over). It is
+   the viewer's own Claude, in the Claude app, asked only when they tap, and the first time they are asked to allow it; where it cannot
+   look at a picture the two buttons are not there ---- */
+var ASK={s:null,img:false,ctl:null,kind:'',text:'',svg:'',pic:null,seq:0};
+function askInit(){if(HOSTED)return;try{if(!(window.claude&&window.claude.use))return;
+  window.claude.use('sample').then(function(s){if(!s)return;ASK.s=s;
+    return s.limits().then(function(l){ASK.img=!!(l&&l.images&&l.images.maxCount>0);askSync()},function(){})}).catch(function(){})}catch(e){}}
+function askSync(){var on=!!(ASK.s&&ASK.img),a=$('bText'),b=$('bPic'),r=$('p_ask');if(a)a.hidden=!on;if(b)b.hidden=!on;if(r)r.hidden=!on}
+function askStop(){if(ASK.ctl){try{ASK.ctl.abort()}catch(e){}ASK.ctl=null}ASK.seq++}
+function askOff(){askStop();var c=$('card');if(c&&c.dataset.k==='sk'){c.hidden=true;c.dataset.k='';while(c.firstChild)c.removeChild(c.firstChild)}ASK.kind='';ASK.pic=null}
+/* the error, said in a line; where Claude cannot be asked here at all, the buttons go */
+function askWhy(e){var k=e&&e.code;
+  if(k==='not_granted'||k==='sampling_disabled'||k==='not_declared'||k==='capability_disabled'||k==='capability_removed'||k==='images_unavailable'){ASK.img=false;askSync();return 'Claude can’t look at the page here'}
+  if(k==='rate_limited')return 'Claude is busy for you just now: try again in a while';
+  if(k==='session_expired')return 'sign in to Claude again, then try';
+  if(k==='refused')return 'Claude wouldn’t take this one';
+  if(k==='image_rejected')return 'the page couldn’t be sent';
+  if(k==='empty_completion')return 'nothing came back: try again with a clearer page';
+  return 'that didn’t come through: try again'}
+function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
+/* the card: its name, a close, the answer (words, or the picture), and what can be done with it */
+function askCard(){var c=$('card');if(!c)return null;
+  c.dataset.k='sk';while(c.firstChild)c.removeChild(c.firstChild);var k=ASK.kind;
+  c.appendChild(el('p','cn',k==='text'?'to text':'quick image'));
+  var x=el('button','cx','×');x.type='button';x.setAttribute('aria-label','Close');x.addEventListener('click',function(){askOff()});c.appendChild(x);
+  var busy=!!ASK.ctl;
+  if(k==='text'){
+    if(ASK.err){c.appendChild(el('p','cdo',ASK.err))}
+    else if(busy&&!ASK.text){c.appendChild(el('p','ck ask','reading the page…'))}
+    else if(ASK.none){c.appendChild(el('p','cdo','no writing on this page'))}
+    else{var t=el('p','ckt',ASK.text);c.appendChild(t);
+      if(!busy){var a=el('div','ca');
+        var cp=el('button','',"copy");cp.type='button';cp.addEventListener('click',function(){var s=ASK.text,done=function(){say('copied','#3ef0ff')};
+          try{navigator.clipboard.writeText(s).then(done,function(){selectIt(t)})}catch(e){selectIt(t)}});a.appendChild(cp);
+        var ty=el('button','cl','type it on the page');ty.type='button';ty.addEventListener('click',function(){if(WORLDS[0].o.skType(ASK.text)){askOff();say('set in type','#3ef0ff')}});a.appendChild(ty);
+        c.appendChild(a)}}}
+  else{
+    if(ASK.err){c.appendChild(el('p','cdo',ASK.err))}
+    if(ASK.svg){var im=el('img','cpic');im.alt='Claude’s picture of the page';im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(ASK.svg);ASK.pic=im;c.appendChild(im)}
+    if(busy)c.appendChild(el('p','ck ask',ASK.svg?'still drawing…':'drawing the page again…'));
+    else if(ASK.svg&&!ASK.err){var a2=el('div','ca');
+      var pu=el('button','cl','put it on the page');pu.type='button';pu.addEventListener('click',function(){var im2=ASK.pic;var go2=function(){if(WORLDS[0].o.skPicture(im2)){askOff();say('on the page','#3ef0ff')}};
+        if(im2&&im2.complete)go2();else if(im2)im2.onload=go2});a2.appendChild(pu);
+      c.appendChild(a2)}}
+  c.hidden=false;return c}
+function selectIt(n){try{var r=document.createRange();r.selectNodeContents(n);var s=getSelection();s.removeAllRanges();s.addRange(r)}catch(e){}}
+/* Claude's picture, kept to drawing: one svg, without scripts, foreign content, outside links, embedded images or animation */
+function svgClean(t,partial){var a=t.indexOf('<svg');if(a<0)return '';var s=t.slice(a),b=s.lastIndexOf('</svg>');
+  if(b>=0)s=s.slice(0,b+6);else{if(!partial)return '';var g=s.lastIndexOf('>');if(g<0)return '';s=s.slice(0,g+1);
+    /* a picture still being written: close what is open, so the part that is done can be shown */
+    var st=[],re=/<(\/?)([a-zA-Z][\w:-]*)[^>]*?(\/?)>/g,m;while((m=re.exec(s))){if(m[1])st.pop();else if(!m[3])st.push(m[2])}
+    if(/<[^>]*$/.test(s))return '';while(st.length)s+='</'+st.pop()+'>'}
+  try{var d=new DOMParser().parseFromString(s,'image/svg+xml'),r=d.documentElement;if(!r||r.nodeName!=='svg'||d.getElementsByTagName('parsererror').length)return '';
+    var bad=r.querySelectorAll('script,foreignObject,image,iframe,a,animate,animateMotion,animateTransform,set,audio,video,style');for(var i=0;i<bad.length;i++)bad[i].remove();
+    var all=[r].concat([].slice.call(r.querySelectorAll('*')));all.forEach(function(n){[].slice.call(n.attributes).forEach(function(at){var nm=at.name.toLowerCase(),v=at.value;
+      if(nm.indexOf('on')===0||((nm==='href'||nm==='xlink:href')&&v.charAt(0)!=='#')||/url\(\s*['"]?\s*(?!#)/i.test(v))n.removeAttribute(at.name)})});
+    if(!r.getAttribute('xmlns'))r.setAttribute('xmlns','http://www.w3.org/2000/svg');return new XMLSerializer().serializeToString(r)}catch(e){return ''}}
+/* the page as it looks (the water and the sheet), taken in the frame, when the water's picture is there to take */
+var SHOTQ=[];
+function shotRun(){var q=SHOTQ;SHOTQ=[];var k=Math.min(1,1100/Math.max(VW,VH)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(VW*k));c.height=Math.max(1,Math.round(VH*k));
+  var x=c.getContext('2d');x.fillStyle='#01040a';x.fillRect(0,0,c.width,c.height);try{if(GLX.ok&&!GLX.lost)x.drawImage(GLX.cv,0,0,c.width,c.height)}catch(e){}
+  var s=$('sk');if(s&&!s.hidden&&s.width>1)x.drawImage(s,0,0,c.width,c.height);q.forEach(function(f){try{f(c)}catch(e){}})}
+function blobOf(c){return new Promise(function(res){try{c.toBlob(function(b){res(b)},'image/png')}catch(e){res(null)}})}
+function askGo(kind){if(!ASK.s||!ASK.img)return;askStop();var my=ASK.seq,ctl=new AbortController();ASK.ctl=ctl;ASK.kind=kind;ASK.text='';ASK.svg='';ASK.err='';ASK.none=false;ASK.pic=null;
+  try{menuShow(false)}catch(e){}askCard();
+  var ink=kind==='text'?WORLDS[0].o.skInk():null;
+  (ink?Promise.resolve(ink):new Promise(function(res){SHOTQ.push(res)})).then(function(cv){if(my!==ASK.seq)return null;
+    var W=Math.round(VW),H=Math.round(VH),P=kind==='text'?
+      (ink?'The image is a page from a sketchbook: what someone wrote and drew with a finger on a phone, shown as dark ink on white. ':'The image is a page from a sketchbook: what someone painted and drew with a finger on a phone, on a near-black page. ')+
+      'Read every word, letter, number and sign written on it, as it is written (keep the spelling and the line breaks). Reply with only that text. If nothing on the page is writing, reply with exactly: NO WRITING'
+      :'The image is a quick sketch, painted and drawn with a finger on a phone, on a near-black page '+W+' wide and '+H+' tall. Draw it again as a clean, finished picture: '+
+      'keep what it shows, where each thing is and its colours, and draw it better. Reply with only one SVG element, <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'"> … </svg>, '+
+      'made of shapes and paths with flat fills or gradients. Leave the background empty (it sits on the near-black page, so use colours that read on it). '+
+      'No words unless the sketch has writing. No image, script, foreignObject, style, link or animation elements. Keep it under 14 kB.';
+    return blobOf(cv).then(function(b){if(my!==ASK.seq)return null;if(!b)throw {code:'image_rejected'};
+      return ASK.s(P,{images:[b],modelTier:kind==='text'?'quick':'default',signal:ctl.signal,onText:function(u){if(my!==ASK.seq)return;
+        if(kind==='text'){ASK.text=u.text;askCard()}else{var s=svgClean(u.text,true);if(s&&s!==ASK.svg){ASK.svg=s;askCard()}}}})})}).then(function(r){
+    if(!r||my!==ASK.seq)return;ASK.ctl=null;
+    if(kind==='text'){var t=String(r.text||'').trim();if(/^NO WRITING\.?$/i.test(t)||!t)ASK.none=true;ASK.text=t}
+    else{var s=svgClean(String(r.text||''),false);if(s)ASK.svg=s;else ASK.err='no picture came back: try again'}
+    askCard()},function(e){if(my!==ASK.seq)return;ASK.ctl=null;if(e&&e.code==='cancelled'){askOff();return}ASK.err=askWhy(e);if(kind==='text')ASK.text='';askCard()})}
+$('bText').addEventListener('click',function(){askGo('text')});
+$('bPic').addEventListener('click',function(){askGo('pic')});
+
 /* ---------- the shell: the worlds, the fingers on the glass, the few controls, the photo ---------- */
 var OVC=$('ov'),OV=OVC.getContext('2d'),STAGE=$('stage');
 /* the worlds. (There were more: a culture of glowing organisms that the owner said made no sense, a picture of the band he did not much
@@ -4419,11 +4603,16 @@ $('bTools').addEventListener('click',function(){menuShow($('pmenu').hidden,'page
 /* a press anywhere outside the menu closes it: on another button the button still does its work; on the world the touch only closes it */
 document.addEventListener('pointerdown',function(e){if(!menuOpen())return;var t=e.target;if(t&&t.closest&&(t.closest('#menu')||t.closest('#wmenu')||t.closest('#pmenu')||t.closest('#bTools')))return;if(t===STAGE)return;menuShow(false)},true);
 addEventListener('keydown',function(e){if(e.key==='Escape'&&menuOpen()){var pg=!$('pmenu').hidden;menuShow(false);try{$(pg?'bTools':'wmenu').focus()}catch(x){}}});
+/* (18 Nov) the button for a page's own menu shows the tool in hand where the page has tools (Paint: the brush, the pen, the pencil,
+   the marker or the eraser), else three sliders */
+var SLI='<path d="M2.4 4.4h11.2M2.4 8h11.2M2.4 11.6h11.2"/><circle cx="5.4" cy="4.4" r="1.6"/><circle cx="10.6" cy="8" r="1.6"/><circle cx="7" cy="11.6" r="1.6"/>';
+function toolIconSync(){var b=$('bTools'),w=WORLDS[CURI];if(!b||!w)return;var ic=null;try{ic=w.o.toolIcon?w.o.toolIcon():null}catch(e){}
+  var h='<svg viewBox="'+(ic?'0 0 18.4 18.4':'0 0 16 16')+'" aria-hidden="true">'+(ic||SLI)+'</svg>';if(b._ic!==h){b._ic=h;b.innerHTML=h;b.classList.toggle('tl2',!!ic)}}
 function chrome(){
   var w=WORLDS[CURI];if(!w)return;$('wname').textContent=w.name;$('wmenu').setAttribute('aria-label',w.name+'. Open the four pages');
   WORLDS.forEach(function(x,i){var b=$('w_'+x.id);if(b)b.setAttribute('aria-current',i===CURI?'true':'false');var sec=$('ms_'+x.id);if(sec)sec.hidden=i!==CURI||!sec.querySelector('button')});
   /* the page's own menu: its button only where the page has one, its name over it */
-  var own=$('ms_'+w.id),tb=$('bTools');tb.hidden=!(own&&own.querySelector('button'));tb.setAttribute('aria-label',w.name+': its own menu');$('pmh').textContent=w.name;$('pmenu').setAttribute('aria-label',w.name+': its own menu');
+  var own=$('ms_'+w.id),tb=$('bTools');tb.hidden=!(own&&own.querySelector('button'));toolIconSync();tb.setAttribute('aria-label',w.name+': its own menu');$('pmh').textContent=w.name;$('pmenu').setAttribute('aria-label',w.name+': its own menu');
   /* (18 Nov) Beat plays its own beats while the band rests, so the band's mode has no button there */
   $('bMode').hidden=!!w.nomode;$('bClear').hidden=!(w.photo&&PHOTO.has);$('bSave').hidden=!DL;$('bNow').hidden=true;
   $('bPhoto').setAttribute('aria-pressed',PHOTO.has?'true':'false');
@@ -4570,7 +4759,7 @@ $('bSave').addEventListener('click',function(){SAVE=true});
 function doSave(){
   SAVE=false;if(!DL)return;
   try{var c=document.createElement('canvas');c.width=OVC.width;c.height=OVC.height;var x=c.getContext('2d');x.fillStyle='#01040a';x.fillRect(0,0,c.width,c.height);
-    if(GLX.ok&&!GLX.lost)x.drawImage(GLX.cv,0,0,c.width,c.height);x.drawImage(OVC,0,0);
+    if(GLX.ok&&!GLX.lost)x.drawImage(GLX.cv,0,0,c.width,c.height);var skc=$('sk');if(skc&&!skc.hidden&&skc.width>1)x.drawImage(skc,0,0,c.width,c.height);x.drawImage(OVC,0,0);
     var d=new Date(),p2=function(n){return (n<10?'0':'')+n},name='live-culture-'+WORLDS[CURI].id+'-'+d.getFullYear()+p2(d.getMonth()+1)+p2(d.getDate())+'-'+p2(d.getHours())+p2(d.getMinutes())+p2(d.getSeconds())+'.png';
     c.toBlob(function(b){if(!b)return;DL.save({filename:name,data:b}).then(function(){say('saved','#3ef0ff')}).catch(function(e){
       var code=e&&e.code;if(code==='declined'||code==='rate_limited')return;DL=null;chrome()})},'image/png')}catch(e){}}
@@ -4596,7 +4785,7 @@ function frame(t){
     clockSync();bandTick(dt);ghostTick(t);pointersTick(t);
     OV.setTransform(1,0,0,1,0,0);OV.clearRect(0,0,OVC.width,OVC.height);OV.setTransform(DPR,0,0,DPR,0,0);OV.globalAlpha=1;OV.globalCompositeOperation='source-over';OV.textAlign='left';
     if(CUR){if(CUR.tick)CUR.tick(dt,t);if(CUR.draw)CUR.draw(t);ghostDraw()}
-    if(SAVE)doSave();
+    if(SAVE)doSave();if(SHOTQ.length)shotRun();
     dataPaint(false);
   }catch(e){if(window.__lc){window.__lc.errs=(window.__lc.errs||[]);if(window.__lc.errs.length<20)window.__lc.errs.push('frame: '+String(e&&e.stack||e))}}
   finally{requestAnimationFrame(frame)}}
@@ -4605,7 +4794,7 @@ function start(data){
   if(data&&data.on&&data.on.length===NL){for(i=0;i<NL;i++){ON[i]=data.on[i]?1:0;G[i]=ON[i]}BD.manual=!!data.manual}
   i=worldOf(h);if(i>=0)w=i;if(data&&typeof data.w==='number'&&data.w>=0&&data.w<WORLDS.length)w=data.w;
   railBuild();layout();ovSize();glInit();glResize();
-  go(w,true);swSync();dlInit();audioLoad();setTimeout(synPrepare,900);setTimeout(limCalibrate,1500);
+  go(w,true);swSync();dlInit();askInit();audioLoad();setTimeout(synPrepare,900);setTimeout(limCalibrate,1500);
   /* a page that opens in a mode of its own (15 Nov: kept on the device) fetches that mode's sounds early, so the first touch has them */
   if(MODE!=='africa')setTimeout(function(){try{SND.load(MIX.banks(MODE))}catch(e){}},1200);MIX.chip();
   /* the orbits, the wind, the aurora and the lightning are read once the page has settled, so they are there when a world wants them */

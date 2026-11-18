@@ -1,4 +1,5 @@
 <canvas id="gl" aria-hidden="true"></canvas>
+<canvas id="sk" aria-hidden="true" hidden></canvas>
 <div class="vid" id="vid" hidden><div class="vb" id="vidbox"><div id="vidp"></div><img id="vidi" alt="" hidden></div></div>
 <div class="vidc" id="vidc" hidden role="group" aria-label="The camera"><button type="button" id="vW" aria-label="The next camera to the west">west</button><button type="button" id="vE" aria-label="The next camera to the east">east</button><a id="vY" target="_blank" rel="noopener noreferrer" hidden>youtube</a><button type="button" id="vX" aria-label="Close the camera">close</button></div>
 <canvas id="ov" aria-hidden="true"></canvas>
@@ -27,6 +28,8 @@
     <button class="mb" id="bPhoto" type="button" aria-label="Use a photo of your own as the paint. It stays on this device"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="4" width="13" height="9.5" rx="2"/><circle cx="8" cy="8.8" r="2.6"/><path d="M5.5 4l1-1.8h3l1 1.8"/></svg><span>your photo</span></button>
     <button class="mb" id="bClear" type="button" hidden aria-label="Take the photo away"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg><span>photo away</span></button>
     <button class="mb" id="bSave" type="button" hidden aria-label="Save a picture of the painting"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8M4.8 7.2L8 10.4l3.2-3.2M2.5 13.5h11"/></svg><span>save a picture</span></button>
+    <button class="mb" id="bText" type="button" hidden aria-label="Ask Claude to read what is written on the page, as text"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3.4h10M8 3.4v9.8M5.4 13.2h5.2"/></svg><span>to text</span></button>
+    <button class="mb" id="bPic" type="button" hidden aria-label="Ask Claude to draw the page again as a quick picture"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6l1.5 4.3 4.3 1.6-4.3 1.6L8 13.4 6.5 9.1 2.2 7.5l4.3-1.6z"/></svg><span>quick image</span></button>
   </section>
   <section class="msec" id="ms_beat" hidden aria-label="Beat"></section>
 </div>

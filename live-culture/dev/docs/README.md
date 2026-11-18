@@ -292,6 +292,22 @@ Artifact: https://claude.ai/artifact/PCzaFJH2vjXe4Kv8KK4Xic (publish to this URL
    Paint's, in Paint's menu only. The Earth's layers stay along its bottom and all of Mix on its screen: they have no menu button.
    The mode's button and the note stay at the top right of every page, as rule 21 has them (his "another layer to change
    globally"); told so, in case that is what he meant.
+31. **What he asked on 18 Nov, 11:31.** "Tie the music to the map. The various rhythms of the world. Also, give me access to
+   localized weather. Give me different brushes and pens and pencils and make the first art page a fun sketchbook that you can do
+   anything with. Paint, drew write. And then it can convert to text, give you a quick image". Three parts, the sketchbook first.
+   **Paint is a sketchbook**: its own menu has, as the tool, the paint (in the water, as before), a pen, a pencil, a marker and an
+   eraser, and for the four a size (fine, medium, bold). They draw on a sheet over the water (`#sk`), crisp and still: the pen finer
+   when fast, like a nib; the pencil paler, in grainy passes; the marker broad and soft-coloured; the eraser rubs out the sheet and
+   lifts the paint under it. The colours are the paint's, the mirror mirrors them, start over clears the sheet with the water, the
+   game puts the sheet away, a new size of the screen carries it from the middle (as the water is carried), and a saved picture has
+   it. The round button for Paint's menu shows the tool in hand. **Asking Claude**, in Paint's menu under "ask claude", only where
+   the viewer's own Claude can look at a picture (in the Claude app; the artifact declares `sample` with images): "to text" sends
+   the sheet's ink, dark on white, to the quick model and shows what is written, to copy or to "type it on the page" (set in the
+   page's display type where the writing was, the handwriting gone); "quick image" sends the page as it looks and Claude draws it
+   again as one SVG, shown as it is drawn, kept to drawing (no scripts, foreign content, embedded images, links, styles, animation
+   or handlers; shown as an image), to "put it on the page" (the water and the sheet cleared, the picture over the screen, to draw
+   on). The viewer's own usage pays, and their first use asks them to allow it; on the site and outside the app the row is not
+   there. Still to do from the same message: the music following the map, then local weather (HOURLY section 3).
 
 ## What the page is
 

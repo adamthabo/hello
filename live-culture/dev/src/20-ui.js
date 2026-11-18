@@ -49,11 +49,16 @@ $('bTools').addEventListener('click',function(){menuShow($('pmenu').hidden,'page
 /* a press anywhere outside the menu closes it: on another button the button still does its work; on the world the touch only closes it */
 document.addEventListener('pointerdown',function(e){if(!menuOpen())return;var t=e.target;if(t&&t.closest&&(t.closest('#menu')||t.closest('#wmenu')||t.closest('#pmenu')||t.closest('#bTools')))return;if(t===STAGE)return;menuShow(false)},true);
 addEventListener('keydown',function(e){if(e.key==='Escape'&&menuOpen()){var pg=!$('pmenu').hidden;menuShow(false);try{$(pg?'bTools':'wmenu').focus()}catch(x){}}});
+/* (18 Nov) the button for a page's own menu shows the tool in hand where the page has tools (Paint: the brush, the pen, the pencil,
+   the marker or the eraser), else three sliders */
+var SLI='<path d="M2.4 4.4h11.2M2.4 8h11.2M2.4 11.6h11.2"/><circle cx="5.4" cy="4.4" r="1.6"/><circle cx="10.6" cy="8" r="1.6"/><circle cx="7" cy="11.6" r="1.6"/>';
+function toolIconSync(){var b=$('bTools'),w=WORLDS[CURI];if(!b||!w)return;var ic=null;try{ic=w.o.toolIcon?w.o.toolIcon():null}catch(e){}
+  var h='<svg viewBox="'+(ic?'0 0 18.4 18.4':'0 0 16 16')+'" aria-hidden="true">'+(ic||SLI)+'</svg>';if(b._ic!==h){b._ic=h;b.innerHTML=h;b.classList.toggle('tl2',!!ic)}}
 function chrome(){
   var w=WORLDS[CURI];if(!w)return;$('wname').textContent=w.name;$('wmenu').setAttribute('aria-label',w.name+'. Open the four pages');
   WORLDS.forEach(function(x,i){var b=$('w_'+x.id);if(b)b.setAttribute('aria-current',i===CURI?'true':'false');var sec=$('ms_'+x.id);if(sec)sec.hidden=i!==CURI||!sec.querySelector('button')});
   /* the page's own menu: its button only where the page has one, its name over it */
-  var own=$('ms_'+w.id),tb=$('bTools');tb.hidden=!(own&&own.querySelector('button'));tb.setAttribute('aria-label',w.name+': its own menu');$('pmh').textContent=w.name;$('pmenu').setAttribute('aria-label',w.name+': its own menu');
+  var own=$('ms_'+w.id),tb=$('bTools');tb.hidden=!(own&&own.querySelector('button'));toolIconSync();tb.setAttribute('aria-label',w.name+': its own menu');$('pmh').textContent=w.name;$('pmenu').setAttribute('aria-label',w.name+': its own menu');
   /* (18 Nov) Beat plays its own beats while the band rests, so the band's mode has no button there */
   $('bMode').hidden=!!w.nomode;$('bClear').hidden=!(w.photo&&PHOTO.has);$('bSave').hidden=!DL;$('bNow').hidden=true;
   $('bPhoto').setAttribute('aria-pressed',PHOTO.has?'true':'false');
@@ -200,7 +205,7 @@ $('bSave').addEventListener('click',function(){SAVE=true});
 function doSave(){
   SAVE=false;if(!DL)return;
   try{var c=document.createElement('canvas');c.width=OVC.width;c.height=OVC.height;var x=c.getContext('2d');x.fillStyle='#01040a';x.fillRect(0,0,c.width,c.height);
-    if(GLX.ok&&!GLX.lost)x.drawImage(GLX.cv,0,0,c.width,c.height);x.drawImage(OVC,0,0);
+    if(GLX.ok&&!GLX.lost)x.drawImage(GLX.cv,0,0,c.width,c.height);var skc=$('sk');if(skc&&!skc.hidden&&skc.width>1)x.drawImage(skc,0,0,c.width,c.height);x.drawImage(OVC,0,0);
     var d=new Date(),p2=function(n){return (n<10?'0':'')+n},name='live-culture-'+WORLDS[CURI].id+'-'+d.getFullYear()+p2(d.getMonth()+1)+p2(d.getDate())+'-'+p2(d.getHours())+p2(d.getMinutes())+p2(d.getSeconds())+'.png';
     c.toBlob(function(b){if(!b)return;DL.save({filename:name,data:b}).then(function(){say('saved','#3ef0ff')}).catch(function(e){
       var code=e&&e.code;if(code==='declined'||code==='rate_limited')return;DL=null;chrome()})},'image/png')}catch(e){}}
