@@ -95,6 +95,8 @@ const clean = errs => [...new Set(errs)].filter(e => !/youtube\.com|requestfaile
     const od = await page.evaluate(() => window.__lc.ORBIT.dbg()); ok(!od.live && od.want === 60, 'the satellites fly, sixty times their speed');
     await page.evaluate(() => window.__lc.ORBIT.pick('ISS (ZARYA)')); let card = '';
     for (let k = 0; k < 24; k++) { await sleep(400); card = await page.evaluate(() => window.__lc.ORBIT.dbg().card || ''); if (/1998-067A/.test(card)) break; } ok(/1998-067A/.test(card) && /MEASURED/i.test(card), 'the space station\'s card on the live list: ' + card.replace(/\n+/g, ' | ').slice(0, 200));
+    // (18 Nov: the Earth makes room above a satellite's card, so the station's card is put away first, as a hand would, before coming close)
+    await page.evaluate(() => { const x = document.querySelector('#card .cx'); if (x) x.click(); }); await sleep(700);
     // close up (14 Nov: "can't zoom in close enough"): the Earth comes far closer, and NASA's 500-metre picture of the part in view comes in
     await page.evaluate(() => window.__lc.WIND.look(36.1, -112.1, 30)); let det = null; for (let k = 0; k < 30 && !det; k++) { await sleep(400); det = await page.evaluate(() => window.__lc.GLOBE.detR()); }
     const dz = await page.evaluate(() => window.__lc.WIND.dbg().zoom);

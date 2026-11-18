@@ -1,6 +1,12 @@
 # Changelog
 
 ## For the owner
+18 Nov 2026, 04:40 (the hourly run):
+
+- **The satellite you tap stays in sight.** On a phone, the Earth now shrinks and moves up above a satellite's card, the way it
+  already did for a place's card, so the ring and name of the one you chose aren't hidden behind the card. Its name also no longer
+  runs off the edge of the screen (long ones like the wreckage clouds' fit or are shortened).
+
 18 Nov 2026, 03:00 (your 02:04 message):
 
 - **Every satellite can be tapped, and each says what it is.** Tap anywhere in the swarm, over the Earth or in the dark around it,
@@ -360,6 +366,18 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 18 Nov 2026, 04:40 (New York), the hourly run: the Earth makes room above a satellite's card; the chosen one's name stays on the screen
+
+- `12-wind.js`: `geo()` counts the card while `ORBIT.layer.sel()` holds a satellite (guarded for the first calls), as it counts the
+  place's and the camera's: on a phone held upright the globe glides to fit above it. The card's height is read every frame
+  (`cardHt`), so a card opening, closing, stepping or filling moves the globe (before, only the words at the top and the bottom row
+  were watched; the place card called `geo` itself).
+- `13-orbit.js`: the chosen one's name beside its ring goes right, else left, else over the ring, clamped to the screen; a name wider
+  than the screen is shortened with an ellipsis (seen in this run's screenshots: "FENGYUN-1C WRECKAGE (2007 MISSILE TEST)" ran off
+  the left edge at 390 wide).
+- `t_hosted.js`: the space station's card is put away before the close-up check (with the card open the Earth is now smaller, so the
+  part in view at zoom 30 is wider than the check's 8 degrees: the check is unchanged, the hand does what a hand would).
 
 ## 18 Nov 2026, 03:00 (New York): every satellite can be tapped; its card steps through the ones within reach, links to N2YO, offers the place below (README rule 29)
 

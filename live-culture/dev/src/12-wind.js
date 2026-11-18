@@ -20,7 +20,7 @@ var WIND=(function(){
     g={cx:0,cy:0,R:100,E:[0,0,0],N:[0,0,0],C:[0,0,0]},lat0=16,lon0=clamp(-(new Date().getTimezoneOffset())/4,-180,180),zoom=1,idle=0,vlon=0,vlat=0,
     sunV=[0,0,0],moonV=[0,0,0],moonI=null,sunI=null,lastT=0,SK=[],byStep=[],flashes=[],STEPS=256,tmp=[0,0,0],probe=null,turned=0,
     FR=[],frV=-1,ST=[],stV=-1,
-    ftAt=0,GT={R:0,cy:0,on:0},GR=0,GC=0,dataH=-1,entT=0,HUDB=0,HLH=0,FOC=null,FLY=null,camOn=false,footH=0;
+    ftAt=0,cardHt=0,GT={R:0,cy:0,on:0},GR=0,GC=0,dataH=-1,entT=0,HUDB=0,HLH=0,FOC=null,FLY=null,camOn=false,footH=0;
   /* the pictures made here for the chip (the wind, for the clouds to drift on; the aurora) are made again if the chip is lost */
   function glSetup(){if(!GLX.ok)return;gen=GLX.gen;windT=aurT=null;windV=aurV=-1}
   /* a grid of numbers, one per degree from the north pole down and from 0 E round, as a picture the chip can read: 512 x 256,
@@ -72,7 +72,9 @@ var WIND=(function(){
         if(pt.length>=2){c.moveTo(pt[0][0],pt[0][1]);c.lineTo(pt[1][0],pt[1][1])}if(pt.length===4){c.moveTo(pt[2][0],pt[2][1]);c.lineTo(pt[3][0],pt[3][1])}}
       c.stroke()}
     return c.getImageData(0,0,W,Hh).data}
-  function geo(){var y0=STG.y0,y1=STG.y1,cd=(PCD&&PCD.on)||(camOn&&LIVEW.layer.cardOn())?$('card'):null;if(cd&&!cd.hidden){var ct=cd.getBoundingClientRect().top;if(ct>STG.y0+80&&ct<y1)y1=ct-6}
+  /* (18 Nov) a satellite's card too: since every satellite can be tapped its card is open often, and tall; the Earth makes room above
+     it, so the one chosen, its ring and its name stay in sight */
+  function geo(){var y0=STG.y0,y1=STG.y1,cd=(PCD&&PCD.on)||(camOn&&LIVEW.layer.cardOn())||(LY&&LY.orbit&&typeof ORBIT!=='undefined'&&ORBIT.layer.sel()>=0)?$('card'):null;if(cd&&!cd.hidden){var ct=cd.getBoundingClientRect().top;if(ct>STG.y0+80&&ct<y1)y1=ct-6}
     /* (14 Nov, afternoon: "so you can see the whole globe") on a phone held upright the globe is kept whole under the words at the
        top; since 15 Nov (night) there are none until something is read, so the globe has the room, and when a reading comes it glides
        to its new place and size rather than jumping */
@@ -335,6 +337,8 @@ var WIND=(function(){
       var fh=$('foot').offsetHeight;if(fh!==footH){footH=fh;layout();geo();try{LIVEW.layer.resize()}catch(e){}}}
     /* the words at the top grew or shrank: the globe's place is worked out again, and it glides there (at once in the first moments) */
     var dh=$('data').offsetHeight;if(dh!==dataH){dataH=dh;geo()}
+    /* a card opened, closed or changed its height (a satellite's, stepping to the next, or its record arriving): the same */
+    var cdE=$('card'),cdH=cdE&&!cdE.hidden?cdE.offsetHeight:0;if(cdH!==cardHt){cardHt=cdH;geo()}
     if(GT.on&&(Math.abs(GR-GT.R)>.15||Math.abs(GC-GT.cy)>.15)){var ge=FT-entT<700?1:1-Math.exp(-dt*7);GR+=(GT.R-GR)*ge;GC+=(GT.cy-GC)*ge;g.R=GR*zoom;g.cy=GC;if(zmOn)zmSync(true)}
     else if(zmOn&&FT-zmAt>300){zmAt=FT;zmSync(true)}
     if(PCD.on&&PCD.fr.length>1&&FT-PCD.ft>(PCD.fi===PCD.fr.length-1?1500:420)){PCD.ft=FT;PCD.fi=(PCD.fi+1)%PCD.fr.length;radarDraw()}

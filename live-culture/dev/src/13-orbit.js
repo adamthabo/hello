@@ -260,8 +260,12 @@ var ORBIT=(function(){
       for(i=0;i<=96;i++){tmp[0]=path[i*3];tmp[1]=path[i*3+1];tmp[2]=path[i*3+2];view(tmp,tq);if(shown(tq)){var x=g.cx+tq[0]*g.R,y=g.cy-tq[1]*g.R;if(pen)c.lineTo(x,y);else{c.moveTo(x,y);pen=true}}else pen=false}
       c.stroke();
       if(shown(selQ)){var sx=g.cx+selQ[0]*g.R,sy=g.cy-selQ[1]*g.R;c.strokeStyle='rgba(234,249,255,.9)';c.lineWidth=1.1;c.beginPath();c.arc(sx,sy,9,0,TAU);c.stroke();
-        c.font='500 9px "JetBrains Mono",ui-monospace,Menlo,monospace';c.textBaseline='middle';var nm=nameOf(sel).toUpperCase(),tw=c.measureText(nm).width,lx=sx+14+tw>VW-8?sx-14-tw:sx+14;
-        c.fillStyle='rgba(1,4,10,.6)';c.fillRect(lx-3,sy-7,tw+6,14);c.fillStyle='rgba(234,249,255,.95)';c.fillText(nm,lx,sy+1)}}}
+        c.font='500 9px "JetBrains Mono",ui-monospace,Menlo,monospace';c.textBaseline='middle';var nm=nameOf(sel).toUpperCase(),tw=c.measureText(nm).width,lx=sx+14,ly=sy;
+        /* (18 Nov) the name never runs off the screen: beside the ring on the right, else on the left, else over it (a long name
+           shortened to the screen's width) */
+        if(tw>VW-22){while(nm.length>4&&c.measureText(nm+'\u2026').width>VW-22)nm=nm.slice(0,-1);nm+='\u2026';tw=c.measureText(nm).width}
+        if(lx+tw>VW-8){lx=sx-14-tw;if(lx<8){lx=clamp(sx-tw/2,8,Math.max(8,VW-8-tw));ly=sy>40?sy-18:sy+18}}
+        c.fillStyle='rgba(1,4,10,.6)';c.fillRect(lx-3,ly-7,tw+6,14);c.fillStyle='rgba(234,249,255,.95)';c.fillText(nm,lx,ly+1)}}}
   /* the stations and the telescopes: a trail of fourteen steps back over four minutes of the time shown (at sixty times their speed,
      four seconds; the space station's is some 1,900 km of its way), then the mark: a station a body between two wings of panels, a telescope a
      small ring with its tube. Bigger as the Earth comes closer */

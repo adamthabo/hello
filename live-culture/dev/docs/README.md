@@ -315,6 +315,10 @@ their place. Since 18 Nov (rule 29) the satellite's card has a cross; when more 
 (`https://www.n2yo.com/satellite/?s=<catalogue number>`, a new tab) and, after a tap on the face, "the place below" (the Earth's
 `below`, which reads the place as if it were tapped where it is now, turning the Earth to it if it has gone round the back). The card
 element is shared: `dataset.k` says whose it is (`sat`, `place`, `cam`), and each puts it away only while it is still its own.
+Since 18 Nov (the 09:32 run) the Earth makes room above a satellite's card on a phone held upright, as it does above the place's and
+the camera's (`geo` counts it while `ORBIT.layer.sel()` holds one; the card's height is watched every frame, `cardHt`, so stepping
+or the record arriving moves the Earth too), and the chosen one's name beside its ring never runs off the screen: on the right, else
+on the left, else over the ring, a name wider than the screen shortened with an ellipsis.
 
 Deep links: `#paint #earth #mix #beat` (old links still land: `#smoke`, `#drift`, `#bloom`, `#loom` and `#band` on Paint, `#wind`, `#orbit` and
 `#live` on the Earth). Keys: 1-4 worlds, space music, arrows in the Earth. Kept in the viewer's own browser (`localStorage`), and

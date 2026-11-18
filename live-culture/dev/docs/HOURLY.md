@@ -203,3 +203,6 @@ not ask for.
   links to its page on N2YO and offers the place below (README rule 29).
 - 2026-11-18 08:30: the satellites of the 07:24 line shipped once the whole suite was green with them (t_play's new checks: any
   satellite over the face, the steps, the N2YO link, the place below, the cross, a fire's mark before the swarm).
+- 2026-11-18 09:32: no new word from him, the backlog done, so the most visible flaw in the screenshots: the satellite card hid
+  the Earth's lower half and often the chosen one, whose long name ran off the screen. The Earth now makes room above the card on
+  a phone, and the name stays on the screen.
