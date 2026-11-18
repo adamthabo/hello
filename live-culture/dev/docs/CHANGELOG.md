@@ -1,6 +1,15 @@
 # Changelog
 
 ## For the owner
+17 Nov 2026, 18:57 (the thirteenth hourly run):
+
+- **A new world, Beat: the bar as a metronome you can play.** One big circle is a bar of music, with a hand sweeping round it in time.
+  Inside, every instrument that's playing gets its own thin ring, and its hits light up as the hand passes, so you see the beat
+  broken down. Outside are eight rings of pitch: tap anywhere on them to put a note there, tap it again to take it away, or draw
+  your finger round to leave a melody. Every bar plays it back, locked to the band. Pick its sound below: glass, rubber, bells, boom
+  or pluck, each a real instrument bent out of shape. "Dice" makes up a melody for you in the chosen sound, and "clear" wipes the
+  circle. Your notes stay there until you clear them, even after closing the page.
+
 17 Nov 2026, 17:54 (the twelfth hourly run):
 
 - **Paint is thick and slow, like honey.** Painting freely, a stroke now moves the paint in broad, smooth folds instead of quick
@@ -279,6 +288,27 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 17 Nov 2026, 18:57 (New York), the thirteenth hourly run: Beat, a fourth world (README rule 25)
+
+- `17-beat.js` (new, in `build.py` after `16-mix.js`; `BEAT` in the test hook): the world. `geo()` the circle (R = min(.405 of the
+  stage's width, .42 of its height)); `clock()` the sixteenth on the band's grid (`(currentTime - lat - AU.t0) / SD`), the bar, the
+  hand's fraction; `lanes(bar)` one ring per instrument heard: the band's players from `ONS` (the strongest onset on each sixteenth
+  of each of the four bars, `stems()`), a mode's from `MIX.rowsBar(bar)`; `cell(x, y)` a touch to (sixteenth, pitch ring);
+  `down/move/up` put or take away notes (a stroke keeps doing what its first cell did); `seq(s, t)` (called by `seqPump` on the
+  band's sixteenths) plays the bar's notes, a chord's notes at `chordK(n) = 1.5/√n` each; `dice()` a walk over the chosen sound's
+  rings (`DICE`), more on the beats; up to 48 notes (`MAXN`), kept in `localStorage` `lc.beat` with the chosen sound. Its row of
+  sounds `#btools` (the `.tools`/`.tb` look) is made in the footer after Paint's. `say()` names a sound when it is chosen (rule 24).
+- `16-mix.js`: `BEATV` and `bnode`/`bvoice` (a note from a bank, octave shift, acid lowpass, wah peaking sweep, plain lowpass, echo
+  send, decay), `offbeat` for the loudness test, `rowsBar(b)`, `col(k)`. `20-ui.js`: the fourth entry of `WORLDS` (a metronome icon).
+- Tests: `t_beat.js` (new, in `check.sh`): four worlds and a real tap opens Beat; its seven buttons whole on the screen above the
+  worlds; the circle whole with its beat numbers (R 158 at 390 wide); with the music on the hand moves and what plays is broken down;
+  a real tap puts a note (heard at once) and a second takes it away; a sound chosen is lit and named; a finger drawn round leaves a
+  melody; every scheduled note lands on its sixteenth (swing included); dice and clear; kept after a reload; whole at 390×750 and
+  375×667. `t_levels.js`: the circle at its fullest (48 notes, eight on each of six sixteenths) in each sound: glass −9.9, rubber
+  −7.0, bells −9.0, boom −7.5, pluck −8.8 dB under the band (before the chord rule rubber, bells and boom were up to 2.6 dB over).
+  The satellites' data refreshed (`feed.py`, `gen_live.py`): a day and a half old, the satellite card's checks had failed.
+  `t_hosted.js`: the hosted page has the four worlds.
 
 ## 17 Nov 2026, 17:54 (New York), the twelfth hourly run: Paint more viscous ("slow down the paint. Make it more viscous")
 

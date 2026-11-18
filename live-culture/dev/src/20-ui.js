@@ -13,6 +13,8 @@ var WORLDS=[
   {id:'earth',name:'Earth',o:WIND,sc:[1,1,1,1,1,1,1,1,1],ic:'<circle cx="12" cy="12" r="6.6"/><path d="M6.2 10.4c2.4-1.3 4.1 1 6.5-.1 1.5-.7 2.4-.8 3.8-.4"/><ellipse cx="12" cy="12" rx="10.6" ry="3.9" transform="rotate(-22 12 12)"/>'},
   /* the mixer: a grid of loops, the band's and a machine's (13 Nov) */
   {id:'mix',name:'Mix',o:MIX,sc:[1,1,1,1,1,1,1,1,1],ic:'<rect x="3.5" y="3.5" width="4.6" height="4.6" rx="1.1"/><rect x="9.7" y="3.5" width="4.6" height="4.6" rx="1.1"/><rect x="15.9" y="3.5" width="4.6" height="4.6" rx="1.1"/><rect x="3.5" y="9.7" width="4.6" height="4.6" rx="1.1"/><rect x="9.7" y="9.7" width="4.6" height="4.6" rx="1.1"/><rect x="15.9" y="9.7" width="4.6" height="4.6" rx="1.1"/><rect x="3.5" y="15.9" width="4.6" height="4.6" rx="1.1"/><rect x="9.7" y="15.9" width="4.6" height="4.6" rx="1.1"/><rect x="15.9" y="15.9" width="4.6" height="4.6" rx="1.1"/>'},
+  /* (17 Nov, 17:54) the bar as a metronome's face: what plays broken down round it, and notes of your own put on it in five sounds */
+  {id:'beat',name:'Beat',o:BEAT,sc:[1,1,1,1,1,1,1,1,1],ic:'<circle cx="12" cy="12" r="8.8"/><path d="M12 12l4.6-4.6"/><path d="M12 3.2v1.6M20.8 12h-1.6M12 20.8v-1.6M3.2 12h1.6"/><circle cx="12" cy="12" r="1.1" fill="currentColor"/>'},
 ];
 var CUR=null,CURI=-1,PT={},PTN=0,GP={},PS=[],HV=null,touched={},lastTouch=-1e9,SAYT=0,SAYX='',SAYC='',swT=0,GOT=0,FDT=.016;
 function safe(f){try{f()}catch(e){if(window.__lc){window.__lc.errs=(window.__lc.errs||[]);window.__lc.errs.push(String(e&&e.stack||e))}}}

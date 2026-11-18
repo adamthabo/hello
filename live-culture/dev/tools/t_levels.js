@@ -65,6 +65,14 @@ const { launch, open } = require('./lib');
       let lone2 = null; for (const r of rows) for (let k = 0; k < r.loops.length; k++) { const x = await render(null, null, inst({ [r.n]: k }, md)); x.which = md + ' ' + r.n + ' ' + r.loops[k].n; each[x.which] = x.loudest; if (!lone2 || x.loudest > lone2.loudest) lone2 = x; }
       out[md + ': the loudest of its ' + rows.reduce((a, r) => a + r.loops.length, 0) + ' loops alone (' + lone2.which + ')'] = lone2;
     }
+    // (17 Nov, evening) Beat: its circle as full as it can be (48 notes: six sixteenths with all eight pitches each, each of a chord of
+    // eight as soft as the page plays it, BEAT.chord), in each of its five sounds alone, and in all five at once on top of the full band
+    // (that one is measured, not held under the band)
+    await L.SND.load(['glock', 'marimba', 'chimes', 'fbass', 'gtr']);
+    const BS = L.BEAT.sounds.map(x => x[0]), sd = L.STEML / 64, FULL = [0, 3, 6, 8, 11, 14];
+    const beatFull = (O, g, G, names) => { for (let t0 = .05; t0 < dur; t0 += 16 * sd) for (const q of FULL) for (let p = 0; p < 8; p++) { const nm = names[(q + p) % names.length]; L.MIX.offbeat(O, { toy: g.toy }, G, nm, L.BEAT.midi(p), .85 * L.BEAT.chord(8), t0 + q * sd + ((q & 1) ? sd * .16 : 0)); } };
+    for (const nm of BS) out['beat: ' + nm + ', the circle full'] = await render(null, null, (O, g) => beatFull(O, g, L.MIX.offline(O, { bus: g.bus, toy: g.toy, comp: g.comp, vs: g.vsend }, 1, {}, 'africa'), [nm]));
+    out['band, all nine, WITH the beat circle full in all five sounds'] = await render(all, null, (O, g) => beatFull(O, g, L.MIX.offline(O, { bus: g.bus, toy: g.toy, comp: g.comp, vs: g.vsend }, 1, {}, 'africa'), BS));
     out.__each = each;
     return out;
   });

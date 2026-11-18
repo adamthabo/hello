@@ -183,3 +183,5 @@ not ask for.
   message changed with it). The A. Thabo artifact, Edge Desk and the green suite stay.
 - 2026-11-17 17:54: Paint thick and slow while painting freely (his 17:54 ask): a viscosity pass, more damping, fewer curls, slower
   time and rising; the game's water untouched. Next: the music (a metronome view of the beat; wild, melodic sounds played in time).
+- 2026-11-17 18:57: Beat, a fourth world (his 17:54 ask): the bar as a metronome's face with what plays broken down inside, eight
+  rings of pitch outside to put notes on in five sounds, dice and clear; `t_beat.js` in the suite; the loudness test measures it.

@@ -257,6 +257,22 @@ var MIX=(function(){
     if(v.fx&&gr&&gr.fx){var sg=c.createGain();sg.gain.value=v.fx;g.connect(sg);sg.connect(gr.fx.ein)}
     if(v.d){g.gain.setTargetAtTime(0,at+v.d,.06);try{s.stop(at+v.d+.5)}catch(e){}}
     VOX++;s.onended=function(){VOX--;try{o.disconnect()}catch(e){}};s.start(at);return true}
+  /* (17 Nov, evening) Beat's five sounds: real instruments bent out of shape, each struck and dying away (rule 1), on the mixer's bus,
+     at the time the bar gives them (Beat's own grid is already the band's) */
+  /* (their gains set so the circle at its fullest, 48 notes, eight on each of six sixteenths, stays some 4 dB under the band:
+     tools/t_levels.js) */
+  var BEATV={glass:{bank:'glock',oct:1,g:.065,d:.9,fx:.5},rubber:{bank:'marimba',oct:-1,g:.042,d:.45,acid:1},bells:{bank:'chimes',oct:-1,g:.018,d:1.8,fx:.45},
+    boom:{bank:'fbass',oct:-2,g:.039,d:.55,lp:700},pluck:{bank:'gtr',oct:0,g:.041,d:.5,wah:1,fx:.3}};
+  function bnode(c,v,m,vel,at,dst,ein){var nt=SND.note(v.bank,m+12*(v.oct||0));if(!nt)return null;var s=c.createBufferSource(),g=c.createGain(),x=s;s.buffer=nt.b;
+    s.playbackRate.value=clamp(nt.rate,.25,4);g.gain.value=clamp(vel,0,1)*v.g*tilt(m+12*(v.oct||0));
+    if(v.acid){var f=c.createBiquadFilter();f.type='lowpass';f.Q.value=12;f.frequency.setValueAtTime(2200,at);f.frequency.setTargetAtTime(260,at+.005,.07);x.connect(f);x=f}
+    if(v.wah){var w=c.createBiquadFilter();w.type='peaking';w.Q.value=2.6;w.gain.value=8;w.frequency.setValueAtTime(380,at);w.frequency.linearRampToValueAtTime(1900,at+.12);x.connect(w);x=w}
+    if(v.lp){var l=c.createBiquadFilter();l.type='lowpass';l.frequency.value=v.lp;l.Q.value=3;x.connect(l);x=l}
+    x.connect(g);g.connect(dst);if(v.fx&&ein){var sg=c.createGain();sg.gain.value=v.fx;g.connect(sg);sg.connect(ein)}
+    if(v.d){g.gain.setTargetAtTime(0,at+v.d,.08);try{s.stop(at+v.d+.7)}catch(e){}}s.start(at);return {s:s,g:g}}
+  function bvoice(name,midi,vel,pan,when){var v=BEATV[name],c=ctx();if(!v||!c||c.state!=='running'||VOX>52||!AU.toy)return false;if(!SND.ready(v.bank)){SND.load([v.bank]);return false}
+    ensure();var at=Math.max(when||0,c.currentTime),o=null,dst=gr?gr.mb:AU.toy;if(c.createStereoPanner){o=c.createStereoPanner();o.pan.value=clamp(pan||0,-1,1);o.connect(dst);dst=o}
+    var n=bnode(c,v,midi,vel,at,dst,gr&&gr.fx?gr.fx.ein:null);if(!n)return false;VOX++;n.s.onended=function(){VOX--;try{(o||n.g).disconnect()}catch(e){}};return true}
   /* ===================== the screen ===================== */
   var MCOL={funk:'#ff6a3d',africa:'#ffb347',blues:'#4aa8ff',acid:'#c6ff6b',dub:'#b46bff'};
   function E(tag,cls,txt,par){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined&&txt!==null)e.textContent=txt;if(par)par.appendChild(e);return e}
@@ -336,6 +352,12 @@ var MIX=(function(){
       banks:Object.keys(SND.B).filter(SND.ready),loops:rowsOf(MODE).reduce(function(a,t){return a+t.loops.length},0),rows:rowsOf(MODE).map(function(t){return t.n}),
       fx:gr?{room:+gr.fx.rs.gain.value.toFixed(2),fb:+gr.fx.fb.gain.value.toFixed(2)}:null,
       tracks:TR.map(function(t){return {n:t.n,k:t.k,m:t.mode||'',play:t.play,next:t.next,src:!!t.src}})}},
+    /* (17 Nov, evening) for Beat: each mode instrument playing, its hits in bar b (the strongest on each sixteenth, 0 to 1) and its
+       colour; a mode's colour; Beat's sounds */
+    rowsBar:function(b){var out=[];TR.forEach(function(tr){if(tr.k!=='row'||tr.play<0)return;var lp=tr.loops[tr.play],v=[],q;
+      for(q=0;q<16;q++){var ev=lp.at[(((b*16+q)%lp.len)+lp.len)%lp.len],m=0;for(var e=0;e<ev.length;e++)m=Math.max(m,ev[e].v||0);v.push(Math.min(1,m))}
+      out.push({col:tr.row.col||MCOL[tr.mode]||'#eaf9ff',v:v})});return out},
+    col:function(k){return hexRGB(MCOL[k]||'#3ef0ff')},bvoice:bvoice,beatv:BEATV,
     launch:launch,stop:stopT,stopAll:stopAll,jam:jam,load:loadAll,rows:ROWS,all:ALL,mode:modeSet,next:next,boot:boot,start:start,voice:voice,chip:chipSync,banks:banksOf,
     tr:function(k,n){return trOf(k,n)},
     post:function(v){if(gr&&gr.mp&&gr.c)gr.mp.gain.setTargetAtTime(v,gr.c.currentTime,.05)},
@@ -350,6 +372,7 @@ var MIX=(function(){
               x.connect(g);g.connect(G.t[j]);if(o&&o.fx>0){var sg=c.createGain();sg.gain.value=o.fx*row.g;g.connect(sg);sg.connect(G.fx.ein)}s2.start(t);if(d>0)g.gain.setTargetAtTime(0,t+d,.06)}
             if(e.h){var b=SND.hit(e.h);if(b)one(b,1,e.v,0,{fx:e.fx})}else e.m.forEach(function(m,k){var nt=SND.note(lp.bank,m);if(nt)one(nt.b,nt.rate,e.v*(k?.82:1),e.d?e.d*sd:0,{fx:e.fx,ac:e.ac})})})}});
       return G},
+    offbeat:function(c,dst,G,name,midi,vel,when){var v=BEATV[name];if(!v)return false;return !!bnode(c,v,midi,vel,when,G?G.mb:dst.toy,G&&G.fx?G.fx.ein:null)},
     offvoice:function(c,dst,G,mode,name,midi,vel,when){var v=MODESET[mode]&&MODESET[mode].voice&&MODESET[mode].voice[name];if(!v)return false;var b,r=1,m=midi||64;
       /* (as the page plays them: on the next sixteenth of the band's grid from the start, one on each) */
       var sd=SPB/4,k=Math.ceil((when-.05)/sd-.02);when=.05+k*sd+((k&1)?sd*SWING:0);G.qs=G.qs||{};var n=G.qs[k]||0;if(n>=1)return true;G.qs[k]=n+1;
