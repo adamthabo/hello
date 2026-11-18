@@ -9,6 +9,7 @@ const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') 
   let cdp = await ctx.newCDPSession(page);
   const touch = async (pts, type) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: pts.map((p, i) => ({ x: p[0], y: p[1], id: i + 1 })) });
   const tap = async (x, y) => { await touch([[x, y]], 'touchStart'); await sleep(50); await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await sleep(150); };
+  const hold = async (x, y) => { await touch([[x, y]], 'touchStart'); await sleep(1100); await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await sleep(200); };
   const D = () => page.evaluate(() => { const L = window.__lc, i = L.WORLDS.findIndex(w => w.id === 'beat'), r = document.getElementById('btools'), g = document.getElementById('wgrip'), f = (g && !g.hidden ? g : document.getElementById('rail')).getBoundingClientRect(), rl = document.getElementById('rail').getBoundingClientRect();
     return { i, cur: L.CURI, d: L.WORLDS[i].o.dbg(), errs: (L.errs || []).slice(0, 3), data: document.getElementById('data').textContent, stg: L.STG, rail: { t: f.top }, grip: g && !g.hidden ? g.textContent : '', railIn: rl.top < innerHeight - 4 && getComputedStyle(document.getElementById('rail')).opacity > .5,
       shown: !!r && !r.hidden, paintTools: !document.getElementById('tools').hidden,
@@ -49,11 +50,17 @@ const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') 
   { const L0 = s.d.lane, j = L0.findIndex(l => l.on), r = await page.evaluate(j => window.__lc.BEAT.ringAt(j), j); await tap(r.x, r.y); s = await D();
     const off = s.d.lane[j]; ok(j >= 0 && L0.length === 9 && off && !off.on && new RegExp(L0[j].n.split(' ')[0]).test(s.data), 'a tap on ' + (L0[j] || {}).n + '\'s ring takes it out of the beat, its name said: ' + JSON.stringify(s.data));
     await tap(r.x, r.y); s = await D(); ok(s.d.lane[j].on, 'a second tap brings it back');
+    // (17 Nov, 21:02) held, a player's ring leaves it alone in the band; held again, the whole band is back
+    await hold(r.x, r.y); s = await D(); ok(s.d.lane.filter(l => l.on).length === 1 && s.d.lane[j].on && /alone/.test(s.data), 'held, ' + L0[j].n + ' plays alone: ' + JSON.stringify(s.data));
+    await hold(r.x, r.y); s = await D(); ok(s.d.lane.every(l => l.on) && /whole band/.test(s.data), 'held again, the whole band is back: ' + s.d.lane.filter(l => l.on).length + ' playing');
     await page.screenshot({ path: 'shots/beat_phone_rings.png' });
     await tap(s.d.geo.cx, s.d.geo.cy); const m1 = await page.evaluate(() => window.__lc.MIX.dbg());
     ok((m1.pend || m1.mode) === 'blues' && /blues/i.test((await D()).data), 'a tap in the middle: the next beat (bluesy) comes in on the bar: ' + JSON.stringify({ pend: m1.pend, mode: m1.mode }));
     for (let k = 0; k < 40; k++) { s = await D(); if (s.d.lane.some(l => l.k === 'row' && l.on)) break; await sleep(250); }
     ok(s.d.lane.filter(l => l.k === 'row').length >= 3, 'and its instruments are the rings now: ' + s.d.lane.map(l => l.n + (l.on ? '' : '(out)')).join(', '));
+    // held, a mode's instrument goes to its other beat (its next loop), its name and the loop's said
+    { const jr = s.d.lane.findIndex(l => l.k === 'row' && l.on), c0 = s.d.lane[jr].cur, rr = await page.evaluate(j => window.__lc.BEAT.ringAt(j), jr); await hold(rr.x, rr.y); s = await D();
+      ok(jr >= 0 && s.d.lane[jr].cur !== c0 && s.d.data !== '' && new RegExp(s.d.lane[jr].n + ': ').test(s.data), 'held, ' + s.d.lane[jr].n + ' goes to its other beat: ' + JSON.stringify(s.data) + ' loop ' + c0 + ' then ' + s.d.lane[jr].cur); }
     await page.screenshot({ path: 'shots/beat_phone_blues.png' }); }
   // a real tap on the circle puts a note there, heard at once; a second tap takes it away
   await page.evaluate(() => { const L = window.__lc, o = L.MIX.bvoice; window.__bv = []; L.MIX.bvoice = function (n, m, v, p, w) { window.__bv.push([n, m, w, L.AU.c.currentTime, L.AU.t0]); return o.apply(this, arguments); }; });

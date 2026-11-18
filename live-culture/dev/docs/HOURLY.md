@@ -188,3 +188,5 @@ not ask for.
 - 2026-11-17 19:44: his look at Beat ("not interactive"; world buttons off the music pages; videos he thought he had uploaded never
   arrived: asked again): Beat's rings and middle answer a touch, the music comes on with a touch, notes heard in time; the worlds
   tucked behind a handle in Mix and Beat (README rule 26).
+- 2026-11-17 21:02: a ring held in Beat: a mode's instrument to its other loop (the classic beats' busier ones), a band player alone
+  and back; a tap as before (no new word from him since 19:44; his videos still not here).

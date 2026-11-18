@@ -1,6 +1,13 @@
 # Changelog
 
 ## For the owner
+17 Nov 2026, 21:02 (the fourteenth hourly run):
+
+- **Hold a ring in Beat to explore the beats.** In funky, bluesy, acid or dub, hold an instrument's ring for half a second and it
+  switches to its other pattern, often the busier, more interesting one. The name of the new pattern shows at the top. In the African
+  beat, holding a player's ring leaves that player alone so you can hear just them. Hold it again and the whole band comes back. A
+  quick tap still drops an instrument out or brings it back.
+
 17 Nov 2026, 19:44 (your look at Beat):
 
 - **Beat now plays back.** Tap an instrument's ring inside the circle to drop it out of the beat. Tap it again to bring it back.
@@ -296,6 +303,16 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 17 Nov 2026, 21:02 (New York), the fourteenth hourly run: a ring held in Beat (the classic beats' other loops; a player alone)
+
+- `17-beat.js`: a touch inside is held as `press` (`innerHit` finds the middle, a ring or nothing); lifted before 450 ms it is a
+  tap (`laneTap`: in or out, as before, its name said with how to hold it); held (`tick`) it is `laneHold`: a mode's instrument
+  launched on its next loop (`MIX.launch(j, (cur + 1) % loops)`, "drums: slow"), one of the band's players alone (the others out,
+  `setPlayer(…, true)`), or, if it already is, the whole band back. A finger moved 16 px or more lets go of the press. The ring
+  flares twice. `16-mix.js` `rowsAll`: each row's `cur` (the loop playing or coming in) and its loops' names.
+- `t_beat.js`: held, the dundun and bell plays alone and held again the band is back; in bluesy, held, the drums go to their
+  other loop ("drums: slow", loop 0 then 1).
 
 ## 17 Nov 2026, 19:44 (New York): Beat answers a touch inside; the worlds tucked away in Mix and Beat (README rule 26)
 

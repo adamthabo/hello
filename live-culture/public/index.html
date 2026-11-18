@@ -3738,7 +3738,7 @@ var MIX=(function(){
       out.push({col:tr.row.col||MCOL[tr.mode]||'#eaf9ff',v:v})});return out},
     rowsAll:function(b){var out=[];TR.forEach(function(tr,j){if(tr.k!=='row'||tr.mode!==MODE)return;var on=tr.play>=0?tr.next!==-2:tr.next>=0,
       lp=tr.loops[tr.play>=0?tr.play:tr.next>=0?tr.next:0],v=[],q;for(q=0;q<16;q++){var ev=lp.at[(((b*16+q)%lp.len)+lp.len)%lp.len],m=0;for(var e=0;e<ev.length;e++)m=Math.max(m,ev[e].v||0);v.push(Math.min(1,m))}
-      out.push({j:j,n:tr.n,col:tr.row.col||MCOL[tr.mode]||'#eaf9ff',on:on,v:v})});return out},
+      out.push({j:j,n:tr.n,col:tr.row.col||MCOL[tr.mode]||'#eaf9ff',on:on,v:v,cur:tr.play>=0?(tr.next>=0?tr.next:tr.play):tr.next>=0?tr.next:0,loops:tr.loops.map(function(q){return q.n})})});return out},
     col:function(k){return hexRGB(MCOL[k]||'#3ef0ff')},bvoice:bvoice,beatv:BEATV,
     launch:launch,stop:stopT,stopAll:stopAll,jam:jam,load:loadAll,rows:ROWS,all:ALL,mode:modeSet,next:next,boot:boot,start:start,voice:voice,chip:chipSync,banks:banksOf,
     tr:function(k,n){return trOf(k,n)},
@@ -3801,7 +3801,7 @@ var BEAT=(function(){
   /* what plays in this bar: one ring each, inside the circle */
   function lanes(bar){var L=[],i,S=stems(),b4=((bar%4)+4)%4,af=MODE==='africa'||!MIXON;
     for(i=0;i<NL;i++){var on=ON[i]*SC[i]>0;if(af||on)L.push({col:BCOL[i],v:S[i][b4],on:on,k:'stem',i:i,n:BNAMES[i]})}
-    if(!af&&MIX.rowsAll)MIX.rowsAll(bar).forEach(function(r){L.push({col:r.col,v:r.v,on:r.on,k:'row',j:r.j,n:r.n})});
+    if(!af&&MIX.rowsAll)MIX.rowsAll(bar).forEach(function(r){L.push({col:r.col,v:r.v,on:r.on,k:'row',j:r.j,n:r.n,cur:r.cur,loops:r.loops})});
     return L.slice(0,12)}
   function laneR(j,n,R){return R*(.16+(.33*(n>1?j/(n-1):.5)))}
   /* the next sixteenth on the band's grid (with its swing), and whether the band's sequencer has already given it out */
@@ -3817,17 +3817,25 @@ var BEAT=(function(){
     if(i>=0||N.length>=MAXN)return;var n={s:c.s,p:c.p,v:cur};N.push(n);save();fl.push({s:c.s,p:c.p,t:performance.now(),c:SCOL[cur]});
     /* heard on the next sixteenth; if that is its own, the bar plays it (unless the bar has already given that sixteenth out) */
     var sl=nextSlot();if(!sl)note(n,0,.7);else if(sl.q!==n.s||sl.out)note(n,sl.t,.7)}
-  /* the inside: an instrument's ring in or out of the beat; the middle: the next mode's beat, on the bar */
-  var tapF=[];
-  function inner(x,y){var g=geo(),r=Math.hypot(x-g.cx,y-g.cy);if(r<g.R*.11){MIX.next();var d=MIX.dbg(),k2=d.pend||d.mode,m=MODES.filter(function(q){return q.k===k2})[0];
-      say('next: '+(m?m.n:k2),'');tapF.push({j:-1,t:performance.now()});return true}
-    if(r>=g.R*.53)return false;var k=clock(),Ls=lanes(k?k.bar:0),n=Ls.length;if(!n)return true;
-    var j=clamp(Math.round(n>1?(r/g.R-.16)/.33*(n-1):0),0,n-1),l=Ls[j];if(Math.abs(r-laneR(j,n,g.R))>g.R*.09)return true;
-    if(l.k==='stem')setPlayer(l.i,!l.on);else{if(l.on)MIX.stop(l.j);else MIX.launch(l.j,0);say(l.n+(l.on?' out':' in'),l.col)}
-    tapF.push({j:j,t:performance.now()});return true}
-  function down(p){if(p.ghost)return;if(!AU.want)musicOn();mode=null;if(inner(p.x,p.y))return;var c=cell(p.x,p.y);if(!c)return;mode=find(c.s,c.p)>=0?'erase':'draw';lastCell='';apply(c,mode)}
-  function move(p){if(p.ghost||!mode)return;var c=cell(p.x,p.y);if(c)apply(c,mode)}
-  function up(){mode=null;lastCell=''}
+  /* the inside: an instrument's ring in or out of the beat with a tap; held, a mode's instrument goes to its next loop (its other,
+     often busier beat) and one of the band's players plays alone (held again, the whole band back); the middle: the next mode's
+     beat, on the bar */
+  var tapF=[],press=null;
+  function innerHit(x,y){var g=geo(),r=Math.hypot(x-g.cx,y-g.cy);if(r<g.R*.11)return {mid:1};if(r>=g.R*.53)return null;var k=clock(),Ls=lanes(k?k.bar:0),n=Ls.length;if(!n)return {none:1};
+    var j=clamp(Math.round(n>1?(r/g.R-.16)/.33*(n-1):0),0,n-1);if(Math.abs(r-laneR(j,n,g.R))>g.R*.09)return {none:1};return {j:j,l:Ls[j]}}
+  function midTap(){MIX.next();var d=MIX.dbg(),k2=d.pend||d.mode,m=MODES.filter(function(q){return q.k===k2})[0];say('next: '+(m?m.n:k2),'');tapF.push({j:-1,t:performance.now()})}
+  function laneTap(h){var l=h.l;if(l.k==='stem'){setPlayer(l.i,!l.on,true);say(BNAMES[l.i]+(l.on?' out':' in')+' (hold its ring to hear it alone)',l.col)}
+    else{if(l.on)MIX.stop(l.j);else MIX.launch(l.j,l.cur||0);say(l.n+(l.on?' out':' in')+' (hold its ring for its other beat)',l.col)}tapF.push({j:h.j,t:performance.now()})}
+  function laneHold(h){var l=h.l,i;
+    if(l.k==='stem'){var alone=true;for(i=0;i<NL;i++)if(i!==l.i&&ON[i])alone=false;
+      if(alone&&ON[l.i]){for(i=0;i<NL;i++)setPlayer(i,1,true);say('the whole band','')}else{for(i=0;i<NL;i++)setPlayer(i,i===l.i?1:0,true);say(BNAMES[l.i]+' alone',l.col)}}
+    else if(l.loops&&l.loops.length){var nx=((l.cur||0)+1)%l.loops.length;MIX.launch(l.j,nx);say(l.n+': '+l.loops[nx],l.col)}
+    tapF.push({j:h.j,t:performance.now()});tapF.push({j:h.j,t:performance.now()+260})}
+  function down(p){if(p.ghost)return;if(!AU.want)musicOn();mode=null;var h=innerHit(p.x,p.y);
+    if(h){if(h.mid)midTap();else if(!h.none)press={h:h,id:p.id,x:p.x,y:p.y,t0:performance.now(),done:false};return}
+    var c=cell(p.x,p.y);if(!c)return;mode=find(c.s,c.p)>=0?'erase':'draw';lastCell='';apply(c,mode)}
+  function move(p){if(p.ghost)return;if(press&&press.id===p.id&&Math.hypot(p.x-press.x,p.y-press.y)>16)press=null;if(!mode)return;var c=cell(p.x,p.y);if(c)apply(c,mode)}
+  function up(p){if(press&&p&&press.id===p.id){if(!press.done)laneTap(press.h);press=null}mode=null;lastCell=''}
   /* the bar's sixteenth: its notes, on time */
   /* (a chord is held together: each of n notes on one sixteenth a little softer, 1.5/√n of one alone, so eight at once stay under the band) */
   function chordK(n){return Math.min(1,1.5/Math.sqrt(Math.max(1,n)))}
@@ -3851,7 +3859,8 @@ var BEAT=(function(){
     if(t&&t.nextSibling)f.insertBefore(r,t.nextSibling);else f.appendChild(r);sync()}
   function enter(){load();build();on=true;var r=$('btools');if(r)r.hidden=false;sync();SND.load(['glock','marimba','chimes','fbass','gtr']);layout()}
   function leave(){on=false;mode=null;var r=$('btools');if(r)r.hidden=true}
-  function tick(){}
+  /* a ring held for half a second */
+  function tick(){if(press&&!press.done&&performance.now()-press.t0>450){press.done=true;laneHold(press.h)}}
   function draw(t){
     blank();var c=OV,g=geo(),R=g.R,cx=g.cx,cy=g.cy,k=clock(),i,s,col=MODE==='africa'?'62,240,255':MIX.col(MODE),now=performance.now();
     c.save();c.lineCap='round';
@@ -3890,7 +3899,7 @@ var BEAT=(function(){
   function hud(){return ''}
   return {enter:enter,leave:leave,tick:tick,draw:draw,hud:hud,down:down,move:move,up:up,seq:seq,resize:function(){},
     dbg:function(){var k=clock(),g=geo();return {on:on,notes:N.map(function(n){return [n.s,n.p,n.v]}),cur:cur,sound:SN[cur][0],clock:k?{bar:k.bar,q:k.q,f:+k.f.toFixed(3)}:null,
-      geo:{cx:g.cx,cy:g.cy,R:g.R},lanes:k?lanes(k.bar).length:0,lane:lanes(k?k.bar:0).map(function(l){return {n:l.n,on:l.on,k:l.k}}),max:MAXN,sounds:SN.map(function(s){return s[0]})}},
+      geo:{cx:g.cx,cy:g.cy,R:g.R},lanes:k?lanes(k.bar).length:0,lane:lanes(k?k.bar:0).map(function(l){return {n:l.n,on:l.on,k:l.k,cur:l.cur}}),max:MAXN,sounds:SN.map(function(s){return s[0]})}},
     /* for the tests: where an instrument's ring is (its top) */
     ringAt:function(j){var g=geo(),k=clock(),n=lanes(k?k.bar:0).length;return {x:g.cx,y:g.cy-laneR(j,n,g.R),n:n}},
     /* for the tests: where a note sits on the screen, and the notes set at once */
