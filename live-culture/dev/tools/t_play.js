@@ -61,7 +61,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       return { id: b.id, t: b.textContent, on: b.getAttribute('aria-pressed') === 'true', h: r.height, l: r.left, r: r.right, b: r.bottom, top: !!e && b.contains(e), cut: sp.scrollWidth > sp.clientWidth + 1 }; }));
     // (15 Nov, 23:20: "The list of buttons on the globe hardly work. Make everything work") every button on the screen at once, none
     // under anything, none with its word cut, and a real tap on each switches it (and a second switches it back)
-    { const vw = await page.evaluate(() => innerWidth), rail = await page.evaluate(() => document.getElementById('rail').getBoundingClientRect().top);
+    { const vw = await page.evaluate(() => innerWidth), rail = await page.evaluate(() => innerHeight);
       ok(dock.every(b => b.l >= 0 && b.r <= vw && b.b <= rail && b.top && !b.cut), 'earth: every layer\'s button on the screen at once, uncovered, its word whole: ' + JSON.stringify(dock.filter(b => !(b.l >= 0 && b.r <= vw && b.b <= rail && b.top && !b.cut)).map(b => [b.id, Math.round(b.l), Math.round(b.r), b.top, b.cut]))); }
     // (a layer with nothing to show has no button: storms when none is turning)
     ok(dock.map(b => b.id).join() === 'ly_vid,ly_war,ly_dark,ly_orbit,' + (s.dbg.storms.length ? 'ly_storm,' : '') + 'ly_fire,ly_bolt,ly_aur' && dock.every(b => b.on && b.h >= 40) && dock[0].t === 'videos', 'earth: a row of layers, each named and lit while it shows (here, with the snapshot: videos, wind, lightning, storms if any, fires, satellites, aurora): ' + dock.map(b => b.t + (b.on ? '+' : '-')).join(', '));
@@ -235,7 +235,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     // less height than the phone), a small one, one on its side; every button inside, above the worlds, none under 28, no scrolling
     { const fits = []; for (const [w, h] of [[390, 750], [390, 660], [375, 560], [360, 520], [844, 390]]) {
         await page.setViewportSize({ width: w, height: h }); await sleep(500);
-        const f = await page.evaluate(() => { const l = document.querySelector('#mix .mxl'), m = document.getElementById('mix').getBoundingClientRect(), r = document.getElementById('rail').getBoundingClientRect(), d = window.__lc.MIX.dbg();
+        const f = await page.evaluate(() => { const l = document.querySelector('#mix .mxl'), m = document.getElementById('mix').getBoundingClientRect(), r = { top: innerHeight }, d = window.__lc.MIX.dbg();
           const bs = [...document.querySelectorAll('#mix button')].map(b => b.getBoundingClientRect()); return { n: bs.length, out: bs.filter(q => q.top < m.top - .5 || q.bottom > Math.min(m.bottom, r.top) + .5 || q.left < 0 || q.right > innerWidth).length,
             min: Math.round(Math.min(...bs.map(q => q.height))), scroll: l.scrollHeight > l.clientHeight + 1, bh: d.bh, wide: d.wide, small: d.small }; });
         fits.push(w + 'x' + h + ':' + (f.out || f.scroll ? 'NO' : 'ok') + ' ' + f.min + 'px' + (f.wide ? ' wide' : '') + (f.small ? ' small' : '') + (f.min < 28 ? ' LOW' : '')); }

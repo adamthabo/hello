@@ -7,14 +7,14 @@ var OVC=$('ov'),OV=OVC.getContext('2d'),STAGE=$('stage');
    each world had a row of circles, one for each player) */
 var WORLDS=[
   /* paint in water (Smoke until 15 Nov: "Call it paint, not smoke"); a link to #smoke still lands here */
-  {id:'paint',name:'Paint',o:DRIFT,sc:[1,1,1,1,1,1,1,1,1],photo:true,ic:'<path d="M19.6 3.6c-3.4 2.2-6.6 5.2-8.8 8.4"/><path d="M10.6 12.6c-1.9-.4-3.7.9-4 2.9-.2 1.5-.9 2.6-2.4 3.2 2.6 1.4 6.2 1.2 7.6-1.2.9-1.6.6-3.6-1.2-4.9z"/>'},
+  {id:'paint',name:'Paint',d:'paint in still water: it stays where you put it',o:DRIFT,sc:[1,1,1,1,1,1,1,1,1],photo:true,ic:'<path d="M19.6 3.6c-3.4 2.2-6.6 5.2-8.8 8.4"/><path d="M10.6 12.6c-1.9-.4-3.7.9-4 2.9-.2 1.5-.9 2.6-2.4 3.2 2.6 1.4 6.2 1.2 7.6-1.2.9-1.6.6-3.6-1.2-4.9z"/>'},
   /* the Earth: the weather, the satellites and (on the site) the live cameras, each a layer of one globe (13 Nov: "Put them all on the
      same globe as satellites and make that just a layer"); Wind, Orbit and Live were three worlds before */
-  {id:'earth',name:'Earth',o:WIND,sc:[1,1,1,1,1,1,1,1,1],ic:'<circle cx="12" cy="12" r="6.6"/><path d="M6.2 10.4c2.4-1.3 4.1 1 6.5-.1 1.5-.7 2.4-.8 3.8-.4"/><ellipse cx="12" cy="12" rx="10.6" ry="3.9" transform="rotate(-22 12 12)"/>'},
+  {id:'earth',name:'Earth',d:'the planet live: weather, satellites, cameras',o:WIND,sc:[1,1,1,1,1,1,1,1,1],ic:'<circle cx="12" cy="12" r="6.6"/><path d="M6.2 10.4c2.4-1.3 4.1 1 6.5-.1 1.5-.7 2.4-.8 3.8-.4"/><ellipse cx="12" cy="12" rx="10.6" ry="3.9" transform="rotate(-22 12 12)"/>'},
   /* the mixer: a grid of loops, the band's and a machine's (13 Nov) */
-  {id:'mix',name:'Mix',o:MIX,tuck:1,sc:[1,1,1,1,1,1,1,1,1],ic:'<rect x="3.5" y="3.5" width="4.6" height="4.6" rx="1.1"/><rect x="9.7" y="3.5" width="4.6" height="4.6" rx="1.1"/><rect x="15.9" y="3.5" width="4.6" height="4.6" rx="1.1"/><rect x="3.5" y="9.7" width="4.6" height="4.6" rx="1.1"/><rect x="9.7" y="9.7" width="4.6" height="4.6" rx="1.1"/><rect x="15.9" y="9.7" width="4.6" height="4.6" rx="1.1"/><rect x="3.5" y="15.9" width="4.6" height="4.6" rx="1.1"/><rect x="9.7" y="15.9" width="4.6" height="4.6" rx="1.1"/><rect x="15.9" y="15.9" width="4.6" height="4.6" rx="1.1"/>'},
+  {id:'mix',name:'Mix',d:'the band and its loops, by hand',o:MIX,sc:[1,1,1,1,1,1,1,1,1],ic:'<rect x="3.5" y="3.5" width="4.6" height="4.6" rx="1.1"/><rect x="9.7" y="3.5" width="4.6" height="4.6" rx="1.1"/><rect x="15.9" y="3.5" width="4.6" height="4.6" rx="1.1"/><rect x="3.5" y="9.7" width="4.6" height="4.6" rx="1.1"/><rect x="9.7" y="9.7" width="4.6" height="4.6" rx="1.1"/><rect x="15.9" y="9.7" width="4.6" height="4.6" rx="1.1"/><rect x="3.5" y="15.9" width="4.6" height="4.6" rx="1.1"/><rect x="9.7" y="15.9" width="4.6" height="4.6" rx="1.1"/><rect x="15.9" y="15.9" width="4.6" height="4.6" rx="1.1"/>'},
   /* (17 Nov, 17:54) the bar as a metronome's face: what plays broken down round it, and notes of your own put on it in five sounds */
-  {id:'beat',name:'Beat',o:BEAT,tuck:1,nomode:1,sc:[1,1,1,1,1,1,1,1,1],ic:'<circle cx="12" cy="12" r="8.8"/><path d="M12 12l4.6-4.6"/><path d="M12 3.2v1.6M20.8 12h-1.6M12 20.8v-1.6M3.2 12h1.6"/><circle cx="12" cy="12" r="1.1" fill="currentColor"/>'},
+  {id:'beat',name:'Beat',d:'34 classic beats from round the world',o:BEAT,nomode:1,sc:[1,1,1,1,1,1,1,1,1],ic:'<circle cx="12" cy="12" r="8.8"/><path d="M12 12l4.6-4.6"/><path d="M12 3.2v1.6M20.8 12h-1.6M12 20.8v-1.6M3.2 12h1.6"/><circle cx="12" cy="12" r="1.1" fill="currentColor"/>'},
 ];
 var CUR=null,CURI=-1,PT={},PTN=0,GP={},PS=[],HV=null,touched={},lastTouch=-1e9,SAYT=0,SAYX='',SAYC='',swT=0,GOT=0,FDT=.016;
 function safe(f){try{f()}catch(e){if(window.__lc){window.__lc.errs=(window.__lc.errs||[]);window.__lc.errs.push(String(e&&e.stack||e))}}}
@@ -25,30 +25,34 @@ var DATAX='',DATAT=0;
 function dataPaint(force){var n=performance.now();if(!force&&n-DATAT<180)return;DATAT=n;var el=$('data'),tx=n<SAYT?SAYX:(CUR&&CUR.hud?CUR.hud():''),c=n<SAYT?SAYC:'';
   if(tx!==DATAX){DATAX=tx;el.textContent=tx}if(el._c!==c){el._c=c;el.style.setProperty('--c',c||'')}}
 
-/* ---- the worlds along the bottom ---- */
-/* (17 Nov, 19:44: "remove buttons when they are not necessary on the screen (world buttons on music pages)") in Mix and Beat the worlds'
-   buttons are tucked away behind a small handle named "worlds" (a dot for each world, its own lit); a tap on it brings them up over
-   the bottom of the screen for a few seconds, a touch anywhere else or a world chosen puts them away */
-var RAILT=0;
-function railShow(on){var f=$('foot');if(!f)return;f.classList.toggle('railup',!!on);clearTimeout(RAILT);if(on)RAILT=setTimeout(function(){railShow(false)},4500)}
-function gripBuild(){var g=$('wgrip');if(!g)return;g.innerHTML='';WORLDS.forEach(function(w,i){var d=document.createElement('i');d.id='gd_'+w.id;g.appendChild(d)});
-  var s=document.createElement('span');s.textContent='worlds';g.appendChild(s);if(!g._on){g._on=1;g.addEventListener('click',function(){railShow(!$('foot').classList.contains('railup'))})}}
-function railBuild(){gripBuild();var r=$('rail');r.innerHTML='';WORLDS.forEach(function(w,i){var b=document.createElement('button');b.type='button';b.className='wb';b.id='w_'+w.id;
-  b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+w.ic+'</svg><span></span>';b.lastChild.textContent=w.name;b.setAttribute('aria-current','false');
-  b.addEventListener('click',function(){go(i)});r.appendChild(b)})}
+/* ---- the menu (18 Nov, 00:50: "Theres too many confusing menu items at the bottom. Fix it and make it make a lot of good design
+   sense. Ux. I like clear windows"): the world's name at the top left is its button; it opens the four worlds, each with a line of
+   what it is, and under them what this world can do (Paint's colours, mirror, start over, photo, building and the game; Beat's
+   sounds, melody and reset), and saving a picture where the viewer can take one. A touch anywhere else, a world chosen, or Escape
+   closes it; the touch that closes it does nothing else. (Until now the worlds were a row of buttons along the bottom, tucked behind
+   a handle in Mix and Beat since 17 Nov, 19:44) ---- */
+function menuOpen(){return !$('menu').hidden}
+function menuShow(on){var m=$('menu'),b=$('wmenu');if(!m)return;on=!!on;if(m.hidden!==!on){m.hidden=!on;b.setAttribute('aria-expanded',on?'true':'false');document.body.classList.toggle('menuon',on)}}
+function railBuild(){var r=$('rail');r.innerHTML='';WORLDS.forEach(function(w,i){var b=document.createElement('button');b.type='button';b.className='wb';b.id='w_'+w.id;
+  b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+w.ic+'</svg><span class="wn"></span><span class="wd"></span>';b.querySelector('.wn').textContent=w.name;b.querySelector('.wd').textContent=w.d||'';
+  b.setAttribute('aria-current','false');b.addEventListener('click',function(){menuShow(false);go(i)});r.appendChild(b)});
+  WORLDS.forEach(function(w){if(w.o.menu){var sec=$('ms_'+w.id);if(sec)safe(function(){w.o.menu(sec)})}})}
+$('wmenu').addEventListener('click',function(){menuShow(!menuOpen())});
+/* a press anywhere outside the menu closes it: on another button the button still does its work; on the world the touch only closes it */
+document.addEventListener('pointerdown',function(e){if(!menuOpen())return;var t=e.target;if(t&&t.closest&&(t.closest('#menu')||t.closest('#wmenu')))return;if(t===STAGE)return;menuShow(false)},true);
+addEventListener('keydown',function(e){if(e.key==='Escape'&&menuOpen()){menuShow(false);try{$('wmenu').focus()}catch(x){}}});
 function chrome(){
-  var w=WORLDS[CURI];if(!w)return;$('wname').textContent=w.name;
-  WORLDS.forEach(function(x,i){var b=$('w_'+x.id);if(b)b.setAttribute('aria-current',i===CURI?'true':'false');var d=$('gd_'+x.id);if(d)d.className=i===CURI?'on':''});
-  var ft=$('foot'),gp=$('wgrip');if(ft)ft.classList.toggle('railauto',!!w.tuck);if(gp)gp.hidden=!w.tuck;railShow(false);
+  var w=WORLDS[CURI];if(!w)return;$('wname').textContent=w.name;$('wmenu').setAttribute('aria-label',w.name+'. Open the menu: the four worlds, and what this one can do');
+  WORLDS.forEach(function(x,i){var b=$('w_'+x.id);if(b)b.setAttribute('aria-current',i===CURI?'true':'false');var sec=$('ms_'+x.id);if(sec)sec.hidden=i!==CURI||!sec.querySelector('button')});
   /* (18 Nov) Beat plays its own beats while the band rests, so the band's mode has no button there */
-  $('bMode').hidden=!!w.nomode;$('bPhoto').hidden=!w.photo;$('bClear').hidden=!(w.photo&&PHOTO.has);$('bSave').hidden=!DL;$('bNow').hidden=true;
+  $('bMode').hidden=!!w.nomode;$('bClear').hidden=!(w.photo&&PHOTO.has);$('bSave').hidden=!DL;$('bNow').hidden=true;
   $('bPhoto').setAttribute('aria-pressed',PHOTO.has?'true':'false');
   try{if(location.hash!=='#'+w.id)history.replaceState(null,'','#'+w.id)}catch(e){}
   layout();if(CUR&&CUR.resize)safe(function(){CUR.resize(VW,VH)});DATAX=null;dataPaint(true)}
 function releaseAll(){for(var id in PT){var p=PT[id];delete PT[id];p.down=false;if(CUR&&CUR.up)(function(p){safe(function(){CUR.up(p)})})(p)}PTN=0;GS.a=null;HV=null}
 /* going to another world: the picture dips to black, the band ducks behind a wall for a moment, and its line-up changes */
 function go(i,instant){
-  if(i===CURI||i<0||i>=WORLDS.length||isNaN(i))return;var w=WORLDS[i],prev=CUR;
+  menuShow(false);if(i===CURI||i<0||i>=WORLDS.length||isNaN(i))return;var w=WORLDS[i],prev=CUR;
   function swap(){ghostsOff(false);releaseAll();if(prev&&prev.leave)safe(function(){prev.leave()});
     CURI=i;CUR=w.o;sceneSet(w.sc);governWorld();if(CUR.enter)safe(function(){CUR.enter()});chrome();document.body.classList.remove('sw');swT=performance.now()}
   clearTimeout(GOT);if(instant||reduce||!prev){swap();return}
@@ -81,8 +85,9 @@ function newP(id,x,y,now,ghost,mouse,down){return {id:id,x:x,y:y,px:x,py:y,x0:x,
 function held(p){var f=FT-p.t0;return p.e1!==undefined?Math.min(f,Math.max(0,p.e1-p.t0)):f}
 STAGE.addEventListener('pointerdown',function(e){
   if(e.pointerType==='mouse'&&e.button!==0)return;e.preventDefault();try{STAGE.setPointerCapture(e.pointerId)}catch(x){}
+  if(menuOpen()){menuShow(false);return}
   var now=performance.now(),p=newP(e.pointerId,e.clientX,e.clientY,now,false,e.pointerType==='mouse',true);if(e.timeStamp>0)p.e0=e.timeStamp;
-  ghostsOff(true);if($('foot').classList.contains('railup'))railShow(false);if(PT[p.id])ptEnd(PT[p.id]);PT[p.id]=p;PTN++;eachPT(function(q){q.n=PTN});touched[CURI]=true;lastTouch=now;GS.a=null;HV=null;
+  ghostsOff(true);if(PT[p.id])ptEnd(PT[p.id]);PT[p.id]=p;PTN++;eachPT(function(q){q.n=PTN});touched[CURI]=true;lastTouch=now;GS.a=null;HV=null;
   if(CUR&&CUR.down)safe(function(){CUR.down(p)});
   try{window.focus()}catch(x2){}});
 STAGE.addEventListener('pointermove',function(e){

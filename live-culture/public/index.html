@@ -71,10 +71,15 @@ body.dropping::after{content:"";position:fixed;inset:10px;z-index:30;border:1px 
 /* ---------- top: the name, the readings, the switch ---------- */
 .top{position:fixed;z-index:6;left:0;right:0;top:0;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
   padding-top:calc(12px + env(safe-area-inset-top,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));pointer-events:none}
-.mark{min-width:0;display:flex;flex-direction:column;gap:3px}
-.mark h1{margin:0;font-weight:700;font-variation-settings:"wdth" 122;font-size:9px;line-height:1;letter-spacing:.3em;text-transform:uppercase;color:var(--dim);white-space:nowrap}
+/* (18 Nov) the world's name is the menu's button: a tap opens the worlds and what this one can do */
+.mark{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;pointer-events:auto;padding:4px 8px 4px 0;margin:-4px 0 0;border-radius:10px}
+.mark .mk1{font-weight:700;font-variation-settings:"wdth" 122;font-size:9px;line-height:1;letter-spacing:.3em;text-transform:uppercase;color:var(--dim);white-space:nowrap}
+.mark .mk2{display:flex;align-items:center;gap:6px}
 .mark .wname{margin:0;font-weight:800;font-variation-settings:"wdth" 62;font-size:34px;line-height:.92;letter-spacing:.01em;text-transform:uppercase;color:var(--ink);white-space:nowrap;
   text-shadow:0 0 22px rgba(1,4,10,.9)}
+.mark .chev{width:22px;height:22px;flex:none;padding:4px;border-radius:50%;border:1px solid var(--faint);background:rgba(1,4,10,.55);fill:none;stroke:var(--ink);stroke-width:1.6;
+  stroke-linecap:round;stroke-linejoin:round;transition:transform .25s,border-color .25s}
+.mark[aria-expanded=true] .chev{transform:rotate(180deg);border-color:var(--lume);stroke:var(--lume)}
 .data{position:fixed;z-index:6;margin:0;left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));top:calc(64px + env(safe-area-inset-top,0px));
   font-family:var(--mono);font-size:10px;line-height:1.55;letter-spacing:.08em;text-transform:uppercase;color:var(--c,var(--dim));pointer-events:none;
   font-variant-numeric:tabular-nums;max-width:min(64ch,100%);text-shadow:0 0 8px rgba(1,4,10,1),0 0 2px rgba(1,4,10,1);white-space:pre-line;text-wrap:balance}
@@ -170,18 +175,9 @@ body.camw .zm{display:none}
 .card canvas{display:block;width:100%;margin:6px 0 0;border-radius:6px}
 .card .cd{display:flex;flex-wrap:wrap;gap:2px 12px;margin:6px 0 0;font-size:8.5px;letter-spacing:.1em;color:var(--ink)}
 .card .cs{margin:6px 0 0;font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:rgba(234,249,255,.35)}
-.rail{display:flex;justify-content:center;gap:clamp(0px,1vw,10px);pointer-events:auto;padding:5px 6px;border-radius:16px;background:rgba(1,4,10,.5);
-  border:1px solid rgba(234,249,255,.1);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);max-width:100%}
-.wb{display:flex;flex-direction:column;align-items:center;gap:4px;width:clamp(56px,17vw,74px);padding:7px 0 6px;border-radius:11px;color:var(--dim);transition:color .3s,background .3s}
-.wb svg{width:22px;height:22px;display:block;fill:none;stroke:currentColor;stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round}
-.wb span{font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;line-height:1}
-.wb:hover{color:var(--ink)}
-.wb[aria-current=true]{color:var(--lume);background:rgba(62,240,255,.09)}
 @media (max-height:480px){
   .mark .wname{font-size:24px}
   .data{top:calc(50px + env(safe-area-inset-top,0px))}
-  .wb{padding:4px 0}
-  .wb span{display:none}
   .foot{gap:2px;padding-bottom:calc(6px + env(safe-area-inset-bottom,0px))}
   .dot{height:24px}
   .card{font-size:9px;padding:8px 11px 7px}
@@ -203,7 +199,7 @@ body.camw .zm{display:none}
   .data{top:calc(78px + env(safe-area-inset-top,0px));font-size:10.5px}
 }
 @media (prefers-reduced-motion:reduce){
-  #gl,#ov,.ic,.wb,.vid,.vid .vb{transition:none}
+  #gl,#ov,.ic,.wb,.vid,.vid .vb,.menu,.mark .chev{transition:none}
 }
 
 /* ---- the mixer (16-mix.js): the five modes, the band's nine players, then the mode's instruments as cards of two loops; a new mix and
@@ -252,17 +248,54 @@ body.camw .zm{display:none}
 #mix.mxsm .mxn{grid-column:auto;padding:0 1px 0 2px;font-size:7.5px;letter-spacing:0}
 #mix.mxsm .mxrow .mxb{padding:0 2px;font-size:8px;letter-spacing:0}
 @keyframes mxblink{50%{opacity:.25}}
-/* (17 Nov, 19:44) in Mix and Beat the worlds' buttons are tucked behind a handle; a tap brings them up over the bottom of the screen */
-.wgrip{display:flex;align-items:center;gap:5px;height:26px;padding:0 12px;border-radius:13px;border:1px solid rgba(234,249,255,.14);
-  background:rgba(1,4,10,.45);color:var(--dim);pointer-events:auto;font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase}
-.wgrip[hidden]{display:none}
-.wgrip i{width:5px;height:5px;border-radius:50%;background:rgba(234,249,255,.3);flex:none}
-.wgrip i.on{background:var(--lume)}
-.wgrip span{margin-left:4px;line-height:1}
-.foot.railauto .rail{position:absolute;left:50%;bottom:calc(4px + env(safe-area-inset-bottom,0px));transform:translate(-50%,140%);opacity:0;pointer-events:none;
-  visibility:hidden;background:rgba(1,4,10,.92);transition:transform .25s ease,opacity .25s ease,visibility 0s linear .25s}
-.foot.railauto.railup .rail{transform:translate(-50%,0);opacity:1;pointer-events:auto;visibility:visible;transition-delay:0s}
-.foot.railauto.railup .wgrip{visibility:hidden}
+
+/* ---------- (18 Nov, 00:50: "Theres too many confusing menu items at the bottom. Fix it and make it make a lot of good design sense.
+   Ux. I like clear windows") the menu: under the world's name, the four worlds, then what this world can do. Nothing else on the screen
+   but what a world is played with ---------- */
+.menu{position:fixed;z-index:8;left:max(10px,env(safe-area-inset-left,0px));top:calc(62px + env(safe-area-inset-top,0px));width:min(360px,calc(100vw - 20px));
+  max-height:calc(100% - 74px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;
+  display:flex;flex-direction:column;gap:10px;padding:8px;border-radius:18px;background:rgba(4,9,18,.94);border:1px solid rgba(234,249,255,.14);
+  box-shadow:0 18px 50px -12px rgba(0,0,0,.8);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);transform-origin:12% 0;animation:mnin .18s ease-out}
+.menu[hidden]{display:none}
+@keyframes mnin{from{opacity:0;transform:translateY(-6px) scale(.98)}to{opacity:1;transform:none}}
+.menu .rail{display:flex;flex-direction:column;gap:2px}
+.menu .wb{display:grid;grid-template-columns:30px 1fr;grid-template-rows:auto auto;column-gap:10px;row-gap:2px;align-items:center;width:100%;padding:9px 10px;
+  border-radius:12px;color:var(--dim);text-align:left;transition:color .2s,background .2s}
+.menu .wb svg{grid-row:1/3;width:24px;height:24px;display:block;fill:none;stroke:currentColor;stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round;justify-self:center}
+.menu .wb .wn{font-family:var(--display);font-weight:800;font-variation-settings:"wdth" 70;font-size:19px;line-height:1;letter-spacing:.02em;text-transform:uppercase;color:var(--ink)}
+.menu .wb .wd{font-family:var(--mono);font-size:9px;line-height:1.3;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
+.menu .wb:active{background:rgba(234,249,255,.06)}
+.menu .wb[aria-current=true]{background:rgba(62,240,255,.1);color:var(--lume)}
+.menu .wb[aria-current=true] .wn{color:var(--lume)}
+.msec{display:flex;flex-direction:column;gap:8px;padding:10px 6px 4px;border-top:1px solid rgba(234,249,255,.1)}
+.msec[hidden]{display:none}
+.msec .mh{font-family:var(--mono);font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:rgba(234,249,255,.45)}
+.mrw{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.mrw .ml{flex:0 0 52px;font-family:var(--mono);font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:rgba(234,249,255,.45)}
+.mb{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px 0 10px;border-radius:17px;border:1px solid rgba(234,249,255,.16);background:rgba(234,249,255,.03);
+  color:var(--ink);font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;transition:border-color .2s,background .2s,color .2s}
+.mb svg{width:15px;height:15px;flex:none;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+.mb[hidden]{display:none}
+.mb:active{background:rgba(234,249,255,.1)}
+.mb[aria-pressed=true]{color:var(--lume);border-color:rgba(62,240,255,.55);background:rgba(62,240,255,.1)}
+.mb.go{color:var(--warm);border-color:rgba(255,179,71,.45)}
+.sw{width:30px;height:30px;border-radius:50%;border:2px solid transparent;padding:3px;flex:none;transition:border-color .2s}
+.sw i{display:block;width:100%;height:100%;border-radius:50%;background:var(--c)}
+.sw[aria-pressed=true]{border-color:var(--ink)}
+.sw.auto i{background:conic-gradient(#3ef0ff,#7dffb2,#ffb347,#ff4a3d,#b46bff,#3ef0ff)}
+.mgen{display:flex;flex-wrap:wrap;gap:6px;padding:0 6px 2px}
+.mgen:not(:has(.mb:not([hidden]))){display:none}
+/* the bottom: only what a world is played with (Paint's chip while building or in a game, the Earth's layers, Beat's beat) */
+.tools .tb{height:32px;padding:0 12px 0 9px;font-size:9px;border-radius:16px}
+.tb.done{color:var(--ink);border-color:rgba(234,249,255,.4);background:rgba(1,4,10,.7)}
+/* Beat: back, the beat's name, next */
+#btools{gap:6px;flex-wrap:nowrap}
+#btools .tb{height:40px;border-radius:20px}
+#btools .bn{min-width:150px;max-width:56vw;justify-content:center;padding:0 16px;font-family:var(--display);font-weight:800;font-variation-settings:"wdth" 70;font-size:16px;
+  letter-spacing:.04em;color:var(--ink);border-color:rgba(239,45,45,.55);background:rgba(239,45,45,.12)}
+#btools .bn span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#btools .ba{width:40px;padding:0;justify-content:center}
+#btools .ba svg{width:16px;height:16px}
 </style>
 
 <canvas id="gl" aria-hidden="true"></canvas>
@@ -272,16 +305,26 @@ body.camw .zm{display:none}
 <div id="stage" role="application" aria-label="The world. Touch it, drag through it, use more than one finger"></div>
 
 <header class="top" id="top">
-  <div class="mark"><h1>Live Culture</h1><p class="wname" id="wname">Paint</p></div>
+  <button class="mark" id="wmenu" type="button" aria-expanded="false" aria-controls="menu" aria-label="Paint. Open the menu: the four worlds, and what this one can do"><span class="mk1">Live Culture</span><span class="mk2"><span class="wname" id="wname">Paint</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5"/></svg></span></button>
   <div class="acts">
     <button class="chip" id="bNow" type="button" hidden aria-label="Return to the present moment">Now</button>
-    <button class="ic" id="bPhoto" type="button" aria-label="Use a photo of your own. It stays on this device"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="4" width="13" height="9.5" rx="2"/><circle cx="8" cy="8.8" r="2.6"/><path d="M5.5 4l1-1.8h3l1 1.8"/></svg></button>
-    <button class="ic" id="bClear" type="button" hidden aria-label="Take the photo away"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
-    <button class="ic" id="bSave" type="button" hidden aria-label="Save a picture of what is on the screen now"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8M4.8 7.2L8 10.4l3.2-3.2M2.5 13.5h11"/></svg></button>
     <button class="chip mode" id="bMode" type="button" aria-label="Music mode: African. Tap for the next mode">African</button>
     <button class="ic mst" id="bSound" type="button" aria-pressed="false" aria-label="Music starts with your first touch. Turn it on now"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6.2 11.6V3.4l6-1.2v8.2"/><circle cx="4.6" cy="11.7" r="1.7"/><circle cx="10.6" cy="10.5" r="1.7"/><path class="sl" d="M2.2 2.2l11.6 11.6"/></svg></button>
   </div>
 </header>
+<!-- (18 Nov, 00:50: "Theres too many confusing menu items at the bottom ... I like clear windows") the worlds and each world's extras
+     live in one menu under the world's name; the bottom keeps only what a world is played with -->
+<div class="menu" id="menu" hidden role="dialog" aria-label="Menu: the worlds, and what this one can do">
+  <nav class="rail" id="rail" aria-label="Worlds"></nav>
+  <section class="msec" id="ms_paint" hidden aria-label="Paint">
+    <button class="mb" id="bPhoto" type="button" aria-label="Use a photo of your own as the paint. It stays on this device"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="4" width="13" height="9.5" rx="2"/><circle cx="8" cy="8.8" r="2.6"/><path d="M5.5 4l1-1.8h3l1 1.8"/></svg><span>your photo</span></button>
+    <button class="mb" id="bClear" type="button" hidden aria-label="Take the photo away"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg><span>photo away</span></button>
+  </section>
+  <section class="msec" id="ms_earth" hidden aria-label="Earth"></section>
+  <section class="msec" id="ms_mix" hidden aria-label="Mix"></section>
+  <section class="msec" id="ms_beat" hidden aria-label="Beat"></section>
+  <div class="mgen"><button class="mb" id="bSave" type="button" hidden aria-label="Save a picture of what is on the screen now"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8M4.8 7.2L8 10.4l3.2-3.2M2.5 13.5h11"/></svg><span>save a picture</span></button></div>
+</div>
 <p class="data" id="data" aria-live="off"></p>
 
 <aside class="card" id="card" hidden aria-live="polite"></aside>
@@ -292,8 +335,6 @@ body.camw .zm{display:none}
   <div class="lgd" id="lgd" hidden aria-hidden="true"><b id="lgn"></b><span class="lgw"><i id="lgb"></i><span class="lgs" id="lgs"></span></span></div>
   <div class="dock" id="lyd" hidden role="group" aria-label="Layers of the Earth: tap one to switch it on or off"></div>
   <div class="tools" id="tools" hidden role="toolbar" aria-label="Build in the water"></div>
-  <nav class="rail" id="rail" aria-label="Worlds"></nav>
-  <button class="wgrip" id="wgrip" type="button" hidden aria-label="Worlds: show the buttons to the other worlds"></button>
 </footer>
 <input class="sr" type="file" id="file" accept="image/*" tabindex="-1" aria-hidden="true">
 
@@ -1451,7 +1492,7 @@ var DRIFT=(function(){
   /* add to a field around a point: the water's velocity, or ink */
   function splat(d,x,y,r,g,b,rad,sat){var gl=GLX.gl,u=run(P.spl,d.w,[1/d.w.w,1/d.w.h]);glBind(0,d.r.tex,u.uT);gl.uniform1f(u.uAR,VW/VH);gl.uniform3f(u.uCol,r,g,b);gl.uniform2f(u.uPt,x/VW,1-y/VH);gl.uniform1f(u.uRad,rad);gl.uniform1f(u.uSat,sat||0);glQuad(P.spl);d.swap()}
   /* queue a push and some ink at a place on the screen (pixels); the push is in pixels per second */
-  function push(x,y,vx,vy,c,amt,rad){if(q.length<64)q.push([x,y,vx,vy,c,amt,rad||.0011])}
+  function push(x,y,vx,vy,c,amt,rad){if(q.length<192)q.push([x,y,vx,vy,c,amt,rad||.0011])}
   function rowOf(y){return clamp(Math.floor((1-clamp((y-STG.y0)/Math.max(1,STG.h),0,.999))*9),0,8)}
   function pan(x){return clamp(x/VW*1.6-.8,-1,1)}
   var BINK=[hexRgb(BCOL[6]),hexRgb(BCOL[7]),[.9,.95,1]];
@@ -1473,7 +1514,20 @@ var DRIFT=(function(){
      neighbours (nu, a second's worth, two passes a frame), dies away in about half a second once the finger lifts (vd), curls far less
      (vort, 20 before), rises at under half the pace (buo) and moves at .6 of the time (ts), and the paint lasts longer (dye). The
      game keeps its own water (LP), tuned to its rings */
-  var PV={nu:30,vd:1.1,vort:4,buo:.45,ts:.6,dye:.22};
+  var PV={nu:30,vd:2.4,vort:2,buo:0,ts:.6,dye:0};
+  /* (18 Nov, 00:50: "I like clear windows, painting without anything on the screen. Make the painting more fun so you can create with
+     it too, not always changing") painting freely the water is still: the paint stays where it is put (it no longer rises or fades),
+     the water settles a second after a finger lifts, and nothing paints by itself once a hand has painted (MINE; until then the band
+     paints, and the hint shows a stroke, both fading). Each touch takes the next colour of six (or the one chosen in the menu); a
+     finger kept still grows a drop; the menu can mirror every stroke two, four or six ways, and start over. The game keeps its own
+     water. (17 Nov, 17:54 "slow down the paint. Make it more viscous": the thick water stays) */
+  var PAL=[[.24,.94,1],[1,.27,.24],[1,.7,.28],[.49,1,.7],[.7,.42,1],[.92,.95,1]],PCN=['cyan','red','amber','mint','violet','white'],PCI=-1,PCK=-1,MIR=1,MINE=false,clearVel=false;
+  function colNext(){if(PCI>=0)return PAL[PCI];PCK=(PCK+1)%PAL.length;return PAL[PCK]}
+  /* a finger's paint, mirrored as the menu asks (two: left for right; four: and top for bottom; six: round the middle) */
+  function pushF(x,y,vx,vy,c,amt,rad){push(x,y,vx,vy,c,amt,rad);if(PZ>=0||MIR<2)return;var cx=STG.cx,cy=STG.cy,dx=x-cx,dy=y-cy,k;
+    if(MIR===2){push(cx-dx,y,-vx,vy,c,amt,rad);return}
+    if(MIR===4){push(cx-dx,y,-vx,vy,c,amt,rad);push(x,cy-dy,vx,-vy,c,amt,rad);push(cx-dx,cy-dy,-vx,-vy,c,amt,rad);return}
+    for(k=1;k<MIR;k++){var a=k/MIR*TAU,ca=Math.cos(a),sa=Math.sin(a);push(cx+dx*ca-dy*sa,cy+dx*sa+dy*ca,vx*ca-vy*sa,vx*sa+vy*ca,c,amt,rad)}}
   /* (in a level the water fades by its own time, not the clock's: a phone that steps it thirty times a second plays the level as one that
      steps it sixty times does, only slower, so a level tested once is the same level everywhere) */
   function WX(u){return u*VW}function WY(v){return v*VH}
@@ -1554,7 +1608,7 @@ var DRIFT=(function(){
     GM.drain=P.drain?[(Math.random()<.5?.35:.65)+(Math.random()-.5)*.06,.5+.12*Math.random()]:null;
     GM.cur=P.cur?{y:.34+.18*Math.random(),dir:Math.random()<.5?-1:1}:null;
     gmPlace();CUPS=[];RUN=0;RT=0;GM.phase='intro';GM.phT=simT;clearInk=true;rbS=simT;toolsSync()}
-  function gmStart(){if(PZ<0)SAVED={w:WALLS,f:FANS,d:DRAINS,p:PRISMS,t:TUNNELS};WALLS=[];FANS=[];DRAINS=[];PRISMS=[];TUNNELS=[];
+  function gmStart(){SAYT=0;if(PZ<0)SAVED={w:WALLS,f:FANS,d:DRAINS,p:PRISMS,t:TUNNELS};WALLS=[];FANS=[];DRAINS=[];PRISMS=[];TUNNELS=[];
     PZ=0;pzWon=0;TOOL='ink';GM.best=bestGet();GM.score=0;GM.loops=0;GM.fx=[];boardFit();TANK=TANK0=1e9;gmRound(1);
     SND.load(['vibes','marimba','small']);if(AU.auto)musicOn()}
   /* back to playing freely, with whatever was built before the game */
@@ -1646,43 +1700,63 @@ var DRIFT=(function(){
       if(!c.done){c.fill=clamp(c.fill+dt*LP.fk*(m.match-LP.f0),0,1);if(c.fill>=1){c.done=true;done=c}}});
     if(TRACE&&TRACE.length<4000)TRACE.push([dt].concat(CUPS.map(function(c){return c.match})));
     if(done&&PZ>=0&&!NOWIN)gmRingDone(done)}
-  /* the tools, in a row along the bottom in this world only. In a level only the pieces it gives; outside the levels, the pieces
-     reached so far */
-  var TOOLS=[['ink','hand','<path d="M6 13.5c-1.6-1.8-.9-3.9.6-5.4L10 4.8c.6-.6 1.5-.5 2 .1.4.5.3 1.2-.1 1.7l-1.3 1.4 2.1-2c.6-.6 1.4-.6 1.9 0 .5.5.4 1.3-.1 1.8l-2.2 2.2 1.4-1.3c.5-.5 1.3-.5 1.8 0s.4 1.3-.1 1.8l-3.4 3.4c-1.8 1.8-4.3 2-6 .2z"/>'],
+  /* the tools (18 Nov): in the menu under the world's name: the colours, mirror, start over, the photo, the three pieces to build
+     with and the game. Along the bottom only a chip, and only when a finger does something else than paint: while building, the piece
+     and "done" (back to painting); in a game, "again" and "stop" */
+  var TOOLS=[['ink','paint','<path d="M6 13.5c-1.6-1.8-.9-3.9.6-5.4L10 4.8c.6-.6 1.5-.5 2 .1.4.5.3 1.2-.1 1.7l-1.3 1.4 2.1-2c.6-.6 1.4-.6 1.9 0 .5.5.4 1.3-.1 1.8l-2.2 2.2 1.4-1.3c.5-.5 1.3-.5 1.8 0s.4 1.3-.1 1.8l-3.4 3.4c-1.8 1.8-4.3 2-6 .2z"/>'],
     ['wall','wall','<path d="M3 15.5L15.5 3"/><circle cx="3" cy="15.5" r="1.4"/><circle cx="15.5" cy="3" r="1.4"/>'],
     ['fan','fan','<circle cx="9.2" cy="9.2" r="1.6"/><path d="M9.2 7.6c0-3 1.4-4.6 3.2-4.2 1.5.4 1.4 2.6-1.5 4.6M10.8 9.2c3 0 4.6 1.4 4.2 3.2-.4 1.5-2.6 1.4-4.6-1.5M9.2 10.8c0 3-1.4 4.6-3.2 4.2-1.5-.4-1.4-2.6 1.5-4.6M7.6 9.2c-3 0-4.6-1.4-4.2-3.2.4-1.5 2.6-1.4 4.6 1.5"/>'],
     ['drain','drain','<circle cx="9.2" cy="9.2" r="6.4"/><path d="M9.2 5.4a3.8 3.8 0 1 1-3.6 2.6M9.2 7.8a1.4 1.4 0 1 1-1.3 1.9"/>'],
-    ['puz','play','<path d="M5.4 3.6l9.4 5.6-9.4 5.6z"/>']];
-  /* (15 Nov: free and hand, the owner said, were the same thing. They were: "free" ended a game and gave the hand back. Now the hand stays in the row
-     during a game, and a tap on it ends the game) */
-  var PLAYI=['<path d="M5.4 3.6l9.4 5.6-9.4 5.6z"/>','<path d="M14.6 7.4A5.8 5.8 0 1 0 15 11.6M15 3.6v3.8h-3.8"/>'];
-  function toolsBuild(){
-    var r=$('tools');if(!r||r.childNodes.length)return;
-    TOOLS.forEach(function(t){var b=document.createElement('button');b.type='button';b.className='tb';b.id='t_'+t[0];
-      b.innerHTML='<span></span><svg viewBox="0 0 18.4 18.4" aria-hidden="true">'+t[2]+'</svg>';b.firstChild.textContent=t[1];
-      b.addEventListener('click',function(){
-        if(t[0]==='puz'){gmStart();toolsSync();return}
-        if(t[0]==='ink'&&PZ>=0){gmOff();return}
-        TOOL=t[0];toolsSync()});r.appendChild(b)})}
-  function toolsSync(){var g=given(),r=$('tools'),h0=r?r.offsetHeight:0;TOOLS.forEach(function(t){var b=$('t_'+t[0]);if(!b)return;
-      /* play, and in a game: start again */
-      if(t[0]==='puz'){var pl=PZ<0?'play':'again';if(b.firstChild.textContent!==pl){b.firstChild.textContent=pl;b.lastChild.innerHTML=PLAYI[PZ<0?0:1]}b.setAttribute('aria-pressed','false');return}
-      /* in a game there is nothing to build: a finger only pushes, and the hand ends the game */
-      if(t[0]==='ink'){b.setAttribute('aria-pressed',PZ<0&&TOOL==='ink'?'true':'false');b.setAttribute('aria-label',PZ<0?'hand: push the paint':'hand: end the game and paint');b.hidden=false;return}
-      b.setAttribute('aria-pressed',TOOL===t[0]?'true':'false');b.hidden=PZ>=0});
-    if(r&&!r.hidden&&r.offsetHeight!==h0){layout();pzRelayout()}}
-  function enter(){if(GLX.ok&&gen!==GLX.gen)glSetup();size();t0=FT;lastT=0;GM.best=bestGet();toolsBuild();var r=$('tools');if(r)r.hidden=false;toolsSync()}
-  function leave(){last={};rows={};q.length=0;bdrag={};var r=$('tools');if(r)r.hidden=true}
+    ['puz','play the game','<path d="M5.4 3.6l9.4 5.6-9.4 5.6z"/>']];
+  var MIRI='<path d="M9.2 2.5v13.4"/><path d="M6.6 5.2L3 9.2l3.6 4"/><path d="M11.8 5.2l3.6 4-3.6 4"/>',CLRI='<path d="M14.6 7.4A5.8 5.8 0 1 0 15 11.6M15 3.6v3.8h-3.8"/>',
+    DONEI='<path d="M4 9.6l3.4 3.4L14.6 5.6"/>',STOPI='<rect x="5" y="5" width="8.4" height="8.4" rx="1.4"/>';
+  function mbtn(par,id,name,icon,fn,lab){var b=document.createElement('button');b.type='button';b.className='mb';b.id=id;
+    b.innerHTML='<svg viewBox="0 0 18.4 18.4" aria-hidden="true">'+icon+'</svg><span></span>';b.lastChild.textContent=name;if(lab)b.setAttribute('aria-label',lab);
+    b.addEventListener('click',fn);par.appendChild(b);return b}
+  function row(par,label){var r=document.createElement('div');r.className='mrw';if(label){var l=document.createElement('span');l.className='ml';l.textContent=label;r.appendChild(l)}par.appendChild(r);return r}
+  function menu(sec){if(sec._built)return;sec._built=1;var ph=$('bPhoto'),pc=$('bClear');
+    var h=document.createElement('div');h.className='mh';h.textContent='paint';sec.insertBefore(h,sec.firstChild);
+    /* the colour: each touch the next of six, or one of them */
+    var rc=row(sec,'colour');[-1].concat(PAL.map(function(x,i){return i})).forEach(function(i){var b=document.createElement('button');b.type='button';b.className='sw'+(i<0?' auto':'');b.id='pc_'+(i<0?'auto':i);
+      b.innerHTML='<i></i>';if(i>=0)b.firstChild.style.setProperty('--c','rgb('+PAL[i].map(function(v){return Math.round(v*255)}).join(',')+')');
+      b.setAttribute('aria-label',i<0?'Each touch the next colour':'Paint in '+PCN[i]);b.addEventListener('click',function(){PCI=i;menuSync();menuShow(false);say(i<0?'each touch a new colour':PCN[i],i<0?'':'rgb('+PAL[i].map(function(v){return Math.round(v*255)}).join(',')+')')});rc.appendChild(b)});
+    /* mirror, start over, your photo (and taking it away) */
+    var rm=row(sec,'');mbtn(rm,'p_mir','mirror','',function(){MIR=MIR===1?2:MIR===2?4:MIR===4?6:1;menuSync();say(MIR<2?'mirror off':'every stroke '+MIR+' times','')},'Mirror every stroke: off, two, four or six ways');
+    mbtn(rm,'p_clear','start over',CLRI,function(){clearInk=true;clearVel=true;MINE=true;menuShow(false);say('clear water','')},'Clear the water and start a new picture');
+    if(ph)rm.appendChild(ph);if(pc)rm.appendChild(pc);
+    /* build: the three pieces; the game */
+    var rb=row(sec,'build');TOOLS.forEach(function(t){if(t[0]==='ink'||t[0]==='puz')return;mbtn(rb,'t_'+t[0],t[1],t[2],function(){if(PZ>=0)gmOff();TOOL=t[0];toolsSync();menuShow(false)},'Build: '+t[1])});
+    var rg=row(sec,'');var g=mbtn(rg,'t_puz','play the game',TOOLS[4][2],function(){gmStart();toolsSync();menuShow(false)},'Play the game: push the paint into the rings');g.classList.add('go');
+    menuSync()}
+  function menuSync(){var i;for(i=-1;i<PAL.length;i++){var b=$('pc_'+(i<0?'auto':i));if(b)b.setAttribute('aria-pressed',PCI===i?'true':'false')}
+    var m=$('p_mir');if(m){m.lastChild.textContent=MIR<2?'mirror · off':'mirror · '+MIR;m.setAttribute('aria-pressed',MIR>1?'true':'false');m.firstChild.innerHTML=MIRI}
+    TOOLS.forEach(function(t){var b=$('t_'+t[0]);if(b&&t[0]!=='puz'&&t[0]!=='ink')b.setAttribute('aria-pressed',PZ<0&&TOOL===t[0]?'true':'false')})}
+  /* the bottom: a chip only while a finger does something else than paint */
+  function toolsBuild(){var r=$('tools');if(!r||r.childNodes.length)return;
+    var mk=function(id,icon,fn){var b=document.createElement('button');b.type='button';b.className='tb';b.id=id;b.innerHTML='<span></span><svg viewBox="0 0 18.4 18.4" aria-hidden="true">'+icon+'</svg>';b.addEventListener('click',fn);r.appendChild(b);return b};
+    mk('t_again',CLRI,function(){gmStart();toolsSync()});
+    mk('t_ink',DONEI,function(){if(PZ>=0){gmOff();return}TOOL='ink';toolsSync()})}
+  function toolsSync(){var r=$('tools'),h0=r?r.offsetHeight:0,a=$('t_again'),k=$('t_ink');
+    if(r&&a&&k){var game=PZ>=0,build=PZ<0&&TOOL!=='ink';
+      a.hidden=!game;if(a.firstChild.textContent!=='again')a.firstChild.textContent='again';a.setAttribute('aria-label','Start the game again from round one');
+      var kt=game?'stop':TOOL+' · done';if(k.firstChild.textContent!==kt){k.firstChild.textContent=kt;k.lastChild.innerHTML=game?STOPI:DONEI}
+      k.classList.toggle('done',build);k.setAttribute('aria-label',game?'Stop the game and paint':'Done building: back to painting');k.hidden=!game&&!build;
+      r.hidden=!on||(!game&&!build)}
+    menuSync();if(r&&r.offsetHeight!==h0){layout();pzRelayout()}}
+  var on=false;
+  function enter(){if(GLX.ok&&gen!==GLX.gen)glSetup();size();t0=FT;lastT=0;GM.best=bestGet();toolsBuild();on=true;toolsSync()}
+  function leave(){on=false;last={};rows={};q.length=0;bdrag={};var r=$('tools');if(r)r.hidden=true}
   /* (the stage is measured again by the world switch once the row is shown or put away) */
   function down(p){
     if(!p.ghost&&PZ<0&&TOOL!=='ink'&&p.n<2){bdrag[p.id]={kind:TOOL,x0:p.x,y0:p.y};return}
-    last[p.id]={x:p.x,y:p.y};rows[p.id]=rowOf(p.y);note(p,.5)}
+    if(!p.ghost&&PZ<0&&!MINE){MINE=true;if(!PHOTO.has)clearInk=true}
+    p.col=colNext();last[p.id]={x:p.x,y:p.y};rows[p.id]=rowOf(p.y);note(p,.5)}
   function up(p){
     var b=bdrag[p.id];if(b){delete bdrag[p.id];buildUp(p,b);toolsSync();return}
     delete GV[p.id];var l=last[p.id];delete last[p.id];delete rows[p.id];if(!l)return;
     if(PZ>=0){if(FT-p.t0<260&&p.moved<14){var ks0=KS();for(var g=0;g<10;g++){var ag=g/10*TAU;push(p.x+Math.cos(ag)*12,p.y+Math.sin(ag)*12,Math.cos(ag)*900*ks0,Math.sin(ag)*900*ks0,[0,0,0],0,.0012*KR())}}return}
     /* a tap is a drop: the ink bursts outward */
-    if(FT-p.t0<260&&p.moved<14){var c=inkOf(p.y);for(var k=0;k<8;k++){var a=k/8*TAU+.3;push(p.x+Math.cos(a)*10,p.y+Math.sin(a)*10,Math.cos(a)*520,Math.sin(a)*520,c,.55,.0007)}}}
+    if(FT-p.t0<260&&p.moved<14){var c=p.col||inkOf(p.y);pushF(p.x,p.y,0,0,c,.5,.0014);for(var k=0;k<8;k++){var a=k/8*TAU+.3;pushF(p.x+Math.cos(a)*10,p.y+Math.sin(a)*10,Math.cos(a)*420,Math.sin(a)*420,c,.3,.0007)}}}
   function tick(dt,t){
     var i,ps=PS,r=Math.random;
     /* in the game a finger moves the water, more widely, and leaves no ink (only the vents' smoke counts); the smoke under a moving
@@ -1694,9 +1768,10 @@ var DRIFT=(function(){
       var dx=p.x-l.x,dy=p.y-l.y,len=Math.hypot(dx,dy);
       if(len>.5){var k=1/Math.max(dt,.008),vx=dx*k,vy=dy*k,m=Math.hypot(vx,vy),cap=VW*5;if(m>cap){vx*=cap/m;vy*=cap/m}
         if(PZ>=0&&FQ.length<6)FQ.push([l.x/VW,l.y/VH,p.x/VW,p.y/VH]);
-        push(p.x,p.y,vx,vy,inkOf(p.y),clamp(len/52,.04,.7)*fk,fr0);l.x=p.x;l.y=p.y;
+        (PZ<0?pushF:push)(p.x,p.y,vx,vy,p.col||inkOf(p.y),clamp(len/52,.04,.7)*fk,fr0);l.x=p.x;l.y=p.y;
         var rw=rowOf(p.y);if(PZ<0&&rw!==rows[p.id]){rows[p.id]=rw;note(p,.3+.5*Math.min(1,p.spd/900))}}
-      else if(PZ<0&&t-p.t0>300){push(p.x+(r()-.5)*6,p.y+(r()-.5)*6,(r()-.5)*90,-60-r()*60,inkOf(p.y),.07*fk,.0016)}
+      /* a finger kept still grows a drop of its colour where it is (until 18 Nov it breathed smoke that rose) */
+      else if(PZ<0&&t-p.t0>300){var hg=Math.min(1,(t-p.t0-300)/2500);pushF(p.x+(r()-.5)*3,p.y+(r()-.5)*3,(r()-.5)*30,(r()-.5)*30,p.col||inkOf(p.y),.035*fk,.0012+.0036*hg)}
       if(PZ>=0&&FM.length<3)FM.push([p.x/VW,p.y/VH])}
     if(PZ>=0)GM.fx=GM.fx.filter(function(f){return simT-f.t<1.2});
     /* the machine runs: fans push and (outside the levels) breathe ink; a level's sources breathe their own colours, its winds only push */
@@ -1732,7 +1807,7 @@ var DRIFT=(function(){
     if(CUPS.length&&FT-rbT>280){var dtc=simT-rbS;rbS=simT;rbT=FT;want=1;cupsCheck(clamp(dtc,0,.6))}
     /* the band in the water. With a photo in it, the band only moves the water (and more gently): the photo stays the only ink */
     var pk=PHOTO.has?0:1,pv=PHOTO.has?.4:1;
-    for(i=0;PZ<0&&i<BD.flow.length;i++){var h=BD.flow[i],s=h.s,x=STG.x0+STG.w*(.06+.88*BD.ph);
+    for(i=0;PZ<0&&!MINE&&i<BD.flow.length;i++){var h=BD.flow[i],s=h.s,x=STG.x0+STG.w*(.06+.88*BD.ph);
       if(h.i===5)push(VW*(.25+.5*r()),STG.y1-6,(r()-.5)*140*pv,-250*s*pv,[.03,.09,.34],.15*s*pk,.0026);
       else if(h.i===6)push(x,STG.y0+STG.h*.6,(r()-.5)*50,80*s*pv,BINK[0],.55*s*pk,.0008);
       else if(h.i===7)push(x,STG.y0+STG.h*.36,(r()-.5)*50,70*s*pv,BINK[1],.55*s*pk,.0008);
@@ -1754,8 +1829,10 @@ var DRIFT=(function(){
     if(ph&&photoVer!==PHOTO.ver){photoVer=PHOTO.ver;u=run(P.heal,dye.w,dt2);glBind(0,dye.r.tex,u.uT);glBind(1,ph.tex,u.uPh);gl.uniform4f(u.uRect,rc[0],rc[1],rc[2],rc[3]);gl.uniform1f(u.uK,1);glQuad(P.heal);dye.swap()}
     if(!ph&&photoVer!==-1&&!PHOTO.has)photoVer=-1;
     if(obsDirty)obsBuild();
-    if(clearInk){clearInk=false;u=run(P.mul,dye.w,dt2);glBind(0,dye.r.tex,u.uT);gl.uniform1f(u.uK,.0);glQuad(P.mul);dye.swap();
-      if(PZ>=0&&vel){u=run(P.mul,vel.w,vt);glBind(0,vel.r.tex,u.uT);gl.uniform1f(u.uK,.0);glQuad(P.mul);vel.swap()}}
+    /* (18 Nov) the water cleared: what was read back of it before is stale (the paint now stays, so a round could count a ring as
+       filled by the picture painted before the game, read back before the water was cleared) */
+    if(clearInk){clearInk=false;rbOk=false;want=1;u=run(P.mul,dye.w,dt2);glBind(0,dye.r.tex,u.uT);gl.uniform1f(u.uK,.0);glQuad(P.mul);dye.swap();
+      if((PZ>=0||clearVel)&&vel){clearVel=false;u=run(P.mul,vel.w,vt);glBind(0,vel.r.tex,u.uT);gl.uniform1f(u.uK,.0);glQuad(P.mul);vel.swap()}}
     for(i=0;i<q.length;i++){var s=q[i],c=s[4],a=s[5];
       if(!simple)splat(vel,s[0],s[1],s[2]/VW*sw,-s[3]/VH*sh,0,s[6]);
       if(a>0)splat(dye,s[0],s[1],c[0]*a,c[1]*a,c[2]*a,s[6]*(simple?1.6:1),1)}
@@ -1779,7 +1856,7 @@ var DRIFT=(function(){
       u=run(P.curl,curl,vt);glBind(0,vel.r.tex,u.uVel);glQuad(P.curl);
       u=run(P.vort,vel.w,vt);glBind(0,vel.r.tex,u.uVel);glBind(1,curl.tex,u.uCurl);gl.uniform1f(u.uK,PZ>=0?20:PV.vort);gl.uniform1f(u.uDt,dt);glQuad(P.vort);vel.swap();
       /* smoke rises (in a level, as fast for the tank's height on any screen) */
-      u=run(P.buo,vel.w,vt);glBind(0,vel.r.tex,u.uVel);glBind(1,dye.r.tex,u.uDye);gl.uniform1f(u.uB,(reduce?18:64)*dt*(PZ>=0?LP.buo*clamp(B.h/VH*sh/197,.5,2):PV.buo));glQuad(P.buo);vel.swap();
+      if(PZ>=0||PV.buo>0){u=run(P.buo,vel.w,vt);glBind(0,vel.r.tex,u.uVel);glBind(1,dye.r.tex,u.uDye);gl.uniform1f(u.uB,(reduce?18:64)*dt*(PZ>=0?LP.buo*clamp(B.h/VH*sh/197,.5,2):PV.buo));glQuad(P.buo);vel.swap()}
       if(PZ<0&&PV.nu>0){var vk=1-Math.exp(-PV.nu*dt);for(var vp=0;vp<2;vp++){u=run(P.vis,vel.w,vt);glBind(0,vel.r.tex,u.uT);gl.uniform1f(u.uK,vk);glQuad(P.vis);vel.swap()}}
       var ho=WN&&obs?1:0;u=run(P.div,div,vt);glBind(0,vel.r.tex,u.uVel);glBind(1,obs?obs.tex:null,u.uObs);gl.uniform1f(u.uHO,ho);glQuad(P.div);
       u=run(P.mul,prs.w,vt);glBind(0,prs.r.tex,u.uT);gl.uniform1f(u.uK,.8);glQuad(P.mul);prs.swap();
@@ -1787,8 +1864,8 @@ var DRIFT=(function(){
       u=run(P.grad,vel.w,vt);glBind(0,prs.r.tex,u.uP);glBind(1,vel.r.tex,u.uVel);glBind(2,obs?obs.tex:null,u.uObs);gl.uniform1f(u.uHO,ho);glQuad(P.grad);vel.swap();
       if(WN){u=run(P.msk,vel.w,vt);glBind(0,vel.r.tex,u.uT);glBind(1,obs.tex,u.uObs);glQuad(P.msk);vel.swap()}
       u=run(P.adv,vel.w,vt);glBind(0,vel.r.tex,u.uVel);glBind(1,vel.r.tex,u.uSrc);glBind(2,obs?obs.tex:null,u.uObs);gl.uniform1f(u.uHO,WN&&obs?1:0);gl.uniform2f(u.uVTexel,vt[0],vt[1]);gl.uniform2f(u.uSTexel,vt[0],vt[1]);gl.uniform1f(u.uDt,PZ>=0?dt:dt*PV.ts);gl.uniform1f(u.uDiss,Math.exp(-(PZ>=0?LP.vel*dt:PV.vd*dtr)));glQuad(P.adv);vel.swap();
-      u=run(P.adv,dye.w,dt2);glBind(0,vel.r.tex,u.uVel);glBind(1,dye.r.tex,u.uSrc);glBind(2,obs?obs.tex:null,u.uObs);gl.uniform1f(u.uHO,WN&&obs?1:0);gl.uniform2f(u.uVTexel,vt[0],vt[1]);gl.uniform2f(u.uSTexel,dt2[0],dt2[1]);gl.uniform1f(u.uDt,PZ>=0?dt:dt*PV.ts);gl.uniform1f(u.uDiss,ph?1:Math.exp(-(PZ>=0?LP.dye*dt:PV.dye*dtr)));glQuad(P.adv);dye.swap()}
-    else{u=run(P.mul,dye.w,dt2);glBind(0,dye.r.tex,u.uT);gl.uniform1f(u.uK,ph?1:Math.exp(-dtr*.5));glQuad(P.mul);dye.swap()}
+      u=run(P.adv,dye.w,dt2);glBind(0,vel.r.tex,u.uVel);glBind(1,dye.r.tex,u.uSrc);glBind(2,obs?obs.tex:null,u.uObs);gl.uniform1f(u.uHO,WN&&obs?1:0);gl.uniform2f(u.uVTexel,vt[0],vt[1]);gl.uniform2f(u.uSTexel,dt2[0],dt2[1]);gl.uniform1f(u.uDt,PZ>=0?dt:dt*PV.ts);gl.uniform1f(u.uDiss,ph?1:Math.exp(-(PZ>=0?LP.dye*dt:(MINE?PV.dye:.9)*dtr)));glQuad(P.adv);dye.swap()}
+    else{u=run(P.mul,dye.w,dt2);glBind(0,dye.r.tex,u.uT);gl.uniform1f(u.uK,ph||(PZ<0&&MINE)?1:Math.exp(-dtr*.5));glQuad(P.mul);dye.swap()}
     if(WN){u=run(P.msk,dye.w,dt2);glBind(0,dye.r.tex,u.uT);glBind(1,obs.tex,u.uObs);glQuad(P.msk);dye.swap()}
     if(ph){u=run(P.heal,dye.w,dt2);glBind(0,dye.r.tex,u.uT);glBind(1,ph.tex,u.uPh);gl.uniform4f(u.uRect,rc[0],rc[1],rc[2],rc[3]);gl.uniform1f(u.uK,1-Math.exp(-dtr/4.5));glQuad(P.heal);dye.swap()}}
   var lastT=0;
@@ -1906,7 +1983,7 @@ var DRIFT=(function(){
      fall either side of the tap's quarter second, so the tap is then shown on the frame after it; a tap is always lifted for a frame
      before the stroke begins */
   var ghU=-1,ghK=-1,ghT=false;
-  function ghost(t){if(PZ>=0||TOOL!=='ink')return [null];var u=(t*.21)%1,k=Math.floor(t*.21)%2,miss=ghK===k&&ghU<.05&&u>=.1;ghU=u;ghK=k;
+  function ghost(t){if(PZ>=0||TOOL!=='ink'||MINE)return [null];var u=(t*.21)%1,k=Math.floor(t*.21)%2,miss=ghK===k&&ghU<.05&&u>=.1;ghU=u;ghK=k;
     if(ghT&&u>=.1){ghT=false;return [null]}
     if((u>.05&&u<.1)||miss){ghT=true;return [{x:STG.x0+STG.w*(k?.7:.3),y:STG.cy+STG.h*(k?.16:-.14)}]}
     if(u>.2&&u<.84){var e=smooth((u-.2)/.64);return [{x:STG.x0+STG.w*(k?.82-.64*e:.18+.64*e),y:STG.cy+STG.h*(.22*Math.sin(e*5.2+k*2)+(k?-.12:.12))}]}
@@ -1917,8 +1994,8 @@ var DRIFT=(function(){
   function recStep(){var R=REC,t=simT-R.t0;if(t<R.next)return;readBack();if(!rbOk)return;R.T.push(+t.toFixed(3));R.cols.forEach(function(c,k){R.S[k].push(scanAt(c,R.nx,R.ny))});
     R.next=t+R.ev;if(t>=R.until||!RUN)R.done=true}
   function U(x){return PZ>=0?bx(x):(STG.x0+x*STG.w)/VW}function V(y){return PZ>=0?by(y):(STG.y0+y*STG.h)/VH}
-  return {enter:enter,leave:leave,resize:function(){resize();pzRelayout();obsDirty=true},down:down,up:up,gesture:gesture,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
-    dbg:function(){return {ok:!!(P&&dye),simT:simT,simple:simple,sw:sw,sh:sh,dw:dw,dh:dh,lin:GLX.hfLin,tool:TOOL,pz:PZ,won:!!pzWon,walls:WALLS.length,fans:FANS.length,drains:DRAINS.length,prisms:PRISMS.length,tunnels:TUNNELS.length,wn:WN,
+  return {enter:enter,leave:leave,menu:menu,resize:function(){resize();pzRelayout();obsDirty=true},down:down,up:up,gesture:gesture,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
+    dbg:function(){return {mine:MINE,mir:MIR,pc:PCI,col:PCK,ok:!!(P&&dye),simT:simT,simple:simple,sw:sw,sh:sh,dw:dw,dh:dh,lin:GLX.hfLin,tool:TOOL,pz:PZ,won:!!pzWon,walls:WALLS.length,fans:FANS.length,drains:DRAINS.length,prisms:PRISMS.length,tunnels:TUNNELS.length,wn:WN,
       game:{round:GM.round,need:GM.need,got:GM.got,left:+GM.left.toFixed(2),score:GM.score,best:GM.best,phase:GM.phase,news:NEWS[GM.round]?NEWS[GM.round][0]:'',newBest:!!GM.newBest,cols:GM.cols.slice(),wall:!!GM.wall,combo:GM.combo,drain:GM.drain,cur:GM.cur,ringN:GM.ringN,loops:GM.loops,wallXY:GM.wall},board:{x0:B.x0,y0:B.y0,w:B.w,h:B.h},run:RUN,rt:RT,
       cups:CUPS.map(function(c){return {c:c.c,fill:c.fill,match:c.match,done:c.done,x:WX(c.x),y:WY(c.y),r:cupR()*(c.r||1),gold:!!c.gold,n:c.n,mv:c.ox?'loop':c.mx||c.my?'drift':'',
         loop:c.ox?{cx:B.x0+c.x0*B.w,cy:B.y0+c.y0*B.h,rx:c.ox*B.w,ry:c.oy*B.h,lap:c.mp,dir:c.od,x0:c.x0,y0:c.y0,ox:c.ox,oy:c.oy}:null}}),vents:FIX.fans.map(function(f){return {x:WX(f.x),y:WY(f.y),c:f.c,a:f.a===undefined?-Math.PI/2:f.a}}),fix:{walls:FIX.walls.length,fans:FIX.fans.length,drains:FIX.drains.length,prisms:FIX.prisms.length},rb:rbOk}},
@@ -3938,7 +4015,7 @@ var BEAT=(function(){
   /* ---- the clock: the beat's own steps at its own tempo ---- */
   function live(){var c=AU.c;return !!(on&&c&&c.state==='running'&&AU.want)}
   function pump(){if(!on){clearInterval(BT.iv);BT.iv=0;BT.run=false;return}if(!live()){BT.run=false;return}var c=AU.c,B=bus();if(!B)return;
-    if(!BT.run){BT.run=true;BT.sd=sdOf(RHY[I]);BT.t0=c.currentTime+.1;BT.k=0;echo()}
+    if(!BT.run){BT.run=true;BT.sd=sdOf(RHY[I]);BT.t0=c.currentTime+.1;BT.k=0;echo();CARD.t=performance.now()}
     if(Math.abs(B.post.gain.value-MODEPOST*BPOST)>.004)B.post.gain.setTargetAtTime(MODEPOST*BPOST,c.currentTime,.05);
     var now=c.currentTime,la=document.hidden?1:.13;if(BT.t0+BT.k*BT.sd<now-.04)BT.k=Math.ceil((now-.04-BT.t0)/BT.sd);
     while(BT.t0+BT.k*BT.sd<now+la){step(BT.k,BT.t0+BT.k*BT.sd);BT.k++}}
@@ -3999,7 +4076,7 @@ var BEAT=(function(){
     if(p)delete ROLL[p.id];mode=null;lastCell=''}
   /* ---- the buttons ---- */
   function pick(i){i=((i%RHY.length)+RHY.length)%RHY.length;I=i;H=hitsOf(I);LIVE={};save();SND.load(banksOf(RHY[I]));drag=null;
-    if(BT.run){var t=BT.t0+BT.k*BT.sd;BT.t0=t;BT.k=0;BT.sd=sdOf(RHY[I]);echo()}CARD.t=performance.now()}
+    if(BT.run){var t=BT.t0+BT.k*BT.sd;BT.t0=t;BT.k=0;BT.sd=sdOf(RHY[I]);echo()}CARD.t=performance.now();sync()}
   /* dice: a melody made up in the sound chosen, on the beat's own strokes (its main row's, some of its second's), walking up and down */
   function dice(){var R=RHY[I],N=R.N,D=DICE[cur],pp=Math.round((D[0]+D[1])/2),st=[],q;
     for(q=0;q<N;q++)if(H[2][q])st.push(q);for(q=0;q<N;q++)if(H[1][q]&&st.indexOf(q)<0&&Math.random()<.5)st.push(q);
@@ -4008,19 +4085,30 @@ var BEAT=(function(){
     st.forEach(function(s){pp=clamp(pp+[-2,-1,-1,0,1,1,2][Math.floor(Math.random()*7)],D[0],D[1]);if(NT.length<MAXN&&findN(s,pp)<0)NT.push({u:s/N,p:pp,v:cur})});
     save();say(SN[cur][0]+': a melody made up on the beat','rgb('+SCOL[cur]+')')}
   function reset(){var id=RHY[I].id;delete ED[id];delete MU[id];H=hitsOf(I);NT=[];save();CARD.t=performance.now();say(RHY[I].n+' as it was, the notes cleared','')}
-  function sound(){cur=(cur+1)%SN.length;save();sync();say(SN[cur][0]+': '+SN[cur][1],'rgb('+SCOL[cur]+')')}
-  function sync(){var b=$('b_snd');if(!b)return;b.lastChild.textContent=SN[cur][0];b.firstChild.style.color='rgb('+SCOL[cur]+')';
-    b.setAttribute('aria-label','The sound of the notes: '+SN[cur][0]+'. Tap for the next')}
+  function sound(i){cur=i;save();sync();say(SN[cur][0]+': '+SN[cur][1],'rgb('+SCOL[cur]+')')}
+  /* (18 Nov, 00:50: "too many confusing menu items at the bottom") along the bottom only the beat: back, its name (a tap shows where it
+     is from), next. The notes' five sounds, the melody and reset are in the menu under the world's name */
+  function sync(){var n=$('b_name');if(n){var nm=RHY[I].n;if(n.lastChild.textContent!==nm)n.lastChild.textContent=nm;n.setAttribute('aria-label',RHY[I].n+': where it is from and its tempo')}
+    SN.forEach(function(x,i){var b=$('b_s'+i);if(b)b.setAttribute('aria-pressed',i===cur?'true':'false')})}
   function build(){if(built)return;var f=$('foot'),t=$('tools'),r=document.createElement('div');if(!f)return;built=true;r.className='tools';r.id='btools';r.hidden=true;
-    r.setAttribute('role','toolbar');r.setAttribute('aria-label','Beat');
-    var mk=function(id,name,icon,fn,lab){var b=document.createElement('button');b.type='button';b.className='tb';b.id=id;b.innerHTML='<svg viewBox="0 0 14 14" aria-hidden="true">'+icon+'</svg><span></span>';
+    r.setAttribute('role','toolbar');r.setAttribute('aria-label','Beat: the beat playing');
+    var mk=function(id,cls,name,icon,fn,lab){var b=document.createElement('button');b.type='button';b.className='tb '+cls;b.id=id;b.innerHTML='<svg viewBox="0 0 14 14" aria-hidden="true">'+icon+'</svg><span></span>';
       b.lastChild.textContent=name;if(lab)b.setAttribute('aria-label',lab);b.addEventListener('click',fn);r.appendChild(b);return b};
-    mk('b_prev','back','<path d="M8.6 3.2L4.8 7l3.8 3.8"/>',function(){pick(I-1)},'The beat before');
-    mk('b_next','next','<path d="M5.4 3.2L9.2 7l-3.8 3.8"/>',function(){pick(I+1)},'The next beat');
-    mk('b_snd','glass','<circle cx="7" cy="7" r="3.4" fill="currentColor" stroke="none"/>',function(){sound()});
-    mk('b_dice','dice','<rect x="2.5" y="2.5" width="9" height="9" rx="2"/><circle cx="5.2" cy="5.2" r=".9" fill="currentColor"/><circle cx="8.8" cy="8.8" r=".9" fill="currentColor"/>',function(){dice()},'Make up a melody on this beat');
-    mk('b_reset','reset','<path d="M3.4 7.2a3.7 3.7 0 1 0 1.3-2.9"/><path d="M4.4 2.2v2.3h2.3"/>',function(){reset()},'This beat as it was, and no notes');
+    mk('b_prev','ba','','<path d="M8.6 3.2L4.8 7l3.8 3.8"/>',function(){pick(I-1)},'The beat before');
+    var nb=mk('b_name','bn',RHY[I].n,'',function(){CARD.t=performance.now()});nb.firstChild.style.display='none';
+    mk('b_next','ba','','<path d="M5.4 3.2L9.2 7l-3.8 3.8"/>',function(){pick(I+1)},'The next beat');
     if(t&&t.nextSibling)f.insertBefore(r,t.nextSibling);else f.appendChild(r);sync()}
+  /* the menu's part for Beat: the notes' sound (five, each its colour and name), a melody made up on the beat, the beat as it was */
+  function menu(sec){if(sec._built)return;sec._built=1;var h=document.createElement('div');h.className='mh';h.textContent='notes inside the ring';sec.appendChild(h);
+    var r=document.createElement('div');r.className='mrw';sec.appendChild(r);
+    SN.forEach(function(x,i){var b=document.createElement('button');b.type='button';b.className='mb';b.id='b_s'+i;b.innerHTML='<svg viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="3.6" fill="currentColor" stroke="none"/></svg><span></span>';
+      b.firstChild.style.color='rgb('+SCOL[i]+')';b.lastChild.textContent=x[0];b.setAttribute('aria-label','Notes in '+x[0]+': '+x[1]);b.addEventListener('click',function(){sound(i);menuShow(false)});r.appendChild(b)});
+    var r2=document.createElement('div');r2.className='mrw';sec.appendChild(r2);
+    var mk=function(id,name,icon,fn,lab){var b=document.createElement('button');b.type='button';b.className='mb';b.id=id;b.innerHTML='<svg viewBox="0 0 14 14" aria-hidden="true">'+icon+'</svg><span></span>';
+      b.lastChild.textContent=name;b.setAttribute('aria-label',lab);b.addEventListener('click',function(){fn();menuShow(false)});r2.appendChild(b);return b};
+    mk('b_dice','make a melody','<rect x="2.5" y="2.5" width="9" height="9" rx="2"/><circle cx="5.2" cy="5.2" r=".9" fill="currentColor"/><circle cx="8.8" cy="8.8" r=".9" fill="currentColor"/>',function(){dice()},'Make up a melody on this beat, in the sound chosen');
+    mk('b_reset','this beat as it was','<path d="M3.4 7.2a3.7 3.7 0 1 0 1.3-2.9"/><path d="M4.4 2.2v2.3h2.3"/>',function(){reset()},'This beat as it was, and no notes');
+    sync()}
   function enter(){load();build();on=true;var r=$('btools');if(r)r.hidden=false;sync();hushSet(true);
     SND.load(banksOf(RHY[I]).concat(['glock','marimba','chimes','fbass','gtr']));if(!BT.iv)BT.iv=setInterval(pump,25);pump();layout();if(AU.want)CARD.t=performance.now()}
   function leave(){on=false;drag=null;mode=null;ROLL={};var r=$('btools');if(r)r.hidden=true;hushSet(false);clearInterval(BT.iv);BT.iv=0;BT.run=false}
@@ -4099,7 +4187,7 @@ var BEAT=(function(){
     card(c,g,now);c.restore()}
   /* no standing words over it: a beat's name only when one is chosen or the middle is tapped, a row's when it is taken out */
   function hud(){return ''}
-  return {enter:enter,leave:leave,tick:tick,draw:draw,hud:hud,down:down,move:move,up:up,resize:function(){},
+  return {enter:enter,leave:leave,menu:menu,tick:tick,draw:draw,hud:hud,down:down,move:move,up:up,resize:function(){},
     dbg:function(){var k=clock(),g=geo(),R=RHY[I];return {on:on,i:I,id:R.id,name:R.n,N:R.N,bpm:R.bpm,b:R.b,run:BT.run,sd:BT.sd,
       rows:R.r.map(function(row,j){return {n:row[0],s:row[1],hits:H[j].reduce(function(a,v,q){if(v)a.push(q+1);return a},[]),mute:muted(j)}}),
       played:PLAYED.slice(),pn:PN,notes:NT.map(function(n){return [n.u,n.p,n.v]}),cur:cur,sound:SN[cur][0],
@@ -4132,14 +4220,14 @@ var OVC=$('ov'),OV=OVC.getContext('2d'),STAGE=$('stage');
    each world had a row of circles, one for each player) */
 var WORLDS=[
   /* paint in water (Smoke until 15 Nov: "Call it paint, not smoke"); a link to #smoke still lands here */
-  {id:'paint',name:'Paint',o:DRIFT,sc:[1,1,1,1,1,1,1,1,1],photo:true,ic:'<path d="M19.6 3.6c-3.4 2.2-6.6 5.2-8.8 8.4"/><path d="M10.6 12.6c-1.9-.4-3.7.9-4 2.9-.2 1.5-.9 2.6-2.4 3.2 2.6 1.4 6.2 1.2 7.6-1.2.9-1.6.6-3.6-1.2-4.9z"/>'},
+  {id:'paint',name:'Paint',d:'paint in still water: it stays where you put it',o:DRIFT,sc:[1,1,1,1,1,1,1,1,1],photo:true,ic:'<path d="M19.6 3.6c-3.4 2.2-6.6 5.2-8.8 8.4"/><path d="M10.6 12.6c-1.9-.4-3.7.9-4 2.9-.2 1.5-.9 2.6-2.4 3.2 2.6 1.4 6.2 1.2 7.6-1.2.9-1.6.6-3.6-1.2-4.9z"/>'},
   /* the Earth: the weather, the satellites and (on the site) the live cameras, each a layer of one globe (13 Nov: "Put them all on the
      same globe as satellites and make that just a layer"); Wind, Orbit and Live were three worlds before */
-  {id:'earth',name:'Earth',o:WIND,sc:[1,1,1,1,1,1,1,1,1],ic:'<circle cx="12" cy="12" r="6.6"/><path d="M6.2 10.4c2.4-1.3 4.1 1 6.5-.1 1.5-.7 2.4-.8 3.8-.4"/><ellipse cx="12" cy="12" rx="10.6" ry="3.9" transform="rotate(-22 12 12)"/>'},
+  {id:'earth',name:'Earth',d:'the planet live: weather, satellites, cameras',o:WIND,sc:[1,1,1,1,1,1,1,1,1],ic:'<circle cx="12" cy="12" r="6.6"/><path d="M6.2 10.4c2.4-1.3 4.1 1 6.5-.1 1.5-.7 2.4-.8 3.8-.4"/><ellipse cx="12" cy="12" rx="10.6" ry="3.9" transform="rotate(-22 12 12)"/>'},
   /* the mixer: a grid of loops, the band's and a machine's (13 Nov) */
-  {id:'mix',name:'Mix',o:MIX,tuck:1,sc:[1,1,1,1,1,1,1,1,1],ic:'<rect x="3.5" y="3.5" width="4.6" height="4.6" rx="1.1"/><rect x="9.7" y="3.5" width="4.6" height="4.6" rx="1.1"/><rect x="15.9" y="3.5" width="4.6" height="4.6" rx="1.1"/><rect x="3.5" y="9.7" width="4.6" height="4.6" rx="1.1"/><rect x="9.7" y="9.7" width="4.6" height="4.6" rx="1.1"/><rect x="15.9" y="9.7" width="4.6" height="4.6" rx="1.1"/><rect x="3.5" y="15.9" width="4.6" height="4.6" rx="1.1"/><rect x="9.7" y="15.9" width="4.6" height="4.6" rx="1.1"/><rect x="15.9" y="15.9" width="4.6" height="4.6" rx="1.1"/>'},
+  {id:'mix',name:'Mix',d:'the band and its loops, by hand',o:MIX,sc:[1,1,1,1,1,1,1,1,1],ic:'<rect x="3.5" y="3.5" width="4.6" height="4.6" rx="1.1"/><rect x="9.7" y="3.5" width="4.6" height="4.6" rx="1.1"/><rect x="15.9" y="3.5" width="4.6" height="4.6" rx="1.1"/><rect x="3.5" y="9.7" width="4.6" height="4.6" rx="1.1"/><rect x="9.7" y="9.7" width="4.6" height="4.6" rx="1.1"/><rect x="15.9" y="9.7" width="4.6" height="4.6" rx="1.1"/><rect x="3.5" y="15.9" width="4.6" height="4.6" rx="1.1"/><rect x="9.7" y="15.9" width="4.6" height="4.6" rx="1.1"/><rect x="15.9" y="15.9" width="4.6" height="4.6" rx="1.1"/>'},
   /* (17 Nov, 17:54) the bar as a metronome's face: what plays broken down round it, and notes of your own put on it in five sounds */
-  {id:'beat',name:'Beat',o:BEAT,tuck:1,nomode:1,sc:[1,1,1,1,1,1,1,1,1],ic:'<circle cx="12" cy="12" r="8.8"/><path d="M12 12l4.6-4.6"/><path d="M12 3.2v1.6M20.8 12h-1.6M12 20.8v-1.6M3.2 12h1.6"/><circle cx="12" cy="12" r="1.1" fill="currentColor"/>'},
+  {id:'beat',name:'Beat',d:'34 classic beats from round the world',o:BEAT,nomode:1,sc:[1,1,1,1,1,1,1,1,1],ic:'<circle cx="12" cy="12" r="8.8"/><path d="M12 12l4.6-4.6"/><path d="M12 3.2v1.6M20.8 12h-1.6M12 20.8v-1.6M3.2 12h1.6"/><circle cx="12" cy="12" r="1.1" fill="currentColor"/>'},
 ];
 var CUR=null,CURI=-1,PT={},PTN=0,GP={},PS=[],HV=null,touched={},lastTouch=-1e9,SAYT=0,SAYX='',SAYC='',swT=0,GOT=0,FDT=.016;
 function safe(f){try{f()}catch(e){if(window.__lc){window.__lc.errs=(window.__lc.errs||[]);window.__lc.errs.push(String(e&&e.stack||e))}}}
@@ -4150,30 +4238,34 @@ var DATAX='',DATAT=0;
 function dataPaint(force){var n=performance.now();if(!force&&n-DATAT<180)return;DATAT=n;var el=$('data'),tx=n<SAYT?SAYX:(CUR&&CUR.hud?CUR.hud():''),c=n<SAYT?SAYC:'';
   if(tx!==DATAX){DATAX=tx;el.textContent=tx}if(el._c!==c){el._c=c;el.style.setProperty('--c',c||'')}}
 
-/* ---- the worlds along the bottom ---- */
-/* (17 Nov, 19:44: "remove buttons when they are not necessary on the screen (world buttons on music pages)") in Mix and Beat the worlds'
-   buttons are tucked away behind a small handle named "worlds" (a dot for each world, its own lit); a tap on it brings them up over
-   the bottom of the screen for a few seconds, a touch anywhere else or a world chosen puts them away */
-var RAILT=0;
-function railShow(on){var f=$('foot');if(!f)return;f.classList.toggle('railup',!!on);clearTimeout(RAILT);if(on)RAILT=setTimeout(function(){railShow(false)},4500)}
-function gripBuild(){var g=$('wgrip');if(!g)return;g.innerHTML='';WORLDS.forEach(function(w,i){var d=document.createElement('i');d.id='gd_'+w.id;g.appendChild(d)});
-  var s=document.createElement('span');s.textContent='worlds';g.appendChild(s);if(!g._on){g._on=1;g.addEventListener('click',function(){railShow(!$('foot').classList.contains('railup'))})}}
-function railBuild(){gripBuild();var r=$('rail');r.innerHTML='';WORLDS.forEach(function(w,i){var b=document.createElement('button');b.type='button';b.className='wb';b.id='w_'+w.id;
-  b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+w.ic+'</svg><span></span>';b.lastChild.textContent=w.name;b.setAttribute('aria-current','false');
-  b.addEventListener('click',function(){go(i)});r.appendChild(b)})}
+/* ---- the menu (18 Nov, 00:50: "Theres too many confusing menu items at the bottom. Fix it and make it make a lot of good design
+   sense. Ux. I like clear windows"): the world's name at the top left is its button; it opens the four worlds, each with a line of
+   what it is, and under them what this world can do (Paint's colours, mirror, start over, photo, building and the game; Beat's
+   sounds, melody and reset), and saving a picture where the viewer can take one. A touch anywhere else, a world chosen, or Escape
+   closes it; the touch that closes it does nothing else. (Until now the worlds were a row of buttons along the bottom, tucked behind
+   a handle in Mix and Beat since 17 Nov, 19:44) ---- */
+function menuOpen(){return !$('menu').hidden}
+function menuShow(on){var m=$('menu'),b=$('wmenu');if(!m)return;on=!!on;if(m.hidden!==!on){m.hidden=!on;b.setAttribute('aria-expanded',on?'true':'false');document.body.classList.toggle('menuon',on)}}
+function railBuild(){var r=$('rail');r.innerHTML='';WORLDS.forEach(function(w,i){var b=document.createElement('button');b.type='button';b.className='wb';b.id='w_'+w.id;
+  b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+w.ic+'</svg><span class="wn"></span><span class="wd"></span>';b.querySelector('.wn').textContent=w.name;b.querySelector('.wd').textContent=w.d||'';
+  b.setAttribute('aria-current','false');b.addEventListener('click',function(){menuShow(false);go(i)});r.appendChild(b)});
+  WORLDS.forEach(function(w){if(w.o.menu){var sec=$('ms_'+w.id);if(sec)safe(function(){w.o.menu(sec)})}})}
+$('wmenu').addEventListener('click',function(){menuShow(!menuOpen())});
+/* a press anywhere outside the menu closes it: on another button the button still does its work; on the world the touch only closes it */
+document.addEventListener('pointerdown',function(e){if(!menuOpen())return;var t=e.target;if(t&&t.closest&&(t.closest('#menu')||t.closest('#wmenu')))return;if(t===STAGE)return;menuShow(false)},true);
+addEventListener('keydown',function(e){if(e.key==='Escape'&&menuOpen()){menuShow(false);try{$('wmenu').focus()}catch(x){}}});
 function chrome(){
-  var w=WORLDS[CURI];if(!w)return;$('wname').textContent=w.name;
-  WORLDS.forEach(function(x,i){var b=$('w_'+x.id);if(b)b.setAttribute('aria-current',i===CURI?'true':'false');var d=$('gd_'+x.id);if(d)d.className=i===CURI?'on':''});
-  var ft=$('foot'),gp=$('wgrip');if(ft)ft.classList.toggle('railauto',!!w.tuck);if(gp)gp.hidden=!w.tuck;railShow(false);
+  var w=WORLDS[CURI];if(!w)return;$('wname').textContent=w.name;$('wmenu').setAttribute('aria-label',w.name+'. Open the menu: the four worlds, and what this one can do');
+  WORLDS.forEach(function(x,i){var b=$('w_'+x.id);if(b)b.setAttribute('aria-current',i===CURI?'true':'false');var sec=$('ms_'+x.id);if(sec)sec.hidden=i!==CURI||!sec.querySelector('button')});
   /* (18 Nov) Beat plays its own beats while the band rests, so the band's mode has no button there */
-  $('bMode').hidden=!!w.nomode;$('bPhoto').hidden=!w.photo;$('bClear').hidden=!(w.photo&&PHOTO.has);$('bSave').hidden=!DL;$('bNow').hidden=true;
+  $('bMode').hidden=!!w.nomode;$('bClear').hidden=!(w.photo&&PHOTO.has);$('bSave').hidden=!DL;$('bNow').hidden=true;
   $('bPhoto').setAttribute('aria-pressed',PHOTO.has?'true':'false');
   try{if(location.hash!=='#'+w.id)history.replaceState(null,'','#'+w.id)}catch(e){}
   layout();if(CUR&&CUR.resize)safe(function(){CUR.resize(VW,VH)});DATAX=null;dataPaint(true)}
 function releaseAll(){for(var id in PT){var p=PT[id];delete PT[id];p.down=false;if(CUR&&CUR.up)(function(p){safe(function(){CUR.up(p)})})(p)}PTN=0;GS.a=null;HV=null}
 /* going to another world: the picture dips to black, the band ducks behind a wall for a moment, and its line-up changes */
 function go(i,instant){
-  if(i===CURI||i<0||i>=WORLDS.length||isNaN(i))return;var w=WORLDS[i],prev=CUR;
+  menuShow(false);if(i===CURI||i<0||i>=WORLDS.length||isNaN(i))return;var w=WORLDS[i],prev=CUR;
   function swap(){ghostsOff(false);releaseAll();if(prev&&prev.leave)safe(function(){prev.leave()});
     CURI=i;CUR=w.o;sceneSet(w.sc);governWorld();if(CUR.enter)safe(function(){CUR.enter()});chrome();document.body.classList.remove('sw');swT=performance.now()}
   clearTimeout(GOT);if(instant||reduce||!prev){swap();return}
@@ -4206,8 +4298,9 @@ function newP(id,x,y,now,ghost,mouse,down){return {id:id,x:x,y:y,px:x,py:y,x0:x,
 function held(p){var f=FT-p.t0;return p.e1!==undefined?Math.min(f,Math.max(0,p.e1-p.t0)):f}
 STAGE.addEventListener('pointerdown',function(e){
   if(e.pointerType==='mouse'&&e.button!==0)return;e.preventDefault();try{STAGE.setPointerCapture(e.pointerId)}catch(x){}
+  if(menuOpen()){menuShow(false);return}
   var now=performance.now(),p=newP(e.pointerId,e.clientX,e.clientY,now,false,e.pointerType==='mouse',true);if(e.timeStamp>0)p.e0=e.timeStamp;
-  ghostsOff(true);if($('foot').classList.contains('railup'))railShow(false);if(PT[p.id])ptEnd(PT[p.id]);PT[p.id]=p;PTN++;eachPT(function(q){q.n=PTN});touched[CURI]=true;lastTouch=now;GS.a=null;HV=null;
+  ghostsOff(true);if(PT[p.id])ptEnd(PT[p.id]);PT[p.id]=p;PTN++;eachPT(function(q){q.n=PTN});touched[CURI]=true;lastTouch=now;GS.a=null;HV=null;
   if(CUR&&CUR.down)safe(function(){CUR.down(p)});
   try{window.focus()}catch(x2){}});
 STAGE.addEventListener('pointermove',function(e){

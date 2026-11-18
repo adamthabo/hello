@@ -54,7 +54,7 @@ take most of the hour.
   `t_levels.js` passing.
 - Put up words nobody asked for: since rule 24 words may go anywhere, but only when something the person did asks for them.
 - Bring back what he took away: the wind, Smoke's name or its explanation, undo, a row of controls that scrolls sideways, knobs,
-  decks, pads, tiles.
+  decks, pads, tiles, the worlds as a row along the bottom (18 Nov: they are in the menu under the world's name), buttons on Paint.
 - Take away anything he asked for, or add controls beyond the few named ones (every new control needs a name, a reason and room on a
   390-wide phone).
 - Put anything about him on the page or the site; use the "↗" arrow or any external-link icon; add an outside resource the artifact's
@@ -196,3 +196,5 @@ not ask for.
 - 2026-11-18 05:15: the loudness test now fills every one of the 34 beats (it had four): Lancaran filled was +0.2 dB over the band,
   and Samba filled had come within 1.2 dB on a louder band render. Fixed in the sound (a tuned row damps its last note; a filled row
   plays lighter), never by loosening the test.
+- 2026-11-18 06:16 (his 00:50 and 01:35 messages): one menu under the world's name instead of the worlds along the bottom; the bottom
+  keeps only what a world is played with; Paint a still water whose paint stays, six colours, mirror, start over (README rule 28).

@@ -110,7 +110,7 @@ var DRIFT=(function(){
   /* add to a field around a point: the water's velocity, or ink */
   function splat(d,x,y,r,g,b,rad,sat){var gl=GLX.gl,u=run(P.spl,d.w,[1/d.w.w,1/d.w.h]);glBind(0,d.r.tex,u.uT);gl.uniform1f(u.uAR,VW/VH);gl.uniform3f(u.uCol,r,g,b);gl.uniform2f(u.uPt,x/VW,1-y/VH);gl.uniform1f(u.uRad,rad);gl.uniform1f(u.uSat,sat||0);glQuad(P.spl);d.swap()}
   /* queue a push and some ink at a place on the screen (pixels); the push is in pixels per second */
-  function push(x,y,vx,vy,c,amt,rad){if(q.length<64)q.push([x,y,vx,vy,c,amt,rad||.0011])}
+  function push(x,y,vx,vy,c,amt,rad){if(q.length<192)q.push([x,y,vx,vy,c,amt,rad||.0011])}
   function rowOf(y){return clamp(Math.floor((1-clamp((y-STG.y0)/Math.max(1,STG.h),0,.999))*9),0,8)}
   function pan(x){return clamp(x/VW*1.6-.8,-1,1)}
   var BINK=[hexRgb(BCOL[6]),hexRgb(BCOL[7]),[.9,.95,1]];
@@ -132,7 +132,20 @@ var DRIFT=(function(){
      neighbours (nu, a second's worth, two passes a frame), dies away in about half a second once the finger lifts (vd), curls far less
      (vort, 20 before), rises at under half the pace (buo) and moves at .6 of the time (ts), and the paint lasts longer (dye). The
      game keeps its own water (LP), tuned to its rings */
-  var PV={nu:30,vd:1.1,vort:4,buo:.45,ts:.6,dye:.22};
+  var PV={nu:30,vd:2.4,vort:2,buo:0,ts:.6,dye:0};
+  /* (18 Nov, 00:50: "I like clear windows, painting without anything on the screen. Make the painting more fun so you can create with
+     it too, not always changing") painting freely the water is still: the paint stays where it is put (it no longer rises or fades),
+     the water settles a second after a finger lifts, and nothing paints by itself once a hand has painted (MINE; until then the band
+     paints, and the hint shows a stroke, both fading). Each touch takes the next colour of six (or the one chosen in the menu); a
+     finger kept still grows a drop; the menu can mirror every stroke two, four or six ways, and start over. The game keeps its own
+     water. (17 Nov, 17:54 "slow down the paint. Make it more viscous": the thick water stays) */
+  var PAL=[[.24,.94,1],[1,.27,.24],[1,.7,.28],[.49,1,.7],[.7,.42,1],[.92,.95,1]],PCN=['cyan','red','amber','mint','violet','white'],PCI=-1,PCK=-1,MIR=1,MINE=false,clearVel=false;
+  function colNext(){if(PCI>=0)return PAL[PCI];PCK=(PCK+1)%PAL.length;return PAL[PCK]}
+  /* a finger's paint, mirrored as the menu asks (two: left for right; four: and top for bottom; six: round the middle) */
+  function pushF(x,y,vx,vy,c,amt,rad){push(x,y,vx,vy,c,amt,rad);if(PZ>=0||MIR<2)return;var cx=STG.cx,cy=STG.cy,dx=x-cx,dy=y-cy,k;
+    if(MIR===2){push(cx-dx,y,-vx,vy,c,amt,rad);return}
+    if(MIR===4){push(cx-dx,y,-vx,vy,c,amt,rad);push(x,cy-dy,vx,-vy,c,amt,rad);push(cx-dx,cy-dy,-vx,-vy,c,amt,rad);return}
+    for(k=1;k<MIR;k++){var a=k/MIR*TAU,ca=Math.cos(a),sa=Math.sin(a);push(cx+dx*ca-dy*sa,cy+dx*sa+dy*ca,vx*ca-vy*sa,vx*sa+vy*ca,c,amt,rad)}}
   /* (in a level the water fades by its own time, not the clock's: a phone that steps it thirty times a second plays the level as one that
      steps it sixty times does, only slower, so a level tested once is the same level everywhere) */
   function WX(u){return u*VW}function WY(v){return v*VH}
@@ -213,7 +226,7 @@ var DRIFT=(function(){
     GM.drain=P.drain?[(Math.random()<.5?.35:.65)+(Math.random()-.5)*.06,.5+.12*Math.random()]:null;
     GM.cur=P.cur?{y:.34+.18*Math.random(),dir:Math.random()<.5?-1:1}:null;
     gmPlace();CUPS=[];RUN=0;RT=0;GM.phase='intro';GM.phT=simT;clearInk=true;rbS=simT;toolsSync()}
-  function gmStart(){if(PZ<0)SAVED={w:WALLS,f:FANS,d:DRAINS,p:PRISMS,t:TUNNELS};WALLS=[];FANS=[];DRAINS=[];PRISMS=[];TUNNELS=[];
+  function gmStart(){SAYT=0;if(PZ<0)SAVED={w:WALLS,f:FANS,d:DRAINS,p:PRISMS,t:TUNNELS};WALLS=[];FANS=[];DRAINS=[];PRISMS=[];TUNNELS=[];
     PZ=0;pzWon=0;TOOL='ink';GM.best=bestGet();GM.score=0;GM.loops=0;GM.fx=[];boardFit();TANK=TANK0=1e9;gmRound(1);
     SND.load(['vibes','marimba','small']);if(AU.auto)musicOn()}
   /* back to playing freely, with whatever was built before the game */
@@ -305,43 +318,63 @@ var DRIFT=(function(){
       if(!c.done){c.fill=clamp(c.fill+dt*LP.fk*(m.match-LP.f0),0,1);if(c.fill>=1){c.done=true;done=c}}});
     if(TRACE&&TRACE.length<4000)TRACE.push([dt].concat(CUPS.map(function(c){return c.match})));
     if(done&&PZ>=0&&!NOWIN)gmRingDone(done)}
-  /* the tools, in a row along the bottom in this world only. In a level only the pieces it gives; outside the levels, the pieces
-     reached so far */
-  var TOOLS=[['ink','hand','<path d="M6 13.5c-1.6-1.8-.9-3.9.6-5.4L10 4.8c.6-.6 1.5-.5 2 .1.4.5.3 1.2-.1 1.7l-1.3 1.4 2.1-2c.6-.6 1.4-.6 1.9 0 .5.5.4 1.3-.1 1.8l-2.2 2.2 1.4-1.3c.5-.5 1.3-.5 1.8 0s.4 1.3-.1 1.8l-3.4 3.4c-1.8 1.8-4.3 2-6 .2z"/>'],
+  /* the tools (18 Nov): in the menu under the world's name: the colours, mirror, start over, the photo, the three pieces to build
+     with and the game. Along the bottom only a chip, and only when a finger does something else than paint: while building, the piece
+     and "done" (back to painting); in a game, "again" and "stop" */
+  var TOOLS=[['ink','paint','<path d="M6 13.5c-1.6-1.8-.9-3.9.6-5.4L10 4.8c.6-.6 1.5-.5 2 .1.4.5.3 1.2-.1 1.7l-1.3 1.4 2.1-2c.6-.6 1.4-.6 1.9 0 .5.5.4 1.3-.1 1.8l-2.2 2.2 1.4-1.3c.5-.5 1.3-.5 1.8 0s.4 1.3-.1 1.8l-3.4 3.4c-1.8 1.8-4.3 2-6 .2z"/>'],
     ['wall','wall','<path d="M3 15.5L15.5 3"/><circle cx="3" cy="15.5" r="1.4"/><circle cx="15.5" cy="3" r="1.4"/>'],
     ['fan','fan','<circle cx="9.2" cy="9.2" r="1.6"/><path d="M9.2 7.6c0-3 1.4-4.6 3.2-4.2 1.5.4 1.4 2.6-1.5 4.6M10.8 9.2c3 0 4.6 1.4 4.2 3.2-.4 1.5-2.6 1.4-4.6-1.5M9.2 10.8c0 3-1.4 4.6-3.2 4.2-1.5-.4-1.4-2.6 1.5-4.6M7.6 9.2c-3 0-4.6-1.4-4.2-3.2.4-1.5 2.6-1.4 4.6 1.5"/>'],
     ['drain','drain','<circle cx="9.2" cy="9.2" r="6.4"/><path d="M9.2 5.4a3.8 3.8 0 1 1-3.6 2.6M9.2 7.8a1.4 1.4 0 1 1-1.3 1.9"/>'],
-    ['puz','play','<path d="M5.4 3.6l9.4 5.6-9.4 5.6z"/>']];
-  /* (15 Nov: free and hand, the owner said, were the same thing. They were: "free" ended a game and gave the hand back. Now the hand stays in the row
-     during a game, and a tap on it ends the game) */
-  var PLAYI=['<path d="M5.4 3.6l9.4 5.6-9.4 5.6z"/>','<path d="M14.6 7.4A5.8 5.8 0 1 0 15 11.6M15 3.6v3.8h-3.8"/>'];
-  function toolsBuild(){
-    var r=$('tools');if(!r||r.childNodes.length)return;
-    TOOLS.forEach(function(t){var b=document.createElement('button');b.type='button';b.className='tb';b.id='t_'+t[0];
-      b.innerHTML='<span></span><svg viewBox="0 0 18.4 18.4" aria-hidden="true">'+t[2]+'</svg>';b.firstChild.textContent=t[1];
-      b.addEventListener('click',function(){
-        if(t[0]==='puz'){gmStart();toolsSync();return}
-        if(t[0]==='ink'&&PZ>=0){gmOff();return}
-        TOOL=t[0];toolsSync()});r.appendChild(b)})}
-  function toolsSync(){var g=given(),r=$('tools'),h0=r?r.offsetHeight:0;TOOLS.forEach(function(t){var b=$('t_'+t[0]);if(!b)return;
-      /* play, and in a game: start again */
-      if(t[0]==='puz'){var pl=PZ<0?'play':'again';if(b.firstChild.textContent!==pl){b.firstChild.textContent=pl;b.lastChild.innerHTML=PLAYI[PZ<0?0:1]}b.setAttribute('aria-pressed','false');return}
-      /* in a game there is nothing to build: a finger only pushes, and the hand ends the game */
-      if(t[0]==='ink'){b.setAttribute('aria-pressed',PZ<0&&TOOL==='ink'?'true':'false');b.setAttribute('aria-label',PZ<0?'hand: push the paint':'hand: end the game and paint');b.hidden=false;return}
-      b.setAttribute('aria-pressed',TOOL===t[0]?'true':'false');b.hidden=PZ>=0});
-    if(r&&!r.hidden&&r.offsetHeight!==h0){layout();pzRelayout()}}
-  function enter(){if(GLX.ok&&gen!==GLX.gen)glSetup();size();t0=FT;lastT=0;GM.best=bestGet();toolsBuild();var r=$('tools');if(r)r.hidden=false;toolsSync()}
-  function leave(){last={};rows={};q.length=0;bdrag={};var r=$('tools');if(r)r.hidden=true}
+    ['puz','play the game','<path d="M5.4 3.6l9.4 5.6-9.4 5.6z"/>']];
+  var MIRI='<path d="M9.2 2.5v13.4"/><path d="M6.6 5.2L3 9.2l3.6 4"/><path d="M11.8 5.2l3.6 4-3.6 4"/>',CLRI='<path d="M14.6 7.4A5.8 5.8 0 1 0 15 11.6M15 3.6v3.8h-3.8"/>',
+    DONEI='<path d="M4 9.6l3.4 3.4L14.6 5.6"/>',STOPI='<rect x="5" y="5" width="8.4" height="8.4" rx="1.4"/>';
+  function mbtn(par,id,name,icon,fn,lab){var b=document.createElement('button');b.type='button';b.className='mb';b.id=id;
+    b.innerHTML='<svg viewBox="0 0 18.4 18.4" aria-hidden="true">'+icon+'</svg><span></span>';b.lastChild.textContent=name;if(lab)b.setAttribute('aria-label',lab);
+    b.addEventListener('click',fn);par.appendChild(b);return b}
+  function row(par,label){var r=document.createElement('div');r.className='mrw';if(label){var l=document.createElement('span');l.className='ml';l.textContent=label;r.appendChild(l)}par.appendChild(r);return r}
+  function menu(sec){if(sec._built)return;sec._built=1;var ph=$('bPhoto'),pc=$('bClear');
+    var h=document.createElement('div');h.className='mh';h.textContent='paint';sec.insertBefore(h,sec.firstChild);
+    /* the colour: each touch the next of six, or one of them */
+    var rc=row(sec,'colour');[-1].concat(PAL.map(function(x,i){return i})).forEach(function(i){var b=document.createElement('button');b.type='button';b.className='sw'+(i<0?' auto':'');b.id='pc_'+(i<0?'auto':i);
+      b.innerHTML='<i></i>';if(i>=0)b.firstChild.style.setProperty('--c','rgb('+PAL[i].map(function(v){return Math.round(v*255)}).join(',')+')');
+      b.setAttribute('aria-label',i<0?'Each touch the next colour':'Paint in '+PCN[i]);b.addEventListener('click',function(){PCI=i;menuSync();menuShow(false);say(i<0?'each touch a new colour':PCN[i],i<0?'':'rgb('+PAL[i].map(function(v){return Math.round(v*255)}).join(',')+')')});rc.appendChild(b)});
+    /* mirror, start over, your photo (and taking it away) */
+    var rm=row(sec,'');mbtn(rm,'p_mir','mirror','',function(){MIR=MIR===1?2:MIR===2?4:MIR===4?6:1;menuSync();say(MIR<2?'mirror off':'every stroke '+MIR+' times','')},'Mirror every stroke: off, two, four or six ways');
+    mbtn(rm,'p_clear','start over',CLRI,function(){clearInk=true;clearVel=true;MINE=true;menuShow(false);say('clear water','')},'Clear the water and start a new picture');
+    if(ph)rm.appendChild(ph);if(pc)rm.appendChild(pc);
+    /* build: the three pieces; the game */
+    var rb=row(sec,'build');TOOLS.forEach(function(t){if(t[0]==='ink'||t[0]==='puz')return;mbtn(rb,'t_'+t[0],t[1],t[2],function(){if(PZ>=0)gmOff();TOOL=t[0];toolsSync();menuShow(false)},'Build: '+t[1])});
+    var rg=row(sec,'');var g=mbtn(rg,'t_puz','play the game',TOOLS[4][2],function(){gmStart();toolsSync();menuShow(false)},'Play the game: push the paint into the rings');g.classList.add('go');
+    menuSync()}
+  function menuSync(){var i;for(i=-1;i<PAL.length;i++){var b=$('pc_'+(i<0?'auto':i));if(b)b.setAttribute('aria-pressed',PCI===i?'true':'false')}
+    var m=$('p_mir');if(m){m.lastChild.textContent=MIR<2?'mirror · off':'mirror · '+MIR;m.setAttribute('aria-pressed',MIR>1?'true':'false');m.firstChild.innerHTML=MIRI}
+    TOOLS.forEach(function(t){var b=$('t_'+t[0]);if(b&&t[0]!=='puz'&&t[0]!=='ink')b.setAttribute('aria-pressed',PZ<0&&TOOL===t[0]?'true':'false')})}
+  /* the bottom: a chip only while a finger does something else than paint */
+  function toolsBuild(){var r=$('tools');if(!r||r.childNodes.length)return;
+    var mk=function(id,icon,fn){var b=document.createElement('button');b.type='button';b.className='tb';b.id=id;b.innerHTML='<span></span><svg viewBox="0 0 18.4 18.4" aria-hidden="true">'+icon+'</svg>';b.addEventListener('click',fn);r.appendChild(b);return b};
+    mk('t_again',CLRI,function(){gmStart();toolsSync()});
+    mk('t_ink',DONEI,function(){if(PZ>=0){gmOff();return}TOOL='ink';toolsSync()})}
+  function toolsSync(){var r=$('tools'),h0=r?r.offsetHeight:0,a=$('t_again'),k=$('t_ink');
+    if(r&&a&&k){var game=PZ>=0,build=PZ<0&&TOOL!=='ink';
+      a.hidden=!game;if(a.firstChild.textContent!=='again')a.firstChild.textContent='again';a.setAttribute('aria-label','Start the game again from round one');
+      var kt=game?'stop':TOOL+' · done';if(k.firstChild.textContent!==kt){k.firstChild.textContent=kt;k.lastChild.innerHTML=game?STOPI:DONEI}
+      k.classList.toggle('done',build);k.setAttribute('aria-label',game?'Stop the game and paint':'Done building: back to painting');k.hidden=!game&&!build;
+      r.hidden=!on||(!game&&!build)}
+    menuSync();if(r&&r.offsetHeight!==h0){layout();pzRelayout()}}
+  var on=false;
+  function enter(){if(GLX.ok&&gen!==GLX.gen)glSetup();size();t0=FT;lastT=0;GM.best=bestGet();toolsBuild();on=true;toolsSync()}
+  function leave(){on=false;last={};rows={};q.length=0;bdrag={};var r=$('tools');if(r)r.hidden=true}
   /* (the stage is measured again by the world switch once the row is shown or put away) */
   function down(p){
     if(!p.ghost&&PZ<0&&TOOL!=='ink'&&p.n<2){bdrag[p.id]={kind:TOOL,x0:p.x,y0:p.y};return}
-    last[p.id]={x:p.x,y:p.y};rows[p.id]=rowOf(p.y);note(p,.5)}
+    if(!p.ghost&&PZ<0&&!MINE){MINE=true;if(!PHOTO.has)clearInk=true}
+    p.col=colNext();last[p.id]={x:p.x,y:p.y};rows[p.id]=rowOf(p.y);note(p,.5)}
   function up(p){
     var b=bdrag[p.id];if(b){delete bdrag[p.id];buildUp(p,b);toolsSync();return}
     delete GV[p.id];var l=last[p.id];delete last[p.id];delete rows[p.id];if(!l)return;
     if(PZ>=0){if(FT-p.t0<260&&p.moved<14){var ks0=KS();for(var g=0;g<10;g++){var ag=g/10*TAU;push(p.x+Math.cos(ag)*12,p.y+Math.sin(ag)*12,Math.cos(ag)*900*ks0,Math.sin(ag)*900*ks0,[0,0,0],0,.0012*KR())}}return}
     /* a tap is a drop: the ink bursts outward */
-    if(FT-p.t0<260&&p.moved<14){var c=inkOf(p.y);for(var k=0;k<8;k++){var a=k/8*TAU+.3;push(p.x+Math.cos(a)*10,p.y+Math.sin(a)*10,Math.cos(a)*520,Math.sin(a)*520,c,.55,.0007)}}}
+    if(FT-p.t0<260&&p.moved<14){var c=p.col||inkOf(p.y);pushF(p.x,p.y,0,0,c,.5,.0014);for(var k=0;k<8;k++){var a=k/8*TAU+.3;pushF(p.x+Math.cos(a)*10,p.y+Math.sin(a)*10,Math.cos(a)*420,Math.sin(a)*420,c,.3,.0007)}}}
   function tick(dt,t){
     var i,ps=PS,r=Math.random;
     /* in the game a finger moves the water, more widely, and leaves no ink (only the vents' smoke counts); the smoke under a moving
@@ -353,9 +386,10 @@ var DRIFT=(function(){
       var dx=p.x-l.x,dy=p.y-l.y,len=Math.hypot(dx,dy);
       if(len>.5){var k=1/Math.max(dt,.008),vx=dx*k,vy=dy*k,m=Math.hypot(vx,vy),cap=VW*5;if(m>cap){vx*=cap/m;vy*=cap/m}
         if(PZ>=0&&FQ.length<6)FQ.push([l.x/VW,l.y/VH,p.x/VW,p.y/VH]);
-        push(p.x,p.y,vx,vy,inkOf(p.y),clamp(len/52,.04,.7)*fk,fr0);l.x=p.x;l.y=p.y;
+        (PZ<0?pushF:push)(p.x,p.y,vx,vy,p.col||inkOf(p.y),clamp(len/52,.04,.7)*fk,fr0);l.x=p.x;l.y=p.y;
         var rw=rowOf(p.y);if(PZ<0&&rw!==rows[p.id]){rows[p.id]=rw;note(p,.3+.5*Math.min(1,p.spd/900))}}
-      else if(PZ<0&&t-p.t0>300){push(p.x+(r()-.5)*6,p.y+(r()-.5)*6,(r()-.5)*90,-60-r()*60,inkOf(p.y),.07*fk,.0016)}
+      /* a finger kept still grows a drop of its colour where it is (until 18 Nov it breathed smoke that rose) */
+      else if(PZ<0&&t-p.t0>300){var hg=Math.min(1,(t-p.t0-300)/2500);pushF(p.x+(r()-.5)*3,p.y+(r()-.5)*3,(r()-.5)*30,(r()-.5)*30,p.col||inkOf(p.y),.035*fk,.0012+.0036*hg)}
       if(PZ>=0&&FM.length<3)FM.push([p.x/VW,p.y/VH])}
     if(PZ>=0)GM.fx=GM.fx.filter(function(f){return simT-f.t<1.2});
     /* the machine runs: fans push and (outside the levels) breathe ink; a level's sources breathe their own colours, its winds only push */
@@ -391,7 +425,7 @@ var DRIFT=(function(){
     if(CUPS.length&&FT-rbT>280){var dtc=simT-rbS;rbS=simT;rbT=FT;want=1;cupsCheck(clamp(dtc,0,.6))}
     /* the band in the water. With a photo in it, the band only moves the water (and more gently): the photo stays the only ink */
     var pk=PHOTO.has?0:1,pv=PHOTO.has?.4:1;
-    for(i=0;PZ<0&&i<BD.flow.length;i++){var h=BD.flow[i],s=h.s,x=STG.x0+STG.w*(.06+.88*BD.ph);
+    for(i=0;PZ<0&&!MINE&&i<BD.flow.length;i++){var h=BD.flow[i],s=h.s,x=STG.x0+STG.w*(.06+.88*BD.ph);
       if(h.i===5)push(VW*(.25+.5*r()),STG.y1-6,(r()-.5)*140*pv,-250*s*pv,[.03,.09,.34],.15*s*pk,.0026);
       else if(h.i===6)push(x,STG.y0+STG.h*.6,(r()-.5)*50,80*s*pv,BINK[0],.55*s*pk,.0008);
       else if(h.i===7)push(x,STG.y0+STG.h*.36,(r()-.5)*50,70*s*pv,BINK[1],.55*s*pk,.0008);
@@ -413,8 +447,10 @@ var DRIFT=(function(){
     if(ph&&photoVer!==PHOTO.ver){photoVer=PHOTO.ver;u=run(P.heal,dye.w,dt2);glBind(0,dye.r.tex,u.uT);glBind(1,ph.tex,u.uPh);gl.uniform4f(u.uRect,rc[0],rc[1],rc[2],rc[3]);gl.uniform1f(u.uK,1);glQuad(P.heal);dye.swap()}
     if(!ph&&photoVer!==-1&&!PHOTO.has)photoVer=-1;
     if(obsDirty)obsBuild();
-    if(clearInk){clearInk=false;u=run(P.mul,dye.w,dt2);glBind(0,dye.r.tex,u.uT);gl.uniform1f(u.uK,.0);glQuad(P.mul);dye.swap();
-      if(PZ>=0&&vel){u=run(P.mul,vel.w,vt);glBind(0,vel.r.tex,u.uT);gl.uniform1f(u.uK,.0);glQuad(P.mul);vel.swap()}}
+    /* (18 Nov) the water cleared: what was read back of it before is stale (the paint now stays, so a round could count a ring as
+       filled by the picture painted before the game, read back before the water was cleared) */
+    if(clearInk){clearInk=false;rbOk=false;want=1;u=run(P.mul,dye.w,dt2);glBind(0,dye.r.tex,u.uT);gl.uniform1f(u.uK,.0);glQuad(P.mul);dye.swap();
+      if((PZ>=0||clearVel)&&vel){clearVel=false;u=run(P.mul,vel.w,vt);glBind(0,vel.r.tex,u.uT);gl.uniform1f(u.uK,.0);glQuad(P.mul);vel.swap()}}
     for(i=0;i<q.length;i++){var s=q[i],c=s[4],a=s[5];
       if(!simple)splat(vel,s[0],s[1],s[2]/VW*sw,-s[3]/VH*sh,0,s[6]);
       if(a>0)splat(dye,s[0],s[1],c[0]*a,c[1]*a,c[2]*a,s[6]*(simple?1.6:1),1)}
@@ -438,7 +474,7 @@ var DRIFT=(function(){
       u=run(P.curl,curl,vt);glBind(0,vel.r.tex,u.uVel);glQuad(P.curl);
       u=run(P.vort,vel.w,vt);glBind(0,vel.r.tex,u.uVel);glBind(1,curl.tex,u.uCurl);gl.uniform1f(u.uK,PZ>=0?20:PV.vort);gl.uniform1f(u.uDt,dt);glQuad(P.vort);vel.swap();
       /* smoke rises (in a level, as fast for the tank's height on any screen) */
-      u=run(P.buo,vel.w,vt);glBind(0,vel.r.tex,u.uVel);glBind(1,dye.r.tex,u.uDye);gl.uniform1f(u.uB,(reduce?18:64)*dt*(PZ>=0?LP.buo*clamp(B.h/VH*sh/197,.5,2):PV.buo));glQuad(P.buo);vel.swap();
+      if(PZ>=0||PV.buo>0){u=run(P.buo,vel.w,vt);glBind(0,vel.r.tex,u.uVel);glBind(1,dye.r.tex,u.uDye);gl.uniform1f(u.uB,(reduce?18:64)*dt*(PZ>=0?LP.buo*clamp(B.h/VH*sh/197,.5,2):PV.buo));glQuad(P.buo);vel.swap()}
       if(PZ<0&&PV.nu>0){var vk=1-Math.exp(-PV.nu*dt);for(var vp=0;vp<2;vp++){u=run(P.vis,vel.w,vt);glBind(0,vel.r.tex,u.uT);gl.uniform1f(u.uK,vk);glQuad(P.vis);vel.swap()}}
       var ho=WN&&obs?1:0;u=run(P.div,div,vt);glBind(0,vel.r.tex,u.uVel);glBind(1,obs?obs.tex:null,u.uObs);gl.uniform1f(u.uHO,ho);glQuad(P.div);
       u=run(P.mul,prs.w,vt);glBind(0,prs.r.tex,u.uT);gl.uniform1f(u.uK,.8);glQuad(P.mul);prs.swap();
@@ -446,8 +482,8 @@ var DRIFT=(function(){
       u=run(P.grad,vel.w,vt);glBind(0,prs.r.tex,u.uP);glBind(1,vel.r.tex,u.uVel);glBind(2,obs?obs.tex:null,u.uObs);gl.uniform1f(u.uHO,ho);glQuad(P.grad);vel.swap();
       if(WN){u=run(P.msk,vel.w,vt);glBind(0,vel.r.tex,u.uT);glBind(1,obs.tex,u.uObs);glQuad(P.msk);vel.swap()}
       u=run(P.adv,vel.w,vt);glBind(0,vel.r.tex,u.uVel);glBind(1,vel.r.tex,u.uSrc);glBind(2,obs?obs.tex:null,u.uObs);gl.uniform1f(u.uHO,WN&&obs?1:0);gl.uniform2f(u.uVTexel,vt[0],vt[1]);gl.uniform2f(u.uSTexel,vt[0],vt[1]);gl.uniform1f(u.uDt,PZ>=0?dt:dt*PV.ts);gl.uniform1f(u.uDiss,Math.exp(-(PZ>=0?LP.vel*dt:PV.vd*dtr)));glQuad(P.adv);vel.swap();
-      u=run(P.adv,dye.w,dt2);glBind(0,vel.r.tex,u.uVel);glBind(1,dye.r.tex,u.uSrc);glBind(2,obs?obs.tex:null,u.uObs);gl.uniform1f(u.uHO,WN&&obs?1:0);gl.uniform2f(u.uVTexel,vt[0],vt[1]);gl.uniform2f(u.uSTexel,dt2[0],dt2[1]);gl.uniform1f(u.uDt,PZ>=0?dt:dt*PV.ts);gl.uniform1f(u.uDiss,ph?1:Math.exp(-(PZ>=0?LP.dye*dt:PV.dye*dtr)));glQuad(P.adv);dye.swap()}
-    else{u=run(P.mul,dye.w,dt2);glBind(0,dye.r.tex,u.uT);gl.uniform1f(u.uK,ph?1:Math.exp(-dtr*.5));glQuad(P.mul);dye.swap()}
+      u=run(P.adv,dye.w,dt2);glBind(0,vel.r.tex,u.uVel);glBind(1,dye.r.tex,u.uSrc);glBind(2,obs?obs.tex:null,u.uObs);gl.uniform1f(u.uHO,WN&&obs?1:0);gl.uniform2f(u.uVTexel,vt[0],vt[1]);gl.uniform2f(u.uSTexel,dt2[0],dt2[1]);gl.uniform1f(u.uDt,PZ>=0?dt:dt*PV.ts);gl.uniform1f(u.uDiss,ph?1:Math.exp(-(PZ>=0?LP.dye*dt:(MINE?PV.dye:.9)*dtr)));glQuad(P.adv);dye.swap()}
+    else{u=run(P.mul,dye.w,dt2);glBind(0,dye.r.tex,u.uT);gl.uniform1f(u.uK,ph||(PZ<0&&MINE)?1:Math.exp(-dtr*.5));glQuad(P.mul);dye.swap()}
     if(WN){u=run(P.msk,dye.w,dt2);glBind(0,dye.r.tex,u.uT);glBind(1,obs.tex,u.uObs);glQuad(P.msk);dye.swap()}
     if(ph){u=run(P.heal,dye.w,dt2);glBind(0,dye.r.tex,u.uT);glBind(1,ph.tex,u.uPh);gl.uniform4f(u.uRect,rc[0],rc[1],rc[2],rc[3]);gl.uniform1f(u.uK,1-Math.exp(-dtr/4.5));glQuad(P.heal);dye.swap()}}
   var lastT=0;
@@ -565,7 +601,7 @@ var DRIFT=(function(){
      fall either side of the tap's quarter second, so the tap is then shown on the frame after it; a tap is always lifted for a frame
      before the stroke begins */
   var ghU=-1,ghK=-1,ghT=false;
-  function ghost(t){if(PZ>=0||TOOL!=='ink')return [null];var u=(t*.21)%1,k=Math.floor(t*.21)%2,miss=ghK===k&&ghU<.05&&u>=.1;ghU=u;ghK=k;
+  function ghost(t){if(PZ>=0||TOOL!=='ink'||MINE)return [null];var u=(t*.21)%1,k=Math.floor(t*.21)%2,miss=ghK===k&&ghU<.05&&u>=.1;ghU=u;ghK=k;
     if(ghT&&u>=.1){ghT=false;return [null]}
     if((u>.05&&u<.1)||miss){ghT=true;return [{x:STG.x0+STG.w*(k?.7:.3),y:STG.cy+STG.h*(k?.16:-.14)}]}
     if(u>.2&&u<.84){var e=smooth((u-.2)/.64);return [{x:STG.x0+STG.w*(k?.82-.64*e:.18+.64*e),y:STG.cy+STG.h*(.22*Math.sin(e*5.2+k*2)+(k?-.12:.12))}]}
@@ -576,8 +612,8 @@ var DRIFT=(function(){
   function recStep(){var R=REC,t=simT-R.t0;if(t<R.next)return;readBack();if(!rbOk)return;R.T.push(+t.toFixed(3));R.cols.forEach(function(c,k){R.S[k].push(scanAt(c,R.nx,R.ny))});
     R.next=t+R.ev;if(t>=R.until||!RUN)R.done=true}
   function U(x){return PZ>=0?bx(x):(STG.x0+x*STG.w)/VW}function V(y){return PZ>=0?by(y):(STG.y0+y*STG.h)/VH}
-  return {enter:enter,leave:leave,resize:function(){resize();pzRelayout();obsDirty=true},down:down,up:up,gesture:gesture,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
-    dbg:function(){return {ok:!!(P&&dye),simT:simT,simple:simple,sw:sw,sh:sh,dw:dw,dh:dh,lin:GLX.hfLin,tool:TOOL,pz:PZ,won:!!pzWon,walls:WALLS.length,fans:FANS.length,drains:DRAINS.length,prisms:PRISMS.length,tunnels:TUNNELS.length,wn:WN,
+  return {enter:enter,leave:leave,menu:menu,resize:function(){resize();pzRelayout();obsDirty=true},down:down,up:up,gesture:gesture,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
+    dbg:function(){return {mine:MINE,mir:MIR,pc:PCI,col:PCK,ok:!!(P&&dye),simT:simT,simple:simple,sw:sw,sh:sh,dw:dw,dh:dh,lin:GLX.hfLin,tool:TOOL,pz:PZ,won:!!pzWon,walls:WALLS.length,fans:FANS.length,drains:DRAINS.length,prisms:PRISMS.length,tunnels:TUNNELS.length,wn:WN,
       game:{round:GM.round,need:GM.need,got:GM.got,left:+GM.left.toFixed(2),score:GM.score,best:GM.best,phase:GM.phase,news:NEWS[GM.round]?NEWS[GM.round][0]:'',newBest:!!GM.newBest,cols:GM.cols.slice(),wall:!!GM.wall,combo:GM.combo,drain:GM.drain,cur:GM.cur,ringN:GM.ringN,loops:GM.loops,wallXY:GM.wall},board:{x0:B.x0,y0:B.y0,w:B.w,h:B.h},run:RUN,rt:RT,
       cups:CUPS.map(function(c){return {c:c.c,fill:c.fill,match:c.match,done:c.done,x:WX(c.x),y:WY(c.y),r:cupR()*(c.r||1),gold:!!c.gold,n:c.n,mv:c.ox?'loop':c.mx||c.my?'drift':'',
         loop:c.ox?{cx:B.x0+c.x0*B.w,cy:B.y0+c.y0*B.h,rx:c.ox*B.w,ry:c.oy*B.h,lap:c.mp,dir:c.od,x0:c.x0,y0:c.y0,ox:c.ox,oy:c.oy}:null}}),vents:FIX.fans.map(function(f){return {x:WX(f.x),y:WY(f.y),c:f.c,a:f.a===undefined?-Math.PI/2:f.a}}),fix:{walls:FIX.walls.length,fans:FIX.fans.length,drains:FIX.drains.length,prisms:FIX.prisms.length},rb:rbOk}},

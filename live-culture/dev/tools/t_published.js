@@ -3,9 +3,8 @@ const { launch, open } = require('./lib'); const sleep = ms => new Promise(r => 
 const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') + m); if (!c) fail.push(m); };
 (async () => { const browser = await launch(); const { page, errs, ctx } = await open(browser, 'phone', { file: 'published.html' }); await sleep(2500);
   // the picture is sampled inside a frame, straight after the page has drawn it (afterwards the graphics chip's canvas is wiped)
-  // (17 Nov, 19:44) a world's button pressed as a person would: in Mix and Beat the buttons are tucked behind the "worlds" handle,
-  // so it is tapped first
-  const goW = async id => { if (await page.evaluate(() => { const g = document.getElementById('wgrip'); return !!g && !g.hidden; })) { await page.click('#wgrip'); await sleep(400); } await page.click('#w_' + id); };
+  // (18 Nov, 00:50) a world chosen as a person would: the world's name at the top left opens the menu, and the world is tapped there
+  const goW = async id => { await page.click('#wmenu'); await sleep(350); await page.click('#w_' + id); };
   const look = () => page.evaluate(() => new Promise(done => requestAnimationFrame(() => { const g = document.getElementById('gl'), o = document.getElementById('ov'); const c = document.createElement('canvas'); c.width = 64; c.height = 128; const x = c.getContext('2d'); x.drawImage(g, 0, 0, 64, 128); x.drawImage(o, 0, 0, 64, 128); const d = x.getImageData(0, 0, 64, 128).data; let lit = 0; for (let i = 0; i < d.length; i += 4) if (d[i] + d[i + 1] + d[i + 2] > 60) lit++;
     const s = document.getElementById('bSound'); done({ world: document.getElementById('wname').textContent, data: document.getElementById('data').textContent.replace(/\n/g, ' | '), lit, music: s.getAttribute('aria-pressed'), waiting: s.classList.contains('wait'), hash: location.hash, hook: typeof window.__lc, save: !document.getElementById('bSave').hidden }); })));
   let s = await look(); ok(s.world === 'Paint' && s.hook === 'undefined' && s.music === 'false' && s.data === '', 'opens on Paint, silent, with no test hook and no words over the paint: ' + JSON.stringify(s.data));
@@ -56,10 +55,11 @@ const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') 
   const lit = i => page.evaluate(i => [...document.querySelectorAll('#mix .mxrow .mxb')][i].classList.contains('on'), i);
   ok(await lit(li), 'a loop tapped (the marimba\'s) comes in on the next bar'); await page.screenshot({ path: 'shots/published_2.png' });
   // Paint: its tools and its game; the loop set in the mixer is still playing when the mixer is opened again
-  ok(await page.evaluate(() => { document.getElementById('w_paint').click(); return new Promise(r => setTimeout(() => r(!document.getElementById('tools').hidden && document.querySelectorAll('#tools .tb').length === 5), 900)); }), 'Paint has its tools (the hand, a wall, a fan, a drain, play)');
+  ok(await page.evaluate(() => { document.getElementById('w_paint').click(); return new Promise(r => setTimeout(() => r(document.getElementById('tools').hidden && !!document.querySelector('#ms_paint #t_puz') && !!document.querySelector('#ms_paint #p_mir')), 900)); }), 'Paint is a clear window, nothing along the bottom; its tools are in the menu');
   s = await look(); ok(s.music === 'true', 'and the music plays on in Paint');
-  await page.click('#t_puz'); await sleep(600); ok(await page.evaluate(() => document.getElementById('data').textContent) === '' && await page.evaluate(() => document.getElementById('t_puz').firstChild.textContent) === 'again', 'play starts a round (what it asks said in the tank, no writing at the top)'); await page.screenshot({ path: 'shots/published_round.png' });
-  await page.click('#t_ink'); await sleep(300); ok(await page.evaluate(() => document.getElementById('t_puz').firstChild.textContent) === 'play', 'the hand ends the game');
+  await page.click('#wmenu'); await sleep(350); await page.click('#t_puz'); await sleep(600);
+  ok(await page.evaluate(() => document.getElementById('data').textContent) === '' && await page.evaluate(() => { const a = document.getElementById('t_again'); return !!a.offsetParent && a.textContent === 'again' && document.getElementById('menu').hidden; }), 'play the game (from the menu) starts a round: what it asks said in the tank, no writing at the top, again and stop along the bottom'); await page.screenshot({ path: 'shots/published_round.png' });
+  await page.click('#t_ink'); await sleep(300); ok(await page.evaluate(() => document.getElementById('tools').hidden), 'stop ends the game: the bottom clear again');
   await goW('mix'); await sleep(900); ok(await lit(li), 'back in the mixer, the loop is still playing'); await goW('paint'); await sleep(600);
   await page.click('#bSound'); await sleep(500); s = await look(); ok(s.music === 'false', 'the note turns the music off');
   // (15 Nov) the modes: the name beside the note steps to the next mode on a bar (and the music comes back with the touch); in Mix the five

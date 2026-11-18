@@ -174,7 +174,7 @@ var BEAT=(function(){
   /* ---- the clock: the beat's own steps at its own tempo ---- */
   function live(){var c=AU.c;return !!(on&&c&&c.state==='running'&&AU.want)}
   function pump(){if(!on){clearInterval(BT.iv);BT.iv=0;BT.run=false;return}if(!live()){BT.run=false;return}var c=AU.c,B=bus();if(!B)return;
-    if(!BT.run){BT.run=true;BT.sd=sdOf(RHY[I]);BT.t0=c.currentTime+.1;BT.k=0;echo()}
+    if(!BT.run){BT.run=true;BT.sd=sdOf(RHY[I]);BT.t0=c.currentTime+.1;BT.k=0;echo();CARD.t=performance.now()}
     if(Math.abs(B.post.gain.value-MODEPOST*BPOST)>.004)B.post.gain.setTargetAtTime(MODEPOST*BPOST,c.currentTime,.05);
     var now=c.currentTime,la=document.hidden?1:.13;if(BT.t0+BT.k*BT.sd<now-.04)BT.k=Math.ceil((now-.04-BT.t0)/BT.sd);
     while(BT.t0+BT.k*BT.sd<now+la){step(BT.k,BT.t0+BT.k*BT.sd);BT.k++}}
@@ -235,7 +235,7 @@ var BEAT=(function(){
     if(p)delete ROLL[p.id];mode=null;lastCell=''}
   /* ---- the buttons ---- */
   function pick(i){i=((i%RHY.length)+RHY.length)%RHY.length;I=i;H=hitsOf(I);LIVE={};save();SND.load(banksOf(RHY[I]));drag=null;
-    if(BT.run){var t=BT.t0+BT.k*BT.sd;BT.t0=t;BT.k=0;BT.sd=sdOf(RHY[I]);echo()}CARD.t=performance.now()}
+    if(BT.run){var t=BT.t0+BT.k*BT.sd;BT.t0=t;BT.k=0;BT.sd=sdOf(RHY[I]);echo()}CARD.t=performance.now();sync()}
   /* dice: a melody made up in the sound chosen, on the beat's own strokes (its main row's, some of its second's), walking up and down */
   function dice(){var R=RHY[I],N=R.N,D=DICE[cur],pp=Math.round((D[0]+D[1])/2),st=[],q;
     for(q=0;q<N;q++)if(H[2][q])st.push(q);for(q=0;q<N;q++)if(H[1][q]&&st.indexOf(q)<0&&Math.random()<.5)st.push(q);
@@ -244,19 +244,30 @@ var BEAT=(function(){
     st.forEach(function(s){pp=clamp(pp+[-2,-1,-1,0,1,1,2][Math.floor(Math.random()*7)],D[0],D[1]);if(NT.length<MAXN&&findN(s,pp)<0)NT.push({u:s/N,p:pp,v:cur})});
     save();say(SN[cur][0]+': a melody made up on the beat','rgb('+SCOL[cur]+')')}
   function reset(){var id=RHY[I].id;delete ED[id];delete MU[id];H=hitsOf(I);NT=[];save();CARD.t=performance.now();say(RHY[I].n+' as it was, the notes cleared','')}
-  function sound(){cur=(cur+1)%SN.length;save();sync();say(SN[cur][0]+': '+SN[cur][1],'rgb('+SCOL[cur]+')')}
-  function sync(){var b=$('b_snd');if(!b)return;b.lastChild.textContent=SN[cur][0];b.firstChild.style.color='rgb('+SCOL[cur]+')';
-    b.setAttribute('aria-label','The sound of the notes: '+SN[cur][0]+'. Tap for the next')}
+  function sound(i){cur=i;save();sync();say(SN[cur][0]+': '+SN[cur][1],'rgb('+SCOL[cur]+')')}
+  /* (18 Nov, 00:50: "too many confusing menu items at the bottom") along the bottom only the beat: back, its name (a tap shows where it
+     is from), next. The notes' five sounds, the melody and reset are in the menu under the world's name */
+  function sync(){var n=$('b_name');if(n){var nm=RHY[I].n;if(n.lastChild.textContent!==nm)n.lastChild.textContent=nm;n.setAttribute('aria-label',RHY[I].n+': where it is from and its tempo')}
+    SN.forEach(function(x,i){var b=$('b_s'+i);if(b)b.setAttribute('aria-pressed',i===cur?'true':'false')})}
   function build(){if(built)return;var f=$('foot'),t=$('tools'),r=document.createElement('div');if(!f)return;built=true;r.className='tools';r.id='btools';r.hidden=true;
-    r.setAttribute('role','toolbar');r.setAttribute('aria-label','Beat');
-    var mk=function(id,name,icon,fn,lab){var b=document.createElement('button');b.type='button';b.className='tb';b.id=id;b.innerHTML='<svg viewBox="0 0 14 14" aria-hidden="true">'+icon+'</svg><span></span>';
+    r.setAttribute('role','toolbar');r.setAttribute('aria-label','Beat: the beat playing');
+    var mk=function(id,cls,name,icon,fn,lab){var b=document.createElement('button');b.type='button';b.className='tb '+cls;b.id=id;b.innerHTML='<svg viewBox="0 0 14 14" aria-hidden="true">'+icon+'</svg><span></span>';
       b.lastChild.textContent=name;if(lab)b.setAttribute('aria-label',lab);b.addEventListener('click',fn);r.appendChild(b);return b};
-    mk('b_prev','back','<path d="M8.6 3.2L4.8 7l3.8 3.8"/>',function(){pick(I-1)},'The beat before');
-    mk('b_next','next','<path d="M5.4 3.2L9.2 7l-3.8 3.8"/>',function(){pick(I+1)},'The next beat');
-    mk('b_snd','glass','<circle cx="7" cy="7" r="3.4" fill="currentColor" stroke="none"/>',function(){sound()});
-    mk('b_dice','dice','<rect x="2.5" y="2.5" width="9" height="9" rx="2"/><circle cx="5.2" cy="5.2" r=".9" fill="currentColor"/><circle cx="8.8" cy="8.8" r=".9" fill="currentColor"/>',function(){dice()},'Make up a melody on this beat');
-    mk('b_reset','reset','<path d="M3.4 7.2a3.7 3.7 0 1 0 1.3-2.9"/><path d="M4.4 2.2v2.3h2.3"/>',function(){reset()},'This beat as it was, and no notes');
+    mk('b_prev','ba','','<path d="M8.6 3.2L4.8 7l3.8 3.8"/>',function(){pick(I-1)},'The beat before');
+    var nb=mk('b_name','bn',RHY[I].n,'',function(){CARD.t=performance.now()});nb.firstChild.style.display='none';
+    mk('b_next','ba','','<path d="M5.4 3.2L9.2 7l-3.8 3.8"/>',function(){pick(I+1)},'The next beat');
     if(t&&t.nextSibling)f.insertBefore(r,t.nextSibling);else f.appendChild(r);sync()}
+  /* the menu's part for Beat: the notes' sound (five, each its colour and name), a melody made up on the beat, the beat as it was */
+  function menu(sec){if(sec._built)return;sec._built=1;var h=document.createElement('div');h.className='mh';h.textContent='notes inside the ring';sec.appendChild(h);
+    var r=document.createElement('div');r.className='mrw';sec.appendChild(r);
+    SN.forEach(function(x,i){var b=document.createElement('button');b.type='button';b.className='mb';b.id='b_s'+i;b.innerHTML='<svg viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="3.6" fill="currentColor" stroke="none"/></svg><span></span>';
+      b.firstChild.style.color='rgb('+SCOL[i]+')';b.lastChild.textContent=x[0];b.setAttribute('aria-label','Notes in '+x[0]+': '+x[1]);b.addEventListener('click',function(){sound(i);menuShow(false)});r.appendChild(b)});
+    var r2=document.createElement('div');r2.className='mrw';sec.appendChild(r2);
+    var mk=function(id,name,icon,fn,lab){var b=document.createElement('button');b.type='button';b.className='mb';b.id=id;b.innerHTML='<svg viewBox="0 0 14 14" aria-hidden="true">'+icon+'</svg><span></span>';
+      b.lastChild.textContent=name;b.setAttribute('aria-label',lab);b.addEventListener('click',function(){fn();menuShow(false)});r2.appendChild(b);return b};
+    mk('b_dice','make a melody','<rect x="2.5" y="2.5" width="9" height="9" rx="2"/><circle cx="5.2" cy="5.2" r=".9" fill="currentColor"/><circle cx="8.8" cy="8.8" r=".9" fill="currentColor"/>',function(){dice()},'Make up a melody on this beat, in the sound chosen');
+    mk('b_reset','this beat as it was','<path d="M3.4 7.2a3.7 3.7 0 1 0 1.3-2.9"/><path d="M4.4 2.2v2.3h2.3"/>',function(){reset()},'This beat as it was, and no notes');
+    sync()}
   function enter(){load();build();on=true;var r=$('btools');if(r)r.hidden=false;sync();hushSet(true);
     SND.load(banksOf(RHY[I]).concat(['glock','marimba','chimes','fbass','gtr']));if(!BT.iv)BT.iv=setInterval(pump,25);pump();layout();if(AU.want)CARD.t=performance.now()}
   function leave(){on=false;drag=null;mode=null;ROLL={};var r=$('btools');if(r)r.hidden=true;hushSet(false);clearInterval(BT.iv);BT.iv=0;BT.run=false}
@@ -335,7 +346,7 @@ var BEAT=(function(){
     card(c,g,now);c.restore()}
   /* no standing words over it: a beat's name only when one is chosen or the middle is tapped, a row's when it is taken out */
   function hud(){return ''}
-  return {enter:enter,leave:leave,tick:tick,draw:draw,hud:hud,down:down,move:move,up:up,resize:function(){},
+  return {enter:enter,leave:leave,menu:menu,tick:tick,draw:draw,hud:hud,down:down,move:move,up:up,resize:function(){},
     dbg:function(){var k=clock(),g=geo(),R=RHY[I];return {on:on,i:I,id:R.id,name:R.n,N:R.N,bpm:R.bpm,b:R.b,run:BT.run,sd:BT.sd,
       rows:R.r.map(function(row,j){return {n:row[0],s:row[1],hits:H[j].reduce(function(a,v,q){if(v)a.push(q+1);return a},[]),mute:muted(j)}}),
       played:PLAYED.slice(),pn:PN,notes:NT.map(function(n){return [n.u,n.p,n.v]}),cur:cur,sound:SN[cur][0],

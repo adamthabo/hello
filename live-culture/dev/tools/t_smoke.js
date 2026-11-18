@@ -19,14 +19,17 @@ const size = process.argv[2] || 'phone';
   const X = (s, u) => s.stg.x0 + s.stg.w * u, Y = (s, v) => s.stg.y0 + s.stg.h * v;
   const ink = (x, y, r) => page.evaluate(a => window.__lc.WORLDS[0].o.sample(a[0], a[1], a[2]).dens, [x, y, r]);
   let s = await D();
-  { const r = await page.evaluate(() => { const t = document.getElementById('tools').getBoundingClientRect(), f = document.getElementById('foot').getBoundingClientRect(); return { t: t.top, b: t.bottom, ft: f.top, fb: f.bottom, h: innerHeight }; });
-    ok(r.t >= r.ft && r.b <= r.fb && r.t > r.h * .7, 'the tools sit in the footer, under the water (' + Math.round(r.t) + '-' + Math.round(r.b) + ' of ' + r.h + ')'); }
+  // (18 Nov, 00:50: "too many confusing menu items at the bottom ... I like clear windows, painting without anything on the screen")
+  // painting, nothing along the bottom; the colours, mirror, start over, the photo, the three pieces and the game are in the menu
   await page.evaluate(() => window.__lc.WORLDS[0].o.tool('ink')); s = await D();
-  ok(s.tools === 'ink*,wall,fan,drain,puz', 'the tools are in a row along the bottom, moving the water first, then every piece (no prism, no tunnel since 14 Nov), then play: ' + s.tools);
+  { const m = await page.evaluate(() => ({ ids: [...document.querySelectorAll('#ms_paint button')].map(b => b.id).join(), foot: [...document.querySelectorAll('#foot button')].filter(b => b.offsetParent).length }));
+    ok(s.tools === '' && m.foot === 0, 'painting, nothing at all along the bottom: a clear window: ' + JSON.stringify(s.tools));
+    ok(m.ids === 'pc_auto,pc_0,pc_1,pc_2,pc_3,pc_4,pc_5,p_mir,p_clear,bPhoto,bClear,t_wall,t_fan,t_drain,t_puz', 'Paint\'s part of the menu: each touch a new colour or one of six, mirror, start over, your photo, the three pieces, the game: ' + m.ids); }
   const mid = () => page.evaluate(() => window.__lc.WORLDS[0].o.mid());
   const simT = () => page.evaluate(() => window.__lc.WORLDS[0].o.dbg().simT);
   // a wall: drawn, and taken away with a tap
-  await click('t_wall'); await drag(X(s, .5), Y(s, .04), X(s, .5), Y(s, .97)); s = await D();
+  await click('t_wall'); s = await D(); ok(s.tools === 'ink' && await page.evaluate(() => document.getElementById('t_ink').textContent) === 'wall · done', 'building a wall, the bottom shows only that, and done: ' + s.tools);
+  await drag(X(s, .5), Y(s, .04), X(s, .5), Y(s, .97)); s = await D();
   ok(s.d.walls === 1 && s.d.wn > 0, 'a drag with the wall tool builds a wall (' + s.d.wn + ' corners in the water\'s grid)');
   await page.screenshot({ path: `shots/smoke_${size}_wall.png` });
   // the wall holds the smoke back: ink pushed at it from the left stays on the left
@@ -49,9 +52,29 @@ const size = process.argv[2] || 'phone';
   await click('t_fan'); for (let k = 0; k < 3; k++) { await tap(X(s, .2), Y(s, .4)); if (!(await D()).d.fans) break; }
   await click('t_drain'); await tap(X(s, .75), Y(s, .4)); s = await D(); ok(s.d.fans === 0 && s.d.drains === 0, 'and a tap on each takes it away');
   // two fingers turning: a whirlpool (no errors, the water keeps going)
-  await click('t_ink'); const cx = X(s, .5), cy = Y(s, .5);
+  await click('t_ink'); s = await D(); ok(s.tools === '' && s.d.tool === 'ink', 'done: back to painting, the bottom clear again');
+  const cx = X(s, .5), cy = Y(s, .5);
   await touch([[cx + 60, cy], [cx - 60, cy]], 'touchStart'); for (let k = 1; k <= 16; k++) { const a = k * .12; await touch([[cx + 60 * Math.cos(a), cy + 60 * Math.sin(a)], [cx - 60 * Math.cos(a), cy - 60 * Math.sin(a)]], 'touchMove'); await sleep(16); }
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await sleep(500); s = await D(); ok(!s.errs.length && s.d.ok, 'two fingers turning make a whirlpool, without fault');
+  // (18 Nov: "Make the painting more fun so you can create with it too, not always changing") the paint stays: start over, a stroke,
+  // and three seconds later it is still there, where it was put (no fading, no rising), and nothing has painted by itself
+  { const all = () => page.evaluate(() => { const o = window.__lc.WORLDS[0].o; o.sample(0, 0, 1); return o.sample(innerWidth / 2, innerHeight / 2, Math.max(innerWidth, innerHeight)).dens; });
+    await click('p_clear'); await sleep(900); await all(); await sleep(300); const z = await all();
+    await drag(X(s, .2), Y(s, .45), X(s, .8), Y(s, .55), 14); await sleep(1500); await all(); await sleep(300);
+    const a0 = await all(), m0 = await mid(); await sleep(3000); await all(); await sleep(300); const a1 = await all(), m1 = await mid();
+    ok(z < .002 && a0 > .004 && a1 > a0 * .85 && Math.abs(m1 - m0) < .04, 'start over clears the water (' + z.toFixed(4) + '); a stroke stays as it was put, three seconds on: ' + a0.toFixed(4) + ' then ' + a1.toFixed(4) + ' of the screen, its height ' + (m0 || 0).toFixed(3) + ' then ' + (m1 || 0).toFixed(3));
+    await page.screenshot({ path: `shots/smoke_${size}_still.png` }); }
+  // each touch the next colour; a colour chosen in the menu stays; mirror: a stroke on the left also paints the right
+  { const c0 = (await D()).d.col; await tap(X(s, .3), Y(s, .3)); await tap(X(s, .6), Y(s, .3)); const c1 = (await D()).d.col;
+    ok(c1 === (c0 + 2) % 6 && (await D()).d.pc === -1, 'each touch takes the next colour of six: ' + c0 + ' then ' + c1);
+    await click('pc_2'); await tap(X(s, .4), Y(s, .7)); s = await D(); ok(s.d.pc === 2 && await page.evaluate(() => document.getElementById('pc_2').getAttribute('aria-pressed')) === 'true', 'amber chosen in the menu: every touch amber');
+    await click('pc_auto'); await click('p_clear'); await click('p_mir'); s = await D(); ok(s.d.mir === 2 && /mirror · 2/.test(await page.evaluate(() => document.getElementById('p_mir').textContent)), 'mirror: every stroke twice, left for right');
+    await sleep(600); await drag(X(s, .12), Y(s, .3), X(s, .28), Y(s, .62), 10); await sleep(1200); await ink(0, 0, 1); await sleep(300);
+    const Lm = await ink(X(s, .2), Y(s, .46), s.stg.w * .1), Rm = await ink(X(s, .8), Y(s, .46), s.stg.w * .1), Mm = await ink(X(s, .5), Y(s, .46), s.stg.w * .06);
+    ok(Lm > .01 && Rm > Lm * .5 && Mm < Lm * .5, 'a stroke on the left paints its mirror on the right: left ' + Lm.toFixed(3) + ', right ' + Rm.toFixed(3) + ', between ' + Mm.toFixed(3));
+    await page.screenshot({ path: `shots/smoke_${size}_mirror.png` });
+    for (let k = 0; k < 3 && (await D()).d.mir !== 1; k++) await click('p_mir'); s = await D(); ok(s.d.mir === 1, 'and off again');
+    await sleep(2800); s = await D(); ok(s.data === '', 'the words a tap asked for go after a moment: ' + JSON.stringify(s.data)); }
   // the game (13 Nov, night: "the game is awful" ... "Push the smoke"): nothing to place; smoke pours from a vent and a finger pushes it
   // into a glowing ring before it fades; short rounds against the clock, each a little faster; a score, and the best kept
   // (the game's clock is the water's own, stepped here as a phone at sixty frames a second steps it, a sixtieth of a second a frame:
@@ -62,6 +85,11 @@ const size = process.argv[2] || 'phone';
   const frame = () => page.evaluate(() => new Promise(r => requestAnimationFrame(() => r())));
   const push = async (x0, y0, x1, y1, n, hold) => { await touch([[x0, y0]], 'touchStart'); await frame(); for (let k = 1; k <= n; k++) { await touch([[x0 + (x1 - x0) * k / n, y0 + (y1 - y0) * k / n]], 'touchMove'); await frame(); }
     for (let k = 0; k < hold; k++) await frame(); await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await frame(); };
+  // (18 Nov) the same push, the finger lifted as soon as a ring is filled (as a player does): with the bottom clear the tank is taller,
+  // and a finger held on after its ring had filled could fill the next one too, where it came up in the stream
+  const pushTill = async (x0, y0, x1, y1, n, hold) => { const g0 = (await D()).d.game.got; await touch([[x0, y0]], 'touchStart'); await frame(); for (let k = 1; k <= n; k++) { await touch([[x0 + (x1 - x0) * k / n, y0 + (y1 - y0) * k / n]], 'touchMove'); await frame(); }
+    for (let k = 0; k < hold; k++) { const g = await page.evaluate(() => new Promise(r => requestAnimationFrame(() => r(window.__lc.WORLDS[0].o.dbg().game.got)))); if (g > g0) break; }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await frame(); };
   // (17 Nov) a finger drawn from (x0, y0) to ring n as it moves, then kept on it for `hold` frames, as a player follows a moving ring:
   // the frames it took (it lets go when the ring is filled and gone)
   const chase = async (x0, y0, n, steps, hold) => { const at = () => page.evaluate(n => new Promise(r => requestAnimationFrame(() => { const c = window.__lc.WORLDS[0].o.dbg().cups.find(c => c.n === n); r(c ? [c.x, c.y] : null); })), n);
@@ -70,13 +98,13 @@ const size = process.argv[2] || 'phone';
     for (let k = 0; k < hold && q; k++) { await touch([q], 'touchMove'); q = await at(); fr++; }
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await frame(); return fr; };
   await page.evaluate(() => { try { localStorage.removeItem('lc.smoke.best'); } catch (e) {} const o = window.__lc.WORLDS[0].o; o.best(0); o.fixdt(1 / 60); });
-  s = await D(); ok(await page.evaluate(() => document.getElementById('t_puz').firstChild.textContent) === 'play' && s.data === '', 'out of a game the button reads play, and there are no words over the paint: ' + JSON.stringify(s.data));
+  s = await D(); ok(await page.evaluate(() => document.getElementById('t_puz').textContent) === 'play the game' && s.data === '', 'out of a game the menu offers to play it, and there are no words over the paint: ' + JSON.stringify(s.data));
   await click('t_puz'); await sleep(300); s = await D();
   ok(s.d.pz === 0 && s.d.game.round === 1 && s.d.game.phase === 'intro' && s.d.game.need === 3 && s.d.cups.length === 0 && s.d.fix.fans === 1 && s.d.fix.walls === 4 && s.d.walls + s.d.fans + s.d.drains + s.d.prisms + s.d.tunnels === 0,
     'play: round 1, one vent, one ring, three rings to fill, nothing placed: ' + JSON.stringify(s.d.game) + ' fix ' + JSON.stringify(s.d.fix));
   ok(s.data === '' && s.d.game.need === 3 && Math.round(s.d.game.left) === 32 && s.d.game.score === 0, 'no words over the tank: round 1 asks three rings in 32 seconds, said in big words in the tank as it opens, the score in its corner: ' + JSON.stringify(s.d.game));
   // (15 Nov: free and hand, the owner said, were the same thing: the hand stays, and ends the game)
-  ok(s.tools === 'ink,puz' && await page.evaluate(() => ['t_ink', 't_puz'].map(i => document.getElementById(i).firstChild.textContent).join()) === 'hand,again', 'in a game only two buttons: the hand, and again: ' + s.tools);
+  ok(s.tools === 'again,ink' && await page.evaluate(() => ['t_again', 't_ink'].map(i => document.getElementById(i).firstChild.textContent).join()) === 'again,stop', 'in a game only two buttons along the bottom: again, and stop: ' + s.tools);
   ok(await page.evaluate(() => document.getElementById('data').getBoundingClientRect().bottom) < s.d.board.y0 + 1, 'the tank sits under the header, clear of it');
   ok(s.d.board.w / s.d.board.h > .6 && s.d.board.w / s.d.board.h < .68, 'a round is played in a tank of fixed shape: ' + Math.round(s.d.board.w) + ' x ' + Math.round(s.d.board.h));
   ok(s.on === ON0, 'a game leaves the music as it is: ' + s.on);
@@ -90,7 +118,7 @@ const size = process.argv[2] || 'phone';
   // (as a player would: a finger on the stream just above its vent, drawn to the ring and held there; the vent turns its stream to
   // follow the finger; up to three times)
   for (let k = 0; k < 3 && !got; k++) { const c = (await D()).d.cups[0]; if (!c) break; const v = s.d.vents.find(q => q.c === c.c) || s.d.vents[0];
-    const v0 = s.d.vents[0], a0 = v0.a; await push(v.x, v.y - 30, c.x, c.y, 30, 150); np++; s = await D(); got = s.d.game.got; }
+    const v0 = s.d.vents[0], a0 = v0.a; await pushTill(v.x, v.y - 30, c.x, c.y, 30, 150); np++; s = await D(); got = s.d.game.got; }
   ok(got >= 1 && s.d.game.score >= 1, 'a finger pushing the smoke from the vent into the ring fills it (' + np + ' push' + (np > 1 ? 'es' : '') + '): ' + JSON.stringify(s.d.game));
   ok(s.d.cups.length === 1 && Math.hypot(s.d.cups[0].x - ring0.x, s.d.cups[0].y - ring0.y) > 20, 'a filled ring gives way to the next, somewhere else');
   ok(s.d.game.got === 1 && s.d.game.score >= 1, 'it is counted (a dot lit at the top of the tank, the score in its corner): ' + JSON.stringify(s.d.game));
@@ -159,10 +187,10 @@ const size = process.argv[2] || 'phone';
   ok(s.d.game.phase === 'over' && sc >= 3 && s.d.game.newBest && s.data === '' && s.d.game.best === sc && await page.evaluate(() => { try { return localStorage.getItem('lc.smoke.best'); } catch (e) { return null; } }) === String(sc),
     'time up: the score, a new best (in big words in the tank), and the best kept: ' + JSON.stringify(s.d.game));
   await look('game_over');
-  await click('t_puz'); await sleep(300); await until(s => s.d.game.round === 1 && s.d.game.phase === 'intro', 5000); ok(s.d.game.round === 1 && s.d.game.score === 0 && s.d.game.best === sc, 'again: round 1, score 0, the best still there: ' + JSON.stringify(s.d.game));
+  await click('t_again'); await sleep(300); await until(s => s.d.game.round === 1 && s.d.game.phase === 'intro', 5000); ok(s.d.game.round === 1 && s.d.game.score === 0 && s.d.game.best === sc, 'again: round 1, score 0, the best still there: ' + JSON.stringify(s.d.game));
   // the hand: back to painting freely, every piece there to build with
   await click('t_ink'); await sleep(500); await page.evaluate(() => window.__lc.WORLDS[0].o.fixdt(0)); s = await D();
-  ok(s.d.pz < 0 && s.d.cups.length === 0 && s.tools === 'ink*,wall,fan,drain,puz' && await page.evaluate(() => document.getElementById('t_puz').firstChild.textContent) === 'play', 'the hand: back to painting freely, with every piece: ' + s.tools);
+  ok(s.d.pz < 0 && s.d.cups.length === 0 && s.tools === '', 'the hand: back to painting freely, with every piece: ' + s.tools);
   await sleep(1500); await page.screenshot({ path: `shots/smoke_${size}_free_pieces.png` });
   const e = [...new Set(errs)]; if (e.length) console.log('ERRORS', e.slice(0, 6));
   await ctx.close(); await browser.close(); console.log(fail.length || e.length ? 'SMOKE FAILED' : 'SMOKE OK'); process.exit(fail.length || e.length ? 1 : 0);

@@ -12,28 +12,30 @@ const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') 
   const touch = async (pts, type) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: pts.map((p, i) => ({ x: p[0], y: p[1], id: i + 1 })) });
   const lift = async () => cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   const tap = async (x, y) => { await touch([[x, y]], 'touchStart'); await sleep(50); await lift(); await sleep(160); };
-  const D = () => page.evaluate(() => { const L = window.__lc, i = L.WORLDS.findIndex(w => w.id === 'beat'), r = document.getElementById('btools'), g = document.getElementById('wgrip'), f = (g && !g.hidden ? g : document.getElementById('rail')).getBoundingClientRect();
-    return { i, cur: L.CURI, d: L.BEAT.dbg(), errs: (L.errs || []).slice(0, 3), data: document.getElementById('data').textContent, stg: L.STG, rail: { t: f.top }, grip: g && !g.hidden ? g.textContent : '',
-      railIn: document.getElementById('foot').classList.contains('railup'), mode: document.getElementById('bMode').hidden, shown: !!r && !r.hidden, paintTools: !document.getElementById('tools').hidden,
+  const D = () => page.evaluate(() => { const L = window.__lc, i = L.WORLDS.findIndex(w => w.id === 'beat'), r = document.getElementById('btools');
+    return { i, cur: L.CURI, d: L.BEAT.dbg(), errs: (L.errs || []).slice(0, 3), data: document.getElementById('data').textContent, stg: L.STG, rail: { t: innerHeight },
+      menu: !document.getElementById('menu').hidden, mode: document.getElementById('bMode').hidden, shown: !!r && !r.hidden, paintTools: !document.getElementById('tools').hidden,
       tools: r ? [...r.querySelectorAll('.tb')].map(b => { const q = b.getBoundingClientRect(); return { id: b.id.slice(2), txt: b.textContent, l: q.left, r: q.right, t: q.top, b: q.bottom }; }) : [] }; });
   const B = (f, a) => page.evaluate(([f, a]) => window.__lc.BEAT[f].apply(null, a || []), [f, a]);
   const btn = async (s, id) => { const b = s.tools.find(t => t.id === id); await tap((b.l + b.r) / 2, (b.t + b.b) / 2); };
+  // (18 Nov) the menu: the world's name at the top left opens it; a button in it pressed as a finger would
+  const at = id => page.evaluate(id => { const q = document.getElementById(id).getBoundingClientRect(); return { x: q.left + q.width / 2, y: q.top + q.height / 2, w: q.width }; }, id);
+  const mtap = async id => { const m = await at('wmenu'); await tap(m.x, m.y); await sleep(250); const q = await at(id); await tap(q.x, q.y); await sleep(200); };
   // the worlds: Beat is the fourth, and a real tap on its button opens it
-  const rail = await page.evaluate(() => [...document.querySelectorAll('#rail .wb')].map(b => b.textContent));
-  ok(rail.join() === 'Paint,Earth,Mix,Beat', 'four worlds, Beat the last: ' + rail.join());
+  const rail = await page.evaluate(() => [...document.querySelectorAll('#rail .wb .wn')].map(b => b.textContent));
+  ok(rail.join() === 'Paint,Earth,Mix,Beat', 'four worlds in the menu, Beat the last: ' + rail.join());
   ok(!(await D()).mode, 'outside Beat the band\'s mode has its button at the top');
   await page.evaluate(() => { try { localStorage.removeItem('lc.beat'); localStorage.removeItem('lc.beat2'); } catch (e) {} });
-  { const r = await page.evaluate(() => { const q = document.getElementById('w_beat').getBoundingClientRect(); return { x: q.left + q.width / 2, y: q.top + q.height / 2 }; }); await tap(r.x, r.y); await sleep(900); }
-  let s = await D(); ok(s.cur === s.i && s.d.on && s.shown && !s.paintTools && !s.errs.length, 'a tap on Beat opens it: its row shown, Paint\'s tools not: ' + JSON.stringify({ cur: s.cur, errs: s.errs }));
+  await mtap('w_beat'); await sleep(900);
+  let s = await D(); ok(s.cur === s.i && s.d.on && s.shown && !s.paintTools && !s.menu && !s.errs.length, 'the world\'s name opens the menu, a tap on Beat there opens it and closes the menu: its row shown, Paint\'s not: ' + JSON.stringify({ cur: s.cur, errs: s.errs }));
   ok(s.mode, 'in Beat the band\'s mode button is gone (the band rests there)');
-  // (17 Nov, 19:44: "remove buttons when they are not necessary on the screen (world buttons on music pages)") the worlds' buttons
-  // tucked behind a handle named worlds; a tap brings them up, a touch elsewhere puts them away; a world chosen from there opens
-  ok(/worlds/.test(s.grip) && !s.railIn, 'in Beat the worlds\' buttons are tucked behind a handle: ' + JSON.stringify(s.grip));
-  { const g = await page.evaluate(() => { const q = document.getElementById('wgrip').getBoundingClientRect(); return { x: q.left + q.width / 2, y: q.top + q.height / 2 }; }); await tap(g.x, g.y); await sleep(450); s = await D();
-    ok(s.railIn, 'a tap on the handle brings them up'); await tap(30, s.stg.y0 + 8); await sleep(450); s = await D(); ok(!s.railIn, 'a touch elsewhere puts them away');
-    await tap(g.x, g.y); await sleep(450); const w = await page.evaluate(() => { const q = document.getElementById('w_mix').getBoundingClientRect(); return { x: q.left + q.width / 2, y: q.top + q.height / 2 }; }); await tap(w.x, w.y); await sleep(700);
-    const m = await page.evaluate(() => { const L = window.__lc; return { id: L.WORLDS[L.CURI].id, grip: !document.getElementById('wgrip').hidden, duck: L.AU.duck ? L.AU.duck.gain.value : 1 }; });
-    ok(m.id === 'mix' && m.grip, 'from there a world chosen opens (Mix, its buttons tucked too): ' + JSON.stringify(m));
+  // (18 Nov, 00:50: "too many confusing menu items at the bottom") no worlds along the bottom: they are in the menu, which a touch
+  // anywhere else closes (that touch doing nothing else), and from which a world chosen opens
+  { const m = await at('wmenu'), n0 = (await D()).d.notes.length; await tap(m.x, m.y); await sleep(300); s = await D(); ok(s.menu, 'a tap on the world\'s name opens the menu');
+    const g = s.d.geo, mb = await page.evaluate(() => document.getElementById('menu').getBoundingClientRect().bottom), ty = Math.max(mb + 16, g.cy + g.R * .45);
+    await tap(g.cx, ty); await sleep(300); s = await D(); ok(!s.menu && s.d.notes.length === n0 && ty < g.cy + g.R * .8, 'a touch on the circle (below the menu) closes it, and puts no note down');
+    await mtap('w_mix'); const mm = await page.evaluate(() => { const L = window.__lc; return { id: L.WORLDS[L.CURI].id, menu: !document.getElementById('menu').hidden }; });
+    ok(mm.id === 'mix' && !mm.menu, 'from there a world chosen opens (Mix): ' + JSON.stringify(mm));
     await page.evaluate(() => { const L = window.__lc; L.go(L.WORLDS.findIndex(w => w.id === 'beat'), true); }); await sleep(700); }
   // the beats, as transcribed from his videos: 34 in six parts of the world, three rows each, every stroke on a step of its circle,
   // every sound one the page has
@@ -56,10 +58,11 @@ const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') 
   ok(hits('swing', 2) === '1,4,6,7,10,12' && hits('shuffle', 2) === '1,3,4,6,7,9,10,12' && hits('waltz', 2) === '1,4,6,7,9' && B0.waltz.N === 9 && hits('secondline', 2) === '1,4,7,11,13' && hits('funk', 2) === '1,3,8,11', 'swing\'s ride, the shuffle, the jazz waltz in nine, the second line\'s clave, funk\'s kick');
   ok(hits('teentaal', 2) === '1,4,5,8,9,16' && hits('teentaal', 0) === '10,11,12,13' && hits('keherwa', 2) === '1,2,7,9,10,15' && hits('dongdong', 2) === '1,3,5' && B0.dongdong.N === 8 && hits('lancaran', 2) === '4,8,12,16' && hits('malfuf', 1) === '4,7,12,15', 'teentaal, keherwa, dong dong qiang in eight, lancaran\'s kenong, malfuf');
   ok(B0.salsa.b === 2 && B0.salsa.bpm === 190 && B0.joropo.b === 2 && B0.lancaran.b === 2 && B0.bossa.b === 2 && B0.swing.b === 3 && B0.house.b === 4, 'each beat\'s steps as long as the video plays them (salsa, joropo, lancaran and the bossa in eighths, swing in triplets)');
-  // its row: back, next, the sound, dice and reset, every one whole on the screen, above the worlds' handle, none narrower than 40
+  // along the bottom only the beat: back, its name, next, whole on the screen, none narrower than 40; the rest in the menu
   s = await D(); const W = await page.evaluate(() => innerWidth);
-  ok(s.tools.map(t => t.id).join() === 'prev,next,snd,dice,reset' && s.tools.every(t => t.l >= 0 && t.r <= W && t.b <= s.rail.t + 1 && t.r - t.l >= 40),
-    'back, next, the sound, dice and reset, all on the screen, above the worlds: ' + s.tools.map(t => t.txt + '@' + Math.round(t.l) + '-' + Math.round(t.r) + '/' + Math.round(t.t)).join(' '));
+  ok(s.tools.map(t => t.id).join() === 'prev,name,next' && s.tools[1].txt === 'House' && s.tools.every(t => t.l >= 0 && t.r <= W && t.b <= s.rail.t + 1 && t.r - t.l >= 40),
+    'along the bottom: back, the beat\'s name, next, all on the screen: ' + s.tools.map(t => t.id + ':' + t.txt + '@' + Math.round(t.l) + '-' + Math.round(t.r) + '/' + Math.round(t.t)).join(' '));
+  ok(await page.evaluate(() => [...document.querySelectorAll('#ms_beat button')].map(b => b.id).join()) === 'b_s0,b_s1,b_s2,b_s3,b_s4,b_dice,b_reset', 'Beat\'s part of the menu: the notes\' five sounds, a melody, the beat as it was');
   const fits = s => { const g = s.d.geo, top = Math.min(...s.tools.map(t => t.t)), W = s.stg.w; return g.cx - g.R * 1.3 >= 0 && g.cx + g.R * 1.3 <= W && g.cy - g.R * 1.24 >= s.stg.y0 - 1 && g.gy >= g.cy + g.R * 1.2 - (g.wide ? 1e9 : 0) && g.gy + 3 * g.rh + 2 * g.gap + 16 <= top + 1 && g.gx >= 0 && g.gx + g.gw <= W && (g.wide || g.card.y + g.card.h <= g.cy - g.R * 1.2 + 1); };
   ok(s.d.geo.R >= 120 && fits(s), 'the circle (R ' + Math.round(s.d.geo.R) + '), its numbers, the name\'s place over it and the grid under it, all whole above the row');
   // the music on: the beat plays on its own clock, at its own tempo, on its steps; the band rests while Beat is open
@@ -75,7 +78,7 @@ const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') 
   await page.screenshot({ path: 'shots/beat_phone_house.png' });
   // next: Trap, its name shown, its tempo; back: House again
   await btn(s, 'next'); await sleep(900); s = await D();
-  ok(s.d.id === 'trap' && s.d.card > .5 && Math.abs(s.d.sd - 60 / 140 / 4) < 1e-6, 'next: Trap, its name shown, its own tempo: ' + JSON.stringify({ id: s.d.id, card: s.d.card, sd: s.d.sd }));
+  ok(s.d.id === 'trap' && s.d.card > .5 && Math.abs(s.d.sd - 60 / 140 / 4) < 1e-6 && s.tools[1].txt === 'Trap', 'next: Trap, its name on the button and shown over the circle, its own tempo: ' + JSON.stringify({ id: s.d.id, card: s.d.card, sd: s.d.sd }));
   await btn(s, 'prev'); await sleep(500); s = await D(); ok(s.d.id === 'house', 'back: House again');
   // the ring: a tap on an empty step puts the kick there, a second takes it away; a kick dragged along the ring moves to where it is let go
   { const r = await B('ringAt', [2]); await tap(r.x, r.y); s = await D(); ok(s.d.rows[2].hits.join() === '1,3,5,9,13', 'a tap on the ring at 3 puts a kick there: ' + s.d.rows[2].hits.join(' '));
@@ -100,8 +103,8 @@ const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') 
     ok(mid.d.rolls.length === 1 && mid.d.rolls[0].on && ks.size >= 8 && !(await D()).d.rolls.length, 'a finger kept still plays its pitch on every step (' + ks.size + ' steps in 2.2 s) and stops when it lifts');
     await B('set', [[]]); }
   // the sound: a tap on it goes to the next (rubber), its name said; dice makes up a melody in it on the beat's own strokes; reset
-  s = await D(); await btn(s, 'snd'); s = await D(); ok(s.d.sound === 'rubber' && /rubber/.test(s.data) && s.tools.find(t => t.id === 'snd').txt === 'rubber', 'the sound button: rubber next, its name said: ' + JSON.stringify(s.data));
-  await btn(s, 'dice'); s = await D(); { const N = s.d.N, kick = s.d.rows[2].hits.map(h => h - 1), st = s.d.notes.map(n => Math.round(n[0] * N) % N);
+  await mtap('b_s1'); s = await D(); ok(s.d.sound === 'rubber' && /rubber/.test(s.data) && !s.menu && await page.evaluate(() => document.getElementById('b_s1').getAttribute('aria-pressed')) === 'true', 'rubber chosen in the menu: its name said, the menu closed: ' + JSON.stringify(s.data));
+  await mtap('b_dice'); s = await D(); { const N = s.d.N, kick = s.d.rows[2].hits.map(h => h - 1), st = s.d.notes.map(n => Math.round(n[0] * N) % N);
     ok(s.d.notes.length >= 4 && s.d.notes.every(n => n[2] === 1) && kick.every(k => st.includes(k)) && /melody/.test(s.data), 'dice: a melody in rubber, on every kick: ' + st.join(' ')); }
   await page.screenshot({ path: 'shots/beat_phone_dice.png' });
   // kept after a reload: the beat chosen, its changes, the notes, the sound
@@ -110,7 +113,7 @@ const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') 
   await page.evaluate(() => { const L = window.__lc; L.go(L.WORLDS.findIndex(w => w.id === 'beat'), true); }); await sleep(700); s = await D();
   ok(s.d.id === before.d.id && s.d.rows[2].hits.join() === before.d.rows[2].hits.join() && s.d.notes.length === before.d.notes.length && s.d.sound === 'rubber',
     'kept after a reload: ' + s.d.name + ', its changed row ' + s.d.rows[2].hits.join(' ') + ', ' + s.d.notes.length + ' notes, ' + s.d.sound);
-  await btn(s, 'reset'); s = await D(); ok(s.d.rows[2].hits.join() === B0[s.d.id].r[2][2].join() && !s.d.notes.length, 'reset: ' + s.d.name + ' as transcribed, no notes');
+  await mtap('b_reset'); s = await D(); ok(s.d.rows[2].hits.join() === B0[s.d.id].r[2][2].join() && !s.d.notes.length, 'the beat as it was (from the menu): ' + s.d.name + ' as transcribed, no notes');
   // every beat plays: each chosen in turn, its strokes given out, its recordings there, no errors
   await page.evaluate(() => { window.__lc.musicOn(); window.__sp = []; window.__lc.BEAT.spy(e => window.__sp.push(e)); }); for (let k = 0; k < 30 && !(await D()).d.run; k++) await sleep(200);
   { const bad = [], slow = []; for (let i = 0; i < lib.length; i++) { await B('pick', [i]); await page.evaluate(() => { window.__sp = []; }); await sleep(i === 0 ? 1500 : 900);

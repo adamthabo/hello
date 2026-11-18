@@ -1,6 +1,18 @@
 # Changelog
 
 ## For the owner
+18 Nov 2026, 02:00 (your 00:50 and 01:35 messages):
+
+- **One clear menu instead of rows of buttons.** The worlds row is gone from the bottom of every page. Tap the world's name at the
+  top left (it has a small arrow beside it) and one menu opens. It lists the four worlds, each with a line saying what it is, and
+  under them what this world can do. A tap anywhere else closes it.
+- **The bottom only shows what you play with.** Paint has nothing there at all, Earth keeps its layers, Mix has nothing, and Beat has
+  ‹ the beat's name › (tap the name to see where the beat is from).
+- **Paint is a clear window, and your painting stays.** The paint no longer rises, fades or gets painted over by the band once you
+  start. The water settles a second after you lift your finger, so you can build up a picture. Each touch takes the next of six
+  colours, or pick one in the menu. Tap for a drop, hold still to grow one, and drag to push the paint. The menu also has "mirror"
+  (every stroke two, four or six ways, for patterns) and "start over". Building and the game are in the menu too.
+
 18 Nov 2026, 00:15 (the seventeenth hourly run):
 
 - **Fill a beat as full as you like, and it stays in balance.** Turning on every step of a beat now plays the filled rows a little
@@ -336,6 +348,27 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 18 Nov 2026, 02:00 (New York): one menu under the world's name; the bottom clear; Paint a still water to make pictures in (README rule 28)
+
+- `body.html`: the header's name is a button (`#wmenu`, a chevron) opening `#menu` (a dialog under it): `#rail` (the worlds, each
+  `.wn` and a line `.wd`), a section per world (`#ms_paint`, `#ms_earth`, `#ms_mix`, `#ms_beat`; shown for the world in view if it has
+  buttons), `#bSave`. The rail and its handle (`#wgrip`) left the footer; `bPhoto` and `bClear` moved into Paint's section.
+- `20-ui.js`: `menuShow`, `menuOpen`; a world's `menu(sec)` fills its section once (`railBuild`); `chrome()` shows the section; a
+  pointerdown on the stage while the menu is open only closes it; `go()` and Escape close it; `WORLDS[].d`, the line under each name;
+  `tuck` and `railShow` gone.
+- `11-drift.js`: `PV` still (`buo` 0, `dye` 0 once `MINE`, `vd` 2.4, `vort` 2; the buoyancy pass skipped at 0); `MINE` on the first
+  real touch (the hint's and the band's ink cleared then, the band painting and the hint only before it); `PAL` (six colours,
+  `colNext`, `PCI` one chosen or each touch the next); `pushF` mirrors a finger's paint 2, 4 or 6 ways round the stage's middle (`MIR`);
+  a held finger grows a drop; a tap a drop and a ring of eight pushes; `p_clear` clears dye and velocity (`clearVel`). The menu section
+  (`menu`, `menuSync`: `pc_*`, `p_mir`, `p_clear`, `bPhoto`, `bClear`, `t_wall`, `t_fan`, `t_drain`, `t_puz`); the footer's `#tools`
+  only `t_again` and `t_ink` ("stop" in a game, "wall · done" while building), hidden otherwise. The water cleared marks the read-back
+  stale (`rbOk=false`): with the paint now staying, a round's first ring had been counted filled by the picture read back before.
+- `17-beat.js`: the footer `b_prev`, `b_name` (the beat's name; a tap, its card), `b_next`; the menu section `b_s0`…`b_s4`, `b_dice`,
+  `b_reset`; the card also shows when Beat's clock starts. `style.css`: the menu, its rows, buttons and swatches; the picker.
+- Tests: `t_smoke.js` (the bottom clear, Paint's menu, "wall · done", a stroke staying put three seconds, start over, the colours, the
+  mirror, "again" and "stop"; its first push lifts once its ring fills), `t_beat.js` (the menu opens, closes on a touch that puts no
+  note, a world from it; back, name, next; the sounds, melody and reset from the menu), `t_published.js`, `t_misc.js`, `t_play.js`.
 
 ## 18 Nov 2026, 00:15 (New York), the seventeenth hourly run: every beat measured with every step on; full rows lighter, tuned rows damped
 

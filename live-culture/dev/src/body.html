@@ -5,16 +5,26 @@
 <div id="stage" role="application" aria-label="The world. Touch it, drag through it, use more than one finger"></div>
 
 <header class="top" id="top">
-  <div class="mark"><h1>Live Culture</h1><p class="wname" id="wname">Paint</p></div>
+  <button class="mark" id="wmenu" type="button" aria-expanded="false" aria-controls="menu" aria-label="Paint. Open the menu: the four worlds, and what this one can do"><span class="mk1">Live Culture</span><span class="mk2"><span class="wname" id="wname">Paint</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5"/></svg></span></button>
   <div class="acts">
     <button class="chip" id="bNow" type="button" hidden aria-label="Return to the present moment">Now</button>
-    <button class="ic" id="bPhoto" type="button" aria-label="Use a photo of your own. It stays on this device"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="4" width="13" height="9.5" rx="2"/><circle cx="8" cy="8.8" r="2.6"/><path d="M5.5 4l1-1.8h3l1 1.8"/></svg></button>
-    <button class="ic" id="bClear" type="button" hidden aria-label="Take the photo away"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
-    <button class="ic" id="bSave" type="button" hidden aria-label="Save a picture of what is on the screen now"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8M4.8 7.2L8 10.4l3.2-3.2M2.5 13.5h11"/></svg></button>
     <button class="chip mode" id="bMode" type="button" aria-label="Music mode: African. Tap for the next mode">African</button>
     <button class="ic mst" id="bSound" type="button" aria-pressed="false" aria-label="Music starts with your first touch. Turn it on now"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6.2 11.6V3.4l6-1.2v8.2"/><circle cx="4.6" cy="11.7" r="1.7"/><circle cx="10.6" cy="10.5" r="1.7"/><path class="sl" d="M2.2 2.2l11.6 11.6"/></svg></button>
   </div>
 </header>
+<!-- (18 Nov, 00:50: "Theres too many confusing menu items at the bottom ... I like clear windows") the worlds and each world's extras
+     live in one menu under the world's name; the bottom keeps only what a world is played with -->
+<div class="menu" id="menu" hidden role="dialog" aria-label="Menu: the worlds, and what this one can do">
+  <nav class="rail" id="rail" aria-label="Worlds"></nav>
+  <section class="msec" id="ms_paint" hidden aria-label="Paint">
+    <button class="mb" id="bPhoto" type="button" aria-label="Use a photo of your own as the paint. It stays on this device"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="4" width="13" height="9.5" rx="2"/><circle cx="8" cy="8.8" r="2.6"/><path d="M5.5 4l1-1.8h3l1 1.8"/></svg><span>your photo</span></button>
+    <button class="mb" id="bClear" type="button" hidden aria-label="Take the photo away"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg><span>photo away</span></button>
+  </section>
+  <section class="msec" id="ms_earth" hidden aria-label="Earth"></section>
+  <section class="msec" id="ms_mix" hidden aria-label="Mix"></section>
+  <section class="msec" id="ms_beat" hidden aria-label="Beat"></section>
+  <div class="mgen"><button class="mb" id="bSave" type="button" hidden aria-label="Save a picture of what is on the screen now"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8M4.8 7.2L8 10.4l3.2-3.2M2.5 13.5h11"/></svg><span>save a picture</span></button></div>
+</div>
 <p class="data" id="data" aria-live="off"></p>
 
 <aside class="card" id="card" hidden aria-live="polite"></aside>
@@ -25,7 +35,5 @@
   <div class="lgd" id="lgd" hidden aria-hidden="true"><b id="lgn"></b><span class="lgw"><i id="lgb"></i><span class="lgs" id="lgs"></span></span></div>
   <div class="dock" id="lyd" hidden role="group" aria-label="Layers of the Earth: tap one to switch it on or off"></div>
   <div class="tools" id="tools" hidden role="toolbar" aria-label="Build in the water"></div>
-  <nav class="rail" id="rail" aria-label="Worlds"></nav>
-  <button class="wgrip" id="wgrip" type="button" hidden aria-label="Worlds: show the buttons to the other worlds"></button>
 </footer>
 <input class="sr" type="file" id="file" accept="image/*" tabindex="-1" aria-hidden="true">
