@@ -8,7 +8,12 @@
    (There was a harp, and its plucked string; the owner called it stupid, and both are gone.) ---------- */
 var OUTG=.3,TOYG=1,TOYLIM=[-27,6,14],TOYPOST=.202,MODELIM=[-21,4,12],MODEPOST=.288;
 var AU={c:null,live:false,run:false,want:false,auto:true,first:true,ready:false,failed:false,loading:null,raw:null,bufs:[],L:[],src:[],
-  bus:null,door:null,out:null,comp:null,vsend:null,toy:null,post:null,lat:0,latAt:0,t0:0,iv:0,sq:-1,unl:null};
+  bus:null,door:null,duck:null,out:null,comp:null,vsend:null,toy:null,post:null,lat:0,latAt:0,t0:0,iv:0,sq:-1,unl:null};
+/* (18 Nov) Beat plays its classic beats at their own tempi, so while it is open the band and the mixer's loops rest: their sound is held
+   at nothing (they go on playing, silently, in time) and comes back when Beat is left. Nothing else changes a level */
+var HUSH=false;
+function hushSet(v){HUSH=!!v;var c=AU.c;if(c){var t=c.currentTime;if(AU.duck)AU.duck.gain.setTargetAtTime(HUSH?0:1,t,HUSH?.06:.3);if(AU.toy)AU.toy.gain.setTargetAtTime(HUSH?0:TOYG,t,HUSH?.06:.3)}
+  try{MIX.hush(HUSH)}catch(e){}}
 var CLK={w0:performance.now()};
 /* where we are in the music, in seconds, never wrapping. While the sound runs its own clock leads; otherwise the wall clock keeps the picture moving */
 function loopT(){if(AU.live)return AU.c.currentTime-AU.t0-AU.lat;return (performance.now()-CLK.w0)/1000}
@@ -85,7 +90,9 @@ function buildGraph(c){
   var comp=c.createDynamicsCompressor(),out=c.createGain();out.gain.value=0;comp.connect(out);out.connect(c.destination);
   /* the band's room: a long dark reverb and a half-second echo, exactly as on the original site */
   var bus=c.createGain();bus.gain.value=.5;
-  var door=c.createBiquadFilter();door.type='lowpass';door.frequency.value=19800;door.Q.value=.8;bus.connect(door);
+  var door=c.createBiquadFilter();door.type='lowpass';door.frequency.value=19800;door.Q.value=.8;
+  /* (18 Nov) a level of its own after the band's, held at nothing while Beat plays its beats at their own tempo (hushSet) */
+  var duck=c.createGain();duck.gain.value=1;bus.connect(duck);duck.connect(door);
   var dry=c.createGain();dry.gain.value=.8;door.connect(dry);dry.connect(comp);
   var wet=c.createConvolver();wet.buffer=irBuf(c,7,2.4);var wg=c.createGain();wg.gain.value=.55;door.connect(wet);wet.connect(wg);wg.connect(comp);
   var dl=c.createDelay(2);dl.delayTime.value=.5;var fb=c.createGain();fb.gain.value=.42;var lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2200;
@@ -102,7 +109,7 @@ function buildGraph(c){
   lim.threshold.value=TOYLIM[0];lim.knee.value=TOYLIM[1];lim.ratio.value=TOYLIM[2];lim.attack.value=.002;lim.release.value=.16;
   /* a browser's compressor turns everything up to make good what it takes off the top; that is taken back out here, so the ceiling is a ceiling */
   var post=c.createGain();post.gain.value=TOYPOST;toy.connect(tlp);tlp.connect(lim);lim.connect(post);post.connect(comp);var ts=c.createGain();ts.gain.value=.45;post.connect(ts);ts.connect(vs);
-  return {comp:comp,out:out,bus:bus,door:door,L:L,vsend:vs,toy:toy,post:post}}
+  return {comp:comp,out:out,bus:bus,door:door,duck:duck,L:L,vsend:vs,toy:toy,post:post}}
 /* how much this browser's compressor turns things up at these settings is measured once, quietly, rather than assumed */
 function limCalibrate(){limOne(TOYLIM,.002,.16,function(m){TOYPOST=1/m;if(AU.post&&AU.c)AU.post.gain.setTargetAtTime(TOYPOST,AU.c.currentTime,.05)});
   /* (and the modes' ceiling: 16-mix.js) */
@@ -118,7 +125,8 @@ function audioInit(){
   if(AU.c)return true;var A=window.AudioContext||window.webkitAudioContext;if(!A)return false;
   var c;try{c=new A({latencyHint:'interactive'})}catch(e){try{c=new A()}catch(e2){return false}}
   AU.c=c;try{c.addEventListener('statechange',function(){if(AU.c.state==='running')AU.taps=0;swSync()})}catch(e){}
-  var gph=buildGraph(c);AU.comp=gph.comp;AU.out=gph.out;AU.bus=gph.bus;AU.door=gph.door;AU.L=gph.L;AU.vsend=gph.vsend;AU.toy=gph.toy;AU.post=gph.post;
+  var gph=buildGraph(c);AU.comp=gph.comp;AU.out=gph.out;AU.bus=gph.bus;AU.door=gph.door;AU.duck=gph.duck;AU.L=gph.L;AU.vsend=gph.vsend;AU.toy=gph.toy;AU.post=gph.post;
+  if(HUSH){AU.duck.gain.value=0;AU.toy.gain.value=0}
   for(var i=0;i<NL;i++)AU.L[i].gain.value=bandGain(i);
   AU.lat=Math.min(.35,c.outputLatency||c.baseLatency||0);
   try{instBuild(c)}catch(e){}

@@ -1,6 +1,27 @@
 # Changelog
 
 ## For the owner
+17 Nov 2026, 23:30 (your seven videos; shipped in the sixteenth hourly run):
+
+- **Beat is now the geometry of rhythm, built from your videos.** All seven came through. They're superxeim's "geometry of rhythms"
+  series, and Beat now holds the 34 beats they show, read step by step and at the tempo each video gives. USA: House, Trap, Boom Bap,
+  Jersey Club, Rock. Cuba and Latin America: son and rumba clave, tresillo, habanera, dembow, salsa, merengue, bachata, cumbia, joropo.
+  Brazil: samba, bossa nova, samba-reggae, funk carioca. Africa: bembé, 3 against 4, shiko, soukous, gahu. Jazz and blues: swing,
+  shuffle, jazz waltz, second line, funk. Asia: teentaal, keherwa, dong dong qiang, lancaran, malfuf.
+- **It looks like the videos.** Each beat is a circle of its steps. The main instrument is a red shape joining the steps it plays,
+  the second a white shape inside, the third little ticks outside. A hand sweeps round, and each corner lights up as it's played.
+  Under the circle is the step grid, one row per instrument, with the step being played lit up. Choose a beat with back and next.
+  Its name, where it's from and its tempo show for a few seconds, the way the videos label them. Tap the middle to see the name again.
+- **It plays on real drums at its own tempo.** House at 124, salsa at 190, teentaal at 80. Your band rests while you're in Beat and
+  comes straight back when you leave. The mode button is gone from Beat, because there's no band there to change.
+- **Change any beat with your finger.** Tap the ring to add or remove a stroke of the main instrument, and drag one along the ring to
+  move it. Son clave becomes rumba clave by moving one corner a single step. Tap the grid to change any instrument, drag along a row
+  to fill it, and tap a row's name to drop that instrument out or bring it back.
+- **Melodies still work, inside the ring.** Tap the faint rings inside to place notes in the sound shown below (glass, rubber, bells,
+  boom, pluck). Each sound's notes join into a shape of their own. Hold a finger still to play its note on every step. "dice"
+  makes up a melody that follows the beat's own strokes, and "reset" puts the beat back as it was and clears the notes. Your beat,
+  your changes and your notes stay on this device.
+
 17 Nov 2026, 22:04 (the fifteenth hourly run):
 
 - **Keep a finger on Beat's circle to play.** Rest a finger on the outer rings and after a moment its note plays on every beat-step,
@@ -309,6 +330,31 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 17 Nov 2026, 23:30 (New York): Beat rebuilt from his seven videos, the geometry of rhythm (README rule 27; shipped in the sixteenth hourly run)
+
+- The videos (superxeim, "la geometría de los ritmos"; 576×1024, 30 fps, 33 to 46 s, four to nine beats each): frames at 2 a second,
+  each beat's span found by where the title changes, its grid read cell by cell over five frames (`/tmp` tools, not kept: the
+  method is in REFERENCES.md), the single-row videos read off the circle's corners and checked against their row; each beat's step
+  length measured from its step counter at 30 fps against its stated tempo: sixteenths, triplets (the 12- and 9-step beats) or
+  eighths (salsa, joropo, lancaran, dong dong qiang, the bossa). 37 beats, three repeats (House, Trap, the bossa): 34.
+- `17-beat.js` rewritten: `RHY` (the 34 in six parts of the world), `LV`, `HG`, `TG`, `ROLE`; its own clock `BT` (each beat at its
+  own tempo; a new beat starts on the next step) and bus (`busOn`: `MODELIM`, `MODEPOST × BPOST` .85, room .1, an echo for the notes
+  on the dotted step); `hushSet` (new, `03-audio.js`: a `duck` gain after the band's bus, `AU.toy`, `MIX.hush`) rests the band while
+  Beat is open. Drawing after the videos: the ring of steps with small rings, ticks for the third row, numbers (the main row's bold),
+  the red shape, the white shape at .63 R, the hand with a red trail, corners flaring as they play, the gong's ring (lancaran on 16,
+  dong dong qiang on 5); the grid with its names, beat columns lighter, the playing step lit through; `n / N` and a dot per beat of
+  the part of the world; the card (fact line, a red box with the beat's number in its part, the name, origin · steps · bpm) for five
+  seconds when asked. Touches: the ring (add, remove, drag along), the grid (tap, drag along a row), a row's name (out and back), the
+  rings of pitch (notes, a melody drawn, a roll), the middle (the card). Notes kept as `u` (0..1 round the circle) so they outlive a
+  change of beat; the old `lc.beat` notes taken over. `MIX`: `bnode` and `hush` exported; `bvoice`, `rowsBar`, `rowsAll`, `col`,
+  `offbeat` (only the first Beat used them) gone; the bells an octave up (an octave down, four of their eight pitches had been one).
+  `20-ui.js`: `nomode` on Beat hides the mode button.
+- `t_beat.js` rewritten (51 checks): the 34 and their transcriptions, the tempo (House 7.96 steps a second for 8.27), every stroke on
+  its step and in time, the band at nothing in Beat and back after, next and back, the ring (add, remove, drag 5 to 7), the grid
+  (a cell, a row drawn, a name out and back), notes, a roll, the sound, dice on the kicks, kept after a reload, reset, all 34 played,
+  every recording loaded, 390×750, 375×667, 360×640, 844×390. `t_levels.js`: each of the 34 as written 6.0 to 10.0 dB under the band;
+  every step on 2.1 to 5.4; with 48 notes and two rolls 2.1 to 4.2; each sound full with two rolls 4.6 to 6.8.
 
 ## 17 Nov 2026, 22:04 (New York), the fifteenth hourly run: a finger kept on Beat's rings plays on every sixteenth
 

@@ -191,3 +191,5 @@ not ask for.
 - 2026-11-17 21:02: a ring held in Beat: a mode's instrument to its other loop (the classic beats' busier ones), a band player alone
   and back; a tap as before (no new word from him since 19:44; his videos still not here).
 - 2026-11-17 22:04: a finger kept on Beat's rings plays its pitch on every sixteenth (two at most), the loudness test measuring it.
+- 2026-11-18 04:04 (his seven videos came at 22:20 local): Beat rebuilt as the geometry of rhythm, the 34 beats of his videos at
+  their own tempi on recorded drums, the band resting in Beat (README rule 27); the 22:04 roll shipped first (03:49).

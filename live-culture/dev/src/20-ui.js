@@ -14,7 +14,7 @@ var WORLDS=[
   /* the mixer: a grid of loops, the band's and a machine's (13 Nov) */
   {id:'mix',name:'Mix',o:MIX,tuck:1,sc:[1,1,1,1,1,1,1,1,1],ic:'<rect x="3.5" y="3.5" width="4.6" height="4.6" rx="1.1"/><rect x="9.7" y="3.5" width="4.6" height="4.6" rx="1.1"/><rect x="15.9" y="3.5" width="4.6" height="4.6" rx="1.1"/><rect x="3.5" y="9.7" width="4.6" height="4.6" rx="1.1"/><rect x="9.7" y="9.7" width="4.6" height="4.6" rx="1.1"/><rect x="15.9" y="9.7" width="4.6" height="4.6" rx="1.1"/><rect x="3.5" y="15.9" width="4.6" height="4.6" rx="1.1"/><rect x="9.7" y="15.9" width="4.6" height="4.6" rx="1.1"/><rect x="15.9" y="15.9" width="4.6" height="4.6" rx="1.1"/>'},
   /* (17 Nov, 17:54) the bar as a metronome's face: what plays broken down round it, and notes of your own put on it in five sounds */
-  {id:'beat',name:'Beat',o:BEAT,tuck:1,sc:[1,1,1,1,1,1,1,1,1],ic:'<circle cx="12" cy="12" r="8.8"/><path d="M12 12l4.6-4.6"/><path d="M12 3.2v1.6M20.8 12h-1.6M12 20.8v-1.6M3.2 12h1.6"/><circle cx="12" cy="12" r="1.1" fill="currentColor"/>'},
+  {id:'beat',name:'Beat',o:BEAT,tuck:1,nomode:1,sc:[1,1,1,1,1,1,1,1,1],ic:'<circle cx="12" cy="12" r="8.8"/><path d="M12 12l4.6-4.6"/><path d="M12 3.2v1.6M20.8 12h-1.6M12 20.8v-1.6M3.2 12h1.6"/><circle cx="12" cy="12" r="1.1" fill="currentColor"/>'},
 ];
 var CUR=null,CURI=-1,PT={},PTN=0,GP={},PS=[],HV=null,touched={},lastTouch=-1e9,SAYT=0,SAYX='',SAYC='',swT=0,GOT=0,FDT=.016;
 function safe(f){try{f()}catch(e){if(window.__lc){window.__lc.errs=(window.__lc.errs||[]);window.__lc.errs.push(String(e&&e.stack||e))}}}
@@ -40,7 +40,8 @@ function chrome(){
   var w=WORLDS[CURI];if(!w)return;$('wname').textContent=w.name;
   WORLDS.forEach(function(x,i){var b=$('w_'+x.id);if(b)b.setAttribute('aria-current',i===CURI?'true':'false');var d=$('gd_'+x.id);if(d)d.className=i===CURI?'on':''});
   var ft=$('foot'),gp=$('wgrip');if(ft)ft.classList.toggle('railauto',!!w.tuck);if(gp)gp.hidden=!w.tuck;railShow(false);
-  $('bPhoto').hidden=!w.photo;$('bClear').hidden=!(w.photo&&PHOTO.has);$('bSave').hidden=!DL;$('bNow').hidden=true;
+  /* (18 Nov) Beat plays its own beats while the band rests, so the band's mode has no button there */
+  $('bMode').hidden=!!w.nomode;$('bPhoto').hidden=!w.photo;$('bClear').hidden=!(w.photo&&PHOTO.has);$('bSave').hidden=!DL;$('bNow').hidden=true;
   $('bPhoto').setAttribute('aria-pressed',PHOTO.has?'true':'false');
   try{if(location.hash!=='#'+w.id)history.replaceState(null,'','#'+w.id)}catch(e){}
   layout();if(CUR&&CUR.resize)safe(function(){CUR.resize(VW,VH)});DATAX=null;dataPaint(true)}

@@ -65,18 +65,21 @@ const { launch, open } = require('./lib');
       let lone2 = null; for (const r of rows) for (let k = 0; k < r.loops.length; k++) { const x = await render(null, null, inst({ [r.n]: k }, md)); x.which = md + ' ' + r.n + ' ' + r.loops[k].n; each[x.which] = x.loudest; if (!lone2 || x.loudest > lone2.loudest) lone2 = x; }
       out[md + ': the loudest of its ' + rows.reduce((a, r) => a + r.loops.length, 0) + ' loops alone (' + lone2.which + ')'] = lone2;
     }
-    // (17 Nov, evening) Beat: its circle as full as it can be (48 notes: six sixteenths with all eight pitches each, each of a chord of
-    // eight as soft as the page plays it, BEAT.chord), in each of its five sounds alone, and in all five at once on top of the full band
-    // (that one is measured, not held under the band)
-    await L.SND.load(['glock', 'marimba', 'chimes', 'fbass', 'gtr']);
-    const BS = L.BEAT.sounds.map(x => x[0]), sd = L.STEML / 64, FULL = [0, 3, 6, 8, 11, 14];
-    // (17 Nov, 22:04: and two fingers kept on the rings, playing on every sixteenth, each sixteenth's notes softer together as the page
-    // plays them: eight and two, or two)
-    const beatFull = (O, g, G, names) => { for (let t0 = .05; t0 < dur; t0 += 16 * sd) for (let q = 0; q < 16; q++) { const full = FULL.includes(q), n = (full ? 8 : 0) + 2, at = t0 + q * sd + ((q & 1) ? sd * .16 : 0);
-      for (let p = 0; p < (full ? 8 : 0); p++) L.MIX.offbeat(O, { toy: g.toy }, G, names[(q + p) % names.length], L.BEAT.midi(p), .85 * L.BEAT.chord(n), at);
-      for (const p of [2, 6]) L.MIX.offbeat(O, { toy: g.toy }, G, names[(q + p) % names.length], L.BEAT.midi(p), .85 * L.BEAT.chord(n), at); } };
-    for (const nm of BS) out['beat: ' + nm + ', the circle full, two fingers playing'] = await render(null, null, (O, g) => beatFull(O, g, L.MIX.offline(O, { bus: g.bus, toy: g.toy, comp: g.comp, vs: g.vsend }, 1, {}, 'africa'), [nm]));
-    out['band, all nine, WITH the beat circle full and two fingers, all five sounds'] = await render(all, null, (O, g) => beatFull(O, g, L.MIX.offline(O, { bus: g.bus, toy: g.toy, comp: g.comp, vs: g.vsend }, 1, {}, 'africa'), BS));
+    // (18 Nov) Beat: its 34 classic beats, each as transcribed, at its own tempo, through Beat's own bus (the band rests while Beat
+    // plays, so each is held under the band by itself); the four with the most steps a second with every step of every row on, and the
+    // same with the circle full of notes (48: six steps with all eight pitches) in all five sounds and two fingers playing; and each of
+    // the five sounds alone, the circle full and two fingers, over House
+    await L.SND.load(['kit', 'k808', 'drums', 'small', 'glock', 'marimba', 'chimes', 'fbass', 'gtr', 'vibes']);
+    const BL = L.BEAT.lib; let loudB = null;
+    for (let i = 0; i < BL.length; i++) { const x = await render(null, null, (O, g) => L.BEAT.offline(O, g, dur, { i })); each['beat ' + BL[i].id] = x.loudest; if (!loudB || x.loudest > loudB.loudest) { loudB = x; loudB.which = BL[i].n; } }
+    out['beat: the loudest of its ' + BL.length + ' beats as written (' + loudB.which + ')'] = loudB;
+    const FAST = BL.map((r, i) => [i, r.bpm * r.b]).sort((a, b) => b[1] - a[1]).slice(0, 4).map(x => x[0]);
+    const FULLN = []; [0, 3, 6, 8, 11, 14].forEach((q, k) => { for (let p = 0; p < 8; p++) FULLN.push([q, p, (k + p) % 5]); });
+    for (const i of FAST) {
+      out['beat: ' + BL[i].n + ', every step of every row on'] = await render(null, null, (O, g) => L.BEAT.offline(O, g, dur, { i, full: 1 }));
+      out['beat: ' + BL[i].n + ', all steps on, 48 notes, two fingers'] = await render(null, null, (O, g) => L.BEAT.offline(O, g, dur, { i, full: 1, notes: FULLN, rolls: [[2, 0], [6, 3]] }));
+    }
+    for (let v = 0; v < 5; v++) out['beat: ' + L.BEAT.sounds[v][0] + ', 48 notes and two fingers, over House'] = await render(null, null, (O, g) => L.BEAT.offline(O, g, dur, { i: 0, notes: FULLN.map(n => [n[0], n[1], v]), rolls: [[2, v], [6, v]] }));
     out.__each = each;
     return out;
   });

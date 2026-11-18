@@ -87,6 +87,14 @@ Both are used only by `tools/test_astro.js`; neither is in the page.
 - **The smoke in Wind (until 15 Nov):** semi-Lagrangian advection (the same paper) in the real wind field; the way of showing wind owes to
   Cameron Beccario's earth.nullschool.net and to Refik Anadol's wind "data paintings".
 
+## Beats
+Beat's 34 beats were read off seven short videos the owner sent on 17 Nov (the TikTok account superxeim, a series on the geometry of
+rhythms, each beat drawn on a circle of its steps over a grid of them): the steps of every row from the grid, the tempo from each
+video's own label, how long a step is from how fast its step counter goes. The rhythms themselves are traditional (the clave, the
+tresillo, the bembé bell, teentaal's theka and the rest belong to their musics), and the way of drawing them follows Godfried
+Toussaint's *The Geometry of Musical Rhythm* (2013), where the six timelines of the third video (son, rumba, bossa nova, shiko,
+soukous, gahu) come from. Played on the page's own recordings (VCSL, CC0, and Fluid R3, MIT: above).
+
 ## Type
 Anybody (Etcetera Type Company) and JetBrains Mono, both SIL Open Font License, from Google Fonts.
 
