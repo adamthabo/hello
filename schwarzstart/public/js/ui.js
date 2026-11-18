@@ -31,6 +31,7 @@ export class Input {
       if (!this.on) { if (ui.panel && OPEN[e.code]) { e.preventDefault(); ui.panel === OPEN[e.code] ? ui.close() : ui.open(OPEN[e.code]); } return; }
       if (e.code === 'Tab' || e.code === 'Space') e.preventDefault(); if (e.repeat) return;
       this.keys.add(e.code); if (KEYS[e.code]) this.pressed.add(KEYS[e.code]); if (e.code === 'KeyF') this.use = true; if (OPEN[e.code]) ui.open(OPEN[e.code]);
+      if (e.code === 'Space') { const now = performance.now(); if (now - (this.spaceT || 0) < 300) { this.pressed.delete('cover'); this.pressed.add('roll'); this.rollDir = null; this.spaceT = 0; } else this.spaceT = now; }   /* double-tap Space rolls, as on the phone */
     });
     addEventListener('keyup', (e) => { this.keys.delete(e.code); if (e.code === 'KeyF') this.use = false; });
     addEventListener('blur', () => { this.keys.clear(); this.fire = this.aim = this.use = false; });
@@ -123,14 +124,14 @@ export class UI {
     set('street', G.loc.street || G.loc.dist.name, (v) => (el('locS').textContent = v)); set('dist', G.loc.dist.name + ' · ' + this.clock(), (v) => (el('locD').textContent = v));
     const wp = G.wp; set('obj', wp ? wp.n + '|' + Math.round(hyp(wp.x - P.x, wp.z - P.z) / 5) : '', () => { el('obj').style.visibility = wp ? 'visible' : 'hidden'; if (wp) { el('objT').textContent = wp.n; const s = wp.s; el('objS').textContent = (wp.loot ? 'Your loot · ' : wp.auto ? 'Nächster Kampf · ' : '') + (s && s.k === 'mission' ? s.def.loc + ' · ' : '') + Math.round(hyp(wp.x - P.x, wp.z - P.z) / 5) * 5 + ' m'; } });
     { // the next fight is one tap away; something better is one tap from being worn
-      const dir = !G.mode || G.mode.id === 'frei', wpd = G.wp ? hyp(G.wp.x - P.x, G.wp.z - P.z) : 0, dep = dir && G.wp && !G.wp.loot && wpd > 140 && !P.dead && !(G.combatT > 0 && G.alive() > 0);
+      const dir = !G.mode || G.mode.id === 'frei', wpd = G.wp ? hyp(G.wp.x - P.x, G.wp.z - P.z) : 0, dep = dir && G.wp && !G.wp.loot && wpd > 100 && !P.dead && !(G.combatT > 0 && G.alive() > 0);
       set('dep', dep ? Math.round(wpd / 10) * 10 : -1, (v) => { el('bDeploy').classList.toggle('hidden', v < 0); if (v >= 0) el('bDeployD').textContent = v + ' m'; });
       const bt = G.better; set('bet', bt ? bt.id : -1, () => { el('bBetter').classList.toggle('hidden', !bt); if (bt) { el('bBetterU').textContent = 'UPGRADE ' + (G.betterD > 0 && G.betterD < 999 ? '+' + Math.round(G.betterD) + '%' : ''); el('bBetterN').innerHTML = `<span style="color:${RAR[bt.rar].c}">${bt.n}</span> · Stufe ${bt.lvl}`; } });
       let nn = 0, br = -1, bu = false; for (const i of G.S.inv) if (i.nw === 1) { nn++; if (i.rar > br) br = i.rar; if (!bu && G.gain(i) > 1) bu = true; }
       set('lootB', nn + '|' + br + '|' + bu, () => { const b = el('bLoot'); b.classList.toggle('hidden', !nn); b.classList.toggle('up', bu); if (nn) { b.style.setProperty('--rc', RAR[br].c); el('bLootN').textContent = nn; } });
     }
     const pr = G.prompt, pe = el('prompt'); set('pr', pr ? pr.text + pr.sub + (pr.bad ? 1 : 0) + (pr.hot ? 'h' : '') : '', () => { pe.classList.toggle('hidden', !pr); pe.classList.toggle('hot', !!(pr && pr.hot)); if (pr) { el('prT').textContent = pr.text; el('prS').textContent = pr.sub; pe.classList.toggle('bad', !!pr.bad); } }); if (pr) el('prP').style.transform = `scaleX(${clamp(pr.prog, 0, 1)})`;
-    const sp = 9 + P.bloom * 16 + (P.moving ? 4 : 0) + (G.inp.aim ? -4 : 0); el('cross').style.setProperty('--g', sp + 'px'); set('lock', !!G.aimT, (v) => el('lock').classList.toggle('on', v)); set('cov', P.st === 'cover' ? 2 : G.coverNear ? 1 : 0, (v) => { const b = el('bCover'); b.classList.toggle('ctx', v > 0); b.classList.toggle('inc', v === 2); });
+    const sp = 9 + P.bloom * 16 + (P.moving ? 4 : 0) + (G.inp.aim ? -4 : 0); el('cross').style.setProperty('--g', sp + 'px'); set('lock', !!G.aimT, (v) => el('lock').classList.toggle('on', v)); set('cov', P.st === 'cover' ? 2 : G.coverNear || G.cvShow ? 1 : 0, (v) => { const b = el('bCover'); b.classList.toggle('ctx', v > 0); b.classList.toggle('inc', v === 2); });
     if (this.hintT > 0) { this.hintT -= dt; if (this.hintT <= 0) el('hint').classList.add('hidden'); }
     this.overlay(dt); this.mmT = (this.mmT || 0) - dt; if (this.mmT <= 0) { this.mmT = 0.05; this.minimap(); }
   }

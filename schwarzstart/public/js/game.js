@@ -1,7 +1,7 @@
 // SCHWARZSTART · core game: player, camera, cover, weapons, effects, loot
 import * as THREE from 'three';
 import { Rig, LOOKS, hasMocap } from './rig.js';
-import { F_LOW, F_WALL } from './geom.js';
+import { F_LOW, F_WALL, F_SOFT } from './geom.js';
 import * as SYS from './systems.js';
 import { WPN, RAR, RARHEX, hasPerk } from './systems.js';
 import { clamp, lerp, damp, dampAng, angDiff, hyp, R, store, IS_TOUCH } from './util.js';
@@ -50,9 +50,22 @@ class FX {
   }
 }
 
+// where COVER will run to: a bracket on the street hugging the cover, and a small diamond floating over it
+function coverMarker() {
+  const g = new THREE.Group(), mat = (k, top) => new THREE.MeshBasicMaterial({ color: top ? new THREE.Color(1.0, 0.72, 0.36).multiplyScalar(k) : new THREE.Color(1.0, 0.5, 0.12).multiplyScalar(k), transparent: true, opacity: 1, depthWrite: false, depthTest: !top, blending: top ? THREE.AdditiveBlending : THREE.NormalBlending, fog: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
+  const P = [], I = [], q = (x0, z0, x1, z1) => { const b = P.length / 3; P.push(x0, 0, z0, x1, 0, z0, x1, 0, z1, x0, 0, z1); I.push(b, b + 2, b + 1, b, b + 3, b + 2); };
+  q(-0.72, 0.05, 0.72, 0.18); q(-0.72, 0.18, -0.6, 0.55); q(0.6, 0.18, 0.72, 0.55);   // a bar along the cover and two ticks towards you
+  const bg = new THREE.BufferGeometry(); bg.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); bg.setIndex(I);
+  const bar = new THREE.Mesh(bg, mat(1.8)); bar.position.y = 0.05; bar.renderOrder = 6; bar.frustumCulled = false; g.add(bar);
+  // the diamond is drawn over everything, so it still shows when your own cover hides the street beyond
+  const dg = new THREE.BufferGeometry(), o = 0.05; dg.setAttribute('position', new THREE.Float32BufferAttribute([0, 0.24, 0, 0.16, 0, 0, 0, -0.24, 0, -0.16, 0, 0, 0, 0.24 - o * 2.4, 0, 0.16 - o * 1.6, 0, 0, 0, -0.24 + o * 2.4, 0, -0.16 + o * 1.6, 0, 0], 3));
+  dg.setIndex([0, 1, 5, 0, 5, 4, 1, 2, 6, 1, 6, 5, 2, 3, 7, 2, 7, 6, 3, 0, 4, 3, 4, 7]);   // an outline, not a solid lozenge
+  const dia = new THREE.Mesh(dg, mat(1.5, true)); dia.renderOrder = 40; dia.frustumCulled = false; g.add(dia);
+  g.visible = false; g.userData = { bar, dia }; return g;
+}
 export class Game {
   constructor(gfx, world, map, audio) {
-    this.gfx = gfx; this.world = world; this.map = map; this.audio = audio; this.scene = gfx.scene; this.fx = new FX(gfx.scene);
+    this.gfx = gfx; this.world = world; this.map = map; this.audio = audio; this.scene = gfx.scene; this.fx = new FX(gfx.scene); this.cvMark = coverMarker(); this.scene.add(this.cvMark); this.cvPick = null;
     this.en = []; this.loot = []; this.nades = []; this.turret = null; this.t = 0; this.paused = true; this.inp = null; this.ui = null;
     this.cam = { yaw: 2.4, pitch: -0.08, dist: 3.1, sh: 1, shT: 1, fov: 58, shake: 0, kick: 0 };
     this.cap = gfx.tier === 'low' ? 12 : 18; this.prompt = null; this.aimT = null; this.combatT = 0; this.wp = null;
@@ -129,13 +142,23 @@ export class Game {
     const coverKey = I.was('cover');
     let speed = 0;
     if (P.roll > 0) {
-      P.roll += dt / 0.52; const s = 9.6 * (1 - P.roll * 0.45); P.x += P.rdx * s * dt; P.z += P.rdz * s * dt; W.collide(P, PR); P.yaw = Math.atan2(P.rdx, P.rdz); P.vx = P.rdx * s * 0.6; P.vz = P.rdz * s * 0.6; if (P.roll >= 1) P.roll = 0; speed = 0;
+      P.roll += dt / 0.52; const s = 9.6 * (1 - P.roll * 0.45); W.slide(P, P.rdx * s * dt, P.rdz * s * dt, PR); P.yaw = Math.atan2(P.rdx, P.rdz); P.vx = P.rdx * s * 0.6; P.vz = P.rdz * s * 0.6; if (P.roll >= 1) P.roll = 0; speed = 0;
     } else if (P.vault > 0) {
       P.vault += dt / 0.42; const k = Math.min(1, P.vault); P.x = lerp(P.vx0, P.vx1, k); P.z = lerp(P.vz0, P.vz1, k); if (P.vault >= 1) { P.vault = 0; P.st = 'free'; } speed = 4;
     } else if (P.dash) {
+      // the run to the marked cover: a quick build to a sprint, sliding round anything small, and a snap into cover on arrival
       const d = P.dash, ddx = d.x - P.x, ddz = d.z - P.z, l = hyp(ddx, ddz) || 1; d.t += dt;
-      if (l < 1.5 || d.t > 3.2) { P.dash = null; this.enterCover(ddx / l, ddz / l, true); }
-      else { P.x += (ddx / l) * 6.8 * dt; P.z += (ddz / l) * 6.8 * dt; P.vx = (ddx / l) * 6.8; P.vz = (ddz / l) * 6.8; W.collide(P, PR); P.yaw = dampAng(P.yaw, Math.atan2(ddx, ddz), 14, dt); speed = 6.8; if (ml > 0.5 && (mx * ddx + mz * ddz) / l < -0.3) P.dash = null; }
+      let wx = d.x, wz = d.z; if (d.path) { while (d.k < d.path.length - 1 && hyp(d.path[d.k][0] - P.x, d.path[d.k][1] - P.z) < 1.0) d.k++; if (d.k < d.path.length - 1) { wx = d.path[d.k][0]; wz = d.path[d.k][1]; } }
+      const rx_ = wx - P.x, rz_ = wz - P.z, rl = hyp(rx_, rz_) || 1;
+      if (l < 0.9) { P.dash = null; this.takeCover(d.cv, ddx * d.cv.dx + ddz * d.cv.dz); speed = 3; }
+      else if (d.t > (d.path ? 4.5 : 3.2) || (ml > 0.5 && (mx * rx_ + mz * rz_) / rl < -0.3)) P.dash = null;
+      else {
+        d.sp = Math.min(6.8, Math.max(d.sp || 0, 2.5) + 22 * dt); const st = Math.min(d.sp * dt, Math.max(0.05, l - 0.5)), ox = P.x, oz = P.z;
+        W.slide(P, (rx_ / rl) * st, (rz_ / rl) * st, PR); const prog = rl - hyp(wx - P.x, wz - P.z);
+        d.stk = prog < st * 0.3 ? (d.stk || 0) + dt : 0;
+        if (d.stk > 0.2) { const cv = d.cv; P.dash = null; if (l < 2) { const s_ = cv.s, L_ = cv.len; cv.t = clamp(((P.x - s_.x1) * cv.dx + (P.z - s_.z1) * cv.dz) / L_, 0.3 / L_, 1 - 0.3 / L_); this.takeCover(cv, ddx * cv.dx + ddz * cv.dz); } }   // blocked: duck in here if it's close, else stop rather than grind
+        if (dt > 0) { P.vx = (P.x - ox) / dt; P.vz = (P.z - oz) / dt; } P.yaw = dampAng(P.yaw, Math.atan2(rx_, rz_), 14, dt); speed = d.sp;
+      }
     } else if (P.st === 'cover') {
       const cv = P.cov, s = cv.s; P.peek = P.aim; P.covT += dt; P.vx = damp(P.vx || 0, 0, 12, dt); P.vz = damp(P.vz || 0, 0, 12, dt);
       const along = mx * cv.dx + mz * cv.dz, away = mx * cv.nx + mz * cv.nz;
@@ -171,12 +194,14 @@ export class Game {
       const hitWall = W.slide(P, P.vx * dt, P.vz * dt, PR); if (dt > 0 && hitWall) { const nvx = (P.x - ox) / dt, nvz = (P.z - oz) / dt, k = hyp(P.vx, P.vz) > 0.1 ? Math.min(1, hyp(nvx, nvz) / hyp(P.vx, P.vz)) : 0; P.vx = nvx; P.vz = nvz; P.snag = k; }
       speed = hyp(P.vx, P.vz);
       if (P.aim) P.yaw = dampAng(P.yaw, c.yaw, 16, dt); else if (speed > 0.5) P.yaw = dampAng(P.yaw, Math.atan2(P.vx, P.vz), P.sprint ? 10 : 13, dt);
-      if (coverKey) this.enterCover(mx || fx, mz || fz, true); else if (this.autoCover && hitWall && this.combatT > 0 && ml > 0.6 && !P.aim && !P.sprint) { P.pushT = (P.pushT || 0) + dt; if (P.pushT > 0.35) { P.pushT = 0; this.enterCover(mx, mz, false, true); } } else P.pushT = 0;
+      if (coverKey) { if (!this.enterCover(mx || fx, mz || fz, true)) this.coverToCover(); } else if (this.autoCover && hitWall && this.combatT > 0 && ml > 0.6 && !P.aim && !P.sprint) { P.pushT = (P.pushT || 0) + dt; if (P.pushT > 0.35) { P.pushT = 0; this.enterCover(mx, mz, false, true); } } else P.pushT = 0;
     }
     const b = W.core, bm = W.coreMargin; P.x = clamp(P.x, b[0] + bm[0], b[2] - bm[2]); P.z = clamp(P.z, b[1] + bm[1], b[3] - bm[3]);
     P.spd = speed; P.moving = speed > 0.5 ? 1 : 0;
     P.crouch = P.st === 'cover' && P.cov.low && !P.peek; P.h = P.crouch ? 1.0 : P.roll ? 0.9 : 1.75;
-    this.covNT = (this.covNT || 0) - dt; if (this.covNT <= 0) { this.covNT = 0.2; const cv = P.st === 'free' && !P.roll ? W.cover(P.x, P.z, 2.2, fx, fz, this.threat()) : null; this.coverNear = !!cv && cv.len >= 0.9; }   // lights the COVER button
+    this.covNT = (this.covNT || 0) - dt; const cvTick = this.covNT <= 0; if (cvTick) { this.covNT = 0.1; const cv = P.st === 'free' && !P.roll ? W.cover(P.x, P.z, 2.2, fx, fz, this.threat()) : null; this.coverNear = !!cv && cv.len >= 0.9; }   // lights the COVER button
+    if (cvTick) { this.cvPick = !P.dash && !P.roll && !P.vault && (P.st === 'cover' || (P.st === 'free' && !this.coverNear && (this.combatT > 0 || !!this.threat()))) ? this.coverPick() : null; }
+    this.cvShow = P.st === 'free' && !!this.cvPick && !P.dash; this.markCover(P.dash ? P.dash.cv : this.cvPick, dt);
     // weapon
     const w = this.curW(), Wd = WPN[w.cls]; P.fireT -= dt; P.bloom = damp(P.bloom, 0, 5, dt);
     if (P.relT > 0) { P.relT -= dt; if (P.relT <= 0) this.finishReload(); }
@@ -208,24 +233,58 @@ export class Game {
   enterCover(dx, dz, forced, auto) {
     const P = this.P, l = hyp(dx, dz) || 1, th = this.threat(), cv = this.world.cover(P.x, P.z, forced ? 2.2 : 0.9, dx / l, dz / l, th); if (!cv || cv.len < 0.9) return false;
     if (auto && ((cv.s.f & F_WALL) || !th || cv.nx * (th.x - cv.x) + cv.nz * (th.z - cv.z) > -0.5)) return false;   // bumping into things only takes cover behind real cover from a real threat
-    P.st = 'cover'; P.cov = cv; P.covT = 0; P.awayT = 0; P.covDir = 1; this.audio.play('cover', 0.35); return true;
+    this.takeCover(cv); return true;
   }
+  takeCover(cv, dir = 1) { const P = this.P; P.st = 'cover'; P.cov = cv; P.covT = 0; P.awayT = 0; P.covDir = dir < 0 ? -1 : 1; P.dash = null; this.audio.play('cover', 0.35); }
   leaveCover() { const P = this.P; if (P.st === 'cover') { P.st = 'free'; P.cov = null; P.peek = false; } }
-  coverToCover() {            // run to the cover the camera is looking at
-    const P = this.P, c = this.cam, fx = Math.sin(c.yaw), fz = Math.cos(c.yaw); let best = null, bs = 1e9;
-    for (const s of this.world.coversNear(P.x + fx * 9, P.z + fz * 9, 9, [])) {
-      if (s === P.cov.s) continue; const mx = (s.x1 + s.x2) / 2, mz = (s.z1 + s.z2) / 2, dx = mx - P.x, dz = mz - P.z, d = hyp(dx, dz); if (d < 2.5 || d > 17) continue;
-      const dot = (dx * fx + dz * fz) / d; if (dot < 0.86) continue; const sc = d * (1.6 - dot); if (sc < bs) { bs = sc; best = s; }
+  coverToCover() {            // run to the marked cover
+    const t = this.cvPick; if (!t) return false;
+    this.leaveCover(); this.P.dash = { cv: t, x: t.x, z: t.z, t: 0, sp: hyp(this.P.vx || 0, this.P.vz || 0), path: t.path || null, k: 0 }; this.cvPick = null; this.audio.play('roll', 0.25); return true;
+  }
+  // the cover the camera is looking at, 2.5 to 17 m off, and the spot on your side of it: where COVER runs to in a fight.
+  // A straight run is preferred; if your own cover or a car is in the way, one detour round it is worked out on the walk grid.
+  coverPick() {
+    const P = this.P, W = this.world, c = this.cam, fx = Math.sin(c.yaw), fz = Math.cos(c.yaw), th = this.threat(), cur = P.cov ? P.cov.s : null, L = this._cvl || (this._cvl = []), pr = this._cvp || (this._cvp = { x: 0, z: 0 }), C = [];
+    L.length = 0; W.coversNear(P.x + fx * 9.5, P.z + fz * 9.5, 9.5, L);
+    for (const s of L) {
+      if (s === cur || s.h < 0.8) continue;
+      const ex = s.x2 - s.x1, ez = s.z2 - s.z1, len = hyp(ex, ez); if (len < 0.9) continue;
+      const ux = ex / len, uz = ez / len, cr = fx * uz - fz * ux; if (Math.abs(cr) < 0.4) continue;   // edge-on to the view: you would arrive beside it, not behind it
+      const m = Math.min(0.45, len / 2), q = clamp(((s.x1 - P.x) * fz - (s.z1 - P.z) * fx) / cr, m, len - m);
+      const qx = s.x1 + ux * q, qz = s.z1 + uz * q; let nx = -uz, nz = ux; if (nx * (P.x - qx) + nz * (P.z - qz) < 0) { nx = -nx; nz = -nz; }
+      const x = qx + nx * (PR + 0.12), z = qz + nz * (PR + 0.12), dx = x - P.x, dz = z - P.z, d = hyp(dx, dz); if (d < 2.5 || d > 17) continue;
+      const dot = (dx * fx + dz * fz) / d; if (dot < 0.87 || !W.inCore(x, z)) continue;
+      let sc = d * (1 + 6 * (1 - dot)); if (th && nx * (th.x - qx) + nz * (th.z - qz) > 0) sc *= 2.5;   // the threat is on this side of it: poor cover
+      C.push({ sc, s, x, z, qx, qz, nx, nz, low: !!(s.f & F_LOW), t: q / len, len, dx: ux, dz: uz, d });
     }
-    if (!best) return false;
-    const mx = (best.x1 + best.x2) / 2, mz = (best.z1 + best.z2) / 2; this.leaveCover(); P.dash = { x: mx, z: mz, t: 0 }; this.audio.play('roll', 0.25); return true;
+    C.sort((a, b) => a.sc - b.sc); let tried = false;
+    for (let i = 0; i < C.length && i < 6; i++) {
+      const k = C[i]; pr.x = k.x; pr.z = k.z; W.collide(pr, PR); if (hyp(pr.x - k.x, pr.z - k.z) > 0.15) continue;   // no room to crouch there
+      const h = W.ray(P.x, 0.4, P.z, (k.x - P.x) / k.d, 0, (k.z - P.z) / k.d, k.d - 0.3);
+      if (h && h.s && h.s !== k.s && !(h.s.f & F_SOFT) && !(h.s.r > 0 && h.s.r < 0.5)) {   // something in the way of the run
+        if (tried || (h.s.f & F_WALL)) continue; tried = true;
+        const ax = k.x + k.nx, az = k.z + k.nz; pr.x = ax; pr.z = az; W.collide(pr, PR); if (hyp(pr.x - ax, pr.z - az) > 0.2) continue;   // come in square to the cover, not round its corner
+        const pth = W.path(P.x, P.z, ax, az, 700); if (!pth || pth.length > 4) continue;
+        let pl = 0, px = P.x, pz = P.z; for (const p of pth) { pl += hyp(p[0] - px, p[1] - pz); px = p[0]; pz = p[1]; } if (pl > k.d * 1.7 + 2) continue;
+        pth.push([k.x, k.z]); k.path = pth;
+      }
+      return k;
+    }
+    return null;
+  }
+  markCover(t, dt) {
+    const g = this.cvMark; if (!g) return; const on = !!t && !this.P.dead;
+    g.userData.a = damp(g.userData.a || 0, on ? 1 : 0, on ? 14 : 10, dt); g.visible = g.userData.a > 0.02; if (!g.visible) return;
+    if (on && g.userData.t !== t) { g.userData.t = t; g.position.set(t.qx, 0, t.qz); g.rotation.y = Math.atan2(t.nx, t.nz); g.userData.dia.position.set(0, Math.min(t.s.h, 2.4) + 0.26, 0.12); }
+    const p = 0.75 + 0.25 * Math.sin(this.t * 6.5), a = g.userData.a * (this.P.dash ? 0.6 : 1);
+    g.userData.bar.material.opacity = 0.85 * a * p; g.userData.dia.material.opacity = 0.9 * a; g.userData.dia.rotation.y = this.cam.yaw - g.rotation.y;   /* the diamond turns to face you */ g.userData.dia.position.y += (Math.min(g.userData.t.s.h, 2.4) + 0.26 + Math.sin(this.t * 3) * 0.05 - g.userData.dia.position.y) * Math.min(1, dt * 10);
   }
   tryVault() {
     const P = this.P, cv = P.cov, W = this.world, p = { x: 0, z: 0 };
     for (let d = 1.0; d <= 4.2; d += 0.4) { p.x = P.x - cv.nx * d; p.z = P.z - cv.nz * d; const ox = p.x, oz = p.z; W.collide(p, PR); if (hyp(p.x - ox, p.z - oz) < 0.05 && W.walkable(p.x, p.z)) { P.vx0 = P.x; P.vz0 = P.z; P.vx1 = p.x; P.vz1 = p.z; P.vault = 0.001; P.st = 'vault'; P.cov = null; this.audio.play('cover', 0.4, 0.8); return; } }
     this.leaveCover();
   }
-  startRoll(dx, dz) { const P = this.P; this.leaveCover(); P.roll = 0.001; P.rdx = dx; P.rdz = dz; P.relT = P.relT > 0 ? P.relT : 0; this.audio.play('roll', 0.3); }
+  startRoll(dx, dz) { const P = this.P; this.leaveCover(); P.dash = null; P.roll = 0.001; P.rdx = dx; P.rdz = dz; P.relT = P.relT > 0 ? P.relT : 0; this.audio.play('roll', 0.3); }
   swap(i) { const S = this.S, P = this.P; if (i === S.cur || !S.wpn[i]) return; S.cur = i; P.relT = 0; P.fireT = 0.35; P.rig.setGun(S.wpn[i].cls); this.audio.play('swap', 0.4); if (this.ui) this.ui.dirty = true; }
   reload() { const P = this.P, w = this.curW(), W = WPN[w.cls], i = this.S.cur; if (P.relT > 0 || this.mags[i] >= this.magSize(w)) return; if (!W.side && (this.S.res[w.cls] || 0) <= 0) { if (this.t - (P.dryT || 0) > 1) { P.dryT = this.t; this.audio.play('dry', 0.4); this.ui.toast('No ammo for this weapon'); } return; } P.relD = P.relT = W.rel * (hasPerk(w, 'rel') ? 0.8 : 1); this.audio.play('reload', 0.5); }
   finishReload() { const w = this.curW(), W = WPN[w.cls], i = this.S.cur, need = this.magSize(w) - this.mags[i]; if (W.side) this.mags[i] += need; else { const n = Math.min(need, this.S.res[w.cls] || 0); this.mags[i] += n; this.S.res[w.cls] -= n; } this.audio.play('cock', 0.45); }
@@ -257,14 +316,16 @@ export class Game {
       dx += s1 * Math.cos(this.cam.yaw) * 1 + 0; dz += -s1 * Math.sin(this.cam.yaw); dy += s2; const l = Math.hypot(dx, dy, dz); dx /= l; dy /= l; dz /= l;
       const maxT = W.range * 1.7, hw = this.world.ray(cp.x, cp.y, cp.z, dx, dy, dz, maxT); let bt = hw ? hw.t : maxT, he = null, head = false;
       for (const e of this.en) { if (e.dead) continue; const r = e.rayHit(cp.x, cp.y, cp.z, dx, dy, dz); if (r && r.t < bt && r.t > this.cam.dist * 0.6) { bt = r.t; he = e; head = r.head; } }
+      let tk = null; for (const e of this.en) { if (e.dead || !e.tank) continue; const r = e.tankHit(cp.x, cp.y, cp.z, dx, dy, dz); if (r && r.t < bt && r.t > this.cam.dist * 0.6) { bt = r.t; tk = e; he = null; head = false; } }   /* a heavy's tank, if it is the nearest thing on the line */
       let hx = cp.x + dx * bt, hy = cp.y + dy * bt, hz = cp.z + dz * bt;
       const mdx = hx - mz.x, mdy = hy - mz.y, mdz = hz - mz.z, ml = Math.hypot(mdx, mdy, mdz), block = ml > 0.5 ? this.world.ray(mz.x, mz.y, mz.z, mdx / ml, mdy / ml, mdz / ml, ml - 0.25) : null;
-      if (block && !block.ground) { hx = block.x; hy = block.y; hz = block.z; he = null; }
+      if (block && !block.ground) { hx = block.x; hy = block.y; hz = block.z; he = null; tk = null; }
       this.fx.tracer(mz, V3.set(hx, hy, hz), [1.0, 0.78, 0.42], 0.06, 2.2);
       if (he) {
         const rng = W.range * (this.inp.aim ? 1.25 : 0.85), dist = hyp(he.x - P.x, he.z - P.z), fall = dist > rng ? clamp(1 - (dist - rng) / (rng * 0.7), 0.25, 1) : 1;   // aimed shots carry further
         const crit = Math.random() * 100 < this.D.crit + (hasPerk(w, 'crit') ? 15 : 0) + (he.mark > 0 ? this.D.markCrit : 0);
         he.damage(base * fall * (head ? (W.hs || 1.6) * (1 + this.D.hs / 100) : 1) * (crit ? 1.5 : 1) * (he.mark > 0 ? 1.15 : 1), { head, crit, pierce: hasPerk(w, 'arm') ? 1.2 : 1, x: hx, y: hy, z: hz }); any = true;
+      } else if (tk) { this.hitTank(tk, base, hx, hy, hz); any = true;
       } else if (hw || block) { const nx = (block || hw).nx || 0, nz = (block || hw).nz || 0; this.fx.puff(hx + nx * 0.05, hy, hz + nz * 0.05, 4, (hw && hw.ground) ? [0.75, 0.8, 0.86] : [0.55, 0.5, 0.45], 0.1, 1.6, 0.4, 0.5, -3, 0.6); this.fx.puff(hx, hy, hz, 2, [3, 2, 0.8], 0.04, 3, 0.12, -1, -6, 0.5); }
     }
     this.fx.puff(mz.x, mz.y, mz.z, 1, [4, 2.6, 1.0], 0.34, 0.2, 0.05, -1, 0, 0); this.gfx.muzzle.position.copy(mz); this.gfx.muzzle.intensity = 60;
@@ -310,6 +371,12 @@ export class Game {
       n.m.position.set(n.x, n.y, n.z); n.beep -= dt; if (!n.mine && n.beep <= 0) { n.beep = 0.3; this.fx.puff(n.x, n.y + 0.1, n.z, 1, [4, 0.4, 0.2], 0.12, 0, 0.12, -1, 0, 0); }
       if (n.t <= 0) { this.explode(n.x, n.y, n.z, n.mine, n.dmg); this.scene.remove(n.m); this.nades.splice(i, 1); }
     }
+  }
+  // shooting a heavy's fuel tank: a few rounds and it goes up, hurting him and anyone standing near him
+  hitTank(e, dmg, x, y, z) {
+    const T = e.tank; if (!T || T.hp <= 0) return; T.hp -= dmg / (SYS.enemyHP(e.lvl) * 0.22 + 1);
+    this.fx.puff(x, y, z, 5, [3.2, 1.3, 0.4], 0.05, 3.5, 0.25, -1, -4, 0.6); this.ui.dmg(x, y + 0.25, z, dmg, false, true, false);
+    if (T.hp <= 0) { T.m.visible = false; this.explode(x, y - 0.9, z, true, e.maxHp * 1.0, 4.6); e.stun = Math.max(e.stun || 0, 1.4); this.ui.toast('Fuel tank!', 'ok'); this.ui.hitmark(false); }
   }
   explode(x, y, z, mine, dmg, rad = 5.2) {
     const P = this.P; this.fx.puff(x, y + 0.3, z, 26, [0.35, 0.33, 0.3], 0.5, 5, 1.2, 0.7, -1.5, 1.5); this.fx.puff(x, y + 0.4, z, 14, [5, 3, 1], 0.6, 6, 0.22, -1, 0, 1); this.fx.puff(x, y + 0.2, z, 24, [4, 2.4, 0.8], 0.05, 12, 0.5, -1, -9, 3);
@@ -419,7 +486,7 @@ export class Game {
     c.so = Math.abs(so) < Math.abs(c.so) ? damp(c.so, so, 22, dt) : damp(c.so, so, 8, dt); so = c.so;
     const px = c.fx + rx * so, pz = c.fz + rz * so, want = P.dead ? 4.2 : aim ? 2.0 : P.sprint ? 3.4 : 2.95;
     const h = W.ray(px, py, pz, -fx, -fy, -fz, want + 0.3); let d = want; if (h) d = Math.max(0.45, h.t - 0.28);
-    c.dist = d < c.dist ? d : damp(c.dist, d, 6, dt);
+    c.dist = d < c.dist ? (c.dist - d > 0.6 ? d : damp(c.dist, d, 30, dt)) : damp(c.dist, d, 6, dt);
     const sk = c.shake * this.motion; cam.position.set(px - fx * c.dist + (Math.random() - 0.5) * sk * 0.2, py - fy * c.dist + 0.1 + (Math.random() - 0.5) * sk * 0.2, pz - fz * c.dist + (Math.random() - 0.5) * sk * 0.2);
     if (cam.position.y < 0.25) cam.position.y = 0.25;
     cam.lookAt(px + fx * 20, py + fy * 20 + 0.1, pz + fz * 20);

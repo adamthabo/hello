@@ -10,6 +10,19 @@ import { Net } from './net.js';
 import { Life } from './life.js';
 import { MP, MODES, readMode, enterMode, probeServer, renderModes } from './mp.js';
 import { loadJSON, loadImage, IS_MOBILE, IS_TOUCH, store, el } from './util.js';
+import { lootLight } from './beams.js';
+
+// compile every shader the city can show while the loading bar is still up, not in the middle of the first fight:
+// all chunks, the light pools and decals, and a pair of loot beams. Capped at 8 s so a slow phone still starts.
+async function prewarm(gfx, world, P) {
+  try {
+    const r = gfx.renderer; if (!r.compileAsync) return;
+    const flip = []; world.group.traverse((o) => { if (!o.visible) { flip.push(o); o.visible = true; } });
+    const tmp = [lootLight(gfx, 0xffa640, true), lootLight(gfx, 0x6fd0ff, false)]; for (const t of tmp) { t.position.set(P.x, -60, P.z); gfx.scene.add(t); }
+    if (r.extensions.has('KHR_parallel_shader_compile')) await Promise.race([r.compileAsync(gfx.scene, gfx.camera), new Promise((res) => setTimeout(res, 8000))]); else r.compile(gfx.scene, gfx.camera);
+    for (const o of flip) o.visible = false; for (const t of tmp) gfx.scene.remove(t); world.cullT = 0;
+  } catch (e) { console.warn('prewarm', e); }
+}
 
 const fail = (e) => { console.error('BOOT', (e && e.stack) || e); const b = el('err'); b.classList.remove('hidden'); b.innerHTML = `<div><b style="font:400 30px var(--disp);letter-spacing:.08em">DER STROM IST WEG</b><br><br>The game could not start on this device.<br><span style="color:#8d99a6">${String((e && e.message) || e).slice(0, 200)}</span></div>`; };
 addEventListener('error', (e) => { if (!window.__ready) fail(e.error || e.message); });
@@ -32,6 +45,7 @@ addEventListener('unhandledrejection', (e) => { if (!window.__ready) fail(e.reas
   const mp = mode ? new MP(game, ui, mode) : null; if (mp) mp.setup();          // mode rules before the city comes alive
   const net = mp || new Net(game, ui); game.net = net; if (!mp) net.start();
   prog(0.98, 'Waking up the city'); let life = null; try { life = new Life(game); game.life = life; } catch (e) { console.warn('life', e); }
+  prog(0.99, 'Warming up the lights'); await prewarm(gfx, world, game.P);
   prog(1, 'Ready'); window.__ready = true; window.__game = game; window.__app = { game, ui, world, gfx, inp, audio, mp, MODES };
   const fresh = !sv || !sv.stats || sv.stats.t < 5, bs = el('btnStart'), bn = el('btnNew');
   bs.textContent = mp ? (mp.def.pvp ? 'Antreten' : mp.def.survival ? 'Hinaus in die Kälte' : 'Los') : fresh ? 'Begin the shift' : 'Back on shift'; bs.classList.remove('hidden'); if (!fresh && !mp) bn.classList.remove('hidden'); el('load').classList.add('hidden'); el('loadT').classList.add('hidden');
@@ -45,8 +59,8 @@ addEventListener('unhandledrejection', (e) => { if (!window.__ready) fail(e.reas
     if (mp) ui.banner(mp.def.name.toUpperCase(), mp.def.sub, mp.def.pvp ? 'warn' : 'net');
     else if (fresh) {
       ui.banner('SCHICHTBEGINN', 'Follow the route. Fight. Take the loot.', 'net');
-      const H = IS_TOUCH ? ['Left thumb moves. Drag the right side to look. Hold FIRE: your weapon finds the nearest hostile in front of you. Double-tap anywhere to roll.', 'Near a car or wall the COVER button lights up: tap it to duck in, push away to leave. Tap AIM to lock on: tighter shots, more headshots, and you lean out of cover.', 'Follow the orange route on the street: it always leads to the next fight. Far away? Tap ABSETZEN and you are dropped right there.', 'Every fight ends in a pile of loot. A green card means you found something better: tap it to equip.', 'Someone in your face? Tap the red SCHLAG button: the rifle butt knocks them flat.']
-        : ['WASD to move, mouse to look, click to fire, right click to aim. Shift sprints, C rolls.', 'Space snaps you into cover behind walls, cars and barriers. Fire from cover to lean out.', 'Follow the orange route on the street: it always leads to the next fight. T drops you right there.', 'Every fight ends in a pile of loot. A green card means you found something better: Y equips it.', 'Someone in your face? F swings the rifle butt and knocks them flat.'];
+      const H = IS_TOUCH ? ['Left thumb moves. Drag the right side to look. Hold FIRE: your weapon finds the nearest hostile in front of you. Double-tap anywhere to roll.', 'Near a car or wall the COVER button lights up: tap it to duck in, push away to leave. Tap AIM to lock on: tighter shots, more headshots, and you lean out of cover.', 'In a fight, look at a car or barrier further off: a bright bracket marks it. Tap COVER and you sprint there and duck in.', 'Heavies carry a red fuel tank on their back. Get round them and shoot it.', 'Follow the orange route on the street: it always leads to the next fight. Far away? Tap ABSETZEN and you are dropped right there.', 'Every fight ends in a pile of loot. A green card means you found something better: tap it to equip.', 'Someone in your face? Tap the red SCHLAG button: the rifle butt knocks them flat.']
+        : ['WASD to move, mouse to look, click to fire, hold right click to aim and lock on. Shift sprints, double-tap Space (or C) rolls.', 'Space snaps you into cover behind walls, cars and barriers. Fire from cover to lean out.', 'In a fight, look at cover further off: a bright bracket marks it. Space sprints you there and ducks you in.', 'Heavies carry a red fuel tank on their back. Get round them and shoot it.', 'Follow the orange route on the street: it always leads to the next fight. T drops you right there.', 'Every fight ends in a pile of loot. A green card means you found something better: Y equips it.', 'Someone in your face? F swings the rifle butt and knocks them flat.'];
       H.forEach((t, i) => setTimeout(() => { if (!game.paused) ui.hint(t, 9); }, 1800 + i * 11000));
     }
   };

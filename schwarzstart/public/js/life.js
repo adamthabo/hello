@@ -244,12 +244,12 @@ export class Life {
     for (const a of this.agents) {
       if (a.flee > 0) { a.flee -= dt; const dx = a.x - P.x, dz = a.z - P.z, l = hyp(dx, dz) || 1; const ox = a.x, oz = a.z; W.slide(a, (dx / l) * 4.6 * dt, (dz / l) * 4.6 * dt, 0.3); if (!W.walkable(a.x, a.z)) { a.x = ox; a.z = oz; } a.yaw = dampAng(a.yaw, Math.atan2(a.x - ox || dx, a.z - oz || dz), 8, dt); a.spd = 4.6; if (a.flee <= 0 && a.kind !== 'walk') { a.x = a.home ? a.home.x : a.x; a.z = a.home ? a.home.z : a.z; } }
       else if (a.kind === 'walk' && a.seg) {                 // scavengers: walk somewhere, stop and look around, walk on
-        if (!a.path || a.pi >= a.path.length) { a.spd = 0; a.wait = (a.wait ?? 0) - dt; if (a.wait <= 0) { const f = W.findWalk(a.x, a.z, 16, 50, Math.random, 16); a.path = f ? W.path(a.x, a.z, f[0], f[1], 2500) : null; a.pi = 0; a.wait = 2 + Math.random() * 6; } }
-        else { const wp = a.path[a.pi], ex = wp[0] - a.x, ez = wp[1] - a.z, l = hyp(ex, ez); if (l < 0.7) a.pi++; else { W.slide(a, (ex / l) * a.sp * dt, (ez / l) * a.sp * dt, 0.3); a.yaw = dampAng(a.yaw, Math.atan2(ex, ez), 5, dt); a.spd = a.sp; } }
+        if (!a.path || a.pi >= a.path.length) { a.vx = damp(a.vx || 0, 0, 6, dt); a.vz = damp(a.vz || 0, 0, 6, dt); if (hyp(a.vx, a.vz) > 0.05) W.slide(a, a.vx * dt, a.vz * dt, 0.3); a.spd = hyp(a.vx, a.vz); a.wait = (a.wait ?? 0) - dt; if (a.wait <= 0) { const f = W.findWalk(a.x, a.z, 16, 50, Math.random, 16); a.path = f ? W.path(a.x, a.z, f[0], f[1], 2500) : null; a.pi = 0; a.wait = 2 + Math.random() * 6; } }
+        else { const wp = a.path[a.pi], ex = wp[0] - a.x, ez = wp[1] - a.z, l = hyp(ex, ez); if (l < 0.7) a.pi++; else { a.vx = damp(a.vx || 0, (ex / l) * a.sp, 4, dt); a.vz = damp(a.vz || 0, (ez / l) * a.sp, 4, dt); W.slide(a, a.vx * dt, a.vz * dt, 0.3); a.yaw = dampAng(a.yaw, Math.atan2(a.vx, a.vz), 6, dt); a.spd = hyp(a.vx, a.vz); } }
       }
       else if (a.kind === 'patrol' && a.loop) {
         if (!a.path || a.pi >= a.path.length) { a.li = (a.li + 1) % a.loop.length; const t = a.loop[a.li]; a.path = W.path(a.x, a.z, t[0], t[1], 2500) || [t]; a.pi = 0; }
-        const wp = a.path[a.pi], ex = wp[0] - a.x, ez = wp[1] - a.z, l = hyp(ex, ez); if (l < 0.7) a.pi++; else { W.slide(a, (ex / l) * a.sp * dt, (ez / l) * a.sp * dt, 0.3); a.yaw = dampAng(a.yaw, Math.atan2(ex, ez), 5, dt); } a.spd = a.sp;
+        const wp = a.path[a.pi], ex = wp[0] - a.x, ez = wp[1] - a.z, l = hyp(ex, ez); if (l < 0.7) a.pi++; else { a.vx = damp(a.vx || 0, (ex / l) * a.sp, 4, dt); a.vz = damp(a.vz || 0, (ez / l) * a.sp, 4, dt); W.slide(a, a.vx * dt, a.vz * dt, 0.3); a.yaw = dampAng(a.yaw, Math.atan2(a.vx, a.vz), 6, dt); } a.spd = hyp(a.vx || 0, a.vz || 0);
       }
       else if (a.kind === 'skate') { a.ang += (a.sp / a.rad) * dt * (a.kind === 'skate' ? 1 : 0.6); const nx = a.cx + Math.cos(a.ang) * a.rad, nz = a.cz + Math.sin(a.ang) * a.rad; a.yaw = Math.atan2(nx - a.x, nz - a.z); a.x = nx; a.z = nz; a.spd = a.kind === 'skate' ? a.sp * 0.6 : a.sp; }
       else a.spd = 0;

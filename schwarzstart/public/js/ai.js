@@ -5,6 +5,19 @@ import * as SYS from './systems.js';
 import { clamp, damp, dampAng, angDiff, hyp, R } from './util.js';
 import { F_LOW } from './geom.js';
 
+// a red fuel tank strapped behind a heavy's shoulders; shared parts, one per heavy
+const _tp = new THREE.Vector3(); let TANK = null;
+function makeTank(root, sc) {
+  if (!TANK) TANK = { geo: new THREE.CylinderGeometry(0.085, 0.085, 0.46, 12), cap: new THREE.CylinderGeometry(0.035, 0.035, 0.07, 8), band: new THREE.CylinderGeometry(0.088, 0.088, 0.045, 12), frame: new THREE.BoxGeometry(0.34, 0.5, 0.04), hose: new THREE.TorusGeometry(0.1, 0.014, 6, 12, Math.PI),
+    red: new THREE.MeshStandardMaterial({ color: 0xb4231b, roughness: 0.42, metalness: 0.35, emissive: 0x3a0603 }), yel: new THREE.MeshStandardMaterial({ color: 0xe0b31c, roughness: 0.5, emissive: 0x2a2000 }), dark: new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.6, metalness: 0.5 }) };
+  const g = new THREE.Group(), fr = new THREE.Mesh(TANK.frame, TANK.dark); fr.position.z = 0.07; g.add(fr);                  // twin tanks on a frame, close against the back
+  for (const sx of [-0.095, 0.095]) { const b = new THREE.Mesh(TANK.geo, TANK.red), c = new THREE.Mesh(TANK.cap, TANK.dark), y1 = new THREE.Mesh(TANK.band, TANK.yel), y2 = new THREE.Mesh(TANK.band, TANK.yel); b.position.x = c.position.x = y1.position.x = y2.position.x = sx; c.position.y = 0.26; y1.position.y = 0.12; y2.position.y = -0.12; g.add(b, c, y1, y2); }
+  const hs = new THREE.Mesh(TANK.hose, TANK.dark); hs.position.set(0, 0.28, 0); hs.rotation.y = Math.PI / 2; g.add(hs);
+  g.position.set(0, 1.14 * sc, -0.22 * sc); g.rotation.x = 0.1; g.scale.setScalar(sc); root.add(g);
+  for (const m of g.children) { m.castShadow = true; m.raycast = () => {}; }
+  return { m: g, hp: 1, r: 0.21 * sc };
+}
+
 const V = new THREE.Vector3(), V2 = new THREE.Vector3();
 const RPM = { smg: 620, ar: 430, lmg: 540, dmr: 60, sg: 70, pst: 200 };
 
@@ -18,6 +31,13 @@ export class Enemy {
     this.mark = 0; this.dead = false; this.deadT = 0; this.spd = 0; this.tellT = 0; this.seen = false; this.seenT = -99; this.lsx = x; this.lsz = z; this.nadeCd = 5 + R() * 6; this.strafe = R() < 0.5 ? 1 : -1; this.meleeT = 0; this.mel = 0; this.stun = 0; this.kvx = 0; this.kvz = 0;
     this.patrol = spec.patrol || null; this.covAge = 0; this.shots = 0; this.gx = x; this.gz = z; this.idleYaw = this.yaw; this.pitch = 0; this.firing = false; this.stuckT = 0; this.px = x; this.pz = z;
     this.rig.root.position.set(x, 0, z);
+    if (spec.arch === 'heavy') this.tank = makeTank(this.rig.root, this.sc);   // the weak point: a fuel tank on the back, worth flanking for
+  }
+  // where a shot from (ox,oy,oz) along (dx,dy,dz) meets the tank, or null
+  tankHit(ox, oy, oz, dx, dy, dz) {
+    const T = this.tank; if (!T || T.hp <= 0 || this.dead) return null; T.m.getWorldPosition(_tp);
+    const fx = _tp.x - ox, fy = _tp.y - oy, fz = _tp.z - oz, b = fx * dx + fy * dy + fz * dz, c = fx * fx + fy * fy + fz * fz - T.r * T.r, h = b * b - c; if (h < 0 || b < 0) return null;
+    return { t: Math.max(0.01, b - Math.sqrt(h)), x: _tp.x, y: _tp.y, z: _tp.z };
   }
   aimY() { return (this.crouch ? 0.72 : 1.2) * this.sc; }
   headY() { return (this.crouch ? 0.98 : 1.62) * this.sc; }
@@ -89,7 +109,7 @@ export class Enemy {
   }
   update(dt) {
     const G = this.G, P = G.P, W = G.world, A = this.A, rig = this.rig;
-    if (this.dead) { this.deadT += dt; if (this.kvx || this.kvz) { this.x += this.kvx * dt; this.z += this.kvz * dt; const k = Math.exp(-5 * dt); this.kvx *= k; this.kvz *= k; if (Math.abs(this.kvx) + Math.abs(this.kvz) < 0.05) this.kvx = this.kvz = 0; G.world.collide(this, 0.3); rig.root.position.set(this.x, 0, this.z); } if (this.deadT < 1.4) { rig.pose({ dead: 1 }, dt); rig.root.updateMatrixWorld(true); } if (this.deadT > 14 || hyp(this.x - P.x, this.z - P.z) > 150) this.gone = true; return; }
+    if (this.dead) { if (this.tank && this.tank.m.visible) this.tank.m.visible = false; this.deadT += dt; if (this.kvx || this.kvz) { this.x += this.kvx * dt; this.z += this.kvz * dt; const k = Math.exp(-5 * dt); this.kvx *= k; this.kvz *= k; if (Math.abs(this.kvx) + Math.abs(this.kvz) < 0.05) this.kvx = this.kvz = 0; G.world.collide(this, 0.3); rig.root.position.set(this.x, 0, this.z); } if (this.deadT < 1.4) { rig.pose({ dead: 1 }, dt); rig.root.updateMatrixWorld(true); } if (this.deadT > 14 || hyp(this.x - P.x, this.z - P.z) > 150) this.gone = true; return; }
     const dx = P.x - this.x, dz = P.z - this.z, d = hyp(dx, dz);
     if (this.despawn && !this.aware && d > 60) { this.gone = true; return; }
     if (d > 240) { this.gone = true; return; }
@@ -128,7 +148,7 @@ export class Enemy {
         this.mel = 1e-4; this.meleeT = 1.25 + R() * 0.7; faceT = tA; if (R() < 0.5) G.audio.playAt('shout', this.x, this.z, 0.55, 1.1 + R() * 0.2);
       } else if (this.arch === 'rush') {
         this.strafeS = damp(this.strafeS ?? this.strafe, d < 9 && los ? this.strafe : 0, 1.6, dt);   // the weave swings across, it doesn't jump
-        if (d > 1.6) { const sx = P.x + Math.cos(tA) * this.strafeS * 3.5, sz = P.z - Math.sin(tA) * this.strafeS * 3.5; this.moveTo(sx, sz, run * (0.72 + 0.28 * clamp((d - 4) / 5, 0, 1)), dt, 1.2); speed = this.spd; }
+        if (d > 1.6) { const sx = P.x + Math.cos(tA) * this.strafeS * 3.5, sz = P.z - Math.sin(tA) * this.strafeS * 3.5; this.moveTo(sx, sz, run * (0.72 + 0.28 * clamp((d - 4) / 5, 0, 1)), dt, 1.6); speed = this.spd; }
         if (R() < dt * 0.22) this.strafe = -this.strafe;
         if (los && inRange) { aim = true; faceT = tA; this.fireBurst(dt); } else faceT = Math.atan2(this.mvx || dx, this.mvz || dz);
       } else if (this.arch === 'heavy') {
@@ -158,6 +178,7 @@ export class Enemy {
     { // steering: the velocity follows the wish with a little inertia (rushers are nimbler, heavies lumber); with no wish it coasts to rest
       const k = this.steered ? (this.arch === 'rush' ? 6.5 : this.arch === 'heavy' ? 4 : 5.5) : 9;
       this.vx = damp(this.vx || 0, this.steered ? this.dvx : 0, k, dt); this.vz = damp(this.vz || 0, this.steered ? this.dvz : 0, k, dt);
+      if (d < 1.3 && d > 1e-3) { const into = (this.vx * dx + this.vz * dz) / d; if (into > 0) { this.vx -= (dx / d) * into; this.vz -= (dz / d) * into; } }   /* close in, never shove into you */
       if (Math.abs(this.vx) + Math.abs(this.vz) > 0.02) { const bx = this.x, bz = this.z; W.slide(this, this.vx * dt, this.vz * dt, 0.34); if (dt > 0) { const ax = (this.x - bx) / dt, az = (this.z - bz) / dt; if (hyp(ax, az) < hyp(this.vx, this.vz) * 0.5) { this.vx = ax; this.vz = az; } } }
       const as = dt > 0 ? hyp(this.x - x0, this.z - z0) / dt : 0; this.aspd = damp(this.aspd || 0, Math.min(as, 9), 12, dt); speed = this.aspd;
     }

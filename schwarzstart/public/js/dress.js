@@ -123,7 +123,7 @@ export function placeTraffic(W) {
     const d = VEH_DIM[kind] || [4.5, 1.8, 1.4], rad = d[0] / 2 + 0.3; if (!clear(x, z, rad)) return false;
     const c = W.ch(x, z); vehicle(c.prop, x, z, ang, kind, seed, { ...o, det: c.det });
     const cs = Math.cos(ang), sn = Math.sin(ang), h = d[2] - (o.burnt ? 0.1 : 0);
-    W.addBox(x, z, cs, -sn, d[0], d[1], kind === 'bus' || kind === 'truck' || kind === 'ambulance' ? h : Math.min(h, 1.42), F_COVER | (h < 1.8 ? F_LOW : 0));
+    W.addBox(x, z, cs, -sn, d[0] - 0.22, d[1] - 0.12, kind === 'bus' || kind === 'truck' || kind === 'ambulance' ? h : Math.min(h, 1.42), F_COVER | (h < 1.8 ? F_LOW : 0));   // a hair inside the bodywork, so corners don't snag
     keep(x, z, rad); return true;
   };
   const pick = (big) => { const q = R(); if (big && q < 0.025) return 'bus'; if (q < 0.3) return 'sedan'; if (q < 0.48) return 'hatch'; if (q < 0.6) return 'estate'; if (q < 0.7) return 'suv'; if (q < 0.79) return 'van'; if (q < 0.85) return 'taxi'; if (q < 0.9) return 'trabi'; if (q < 0.94) return 'police'; if (q < 0.97) return 'ambulance'; return 'truck'; };
@@ -298,7 +298,7 @@ export function dressKerbs(W, X) {
       else if (q < 0.9) mb.box(px, 0.02, pz, 1.9, 0.2, 0.9, a + (R() - 0.5) * 0.4, C([0xd8d0c0, 0xb8b0a8, 0x8a8a92][(R() * 3) | 0], 0.8 + R() * 0.2));
       else { mb.box(px, 0, pz, 0.08, 0.45, 0.08, a, dk); mb.box(px, 0.45, pz, 0.5, 0.08, 0.5, a + R(), C(0x2a2a2e)); mb.box(px + 0.2 * sn, 0.5, pz + 0.2 * cs, 0.5, 0.55, 0.07, a, C(0x2a2a2e)); }
     }
-    W.addCircle(x + sn * 0.5, z + cs * 0.5, big ? 1.3 : 0.9, 0.7); take(x, z, big ? 2.2 : 1.5); n.junk++;
+    W.addCircle(x + sn * 0.5, z + cs * 0.5, big ? 0.95 : 0.62, 0.7); take(x, z, big ? 2.2 : 1.5); n.junk++;   // you can brush the edge of a rubbish heap
   };
   const jersey = (x, z, a) => { const mb = P(x, z); mb.box(x, 0, z, 2.0, 0.24, 0.62, a, conc); mb.box(x, 0.24, z, 2.0, 0.78, 0.36, a, conc, { w1: 0.18 }); const cs = Math.cos(a), sn = Math.sin(a); W.addBox(x, z, cs, -sn, 2.0, 0.6, 1.02, F_COVER | F_LOW); };
   const bake = (x, z, a) => { const mb = Dl(x, z), cs = Math.cos(a), sn = Math.sin(a); for (const e of [-0.85, 0.85]) mb.box(x + cs * e, 0, z - sn * e, 0.1, 1.05, 0.5, a, C(0x2a2a2a)); for (let k = 0; k < 5; k++) { const u = -0.8 + k * 0.4; mb.box(x + cs * u, 0.82, z - sn * u, 0.4, 0.22, 0.04, a, k % 2 ? C(0xe8e4dc) : C(0xb8241c)); } W.addBox(x, z, cs, -sn, 1.9, 0.3, 1.0, 0); };

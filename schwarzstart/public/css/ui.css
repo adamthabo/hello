@@ -110,7 +110,7 @@ body.touch #bS1 { right: calc(var(--sar) + 8px); } body.touch #bS2 { right: calc
 body.touch #vit { bottom: calc(var(--sab) + 8px); }
 @media (max-height: 430px) {
   #mm { width: 104px; height: 104px; } #loc, #obj { left: calc(var(--sal) + 124px); } #obj { top: calc(var(--sat) + 56px); } #toasts { top: calc(var(--sat) + 116px); }
-  #prompt { bottom: calc(var(--sab) + 64px); } #hint { bottom: auto; top: calc(var(--sat) + 62px); max-width: min(340px, 40vw); font-size: 11px; padding: 5px 9px; opacity: .92; }
+  #prompt { bottom: calc(var(--sab) + 64px); } #hint { bottom: auto; top: calc(var(--sat) + 116px); max-width: min(320px, 36vw); font-size: 11px; padding: 5px 9px; opacity: .9; }
 }
 @media (orientation: portrait) { #obj { max-width: 52vw; } #bars { width: 34vw; } #banner { top: 24%; } body.touch #vit { bottom: calc(var(--sab) + 210px); left: calc(var(--sal) + 12px); transform: none; } }
 

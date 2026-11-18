@@ -65,8 +65,8 @@ export class World {
     if (!this.collide(p, r)) return false;
     const want = Math.hypot(dx, dz), px = p.x - hx, pz = p.z - hz, pl = Math.hypot(px, pz); if (want < 1e-5 || pl < 1e-5) return true;
     const got = ((p.x - ox) * dx + (p.z - oz) * dz) / want, lost = want - Math.max(0, got); if (lost <= want * 0.15) return true;
-    const nx = px / pl, nz = pz / pl, tx = -nz, tz = nx, sg = tx * dx + tz * dz >= 0 ? 1 : -1;
-    p.x += tx * sg * lost * 0.9; p.z += tz * sg * lost * 0.9; this.collide(p, r); return true;
+    const nx = px / pl, nz = pz / pl, tx = -nz, tz = nx, td = (tx * dx + tz * dz) / want, sg = td >= 0 ? 1 : -1, k = lost * Math.min(0.9, Math.abs(td) * 2.2);   // glancing blows glide; head-on stops instead of jittering side to side
+    p.x += tx * sg * k; p.z += tz * sg * k; this.collide(p, r); return true;
   }
   // 3D ray against the 2.5D world. Returns {t, s, x, y, z, nx, nz} for the nearest hit within maxT, or null.
   ray(ox, oy, oz, dx, dy, dz, maxT, skipLow = false) {
