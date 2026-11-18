@@ -1,6 +1,18 @@
 # Changelog
 
 ## For the owner
+18 Nov 2026, 17:15 (your 16:06 message):
+
+- **Paint's art materials are along the top.** Brush, pen, pencil, marker and eraser are big buttons that are always there. The
+  one you're holding is lit in its colour. Everything else (sizes, colours, mirror, start over, photo, ask Claude, the game) stays
+  in Paint's menu.
+- **Beat has no menu any more.** The five note sounds are big coloured dots under the grid. Under them are "make a melody" (the
+  die), back, the beat's name, next, and "as it was" (the circle arrow).
+- **The beats are on the world.** With the music on, the Earth marks each beat's home with a small red ring. The one playing is
+  bigger, flashes on its beat and shows its name. Tap another mark and the globe flies there and its beat comes in. Tap the one
+  playing to open it on Beat. On Beat, a red chip at the top right names where the beat is from ("Chicago"); tap it and the Earth
+  turns there and plays it.
+
 18 Nov 2026, 16:10 (your 11:31 message, part three):
 
 - **Local weather.** The Earth now has its own menu, the round button beside its name, like Paint and Beat. Type a town or city
@@ -436,6 +448,21 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 18 Nov 2026, 17:15 (New York): Paint's materials along the top; Beat without a menu; the beats on the Earth (README rule 32)
+
+- `11-drift.js`: `ptBuild`/`ptSync` (`#ptools`, the five `pn_*` buttons, shown while Paint paints and not in the game; `body.ptl`
+  moves the line of words under it and the stage is measured again); the tool row left the menu; `PENS[0]` is called the brush;
+  `toolIcon` gone (the menu button is the sliders again).
+- `17-beat.js`: `build` makes `#btools` two rows (`.bsnd`: `b_s0..4` as `.bs` dots; then `b_dice`, `b_prev`, `b_name`, `b_next`,
+  `b_reset`); no `menu`. `mapMarks` (the places, the one playing, the flash of its main row's last strokes, kept in `MAP.fl`),
+  `mapForce(p, id)` (a place's beat now, for five seconds whatever the middle of the globe), `placeOf`; `sync` names the chip
+  `#bWorld` (in the header, Beat only), whose tap goes to the Earth and, after the change of page, flies to the place.
+- `12-wind.js`: the marks drawn last (over the cameras' lenses), `BMK` for the taps (12 px, before a camera's ring at the same
+  town), `BLB` the playing beat's name's box (`beatBox`, kept clear by the zones' names), `toPlace`, `touchNow` (a flight a finger
+  asked for stops the hints' ghost finger, which had turned the globe away from Chicago), `marks()` for the tests.
+- Tests: `t_sketch.js` (the row along the top, big; the pen lit; put away in the game), `t_smoke.js` (the menu's ids), `t_beat.js`
+  (the page's two rows; no menu; the marks, a tap on Rio's, a tap on the one playing, the chip to Cuba).
 
 ## 18 Nov 2026, 16:10 (New York), the hourly run: local weather; the Earth's own menu; 7,342 towns (README rule 31)
 

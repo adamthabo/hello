@@ -15,9 +15,11 @@ const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') 
   const D = () => page.evaluate(() => { const L = window.__lc, i = L.WORLDS.findIndex(w => w.id === 'beat'), r = document.getElementById('btools');
     return { i, cur: L.CURI, d: L.BEAT.dbg(), errs: (L.errs || []).slice(0, 3), data: document.getElementById('data').textContent, stg: L.STG, rail: { t: innerHeight },
       menu: !document.getElementById('menu').hidden, own: !document.getElementById('pmenu').hidden, mode: document.getElementById('bMode').hidden, shown: !!r && !r.hidden, paintTools: !document.getElementById('tools').hidden,
-      tools: r ? [...r.querySelectorAll('.tb')].map(b => { const q = b.getBoundingClientRect(); return { id: b.id.slice(2), txt: b.textContent, l: q.left, r: q.right, t: q.top, b: q.bottom }; }) : [] }; });
+      tools: r ? [...r.querySelectorAll('.tb,.bs')].map(b => { const q = b.getBoundingClientRect(); return { id: b.id.slice(2), txt: b.textContent, l: q.left, r: q.right, t: q.top, b: q.bottom }; }) : [] }; });
   const B = (f, a) => page.evaluate(([f, a]) => window.__lc.BEAT[f].apply(null, a || []), [f, a]);
   const btn = async (s, id) => { const b = s.tools.find(t => t.id === id); await tap((b.l + b.r) / 2, (b.t + b.b) / 2); };
+  // (a button on the page, tapped as a finger would)
+  const btap = async id => { const q = await page.evaluate(id => { const r = document.getElementById(id).getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }, id); await tap(q.x, q.y); await sleep(200); };
   // (18 Nov) the menus: the world's name at the top left opens the four pages; (06:04: "Each has its own menu items. Don't put them on
   // other sections!") the button beside it Beat's own menu; a button in either pressed as a finger would
   const at = id => page.evaluate(id => { const q = document.getElementById(id).getBoundingClientRect(); return { x: q.left + q.width / 2, y: q.top + q.height / 2, w: q.width }; }, id);
@@ -59,15 +61,14 @@ const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') 
   ok(hits('swing', 2) === '1,4,6,7,10,12' && hits('shuffle', 2) === '1,3,4,6,7,9,10,12' && hits('waltz', 2) === '1,4,6,7,9' && B0.waltz.N === 9 && hits('secondline', 2) === '1,4,7,11,13' && hits('funk', 2) === '1,3,8,11', 'swing\'s ride, the shuffle, the jazz waltz in nine, the second line\'s clave, funk\'s kick');
   ok(hits('teentaal', 2) === '1,4,5,8,9,16' && hits('teentaal', 0) === '10,11,12,13' && hits('keherwa', 2) === '1,2,7,9,10,15' && hits('dongdong', 2) === '1,3,5' && B0.dongdong.N === 8 && hits('lancaran', 2) === '4,8,12,16' && hits('malfuf', 1) === '4,7,12,15', 'teentaal, keherwa, dong dong qiang in eight, lancaran\'s kenong, malfuf');
   ok(B0.salsa.b === 2 && B0.salsa.bpm === 190 && B0.joropo.b === 2 && B0.lancaran.b === 2 && B0.bossa.b === 2 && B0.swing.b === 3 && B0.house.b === 4, 'each beat\'s steps as long as the video plays them (salsa, joropo, lancaran and the bossa in eighths, swing in triplets)');
-  // along the bottom only the beat: back, its name, next, whole on the screen, none narrower than 40; the rest in the menu
+  // (18 Nov, 16:06: "the menu items are still small and fussy and busy and wrongly placed on the ring page") no menu of its own: along
+  // the bottom, the notes' five sounds as dots over their names, then a melody, back, the beat's name, next, the beat as it was; all on
+  // the screen, the beat's buttons 40 wide at least, the sounds' 44 by 44 at least
   s = await D(); const W = await page.evaluate(() => innerWidth);
-  ok(s.tools.map(t => t.id).join() === 'prev,name,next' && s.tools[1].txt === 'House' && s.tools.every(t => t.l >= 0 && t.r <= W && t.b <= s.rail.t + 1 && t.r - t.l >= 40),
-    'along the bottom: back, the beat\'s name, next, all on the screen: ' + s.tools.map(t => t.id + ':' + t.txt + '@' + Math.round(t.l) + '-' + Math.round(t.r) + '/' + Math.round(t.t)).join(' '));
-  ok(await page.evaluate(() => [...document.querySelectorAll('#ms_beat button')].map(b => b.id).join()) === 'b_s0,b_s1,b_s2,b_s3,b_s4,b_dice,b_reset', 'Beat\'s part of the menu: the notes\' five sounds, a melody, the beat as it was');
-  { const m = await at('bTools'); await tap(m.x, m.y); await sleep(300); const o = await page.evaluate(() => { const vis = e => !!e && !e.hidden && e.getClientRects().length > 0, pm = document.getElementById('pmenu');
-      return { own: vis(pm), pages: vis(document.getElementById('menu')), title: document.getElementById('pmh').textContent, items: [...pm.querySelectorAll('button')].filter(vis).map(b => b.id).join(), save: vis(document.getElementById('bSave')) }; });
-    ok(o.own && !o.pages && o.title === 'Beat' && o.items === 'b_s0,b_s1,b_s2,b_s3,b_s4,b_dice,b_reset' && !o.save, 'the button beside the name opens Beat\'s own menu, under its name, with only its own: ' + JSON.stringify(o));
-    await tap(m.x, m.y); await sleep(300); s = await D(); ok(!s.own && !s.menu, 'a second tap on it closes it'); }
+  { const nm = s.tools.find(t => t.id === 'name'), snd = s.tools.filter(t => /^s\d$/.test(t.id)), tb = s.tools.filter(t => !/^s\d$/.test(t.id));
+    ok(s.tools.map(t => t.id).join() === 's0,s1,s2,s3,s4,dice,prev,name,next,reset' && nm && nm.txt === 'House' && s.tools.every(t => t.l >= 0 && t.r <= W && t.b <= s.rail.t + 1) && tb.every(t => t.r - t.l >= 40) && snd.every(t => t.r - t.l >= 44 && t.b - t.t >= 44) && Math.max(...snd.map(t => t.b)) <= Math.min(...tb.map(t => t.t)),
+      'along the bottom: the notes\' five sounds over a melody, back, the beat\'s name, next and the beat as it was, all on the screen: ' + s.tools.map(t => t.id + '@' + Math.round(t.l) + '-' + Math.round(t.r) + '/' + Math.round(t.t)).join(' ')); }
+  ok(await page.evaluate(() => !document.querySelector('#ms_beat button') && document.getElementById('bTools').hidden), 'Beat has no menu of its own: everything is on its page');
   const fits = s => { const g = s.d.geo, top = Math.min(...s.tools.map(t => t.t)), W = s.stg.w; return g.cx - g.R * 1.3 >= 0 && g.cx + g.R * 1.3 <= W && g.cy - g.R * 1.24 >= s.stg.y0 - 1 && g.gy >= g.cy + g.R * 1.2 - (g.wide ? 1e9 : 0) && g.gy + 3 * g.rh + 2 * g.gap + 16 <= top + 1 && g.gx >= 0 && g.gx + g.gw <= W && (g.wide || g.card.y + g.card.h <= g.cy - g.R * 1.2 + 1); };
   ok(s.d.geo.R >= 120 && fits(s), 'the circle (R ' + Math.round(s.d.geo.R) + '), its numbers, the name\'s place over it and the grid under it, all whole above the row');
   // the music on: the beat plays on its own clock, at its own tempo, on its steps; the band rests while Beat is open
@@ -83,7 +84,7 @@ const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') 
   await page.screenshot({ path: 'shots/beat_phone_house.png' });
   // next: Trap, its name shown, its tempo; back: House again
   await btn(s, 'next'); await sleep(900); s = await D();
-  ok(s.d.id === 'trap' && s.d.card > .5 && Math.abs(s.d.sd - 60 / 140 / 4) < 1e-6 && s.tools[1].txt === 'Trap', 'next: Trap, its name on the button and shown over the circle, its own tempo: ' + JSON.stringify({ id: s.d.id, card: s.d.card, sd: s.d.sd }));
+  ok(s.d.id === 'trap' && s.d.card > .5 && Math.abs(s.d.sd - 60 / 140 / 4) < 1e-6 && s.tools.find(t => t.id === 'name').txt === 'Trap', 'next: Trap, its name on the button and shown over the circle, its own tempo: ' + JSON.stringify({ id: s.d.id, card: s.d.card, sd: s.d.sd }));
   await btn(s, 'prev'); await sleep(500); s = await D(); ok(s.d.id === 'house', 'back: House again');
   // the ring: a tap on an empty step puts the kick there, a second takes it away; a kick dragged along the ring moves to where it is let go
   { const r = await B('ringAt', [2]); await tap(r.x, r.y); s = await D(); ok(s.d.rows[2].hits.join() === '1,3,5,9,13', 'a tap on the ring at 3 puts a kick there: ' + s.d.rows[2].hits.join(' '));
@@ -108,8 +109,8 @@ const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') 
     ok(mid.d.rolls.length === 1 && mid.d.rolls[0].on && ks.size >= 8 && !(await D()).d.rolls.length, 'a finger kept still plays its pitch on every step (' + ks.size + ' steps in 2.2 s) and stops when it lifts');
     await B('set', [[]]); }
   // the sound: a tap on it goes to the next (rubber), its name said; dice makes up a melody in it on the beat's own strokes; reset
-  await mtap('b_s1'); s = await D(); ok(s.d.sound === 'rubber' && /rubber/.test(s.data) && !s.menu && await page.evaluate(() => document.getElementById('b_s1').getAttribute('aria-pressed')) === 'true', 'rubber chosen in the menu: its name said, the menu closed: ' + JSON.stringify(s.data));
-  await mtap('b_dice'); s = await D(); { const N = s.d.N, kick = s.d.rows[2].hits.map(h => h - 1), st = s.d.notes.map(n => Math.round(n[0] * N) % N);
+  await btap('b_s1'); s = await D(); ok(s.d.sound === 'rubber' && /rubber/.test(s.data) && !s.menu && await page.evaluate(() => document.getElementById('b_s1').getAttribute('aria-pressed')) === 'true', 'rubber chosen on the page: its name said: ' + JSON.stringify(s.data));
+  await btap('b_dice'); s = await D(); { const N = s.d.N, kick = s.d.rows[2].hits.map(h => h - 1), st = s.d.notes.map(n => Math.round(n[0] * N) % N);
     ok(s.d.notes.length >= 4 && s.d.notes.every(n => n[2] === 1) && kick.every(k => st.includes(k)) && /melody/.test(s.data), 'dice: a melody in rubber, on every kick: ' + st.join(' ')); }
   await page.screenshot({ path: 'shots/beat_phone_dice.png' });
   // kept after a reload: the beat chosen, its changes, the notes, the sound
@@ -118,7 +119,7 @@ const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') 
   await page.evaluate(() => { const L = window.__lc; L.go(L.WORLDS.findIndex(w => w.id === 'beat'), true); }); await sleep(700); s = await D();
   ok(s.d.id === before.d.id && s.d.rows[2].hits.join() === before.d.rows[2].hits.join() && s.d.notes.length === before.d.notes.length && s.d.sound === 'rubber',
     'kept after a reload: ' + s.d.name + ', its changed row ' + s.d.rows[2].hits.join(' ') + ', ' + s.d.notes.length + ' notes, ' + s.d.sound);
-  await mtap('b_reset'); s = await D(); ok(s.d.rows[2].hits.join() === B0[s.d.id].r[2][2].join() && !s.d.notes.length, 'the beat as it was (from the menu): ' + s.d.name + ' as transcribed, no notes');
+  await btap('b_reset'); s = await D(); ok(s.d.rows[2].hits.join() === B0[s.d.id].r[2][2].join() && !s.d.notes.length, 'the beat as it was (beside its name): ' + s.d.name + ' as transcribed, no notes');
   // every beat plays: each chosen in turn, its strokes given out, its recordings there, no errors
   await page.evaluate(() => { window.__lc.musicOn(); window.__sp = []; window.__lc.BEAT.spy(e => window.__sp.push(e)); }); for (let k = 0; k < 30 && !(await D()).d.run; k++) await sleep(200);
   { const bad = [], slow = []; for (let i = 0; i < lib.length; i++) { await B('pick', [i]); await page.evaluate(() => { window.__sp = []; }); await sleep(i === 0 ? 1500 : 900);
@@ -160,6 +161,24 @@ const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') 
     const onMap = [...new Set(r.places.flatMap(p => p.r))], off = r.lib.filter(x => !onMap.includes(x.id)).map(x => x.id);
     ok(onMap.length === 33 && off.join() === 'waltz' && r.lib.filter(x => onMap.includes(x.id)).every(x => [8, 12, 16].includes(x.N)),
       'all of the 34 are on the map but the jazz waltz (nine steps in three, which do not fit the band\'s bar): ' + onMap.length + ' places\' beats, off the map: ' + off.join()); }
+  // (18 Nov, 16:06: "the world is not connected to beats") the beats on the Earth: with the music on, a mark at each place a beat comes
+  // from; a tap on another's mark goes there and its beat comes in; a tap on the one playing opens it on Beat, its place on a chip at
+  // the top; and that chip turns the Earth to the place and plays the beat there
+  { await page.evaluate(() => { document.getElementById('lyd').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); window.__lc.WIND.look(-10, -50, 1); }); await sleep(1400);
+    const mk = await page.evaluate(() => { const L = window.__lc, i = L.BEAT.places().findIndex(p => p.n === 'Rio de Janeiro'), M = L.WIND.marks(); return { all: M.length, rio: M.find(x => x.i === i) }; });
+    ok(mk.all >= 3 && !!mk.rio, 'with the music on, the beats\' places are marked on the Earth: ' + mk.all + ' in view');
+    if (mk.rio) { await tap(mk.rio.x, mk.rio.y); await sleep(3600); }
+    const af = await page.evaluate(() => { const L = window.__lc, d = L.WIND.dbg(); return { lat0: d.lat0, now: L.BEAT.mapNow() }; });
+    ok(af.now.place === 'Rio de Janeiro' && af.now.id === 'samba' && Math.abs(af.lat0 - -22.91) < 1, 'a tap on Rio\'s mark: the Earth goes there and its samba comes in: ' + JSON.stringify(af.now));
+    const m2 = await page.evaluate(() => { const L = window.__lc, i = L.BEAT.places().findIndex(p => p.n === 'Rio de Janeiro'); return L.WIND.marks().find(x => x.i === i); });
+    if (m2) { await tap(m2.x, m2.y); await sleep(900); }
+    const bb = await page.evaluate(() => { const L = window.__lc, b = document.getElementById('bWorld'); return { cur: L.WORLDS[L.CURI].id, id: L.BEAT.dbg().id, chip: b.textContent, shown: !b.hidden }; });
+    ok(bb.cur === 'beat' && bb.id === 'samba' && bb.shown && bb.chip === 'Rio de Janeiro', 'a tap on the one playing opens it on Beat, its place on a chip at the top: ' + JSON.stringify(bb));
+    await page.evaluate(() => window.__lc.BEAT.pick(window.__lc.BEAT.lib.findIndex(r => r.id === 'son'))); await sleep(400);
+    { const q = await at('bWorld'); await tap(q.x, q.y); } await sleep(3600);
+    const cc = await page.evaluate(() => { const L = window.__lc, d = L.WIND.dbg(); return { cur: L.WORLDS[L.CURI].id, lat0: d.lat0, lon0: d.lon0, now: L.BEAT.mapNow() }; });
+    ok(cc.cur === 'earth' && cc.now.id === 'son' && cc.now.place === 'Cuba' && Math.abs(cc.lat0 - 22) < 1.2 && Math.abs(((cc.lon0 + 79.5 + 540) % 360) - 180) < 1.2, 'on Beat the place\'s chip turns the Earth to Cuba and plays the son clave there: ' + JSON.stringify(cc.now));
+    await page.screenshot({ path: 'shots/beat_world_cuba.png' }); }
   await page.evaluate(() => window.__lc.BEAT.spy(null));
   const e = [...new Set(errs)]; if (e.length) console.log('ERRORS', e.slice(0, 6));
   await ctx.close(); await browser.close(); console.log(fail.length || e.length ? 'BEAT FAILED' : 'BEAT OK'); process.exit(fail.length || e.length ? 1 : 0);

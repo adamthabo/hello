@@ -66,7 +66,9 @@ led to the weather are kept here):
   `t_levels.js` passing.
 - Put up words nobody asked for: since rule 24 words may go anywhere, but only when something the person did asks for them.
 - Bring back what he took away: the wind, Smoke's name or its explanation, undo, a row of controls that scrolls sideways, knobs,
-  decks, pads, tiles, the worlds as a row along the bottom (18 Nov: they are in the menu under the world's name), buttons on Paint.
+  decks, pads, tiles, the worlds as a row along the bottom (18 Nov: they are in the menu under the world's name), buttons on Paint
+  other than its five art materials along the top (18 Nov, 16:06: "The menu items for art materials need to be accessible at the top,
+  just the marker, brush, pen, etc."), a menu of Beat's own (16:06: its things are on its page, big).
 - Take away anything he asked for, or add controls beyond the few named ones (every new control needs a name, a reason and room on a
   390-wide phone).
 - Put anything about him on the page or the site; use the "↗" arrow or any external-link icon; add an outside resource the artifact's
@@ -244,6 +246,11 @@ not ask for.
   sixteenth, where the place was looked at; now the place is looked at on the first sixteenth seen of each bar. The first suite
   failed four of PLAY's readings: the beat's name, said when a tap's flight brought a new place, covered the reading. Now it is
   never said over a reading, a card or a flight, and a finger's reading clears a passing line.
+- 2026-11-18 21:03: his 16:06 message ("Nope not quite. The menu items for art materials need to be accessible at the top, just the
+  marker, brush, pen, etc. the world is not connected to beats and the menu items are still small and fussy and busy and wrongly
+  placed on the ring page"): Paint's five art materials along its top, big; Beat with no menu, its five sounds as big dots and a
+  melody and the beat as it was beside its name, on its page; the beats' places marked on the Earth (the one playing named and
+  flashing; a tap goes there or opens it on Beat), and on Beat its place on a chip that turns the Earth to it. README rule 32.
 - 2026-11-18 20:02: his 11:31 message, part three: local weather. The Earth has its own menu: a town typed (7,342 now, from
   Natural Earth's 1:10m places; the old list had no Providence) or, on the site, "where I am"; the Earth flies there and opens its
   weather card on the site, its reading (sun, wind) in the artifact. His 11:31 message is done.

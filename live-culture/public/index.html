@@ -249,6 +249,11 @@ body.camw .zm{display:none}
 .mxmodes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:var(--g)}
 .mxm{padding:0 2px;letter-spacing:.04em}
 .chip.mode{min-width:56px;padding:0 10px;border-color:var(--mc,#ffb347);color:var(--mc,#ffb347);cursor:pointer}
+/* (18 Nov, 16:06) on Beat, where the beat comes from: a tap turns the Earth to it and plays it there */
+.chip.wld{display:inline-flex;align-items:center;gap:6px;max-width:46vw;padding:0 12px 0 9px;border-color:rgba(239,45,45,.72);color:#ff6a5c;cursor:pointer}
+.chip.wld svg{width:15px;height:15px;flex:none;display:block;fill:none;stroke:currentColor;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
+.chip.wld span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip.wld[hidden]{display:none}
 .chip.mode.wait{animation:mxblink .5s steps(2) infinite}
 .mxb.on{color:#01040a;background:var(--c);border-color:var(--c);box-shadow:0 0 calc(14px + 18px * var(--pl,0)) calc(-4px + 3px * var(--pl,0)) var(--c);filter:brightness(calc(1 + .22 * var(--pl,0)))}
 /* (17 Nov) the mode's colour, faintly over the screen behind the buttons, brighter on the beat (16-mix.js sets --mc and --pl) */
@@ -300,6 +305,19 @@ body.camw .zm{display:none}
 .mb svg{width:15px;height:15px;flex:none;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
 .mb[hidden]{display:none}
 .mrw[hidden]{display:none}
+/* (18 Nov, 16:06) Paint's art materials along the top, big: a picture over a word, the one in hand lit in the colour it paints */
+.ptools{position:fixed;z-index:6;top:calc(64px + env(safe-area-inset-top,0px));left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;gap:7px;max-width:460px;pointer-events:auto}
+.ptools[hidden]{display:none}
+.pt{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;height:58px;padding:0 2px;border-radius:15px;
+  border:1px solid rgba(234,249,255,.16);background:rgba(1,4,10,.62);color:rgba(234,249,255,.6);font:500 10px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;
+  white-space:nowrap;-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-user-select:none;user-select:none;transition:color .2s,border-color .2s,background .2s}
+.pt svg{width:24px;height:24px;display:block;flex:none;fill:none;stroke:currentColor;stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round}
+.pt span{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.pt[aria-pressed=true]{color:var(--ink);border-color:var(--pc,rgba(62,240,255,.7));background:rgba(62,240,255,.12);box-shadow:0 0 16px -6px var(--pc,var(--lume))}
+.pt[aria-pressed=true] svg{color:var(--pc,var(--ink))}
+.pt:active{transform:scale(.96)}
+body.ptl .data{top:calc(132px + env(safe-area-inset-top,0px))}
 /* (18 Nov) the Earth's own menu: a town's name typed, the towns it finds, a line of what happened */
 .mi{flex:1 1 180px;min-width:0;height:34px;padding:0 14px;border-radius:17px;border:1px solid rgba(234,249,255,.22);background:rgba(234,249,255,.05);
   color:var(--ink);font-family:var(--mono);font-size:12px;letter-spacing:.04em;outline:none;-webkit-appearance:none;appearance:none}
@@ -337,6 +355,18 @@ body.camw .zm{display:none}
 #btools .bn span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #btools .ba{width:40px;padding:0;justify-content:center}
 #btools .ba svg{width:16px;height:16px}
+/* (18 Nov, 16:06: "small and fussy and busy and wrongly placed") Beat's things on its page, big: the notes' five sounds as dots of their
+   colours over their names, then the beat with a melody at its left and the beat as it was at its right */
+#btools{flex-direction:column;align-items:center;gap:10px;flex-wrap:nowrap}
+#btools .brw{display:flex;justify-content:center;align-items:center;gap:8px;width:100%}
+#btools .bsnd{gap:4px;max-width:380px}
+#btools .bs{flex:1 1 0;max-width:72px;min-width:0;display:flex;flex-direction:column;align-items:center;gap:7px;padding:3px 0 1px;background:none;border:0;border-radius:12px;
+  color:rgba(234,249,255,.55);font:500 9px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+#btools .bs i{display:block;width:30px;height:30px;border-radius:50%;background:var(--c);opacity:.5;box-shadow:0 0 0 2px rgba(1,4,10,.9);transition:opacity .2s,box-shadow .2s,transform .2s}
+#btools .bs[aria-pressed=true]{color:var(--ink)}
+#btools .bs[aria-pressed=true] i{opacity:1;box-shadow:0 0 0 3px rgba(1,4,10,.95),0 0 0 4.5px var(--c),0 0 18px -2px var(--c);transform:scale(1.08)}
+#btools .bs:active i{transform:scale(.92)}
+@media (max-width:370px){#btools .bn{min-width:112px}#btools .brw{gap:6px}}
 </style>
 
 <canvas id="gl" aria-hidden="true"></canvas>
@@ -353,10 +383,13 @@ body.camw .zm{display:none}
   </div>
   <div class="acts">
     <button class="chip" id="bNow" type="button" hidden aria-label="Return to the present moment">Now</button>
+    <button class="chip wld" id="bWorld" type="button" hidden aria-label="This beat on the Earth"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.6"/><path d="M2.6 8h10.8M8 2.4c-2.2 2.6-2.2 8.6 0 11.2M8 2.4c2.2 2.6 2.2 8.6 0 11.2"/></svg><span></span></button>
     <button class="chip mode" id="bMode" type="button" aria-label="Music mode: African. Tap for the next mode">African</button>
     <button class="ic mst" id="bSound" type="button" aria-pressed="false" aria-label="Music starts with your first touch. Turn it on now"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6.2 11.6V3.4l6-1.2v8.2"/><circle cx="4.6" cy="11.7" r="1.7"/><circle cx="10.6" cy="10.5" r="1.7"/><path class="sl" d="M2.2 2.2l11.6 11.6"/></svg></button>
   </div>
 </header>
+<!-- (18 Nov, 16:06: "The menu items for art materials need to be accessible at the top, just the marker, brush, pen, etc.") -->
+<div class="ptools" id="ptools" hidden role="toolbar" aria-label="Paint: what draws"></div>
 <!-- (18 Nov, 00:50: "Theres too many confusing menu items at the bottom ... I like clear windows"; 06:04: "There are only four pages.
      Each has its own menu items. Don't put them on other sections!") the page's name opens the four pages and nothing else; the button
      beside it, on a page that has more than its screen shows, opens that page's own menu and nothing else -->
@@ -1598,7 +1631,7 @@ var DRIFT=(function(){
      (which lifts the paint under it as well). Three sizes each; the colours are the paint's, and the mirror mirrors them too. The sheet
      keeps its picture through a new size of the screen, as the water does, and goes into a saved picture ---- */
   var PEN='paint',PSZ=1,SKC=null,SKX=null,SKD=1,SKV=0,PW={pen:[1.6,3.2,6.5],pencil:[1.3,2.6,4.8],marker:[9,16,28],eraser:[12,24,44]},
-    PENS=[['paint','paint','<path d="M12.6 2.4l3.4 3.4-6.6 6.6-3.4-3.4z"/><path d="M5.8 9.4c-1.9.1-3 1.5-3 3.4 0 .9-.5 1.7-1.2 2.2 2.6.6 5.6-.1 6.4-2.8"/>'],
+    PENS=[['paint','brush','<path d="M12.6 2.4l3.4 3.4-6.6 6.6-3.4-3.4z"/><path d="M5.8 9.4c-1.9.1-3 1.5-3 3.4 0 .9-.5 1.7-1.2 2.2 2.6.6 5.6-.1 6.4-2.8"/>'],
       ['pen','pen','<path d="M3 15.4l1.2-4.6 7.6-7.6 3.4 3.4-7.6 7.6z"/><path d="M10.4 4.6l3.4 3.4"/>'],
       ['pencil','pencil','<path d="M3 15.4l.9-3.6 8.4-8.4 2.7 2.7-8.4 8.4z"/><path d="M11 4.7l2.7 2.7M3.9 11.8l2.7 2.7"/>'],
       ['marker','marker','<path d="M4.6 13l1.8-4.6 5.8-5.8 3.6 3.6-5.8 5.8z"/><path d="M2.6 16h6"/>'],
@@ -1859,7 +1892,8 @@ var DRIFT=(function(){
     /* (18 Nov, 06:04) Paint's own menu, under the page's name (the menu's title): nothing of another page's here, and saving a
        picture, which is the painting's, is here and nowhere else */
     /* (18 Nov, 11:31) what a finger does: paint in the water, or draw on the sheet with a pen, a pencil, a marker, or rub out; and how big */
-    var rt=row(sec,'tool');PENS.forEach(function(t){mbtn(rt,'pn_'+t[0],t[1],t[2],function(){PEN=t[0];if(PZ>=0)gmOff();TOOL='ink';menuSync();toolsSync();menuShow(false);try{toolIconSync()}catch(e){}},'Draw with the '+t[1])});
+    /* (18 Nov, 16:06: "The menu items for art materials need to be accessible at the top, just the marker, brush, pen, etc.") the
+       brush, the pen, the pencil, the marker and the eraser are along the top of Paint (ptBuild), not in here; their size is */
     var rz=row(sec,'size');['fine','medium','bold'].forEach(function(nm,i){var b=mbtn(rz,'ps_'+i,nm,'<circle cx="9.2" cy="9.2" r="'+[1.8,3.4,5.4][i]+'"/>',function(){PSZ=i;menuSync();menuShow(false)},'Size: '+nm);b.classList.add('szb')});
     /* the colour: each touch the next of six, or one of them */
     var rc=row(sec,'colour');[-1].concat(PAL.map(function(x,i){return i})).forEach(function(i){var b=document.createElement('button');b.type='button';b.className='sw'+(i<0?' auto':'');b.id='pc_'+(i<0?'auto':i);
@@ -1879,13 +1913,24 @@ var DRIFT=(function(){
     PENS.forEach(function(t){var b=$('pn_'+t[0]);if(b)b.setAttribute('aria-pressed',PZ<0&&TOOL==='ink'&&PEN===t[0]?'true':'false')});
     for(i=0;i<3;i++){var bz=$('ps_'+i);if(bz){bz.setAttribute('aria-pressed',PSZ===i?'true':'false');bz.disabled=PEN==='paint'}}
     var m=$('p_mir');if(m){m.lastChild.textContent=MIR<2?'mirror · off':'mirror · '+MIR;m.setAttribute('aria-pressed',MIR>1?'true':'false');m.firstChild.innerHTML=MIRI}
-    TOOLS.forEach(function(t){var b=$('t_'+t[0]);if(b&&t[0]!=='puz'&&t[0]!=='ink')b.setAttribute('aria-pressed',PZ<0&&TOOL===t[0]?'true':'false')})}
+    TOOLS.forEach(function(t){var b=$('t_'+t[0]);if(b&&t[0]!=='puz'&&t[0]!=='ink')b.setAttribute('aria-pressed',PZ<0&&TOOL===t[0]?'true':'false')});ptSync()}
+  /* ---- (18 Nov, 16:06) along the top of Paint, big and always there while it paints: the brush (the paint in the water), the pen,
+     the pencil, the marker and the eraser. Nothing else: the rest is in Paint's own menu ---- */
+  function ptBuild(){var r=$('ptools');if(!r||r.childNodes.length)return;
+    PENS.forEach(function(t){var b=document.createElement('button');b.type='button';b.className='pt';b.id='pn_'+t[0];
+      b.innerHTML='<svg viewBox="0 0 18.4 18.4" aria-hidden="true">'+t[2]+'</svg><span></span>';b.lastChild.textContent=t[1];
+      b.setAttribute('aria-label',t[0]==='paint'?'Paint with the brush, in the water':t[0]==='eraser'?'Rub out with the eraser':'Draw with the '+t[1]);
+      b.addEventListener('click',function(){PEN=t[0];if(PZ>=0)gmOff();TOOL='ink';menuSync();toolsSync()});r.appendChild(b)})}
+  function ptSync(){var r=$('ptools');if(!r)return;var show=on&&PZ<0,was=!r.hidden;r.hidden=!show;document.body.classList.toggle('ptl',show);
+    PENS.forEach(function(t){var b=$('pn_'+t[0]);if(b){b.setAttribute('aria-pressed',show&&TOOL==='ink'&&PEN===t[0]?'true':'false');
+      var c=t[0]==='eraser'?null:(PCI>=0?PAL[PCI]:null);b.style.setProperty('--pc',c?'rgb('+c.map(function(v){return Math.round(v*255)}).join(',')+')':'')}});
+    if(was!==show){layout();try{pzRelayout()}catch(e){}}}
   /* the bottom: a chip only while a finger does something else than paint */
   function toolsBuild(){var r=$('tools');if(!r||r.childNodes.length)return;
     var mk=function(id,icon,fn){var b=document.createElement('button');b.type='button';b.className='tb';b.id=id;b.innerHTML='<span></span><svg viewBox="0 0 18.4 18.4" aria-hidden="true">'+icon+'</svg>';b.addEventListener('click',fn);r.appendChild(b);return b};
     mk('t_again',CLRI,function(){gmStart();toolsSync()});
     mk('t_ink',DONEI,function(){if(PZ>=0){gmOff();return}TOOL='ink';toolsSync()})}
-  function toolsSync(){skShow();var r=$('tools'),h0=r?r.offsetHeight:0,a=$('t_again'),k=$('t_ink');
+  function toolsSync(){skShow();ptSync();var r=$('tools'),h0=r?r.offsetHeight:0,a=$('t_again'),k=$('t_ink');
     if(r&&a&&k){var game=PZ>=0,build=PZ<0&&TOOL!=='ink';
       a.hidden=!game;if(a.firstChild.textContent!=='again')a.firstChild.textContent='again';a.setAttribute('aria-label','Start the game again from round one');
       var kt=game?'stop':TOOL+' · done';if(k.firstChild.textContent!==kt){k.firstChild.textContent=kt;k.lastChild.innerHTML=game?STOPI:DONEI}
@@ -1893,8 +1938,8 @@ var DRIFT=(function(){
       r.hidden=!on||(!game&&!build)}
     menuSync();if(r&&r.offsetHeight!==h0){layout();pzRelayout()}}
   var on=false;
-  function enter(){if(GLX.ok&&gen!==GLX.gen)glSetup();size();t0=FT;lastT=0;GM.best=bestGet();toolsBuild();on=true;skSize();skShow();toolsSync()}
-  function leave(){on=false;last={};rows={};q.length=0;bdrag={};var r=$('tools');if(r)r.hidden=true;skShow();try{askOff()}catch(e){}}
+  function enter(){if(GLX.ok&&gen!==GLX.gen)glSetup();size();t0=FT;lastT=0;GM.best=bestGet();toolsBuild();ptBuild();on=true;skSize();skShow();toolsSync()}
+  function leave(){on=false;last={};rows={};q.length=0;bdrag={};var r=$('tools');if(r)r.hidden=true;skShow();ptSync();try{askOff()}catch(e){}}
   /* (the stage is measured again by the world switch once the row is shown or put away) */
   function down(p){
     if(!p.ghost&&PZ<0&&TOOL!=='ink'&&p.n<2){bdrag[p.id]={kind:TOOL,x0:p.x,y0:p.y};return}
@@ -2145,7 +2190,7 @@ var DRIFT=(function(){
   function recStep(){var R=REC,t=simT-R.t0;if(t<R.next)return;readBack();if(!rbOk)return;R.T.push(+t.toFixed(3));R.cols.forEach(function(c,k){R.S[k].push(scanAt(c,R.nx,R.ny))});
     R.next=t+R.ev;if(t>=R.until||!RUN)R.done=true}
   function U(x){return PZ>=0?bx(x):(STG.x0+x*STG.w)/VW}function V(y){return PZ>=0?by(y):(STG.y0+y*STG.h)/VH}
-  return {enter:enter,leave:leave,menu:menu,skInk:skInk,skType:skType,skPicture:skPicture,skBox:function(){return SKB?{x0:SKB.x0,y0:SKB.y0,x1:SKB.x1,y1:SKB.y1,n:SKV}:null},toolIcon:function(){for(var i=0;i<PENS.length;i++)if(PENS[i][0]===PEN)return PENS[i][2];return null},resize:function(){resize();pzRelayout();obsDirty=true},down:down,up:up,gesture:gesture,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
+  return {enter:enter,leave:leave,menu:menu,skInk:skInk,skType:skType,skPicture:skPicture,skBox:function(){return SKB?{x0:SKB.x0,y0:SKB.y0,x1:SKB.x1,y1:SKB.y1,n:SKV}:null},resize:function(){resize();pzRelayout();obsDirty=true},down:down,up:up,gesture:gesture,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
     dbg:function(){return {pen:PEN,psz:PSZ,skv:SKV,skh:SKC?SKC.hidden:null,mine:MINE,mir:MIR,pc:PCI,col:PCK,ok:!!(P&&dye),carried:carried,simT:simT,simple:simple,sw:sw,sh:sh,dw:dw,dh:dh,lin:GLX.hfLin,tool:TOOL,pz:PZ,won:!!pzWon,walls:WALLS.length,fans:FANS.length,drains:DRAINS.length,prisms:PRISMS.length,tunnels:TUNNELS.length,wn:WN,
       game:{round:GM.round,need:GM.need,got:GM.got,left:+GM.left.toFixed(2),score:GM.score,best:GM.best,phase:GM.phase,news:NEWS[GM.round]?NEWS[GM.round][0]:'',newBest:!!GM.newBest,cols:GM.cols.slice(),wall:!!GM.wall,combo:GM.combo,drain:GM.drain,cur:GM.cur,ringN:GM.ringN,loops:GM.loops,wallXY:GM.wall},board:{x0:B.x0,y0:B.y0,w:B.w,h:B.h},run:RUN,rt:RT,
       cups:CUPS.map(function(c){return {c:c.c,fill:c.fill,match:c.match,done:c.done,x:WX(c.x),y:WY(c.y),r:cupR()*(c.r||1),gold:!!c.gold,n:c.n,mv:c.ox?'loop':c.mx||c.my?'drift':'',
@@ -2282,6 +2327,8 @@ var ZONES=(function(){
   function labels(c,g){var box=[],n=0,tw={};LBX=[];c.font='600 9px '+MONO;c.textBaseline='middle';c.lineJoin='round';
     /* (18 Nov) clear of the satellite asked about, whose name is drawn over everything */
     try{var sb=ORBIT.layer.box();if(sb)box.push(sb)}catch(e){}
+    /* and clear of the name of the beat playing at its place (18 Nov, 16:06), drawn over everything */
+    try{var bb=WIND.beatBox();if(bb)box.push(bb)}catch(e){}
     /* and clear of the zoom's buttons over the right of the globe: a name that would go under them goes to their left, or is left out */
     var zb=null;try{zb=WIND.zmBox()}catch(e){}
     /* a war first, by its dead; a place both at war and cut off has one name, the war's, with what it is cut off from */
@@ -2342,7 +2389,7 @@ var WIND=(function(){
     g={cx:0,cy:0,R:100,E:[0,0,0],N:[0,0,0],C:[0,0,0]},lat0=16,lon0=clamp(-(new Date().getTimezoneOffset())/4,-180,180),zoom=1,idle=0,vlon=0,vlat=0,
     sunV=[0,0,0],moonV=[0,0,0],moonI=null,sunI=null,lastT=0,SK=[],byStep=[],flashes=[],STEPS=256,tmp=[0,0,0],probe=null,turned=0,
     FR=[],frV=-1,ST=[],stV=-1,
-    ftAt=0,cardHt=0,DUSTC=null,GT={R:0,cy:0,on:0},GR=0,GC=0,dataH=-1,entT=0,HUDB=0,HLH=0,FOC=null,FLY=null,camOn=false,footH=0;
+    BMK=[],BLB=null,ftAt=0,cardHt=0,DUSTC=null,GT={R:0,cy:0,on:0},GR=0,GC=0,dataH=-1,entT=0,HUDB=0,HLH=0,FOC=null,FLY=null,camOn=false,footH=0;
   /* the pictures made here for the chip (the wind, for the clouds to drift on; the aurora) are made again if the chip is lost */
   function glSetup(){if(!GLX.ok)return;gen=GLX.gen;windT=aurT=null;windV=aurV=-1}
   /* a grid of numbers, one per degree from the north pole down and from 0 E round, as a picture the chip can read: 512 x 256,
@@ -2519,7 +2566,10 @@ var WIND=(function(){
      Natural Earth's 7,342), or, on the site, where the phone is (asked once, by the phone). The Earth flies there, comes close and reads
      it as a tap would: on the site its card has the weather now, the next day, the next three and the last hour of rain radar; in the
      artifact, which can reach no weather service and cannot know where the phone is, the reading has the town, its sun and its wind ---- */
-  function visit(la,lo){try{ORBIT.layer.off()}catch(e){}read({x:-1e4,y:-1e4,ghost:false},{lat:la,lon:lo});
+  /* (a flight a finger asked for is a touch of the Earth: the hints' ghost finger does not turn it away after) */
+  function touchNow(){try{ghostsOff(true);touched[CURI]=true;lastTouch=performance.now()}catch(e){}}
+  function toPlace(la,lo){touchNow();probe=null;cardOff();FLY=null;FOC={s:{lat:la,lon:lo},t:FT,lat:lat0,lon:lon0,z:zoom,tz:Math.min(ZMAX,Math.max(zoom,1.5))};idle=0;vlon=vlat=0;turned=1}
+  function visit(la,lo){touchNow();try{ORBIT.layer.off()}catch(e){}read({x:-1e4,y:-1e4,ghost:false},{lat:la,lon:lo});
     FLY=null;FOC={s:{lat:la,lon:lo},t:FT,lat:lat0,lon:lon0,z:zoom,tz:Math.min(ZMAX,Math.max(zoom,2.6))};idle=0;vlon=vlat=0;turned=1}
   function menu(sec){if(sec._built)return;sec._built=1;
     var h=document.createElement('div');h.className='mh';h.textContent=HOSTED?'the weather in a town or city':'go to a town or city';sec.appendChild(h);
@@ -2580,6 +2630,12 @@ var WIND=(function(){
   function up(p){if(p.win){if(p.win===1)LIVEW.layer.up(p);return}idle=0;if(held(p)>(p.ghost?320:600)||p.moved>12)return;var w=GLOBE.at(p.x,p.y,g),i;
     /* a camera, then a satellite (while they are shown), are what a tap meant before the place under it */
     if(!p.ghost)try{LIVEW.layer.cardOff()}catch(e){}
+    /* (18 Nov, 16:06) a beat's place, right on its mark (before a camera's ring at the same town; a camera's lens stands above its
+       place, out of this reach): the one playing opens it on Beat; another is gone to, and its beat comes in at the bar */
+    if(!p.ghost&&BMK.length){var bi=-1,bd2=12*12;for(i=0;i<BMK.length;i++){var dx2=BMK[i].x-p.x,dy2=BMK[i].y-p.y,d2=dx2*dx2+dy2*dy2;if(d2<bd2){bd2=d2;bi=BMK[i].i}}
+      if(bi>=0){var MK2=BEAT.mapMarks(),P2=MK2.places[bi];try{ORBIT.layer.off()}catch(e){}
+        if(bi===MK2.p&&MK2.id){var ix=BEAT.lib.findIndex(function(r){return r.id===MK2.id});BEAT.pick(ix);go(WORLDS.findIndex(function(w){return w.id==='beat'}));return}
+        BEAT.mapForce(bi,null);toPlace(P2.la,P2.lo);return}}
     if(!p.ghost&&camOn&&LIVEW.layer.near(p.x,p.y)>=0){probe=null;cardOff();try{ORBIT.layer.off()}catch(e){}LIVEW.layer.pick(p.x,p.y);return}
     /* (17 Nov) a storm's wheel right under the finger is what it meant, before any satellite flying over it; (18 Nov) and so is a fire's
        mark, or the ring of a small war or blackout: marks that stay where they are, under a swarm that flies */
@@ -2802,7 +2858,21 @@ var WIND=(function(){
     /* (18 Nov) the satellite asked about: its ring and its name, over the rest */
     if(LY.orbit)try{ORBIT.layer.top(c)}catch(e){}
     /* the cameras: a ring for each, and the window of the one playing */
-    if(camOn)try{LIVEW.layer.draw(t,g)}catch(e){}}
+    if(camOn)try{LIVEW.layer.draw(t,g)}catch(e){}
+    /* (over the cameras' lenses, last) (18 Nov, 16:06: "the world is not connected to beats") the beats' places, while the music plays: a small ring of steps at each,
+       the one playing larger, red, flashing on its main instrument's strokes, and named */
+    BMK.length=0;BLB=null;if(AU.want)try{var MK=BEAT.mapMarks(),q5=[0,0,0];c.textBaseline='middle';
+      for(i=0;i<MK.places.length;i++){var P=MK.places[i];GLOBE.pr(AS.llv(P.la,P.lo),g,q5);if(q5[2]<=.15)continue;var me=i===MK.p,rr=me?7+MK.flash*3:4.2,al=clamp((q5[2]-.15)*4,0,1);
+        BMK.push({i:i,x:q5[0],y:q5[1]});c.globalAlpha=al;
+        c.strokeStyle='rgba(1,4,10,.6)';c.lineWidth=3;c.beginPath();c.arc(q5[0],q5[1],rr,0,TAU);c.stroke();
+        c.strokeStyle=me?'rgba(239,45,45,'+(.75+.25*MK.flash).toFixed(3)+')':'rgba(239,45,45,.6)';c.lineWidth=me?1.8:1.2;c.beginPath();c.arc(q5[0],q5[1],rr,0,TAU);c.stroke();
+        for(var k5=0;k5<8;k5++){var a5=k5/8*TAU-Math.PI/2;c.fillStyle='rgba(239,45,45,'+(me?.9:.55)+')';c.beginPath();c.arc(q5[0]+Math.cos(a5)*rr,q5[1]+Math.sin(a5)*rr,me?1.1:.8,0,TAU);c.fill()}
+        if(me){c.fillStyle='rgba(239,45,45,'+(.35+.6*MK.flash).toFixed(3)+')';c.beginPath();c.arc(q5[0],q5[1],rr*.55,0,TAU);c.fill();
+          if(MK.flash>.02){c.strokeStyle='rgba(239,45,45,'+(.5*MK.flash).toFixed(3)+')';c.lineWidth=1;c.beginPath();c.arc(q5[0],q5[1],rr+5+8*(1-MK.flash),0,TAU);c.stroke()}
+          c.font='700 9.5px '+MONO;var nm5=MK.name.toUpperCase(),tw5=c.measureText(nm5).width,lx5=q5[0]+rr+7,zb5=zmBox();if(lx5+tw5>VW-8||(zb5&&lx5<zb5[2]&&lx5+tw5>zb5[0]&&q5[1]-7<zb5[3]&&q5[1]+7>zb5[1]))lx5=q5[0]-rr-7-tw5;
+          c.lineWidth=3;c.strokeStyle='rgba(1,4,10,.8)';c.strokeText(nm5,lx5,q5[1]);c.fillStyle='rgba(255,96,84,.98)';c.fillText(nm5,lx5,q5[1]);BLB=[lx5-4,q5[1]-8,lx5+tw5+4,q5[1]+8]}
+        c.globalAlpha=1}}catch(e){c.globalAlpha=1}
+  }
   /* the words at the top: only what a tap asked for (15 Nov, 22:59: "Remove the writing on the top"; until then four lines stood there:
      what to do, what was happening, how fresh it was, the cameras): a camera open, or a place, a fire, a storm, a war or a place cut off
      read. Nothing for the hints' ghost finger, nothing when a layer is switched (its button says it) */
@@ -2835,7 +2905,7 @@ var WIND=(function(){
     if(u<.3){var e=smooth(u/.3);return [{x:g.cx+dir*R*(.4-.8*e),y:g.cy+R*.12*Math.sin(e*3.1)}]}
     if(u>.46&&u<.5)return [{x:g.cx-dir*R*.22,y:g.cy-R*.28}];
     return [null]}
-  return {nowGo:function(i){nowGo(NOWL[i])},zoomBy:zoomBy,menu:menu,visit:visit,nowList:function(){return NOWL.map(function(x){return x.k+':'+x.n})},enter:enter,leave:leave,resize:resize,down:down,move:move,up:up,gesture:gesture,wheel:wheel,key:key,seq:seq,step:step,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
+  return {nowGo:function(i){nowGo(NOWL[i])},zoomBy:zoomBy,menu:menu,visit:visit,toPlace:toPlace,beatBox:function(){return BLB},marks:function(){return BMK.map(function(m){return {i:m.i,x:m.x,y:m.y}})},nowList:function(){return NOWL.map(function(x){return x.k+':'+x.n})},enter:enter,leave:leave,resize:resize,down:down,move:move,up:up,gesture:gesture,wheel:wheel,key:key,seq:seq,step:step,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
     dbg:function(){return {ok:GLX.ok&&gen===GLX.gen,wind:!!windT,aurora:!!aurT,strikes:SK.length,flashes:flashes.length,ready:GLOBE.ready(),lat0:lat0,lon0:lon0,R:g.R,cx:g.cx,cy:g.cy,zoom:zoom,turned:turned,
       LY:LY,ping:lyPing?lyPing.k:'',flames:flN,darkK:LY.dark?+darkNow(FT).toFixed(3):0,dock:[].map.call($('lyd').childNodes,function(b){return b.id.slice(3)+(b.getAttribute('aria-pressed')==='true'?'+':'-')}),dockShown:!$('lyd').hidden,lgd:$('lgd').hidden?'':$('lgd').dataset.k,
       col:colLayer(),wx:!!wxT,geo:GLOBE.hasGeo(),now:NOWL.map(function(x){return x.k+':'+x.n}),cams:camOn,fly:!!FLY,probe:probe?{lat:probe.lat,lon:probe.lon,ghost:probe.ghost,r:reading(),zone:probe.zone?{w:probe.zone.w?probe.zone.w.id:null,d:probe.zone.d?probe.zone.d.id:null,front:probe.zone.front}:null}:null,vis:SK.filter(function(k){return k.p[2]>.3}).length,fires:FR.length,zones:ZONES.dbg(),storms:ST.map(function(k){var L=stLook(k.s);return {name:k.s.name,lat:k.s.lat,lon:k.s.lon,x:k.p[0],y:k.p[1],z:k.p[2],kmh:k.s.kmh,r:L.r,sp:L.sp,arms:L.arms,cat:L.cat}}),foc:!!FOC,
@@ -4395,29 +4465,30 @@ var BEAT=(function(){
   /* (18 Nov, 00:50: "too many confusing menu items at the bottom") along the bottom only the beat: back, its name (a tap shows where it
      is from), next. The notes' five sounds, the melody and reset are in the menu under the world's name */
   function sync(){var n=$('b_name');if(n){var nm=RHY[I].n;if(n.lastChild.textContent!==nm)n.lastChild.textContent=nm;n.setAttribute('aria-label',RHY[I].n+': where it is from and its tempo')}
+    var wb=$('bWorld'),pi=placeOf(RHY[I].id);if(wb){wb.hidden=!on||pi<0;if(pi>=0){var pn=PLACES[pi].n;if(wb.lastChild.textContent!==pn)wb.lastChild.textContent=pn;wb.setAttribute('aria-label',RHY[I].n+' on the Earth: where it comes from, '+pn)}}
     SN.forEach(function(x,i){var b=$('b_s'+i);if(b)b.setAttribute('aria-pressed',i===cur?'true':'false')})}
+  /* (18 Nov, 16:06: "the menu items are still small and fussy and busy and wrongly placed on the ring page") no menu of its own:
+     under the grid, the notes' five sounds as big dots of their colours, named; under them the beat, with a melody made up on it at
+     its left and the beat as it was at its right */
   function build(){if(built)return;var f=$('foot'),t=$('tools'),r=document.createElement('div');if(!f)return;built=true;r.className='tools';r.id='btools';r.hidden=true;
-    r.setAttribute('role','toolbar');r.setAttribute('aria-label','Beat: the beat playing');
+    r.setAttribute('role','toolbar');r.setAttribute('aria-label','Beat: the notes\' sound and the beat playing');
+    var r1=document.createElement('div');r1.className='brw bsnd';r1.setAttribute('role','group');r1.setAttribute('aria-label','The sound of the notes you put inside the ring');r.appendChild(r1);
+    SN.forEach(function(x,i){var b=document.createElement('button');b.type='button';b.className='bs';b.id='b_s'+i;b.innerHTML='<i></i><span></span>';
+      b.firstChild.style.setProperty('--c','rgb('+SCOL[i]+')');b.lastChild.textContent=x[0];b.setAttribute('aria-label','Notes in '+x[0]+': '+x[1]);b.addEventListener('click',function(){sound(i)});r1.appendChild(b)});
+    var r2=document.createElement('div');r2.className='brw';r.appendChild(r2);
     var mk=function(id,cls,name,icon,fn,lab){var b=document.createElement('button');b.type='button';b.className='tb '+cls;b.id=id;b.innerHTML='<svg viewBox="0 0 14 14" aria-hidden="true">'+icon+'</svg><span></span>';
-      b.lastChild.textContent=name;if(lab)b.setAttribute('aria-label',lab);b.addEventListener('click',fn);r.appendChild(b);return b};
+      b.lastChild.textContent=name;if(lab)b.setAttribute('aria-label',lab);b.addEventListener('click',fn);r2.appendChild(b);return b};
+    mk('b_dice','ba bx','','<rect x="2.5" y="2.5" width="9" height="9" rx="2"/><circle cx="5.2" cy="5.2" r=".9" fill="currentColor"/><circle cx="8.8" cy="8.8" r=".9" fill="currentColor"/>',function(){dice()},'Make up a melody on this beat, in the sound chosen');
     mk('b_prev','ba','','<path d="M8.6 3.2L4.8 7l3.8 3.8"/>',function(){pick(I-1)},'The beat before');
     var nb=mk('b_name','bn',RHY[I].n,'',function(){CARD.t=performance.now()});nb.firstChild.style.display='none';
     mk('b_next','ba','','<path d="M5.4 3.2L9.2 7l-3.8 3.8"/>',function(){pick(I+1)},'The next beat');
+    mk('b_reset','ba bx','','<path d="M3.4 7.2a3.7 3.7 0 1 0 1.3-2.9"/><path d="M4.4 2.2v2.3h2.3"/>',function(){reset()},'This beat as it was, and no notes');
     if(t&&t.nextSibling)f.insertBefore(r,t.nextSibling);else f.appendChild(r);sync()}
-  /* the menu's part for Beat: the notes' sound (five, each its colour and name), a melody made up on the beat, the beat as it was */
-  function menu(sec){if(sec._built)return;sec._built=1;var h=document.createElement('div');h.className='mh';h.textContent='notes inside the ring';sec.appendChild(h);
-    var r=document.createElement('div');r.className='mrw';sec.appendChild(r);
-    SN.forEach(function(x,i){var b=document.createElement('button');b.type='button';b.className='mb';b.id='b_s'+i;b.innerHTML='<svg viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="3.6" fill="currentColor" stroke="none"/></svg><span></span>';
-      b.firstChild.style.color='rgb('+SCOL[i]+')';b.lastChild.textContent=x[0];b.setAttribute('aria-label','Notes in '+x[0]+': '+x[1]);b.addEventListener('click',function(){sound(i);menuShow(false)});r.appendChild(b)});
-    var r2=document.createElement('div');r2.className='mrw';sec.appendChild(r2);
-    var mk=function(id,name,icon,fn,lab){var b=document.createElement('button');b.type='button';b.className='mb';b.id=id;b.innerHTML='<svg viewBox="0 0 14 14" aria-hidden="true">'+icon+'</svg><span></span>';
-      b.lastChild.textContent=name;b.setAttribute('aria-label',lab);b.addEventListener('click',function(){fn();menuShow(false)});r2.appendChild(b);return b};
-    mk('b_dice','make a melody','<rect x="2.5" y="2.5" width="9" height="9" rx="2"/><circle cx="5.2" cy="5.2" r=".9" fill="currentColor"/><circle cx="8.8" cy="8.8" r=".9" fill="currentColor"/>',function(){dice()},'Make up a melody on this beat, in the sound chosen');
-    mk('b_reset','this beat as it was','<path d="M3.4 7.2a3.7 3.7 0 1 0 1.3-2.9"/><path d="M4.4 2.2v2.3h2.3"/>',function(){reset()},'This beat as it was, and no notes');
-    sync()}
-  function enter(){load();build();on=true;var r=$('btools');if(r)r.hidden=false;sync();hushSet(true);
+  function enter(){load();build();on=true;var wb=$('bWorld');if(wb&&!wb._on){wb._on=1;wb.addEventListener('click',function(){var pi=placeOf(RHY[I].id);if(pi<0)return;var P=PLACES[pi],id=RHY[I].id;
+      /* (after the change of page, 200 ms: the Earth is the page then, and the flight is its own) */
+      mapForce(pi,id);go(WORLDS.findIndex(function(w){return w.id==='earth'}));setTimeout(function(){try{mapForce(pi,id);WIND.toPlace(P.la,P.lo)}catch(e){}},280)})}var r=$('btools');if(r)r.hidden=false;sync();hushSet(true);
     SND.load(banksOf(RHY[I]).concat(['glock','marimba','chimes','fbass','gtr']));if(!BT.iv)BT.iv=setInterval(pump,25);pump();layout();if(AU.want)CARD.t=performance.now()}
-  function leave(){on=false;drag=null;mode=null;ROLL={};var r=$('btools');if(r)r.hidden=true;hushSet(false);clearInterval(BT.iv);BT.iv=0;BT.run=false}
+  function leave(){on=false;drag=null;mode=null;ROLL={};var r=$('btools');if(r)r.hidden=true;var wb=$('bWorld');if(wb)wb.hidden=true;hushSet(false);clearInterval(BT.iv);BT.iv=0;BT.run=false}
   function tick(){var now=performance.now();for(var id in ROLL){var r=ROLL[id];if(!PTR(id)){delete ROLL[id];continue}if(!r.on&&now-r.t0>330){r.on=true;mode=null}}}
   /* ---- the picture ---- */
   function cardA(now){var e=(now-CARD.t)/1000;if(e<0||e>5)return 0;return Math.min(1,e/.18)*(e>4.2?1-(e-4.2)/.8:1)}
@@ -4520,16 +4591,26 @@ var BEAT=(function(){
     {n:'Mumbai',la:19.08,lo:72.88,r:['keherwa']},
     {n:'South China',la:23.13,lo:113.26,r:['dongdong']},
     {n:'Java',la:-7.8,lo:110.36,r:['lancaran']}],
-    MAPI={},MAP={p:-1,id:null,k0:0,bar:null,rot:{},g:null,spy:null},MAPV=.5,MAPR=2600;
+    MAPI={},MAP={p:-1,id:null,k0:0,bar:null,rot:{},g:null,spy:null,fl:[],force:null},MAPV=.5,MAPR=2600;
   RHY.forEach(function(R,i){MAPI[R.id]=i});
   function km(a,b,c,d){var r=Math.PI/180,x=Math.sin((c-a)*r/2),y=Math.sin((d-b)*r/2);return 12742*Math.asin(Math.min(1,Math.sqrt(x*x+Math.cos(a*r)*Math.cos(c*r)*y*y)))}
   /* the place in view (a place keeps its beat until another is clearly nearer, so a globe resting between two does not flicker) */
-  function placeAt(la,lo,cur){var b=-1,bd=MAPR,cd=1e9;for(var i=0;i<PLACES.length;i++){var d=km(la,lo,PLACES[i].la,PLACES[i].lo);if(i===cur)cd=d;if(d<bd){bd=d;b=i}}
+  function placeAt(la,lo,cur){if(MAP.force&&performance.now()<MAP.force.until)return MAP.force.p;var b=-1,bd=MAPR,cd=1e9;for(var i=0;i<PLACES.length;i++){var d=km(la,lo,PLACES[i].la,PLACES[i].lo);if(i===cur)cd=d;if(d<bd){bd=d;b=i}}
     if(cur>=0&&b!==cur&&cd<MAPR+150&&cd-(b<0?MAPR:bd)<180)return cur;return b}
   /* steps of the band's time: 1 a sixteenth, 2 an eighth, 3 a triplet (three to a beat) */
   function unitOf(R){if(R.N===12)return 3;var nat=60/R.bpm/R.b;return Math.abs(nat-2*SD)<Math.abs(nat-SD)?2:1}
   function mapDst(){var B=bus();if(!B)return null;if(!MAP.g||MAP.g.context!==B.c){MAP.g=B.c.createGain();MAP.g.gain.value=MAPV;MAP.g.connect(B.i)}return MAP.g}
-  function mapStep(c,dst,R,k,t){var q=((k%R.N)+R.N)%R.N;for(var j=1;j<3;j++)if(R.r[j][2].indexOf(q+1)>=0){hitRow(c,dst,R,j,q,t,c===AU.c,0);if(MAP.spy&&c===AU.c)MAP.spy({id:R.id,j:j,q:q,t:t})}}
+  function mapStep(c,dst,R,k,t){var q=((k%R.N)+R.N)%R.N;for(var j=1;j<3;j++)if(R.r[j][2].indexOf(q+1)>=0){hitRow(c,dst,R,j,q,t,c===AU.c,0);
+    if(c===AU.c){if(MAP.spy)MAP.spy({id:R.id,j:j,q:q,t:t});if(j===2){MAP.fl.push(t);if(MAP.fl.length>8)MAP.fl.shift()}}}}
+  /* ---- (18 Nov, 16:06: "the world is not connected to beats") the beats on the Earth: a mark at each place a beat comes from, the one
+     playing lit, flashing on its main instrument's strokes and named; a tap on another goes there and its beat comes in, a tap on the
+     one playing opens it on Beat. And from Beat, its place: the Earth turns to it and plays it there ---- */
+  function mapMarks(){var now=AU.c?AU.c.currentTime-(AU.lat||0):0,fl=0;for(var i=0;i<MAP.fl.length;i++){var d=now-MAP.fl[i];if(d>=0&&d<.5)fl=Math.max(fl,Math.exp(-d/.11))}
+    return {places:PLACES,p:MAP.p,id:MAP.id,name:MAP.id?RHY[MAPI[MAP.id]].n:'',flash:fl}}
+  /* a place's beat to play now (on the Earth): the one asked for, from its first bar */
+  function mapForce(p,id){if(p<0||p>=PLACES.length)return;var k=id?PLACES[p].r.indexOf(id):-1;if(k>=0)MAP.rot[p]=k;MAP.force={p:p,until:performance.now()+5000};MAP.p=-1;MAP.bar=null;MAP.k0=-1e9}
+  function placeOf(id){for(var i=0;i<PLACES.length;i++)if(PLACES[i].r.indexOf(id)>=0)return i;return -1}
+
   function mapPlay(c,dst,R,s,when){var u=unitOf(R);if(u===1)mapStep(c,dst,R,s,when);else if(u===2){if(s%2===0)mapStep(c,dst,R,s/2,when)}
     else if(s%4===0){var b=s/4,tl=4*SD/3;for(var j=0;j<3;j++)mapStep(c,dst,R,b*3+j,when+j*tl)}}
   /* (the place is looked at on the first sixteenth of each bar the clock gives out: a busy page can skip a few, the bar's first too) */
@@ -4541,9 +4622,9 @@ var BEAT=(function(){
       if(MAP.id&&MAP.id!==was)try{SND.load(banksOf(RHY[MAPI[MAP.id]]))}catch(e){}
       if(MAP.id&&MAP.id!==was&&!quiet&&performance.now()-lastTouch<15000)say(RHY[MAPI[MAP.id]].n+' · '+PLACES[p].n,'rgb('+RED+')')}
     if(!MAP.id||VB>64)return;var dst=mapDst();if(dst)mapPlay(c,dst,RHY[MAPI[MAP.id]],s,when)}
-  return {enter:enter,leave:leave,menu:menu,tick:tick,draw:draw,hud:hud,down:down,move:move,up:up,resize:function(){},
+  return {enter:enter,leave:leave,tick:tick,draw:draw,hud:hud,down:down,move:move,up:up,resize:function(){},
     /* (18 Nov) the Earth's rhythm: called on each of the band's sixteenths while the Earth is shown, with the middle of the globe */
-    mapSeq:mapSeq,mapNow:function(){return {p:MAP.p,place:MAP.p>=0?PLACES[MAP.p].n:null,id:MAP.id,u:MAP.id?unitOf(RHY[MAPI[MAP.id]]):0}},
+    mapSeq:mapSeq,mapMarks:mapMarks,mapForce:mapForce,placeOf:placeOf,mapNow:function(){return {force:MAP.force&&performance.now()<MAP.force.until?MAP.force.p:-1,p:MAP.p,place:MAP.p>=0?PLACES[MAP.p].n:null,id:MAP.id,u:MAP.id?unitOf(RHY[MAPI[MAP.id]]):0}},
     mapAt:function(la,lo){var p=placeAt(la,lo,-1);return p<0?null:{n:PLACES[p].n,r:PLACES[p].r.slice()}},places:function(){return PLACES.map(function(P){return {n:P.n,la:P.la,lo:P.lo,r:P.r.slice()}})},
     mapSpy:function(f){MAP.spy=f||null},
     /* for the loudness test: a place's beat as the Earth plays it (its two upper rows on the band's time) through a bus like Beat's */

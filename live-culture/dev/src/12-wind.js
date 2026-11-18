@@ -20,7 +20,7 @@ var WIND=(function(){
     g={cx:0,cy:0,R:100,E:[0,0,0],N:[0,0,0],C:[0,0,0]},lat0=16,lon0=clamp(-(new Date().getTimezoneOffset())/4,-180,180),zoom=1,idle=0,vlon=0,vlat=0,
     sunV=[0,0,0],moonV=[0,0,0],moonI=null,sunI=null,lastT=0,SK=[],byStep=[],flashes=[],STEPS=256,tmp=[0,0,0],probe=null,turned=0,
     FR=[],frV=-1,ST=[],stV=-1,
-    ftAt=0,cardHt=0,DUSTC=null,GT={R:0,cy:0,on:0},GR=0,GC=0,dataH=-1,entT=0,HUDB=0,HLH=0,FOC=null,FLY=null,camOn=false,footH=0;
+    BMK=[],BLB=null,ftAt=0,cardHt=0,DUSTC=null,GT={R:0,cy:0,on:0},GR=0,GC=0,dataH=-1,entT=0,HUDB=0,HLH=0,FOC=null,FLY=null,camOn=false,footH=0;
   /* the pictures made here for the chip (the wind, for the clouds to drift on; the aurora) are made again if the chip is lost */
   function glSetup(){if(!GLX.ok)return;gen=GLX.gen;windT=aurT=null;windV=aurV=-1}
   /* a grid of numbers, one per degree from the north pole down and from 0 E round, as a picture the chip can read: 512 x 256,
@@ -197,7 +197,10 @@ var WIND=(function(){
      Natural Earth's 7,342), or, on the site, where the phone is (asked once, by the phone). The Earth flies there, comes close and reads
      it as a tap would: on the site its card has the weather now, the next day, the next three and the last hour of rain radar; in the
      artifact, which can reach no weather service and cannot know where the phone is, the reading has the town, its sun and its wind ---- */
-  function visit(la,lo){try{ORBIT.layer.off()}catch(e){}read({x:-1e4,y:-1e4,ghost:false},{lat:la,lon:lo});
+  /* (a flight a finger asked for is a touch of the Earth: the hints' ghost finger does not turn it away after) */
+  function touchNow(){try{ghostsOff(true);touched[CURI]=true;lastTouch=performance.now()}catch(e){}}
+  function toPlace(la,lo){touchNow();probe=null;cardOff();FLY=null;FOC={s:{lat:la,lon:lo},t:FT,lat:lat0,lon:lon0,z:zoom,tz:Math.min(ZMAX,Math.max(zoom,1.5))};idle=0;vlon=vlat=0;turned=1}
+  function visit(la,lo){touchNow();try{ORBIT.layer.off()}catch(e){}read({x:-1e4,y:-1e4,ghost:false},{lat:la,lon:lo});
     FLY=null;FOC={s:{lat:la,lon:lo},t:FT,lat:lat0,lon:lon0,z:zoom,tz:Math.min(ZMAX,Math.max(zoom,2.6))};idle=0;vlon=vlat=0;turned=1}
   function menu(sec){if(sec._built)return;sec._built=1;
     var h=document.createElement('div');h.className='mh';h.textContent=HOSTED?'the weather in a town or city':'go to a town or city';sec.appendChild(h);
@@ -258,6 +261,12 @@ var WIND=(function(){
   function up(p){if(p.win){if(p.win===1)LIVEW.layer.up(p);return}idle=0;if(held(p)>(p.ghost?320:600)||p.moved>12)return;var w=GLOBE.at(p.x,p.y,g),i;
     /* a camera, then a satellite (while they are shown), are what a tap meant before the place under it */
     if(!p.ghost)try{LIVEW.layer.cardOff()}catch(e){}
+    /* (18 Nov, 16:06) a beat's place, right on its mark (before a camera's ring at the same town; a camera's lens stands above its
+       place, out of this reach): the one playing opens it on Beat; another is gone to, and its beat comes in at the bar */
+    if(!p.ghost&&BMK.length){var bi=-1,bd2=12*12;for(i=0;i<BMK.length;i++){var dx2=BMK[i].x-p.x,dy2=BMK[i].y-p.y,d2=dx2*dx2+dy2*dy2;if(d2<bd2){bd2=d2;bi=BMK[i].i}}
+      if(bi>=0){var MK2=BEAT.mapMarks(),P2=MK2.places[bi];try{ORBIT.layer.off()}catch(e){}
+        if(bi===MK2.p&&MK2.id){var ix=BEAT.lib.findIndex(function(r){return r.id===MK2.id});BEAT.pick(ix);go(WORLDS.findIndex(function(w){return w.id==='beat'}));return}
+        BEAT.mapForce(bi,null);toPlace(P2.la,P2.lo);return}}
     if(!p.ghost&&camOn&&LIVEW.layer.near(p.x,p.y)>=0){probe=null;cardOff();try{ORBIT.layer.off()}catch(e){}LIVEW.layer.pick(p.x,p.y);return}
     /* (17 Nov) a storm's wheel right under the finger is what it meant, before any satellite flying over it; (18 Nov) and so is a fire's
        mark, or the ring of a small war or blackout: marks that stay where they are, under a swarm that flies */
@@ -480,7 +489,21 @@ var WIND=(function(){
     /* (18 Nov) the satellite asked about: its ring and its name, over the rest */
     if(LY.orbit)try{ORBIT.layer.top(c)}catch(e){}
     /* the cameras: a ring for each, and the window of the one playing */
-    if(camOn)try{LIVEW.layer.draw(t,g)}catch(e){}}
+    if(camOn)try{LIVEW.layer.draw(t,g)}catch(e){}
+    /* (over the cameras' lenses, last) (18 Nov, 16:06: "the world is not connected to beats") the beats' places, while the music plays: a small ring of steps at each,
+       the one playing larger, red, flashing on its main instrument's strokes, and named */
+    BMK.length=0;BLB=null;if(AU.want)try{var MK=BEAT.mapMarks(),q5=[0,0,0];c.textBaseline='middle';
+      for(i=0;i<MK.places.length;i++){var P=MK.places[i];GLOBE.pr(AS.llv(P.la,P.lo),g,q5);if(q5[2]<=.15)continue;var me=i===MK.p,rr=me?7+MK.flash*3:4.2,al=clamp((q5[2]-.15)*4,0,1);
+        BMK.push({i:i,x:q5[0],y:q5[1]});c.globalAlpha=al;
+        c.strokeStyle='rgba(1,4,10,.6)';c.lineWidth=3;c.beginPath();c.arc(q5[0],q5[1],rr,0,TAU);c.stroke();
+        c.strokeStyle=me?'rgba(239,45,45,'+(.75+.25*MK.flash).toFixed(3)+')':'rgba(239,45,45,.6)';c.lineWidth=me?1.8:1.2;c.beginPath();c.arc(q5[0],q5[1],rr,0,TAU);c.stroke();
+        for(var k5=0;k5<8;k5++){var a5=k5/8*TAU-Math.PI/2;c.fillStyle='rgba(239,45,45,'+(me?.9:.55)+')';c.beginPath();c.arc(q5[0]+Math.cos(a5)*rr,q5[1]+Math.sin(a5)*rr,me?1.1:.8,0,TAU);c.fill()}
+        if(me){c.fillStyle='rgba(239,45,45,'+(.35+.6*MK.flash).toFixed(3)+')';c.beginPath();c.arc(q5[0],q5[1],rr*.55,0,TAU);c.fill();
+          if(MK.flash>.02){c.strokeStyle='rgba(239,45,45,'+(.5*MK.flash).toFixed(3)+')';c.lineWidth=1;c.beginPath();c.arc(q5[0],q5[1],rr+5+8*(1-MK.flash),0,TAU);c.stroke()}
+          c.font='700 9.5px '+MONO;var nm5=MK.name.toUpperCase(),tw5=c.measureText(nm5).width,lx5=q5[0]+rr+7,zb5=zmBox();if(lx5+tw5>VW-8||(zb5&&lx5<zb5[2]&&lx5+tw5>zb5[0]&&q5[1]-7<zb5[3]&&q5[1]+7>zb5[1]))lx5=q5[0]-rr-7-tw5;
+          c.lineWidth=3;c.strokeStyle='rgba(1,4,10,.8)';c.strokeText(nm5,lx5,q5[1]);c.fillStyle='rgba(255,96,84,.98)';c.fillText(nm5,lx5,q5[1]);BLB=[lx5-4,q5[1]-8,lx5+tw5+4,q5[1]+8]}
+        c.globalAlpha=1}}catch(e){c.globalAlpha=1}
+  }
   /* the words at the top: only what a tap asked for (15 Nov, 22:59: "Remove the writing on the top"; until then four lines stood there:
      what to do, what was happening, how fresh it was, the cameras): a camera open, or a place, a fire, a storm, a war or a place cut off
      read. Nothing for the hints' ghost finger, nothing when a layer is switched (its button says it) */
@@ -513,7 +536,7 @@ var WIND=(function(){
     if(u<.3){var e=smooth(u/.3);return [{x:g.cx+dir*R*(.4-.8*e),y:g.cy+R*.12*Math.sin(e*3.1)}]}
     if(u>.46&&u<.5)return [{x:g.cx-dir*R*.22,y:g.cy-R*.28}];
     return [null]}
-  return {nowGo:function(i){nowGo(NOWL[i])},zoomBy:zoomBy,menu:menu,visit:visit,nowList:function(){return NOWL.map(function(x){return x.k+':'+x.n})},enter:enter,leave:leave,resize:resize,down:down,move:move,up:up,gesture:gesture,wheel:wheel,key:key,seq:seq,step:step,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
+  return {nowGo:function(i){nowGo(NOWL[i])},zoomBy:zoomBy,menu:menu,visit:visit,toPlace:toPlace,beatBox:function(){return BLB},marks:function(){return BMK.map(function(m){return {i:m.i,x:m.x,y:m.y}})},nowList:function(){return NOWL.map(function(x){return x.k+':'+x.n})},enter:enter,leave:leave,resize:resize,down:down,move:move,up:up,gesture:gesture,wheel:wheel,key:key,seq:seq,step:step,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
     dbg:function(){return {ok:GLX.ok&&gen===GLX.gen,wind:!!windT,aurora:!!aurT,strikes:SK.length,flashes:flashes.length,ready:GLOBE.ready(),lat0:lat0,lon0:lon0,R:g.R,cx:g.cx,cy:g.cy,zoom:zoom,turned:turned,
       LY:LY,ping:lyPing?lyPing.k:'',flames:flN,darkK:LY.dark?+darkNow(FT).toFixed(3):0,dock:[].map.call($('lyd').childNodes,function(b){return b.id.slice(3)+(b.getAttribute('aria-pressed')==='true'?'+':'-')}),dockShown:!$('lyd').hidden,lgd:$('lgd').hidden?'':$('lgd').dataset.k,
       col:colLayer(),wx:!!wxT,geo:GLOBE.hasGeo(),now:NOWL.map(function(x){return x.k+':'+x.n}),cams:camOn,fly:!!FLY,probe:probe?{lat:probe.lat,lon:probe.lon,ghost:probe.ghost,r:reading(),zone:probe.zone?{w:probe.zone.w?probe.zone.w.id:null,d:probe.zone.d?probe.zone.d.id:null,front:probe.zone.front}:null}:null,vis:SK.filter(function(k){return k.p[2]>.3}).length,fires:FR.length,zones:ZONES.dbg(),storms:ST.map(function(k){var L=stLook(k.s);return {name:k.s.name,lat:k.s.lat,lon:k.s.lon,x:k.p[0],y:k.p[1],z:k.p[2],kmh:k.s.kmh,r:L.r,sp:L.sp,arms:L.arms,cat:L.cat}}),foc:!!FOC,

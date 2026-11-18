@@ -159,7 +159,7 @@ var DRIFT=(function(){
      (which lifts the paint under it as well). Three sizes each; the colours are the paint's, and the mirror mirrors them too. The sheet
      keeps its picture through a new size of the screen, as the water does, and goes into a saved picture ---- */
   var PEN='paint',PSZ=1,SKC=null,SKX=null,SKD=1,SKV=0,PW={pen:[1.6,3.2,6.5],pencil:[1.3,2.6,4.8],marker:[9,16,28],eraser:[12,24,44]},
-    PENS=[['paint','paint','<path d="M12.6 2.4l3.4 3.4-6.6 6.6-3.4-3.4z"/><path d="M5.8 9.4c-1.9.1-3 1.5-3 3.4 0 .9-.5 1.7-1.2 2.2 2.6.6 5.6-.1 6.4-2.8"/>'],
+    PENS=[['paint','brush','<path d="M12.6 2.4l3.4 3.4-6.6 6.6-3.4-3.4z"/><path d="M5.8 9.4c-1.9.1-3 1.5-3 3.4 0 .9-.5 1.7-1.2 2.2 2.6.6 5.6-.1 6.4-2.8"/>'],
       ['pen','pen','<path d="M3 15.4l1.2-4.6 7.6-7.6 3.4 3.4-7.6 7.6z"/><path d="M10.4 4.6l3.4 3.4"/>'],
       ['pencil','pencil','<path d="M3 15.4l.9-3.6 8.4-8.4 2.7 2.7-8.4 8.4z"/><path d="M11 4.7l2.7 2.7M3.9 11.8l2.7 2.7"/>'],
       ['marker','marker','<path d="M4.6 13l1.8-4.6 5.8-5.8 3.6 3.6-5.8 5.8z"/><path d="M2.6 16h6"/>'],
@@ -420,7 +420,8 @@ var DRIFT=(function(){
     /* (18 Nov, 06:04) Paint's own menu, under the page's name (the menu's title): nothing of another page's here, and saving a
        picture, which is the painting's, is here and nowhere else */
     /* (18 Nov, 11:31) what a finger does: paint in the water, or draw on the sheet with a pen, a pencil, a marker, or rub out; and how big */
-    var rt=row(sec,'tool');PENS.forEach(function(t){mbtn(rt,'pn_'+t[0],t[1],t[2],function(){PEN=t[0];if(PZ>=0)gmOff();TOOL='ink';menuSync();toolsSync();menuShow(false);try{toolIconSync()}catch(e){}},'Draw with the '+t[1])});
+    /* (18 Nov, 16:06: "The menu items for art materials need to be accessible at the top, just the marker, brush, pen, etc.") the
+       brush, the pen, the pencil, the marker and the eraser are along the top of Paint (ptBuild), not in here; their size is */
     var rz=row(sec,'size');['fine','medium','bold'].forEach(function(nm,i){var b=mbtn(rz,'ps_'+i,nm,'<circle cx="9.2" cy="9.2" r="'+[1.8,3.4,5.4][i]+'"/>',function(){PSZ=i;menuSync();menuShow(false)},'Size: '+nm);b.classList.add('szb')});
     /* the colour: each touch the next of six, or one of them */
     var rc=row(sec,'colour');[-1].concat(PAL.map(function(x,i){return i})).forEach(function(i){var b=document.createElement('button');b.type='button';b.className='sw'+(i<0?' auto':'');b.id='pc_'+(i<0?'auto':i);
@@ -440,13 +441,24 @@ var DRIFT=(function(){
     PENS.forEach(function(t){var b=$('pn_'+t[0]);if(b)b.setAttribute('aria-pressed',PZ<0&&TOOL==='ink'&&PEN===t[0]?'true':'false')});
     for(i=0;i<3;i++){var bz=$('ps_'+i);if(bz){bz.setAttribute('aria-pressed',PSZ===i?'true':'false');bz.disabled=PEN==='paint'}}
     var m=$('p_mir');if(m){m.lastChild.textContent=MIR<2?'mirror · off':'mirror · '+MIR;m.setAttribute('aria-pressed',MIR>1?'true':'false');m.firstChild.innerHTML=MIRI}
-    TOOLS.forEach(function(t){var b=$('t_'+t[0]);if(b&&t[0]!=='puz'&&t[0]!=='ink')b.setAttribute('aria-pressed',PZ<0&&TOOL===t[0]?'true':'false')})}
+    TOOLS.forEach(function(t){var b=$('t_'+t[0]);if(b&&t[0]!=='puz'&&t[0]!=='ink')b.setAttribute('aria-pressed',PZ<0&&TOOL===t[0]?'true':'false')});ptSync()}
+  /* ---- (18 Nov, 16:06) along the top of Paint, big and always there while it paints: the brush (the paint in the water), the pen,
+     the pencil, the marker and the eraser. Nothing else: the rest is in Paint's own menu ---- */
+  function ptBuild(){var r=$('ptools');if(!r||r.childNodes.length)return;
+    PENS.forEach(function(t){var b=document.createElement('button');b.type='button';b.className='pt';b.id='pn_'+t[0];
+      b.innerHTML='<svg viewBox="0 0 18.4 18.4" aria-hidden="true">'+t[2]+'</svg><span></span>';b.lastChild.textContent=t[1];
+      b.setAttribute('aria-label',t[0]==='paint'?'Paint with the brush, in the water':t[0]==='eraser'?'Rub out with the eraser':'Draw with the '+t[1]);
+      b.addEventListener('click',function(){PEN=t[0];if(PZ>=0)gmOff();TOOL='ink';menuSync();toolsSync()});r.appendChild(b)})}
+  function ptSync(){var r=$('ptools');if(!r)return;var show=on&&PZ<0,was=!r.hidden;r.hidden=!show;document.body.classList.toggle('ptl',show);
+    PENS.forEach(function(t){var b=$('pn_'+t[0]);if(b){b.setAttribute('aria-pressed',show&&TOOL==='ink'&&PEN===t[0]?'true':'false');
+      var c=t[0]==='eraser'?null:(PCI>=0?PAL[PCI]:null);b.style.setProperty('--pc',c?'rgb('+c.map(function(v){return Math.round(v*255)}).join(',')+')':'')}});
+    if(was!==show){layout();try{pzRelayout()}catch(e){}}}
   /* the bottom: a chip only while a finger does something else than paint */
   function toolsBuild(){var r=$('tools');if(!r||r.childNodes.length)return;
     var mk=function(id,icon,fn){var b=document.createElement('button');b.type='button';b.className='tb';b.id=id;b.innerHTML='<span></span><svg viewBox="0 0 18.4 18.4" aria-hidden="true">'+icon+'</svg>';b.addEventListener('click',fn);r.appendChild(b);return b};
     mk('t_again',CLRI,function(){gmStart();toolsSync()});
     mk('t_ink',DONEI,function(){if(PZ>=0){gmOff();return}TOOL='ink';toolsSync()})}
-  function toolsSync(){skShow();var r=$('tools'),h0=r?r.offsetHeight:0,a=$('t_again'),k=$('t_ink');
+  function toolsSync(){skShow();ptSync();var r=$('tools'),h0=r?r.offsetHeight:0,a=$('t_again'),k=$('t_ink');
     if(r&&a&&k){var game=PZ>=0,build=PZ<0&&TOOL!=='ink';
       a.hidden=!game;if(a.firstChild.textContent!=='again')a.firstChild.textContent='again';a.setAttribute('aria-label','Start the game again from round one');
       var kt=game?'stop':TOOL+' · done';if(k.firstChild.textContent!==kt){k.firstChild.textContent=kt;k.lastChild.innerHTML=game?STOPI:DONEI}
@@ -454,8 +466,8 @@ var DRIFT=(function(){
       r.hidden=!on||(!game&&!build)}
     menuSync();if(r&&r.offsetHeight!==h0){layout();pzRelayout()}}
   var on=false;
-  function enter(){if(GLX.ok&&gen!==GLX.gen)glSetup();size();t0=FT;lastT=0;GM.best=bestGet();toolsBuild();on=true;skSize();skShow();toolsSync()}
-  function leave(){on=false;last={};rows={};q.length=0;bdrag={};var r=$('tools');if(r)r.hidden=true;skShow();try{askOff()}catch(e){}}
+  function enter(){if(GLX.ok&&gen!==GLX.gen)glSetup();size();t0=FT;lastT=0;GM.best=bestGet();toolsBuild();ptBuild();on=true;skSize();skShow();toolsSync()}
+  function leave(){on=false;last={};rows={};q.length=0;bdrag={};var r=$('tools');if(r)r.hidden=true;skShow();ptSync();try{askOff()}catch(e){}}
   /* (the stage is measured again by the world switch once the row is shown or put away) */
   function down(p){
     if(!p.ghost&&PZ<0&&TOOL!=='ink'&&p.n<2){bdrag[p.id]={kind:TOOL,x0:p.x,y0:p.y};return}
@@ -706,7 +718,7 @@ var DRIFT=(function(){
   function recStep(){var R=REC,t=simT-R.t0;if(t<R.next)return;readBack();if(!rbOk)return;R.T.push(+t.toFixed(3));R.cols.forEach(function(c,k){R.S[k].push(scanAt(c,R.nx,R.ny))});
     R.next=t+R.ev;if(t>=R.until||!RUN)R.done=true}
   function U(x){return PZ>=0?bx(x):(STG.x0+x*STG.w)/VW}function V(y){return PZ>=0?by(y):(STG.y0+y*STG.h)/VH}
-  return {enter:enter,leave:leave,menu:menu,skInk:skInk,skType:skType,skPicture:skPicture,skBox:function(){return SKB?{x0:SKB.x0,y0:SKB.y0,x1:SKB.x1,y1:SKB.y1,n:SKV}:null},toolIcon:function(){for(var i=0;i<PENS.length;i++)if(PENS[i][0]===PEN)return PENS[i][2];return null},resize:function(){resize();pzRelayout();obsDirty=true},down:down,up:up,gesture:gesture,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
+  return {enter:enter,leave:leave,menu:menu,skInk:skInk,skType:skType,skPicture:skPicture,skBox:function(){return SKB?{x0:SKB.x0,y0:SKB.y0,x1:SKB.x1,y1:SKB.y1,n:SKV}:null},resize:function(){resize();pzRelayout();obsDirty=true},down:down,up:up,gesture:gesture,tick:tick,draw:draw,hud:hud,ghost:ghost,gl:function(){gen=-1},
     dbg:function(){return {pen:PEN,psz:PSZ,skv:SKV,skh:SKC?SKC.hidden:null,mine:MINE,mir:MIR,pc:PCI,col:PCK,ok:!!(P&&dye),carried:carried,simT:simT,simple:simple,sw:sw,sh:sh,dw:dw,dh:dh,lin:GLX.hfLin,tool:TOOL,pz:PZ,won:!!pzWon,walls:WALLS.length,fans:FANS.length,drains:DRAINS.length,prisms:PRISMS.length,tunnels:TUNNELS.length,wn:WN,
       game:{round:GM.round,need:GM.need,got:GM.got,left:+GM.left.toFixed(2),score:GM.score,best:GM.best,phase:GM.phase,news:NEWS[GM.round]?NEWS[GM.round][0]:'',newBest:!!GM.newBest,cols:GM.cols.slice(),wall:!!GM.wall,combo:GM.combo,drain:GM.drain,cur:GM.cur,ringN:GM.ringN,loops:GM.loops,wallXY:GM.wall},board:{x0:B.x0,y0:B.y0,w:B.w,h:B.h},run:RUN,rt:RT,
       cups:CUPS.map(function(c){return {c:c.c,fill:c.fill,match:c.match,done:c.done,x:WX(c.x),y:WY(c.y),r:cupR()*(c.r||1),gold:!!c.gold,n:c.n,mv:c.ox?'loop':c.mx||c.my?'drift':'',

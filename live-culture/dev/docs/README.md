@@ -330,6 +330,19 @@ Artifact: https://claude.ai/artifact/PCzaFJH2vjXe4Kv8KK4Xic (publish to this URL
    wind from the published snapshot), and the menu says "go to a town or city" rather than promise weather. Keys typed into the
    box are the box's (a "2" opens no page, a space starts no music).
 
+32. **What he said on 18 Nov, 16:06.** "Nope not quite. The menu items for art materials need to be accessible at the top, just the
+   marker, brush, pen, etc. the world is not connected to beats and the menu items are still small and fussy and busy and wrongly
+   placed on the ring page". So: **Paint's art materials along its top**, big (58 tall, a picture over a word), always there while it
+   paints and put away for the game: the brush (the paint in the water; until now called the paint), the pen, the pencil, the marker
+   and the eraser, the one in hand lit in the colour it paints. Nothing else is up there; the sizes, the colours, the mirror, start
+   over, the photo, asking Claude, the pieces and the game stay in Paint's own menu. **Beat has no menu of its own**: under its grid
+   the notes' five sounds as big dots of their colours over their names, and under them the beat's row: a melody made up on it,
+   back, its name, next, the beat as it was. **The beats on the world**: with the music on the Earth marks each place a beat comes
+   from with a small red ring of steps; the one playing is larger, flashes on its main instrument's strokes and is named; a tap on
+   another's mark flies there and its beat comes in at the bar; a tap on the one playing opens it on Beat. On Beat a red chip at the
+   top right names the beat's place ("Chicago"); a tap turns the Earth to it and plays the beat there. (Asked in the reply to say if
+   "the world is not connected to beats" meant something else.)
+
 ## What the page is
 
 One screen. The world fills it edge to edge; top left its name, which opens the four pages (since 18 Nov, rule 30: nothing else),

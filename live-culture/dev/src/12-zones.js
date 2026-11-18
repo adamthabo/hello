@@ -98,6 +98,8 @@ var ZONES=(function(){
   function labels(c,g){var box=[],n=0,tw={};LBX=[];c.font='600 9px '+MONO;c.textBaseline='middle';c.lineJoin='round';
     /* (18 Nov) clear of the satellite asked about, whose name is drawn over everything */
     try{var sb=ORBIT.layer.box();if(sb)box.push(sb)}catch(e){}
+    /* and clear of the name of the beat playing at its place (18 Nov, 16:06), drawn over everything */
+    try{var bb=WIND.beatBox();if(bb)box.push(bb)}catch(e){}
     /* and clear of the zoom's buttons over the right of the globe: a name that would go under them goes to their left, or is left out */
     var zb=null;try{zb=WIND.zmBox()}catch(e){}
     /* a war first, by its dead; a place both at war and cut off has one name, the war's, with what it is cut off from */

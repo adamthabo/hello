@@ -41,14 +41,21 @@ async function setup(browser, init) {
     ok(d.pen === 'paint' && d.skh === false, 'Paint opens with the paint, and the sheet over the water is there (empty): ' + JSON.stringify({ pen: d.pen, skh: d.skh }));
     const row = await page.evaluate(() => { const r = document.getElementById('p_ask'); return { row: !!r, hidden: r ? r.hidden : null, t: document.getElementById('bText').hidden, p: document.getElementById('bPic').hidden }; });
     ok(row.row && row.hidden && row.t && row.p, 'where Claude cannot be asked (not in the Claude app) the "ask claude" row is not there: ' + JSON.stringify(row));
-    const tools = await page.evaluate(() => [...document.querySelectorAll('#ms_paint [id^=pn_]')].map(b => b.id.slice(3)).join() + ' | ' + [...document.querySelectorAll('#ms_paint [id^=ps_]')].map(b => b.textContent + (b.disabled ? '(off)' : '')).join());
-    ok(tools === 'paint,pen,pencil,marker,eraser | fine(off),medium(off),bold(off)', 'Paint\'s own menu: the paint, a pen, a pencil, a marker, an eraser; three sizes (not for the paint): ' + tools);
+    // (18 Nov, 16:06: "The menu items for art materials need to be accessible at the top, just the marker, brush, pen, etc.") along the
+    // top, big and always there: the brush, the pen, the pencil, the marker, the eraser; nothing else there; the sizes in the menu
+    const tools = await page.evaluate(() => { const v = e => !!e && !e.hidden && e.getClientRects().length > 0, r = document.getElementById('ptools'), bs = [...r.querySelectorAll('button')];
+      return { shown: v(r), names: bs.map(b => b.textContent).join(), ids: bs.map(b => b.id.slice(3)).join(), small: bs.filter(b => { const q = b.getBoundingClientRect(); return q.height < 52 || q.width < 56; }).length,
+        top: Math.round(r.getBoundingClientRect().top), inMenu: document.querySelectorAll('#ms_paint [id^=pn_]').length, sizes: [...document.querySelectorAll('#ms_paint [id^=ps_]')].map(b => b.textContent + (b.disabled ? '(off)' : '')).join(),
+        pressed: bs.filter(b => b.getAttribute('aria-pressed') === 'true').map(b => b.id).join() }; });
+    ok(tools.shown && tools.names === 'brush,pen,pencil,marker,eraser' && tools.ids === 'paint,pen,pencil,marker,eraser' && !tools.small && tools.top < 90 && !tools.inMenu && tools.pressed === 'pn_paint',
+      'along the top of Paint, big: the brush (in hand), the pen, the pencil, the marker, the eraser; none of them in the menu: ' + JSON.stringify(tools));
+    ok(tools.sizes === 'fine(off),medium(off),bold(off)', 'in the menu, three sizes (not for the brush): ' + tools.sizes);
     // the pen: on the sheet, crisp, the water untouched; the menu button shows it
     await click('pn_pen'); await click('ps_0'); await stroke(60, 300, 330, 300);
-    d = await D(); const icon = await page.evaluate(() => document.getElementById('bTools').innerHTML);
+    d = await D(); const lit = await page.evaluate(() => [...document.querySelectorAll('#ptools button')].filter(b => b.getAttribute('aria-pressed') === 'true').map(b => b.id).join());
     const pen0 = await across(195, 280, 320), dn0 = await dens(195, 300, 6);
     ok(d.pen === 'pen' && d.psz === 0 && d.skv > 0 && pen0.max > 200 && dn0 < .05, 'the pen draws on the sheet, crisp, and leaves the water alone: ' + JSON.stringify({ skv: d.skv, pen0, dens: +dn0.toFixed(3) }));
-    ok(/M3 15\.4l1\.2-4\.6/.test(icon), 'the button for Paint\'s menu shows the tool in hand (the pen)');
+    ok(lit === 'pn_pen', 'the pen is lit along the top: ' + lit);
     await click('ps_2'); await stroke(60, 400, 330, 400); const pen2 = await across(195, 370, 430);
     ok(pen2.wide > pen0.wide * 2.2, 'bold is wider than fine: ' + pen0.wide.toFixed(1) + ' px, then ' + pen2.wide.toFixed(1) + ' px');
     // the pencil, paler and grainy; the marker, broad
@@ -69,7 +76,9 @@ async function setup(browser, init) {
     await page.evaluate(() => { const L = window.__lc.WORLDS[0].o; while (L.dbg().mir !== 1) document.getElementById('p_mir').click(); });
     ok(mir[0] > 200 && mir[1] > 200, 'the mirror draws the pen\'s stroke on the other side too: ' + JSON.stringify(mir));
     // the game puts the sheet away, and it comes back after
-    await click('t_puz'); await sleep(300); const inGame = (await D()).skh; await page.evaluate(() => document.getElementById('t_ink').click()); await sleep(300); const back = (await D()).skh;
+    await click('t_puz'); await sleep(300); const inGame = (await D()).skh, rowGame = await page.evaluate(() => document.getElementById('ptools').hidden);
+    await page.evaluate(() => document.getElementById('t_ink').click()); await sleep(300); const back = (await D()).skh, rowBack = await page.evaluate(() => document.getElementById('ptools').hidden);
+    ok(rowGame === true && rowBack === false, 'the game puts the row of tools away too, and it is back after');
     ok(inGame === true && back === false && await alpha(105, 350) > 200, 'the game puts the sheet away; after it the drawing is there again: ' + JSON.stringify({ inGame, back }));
     // a new size of the screen keeps the drawing where it was, measured from the middle
     await page.screenshot({ path: `shots/sketch_${size}_tools.png` });
