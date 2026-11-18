@@ -245,6 +245,8 @@ var WIND=(function(){
     read(p,w)}
   /* the place tapped, read (or the place under a satellite whose card was asked for it) */
   function read(p,w){var i,bd,d,tg=null;
+    /* (18 Nov) what a finger asked to read shows at once, over a passing line (the beat's name, a layer's) */
+    if(p&&!p.ghost)SAYT=0;
     /* a storm's eye or a fire under the finger is what was meant: the reading goes to it */
     for(i=0,bd=26*26;i<ST.length&&LY.storm;i++){if(ST[i].p[2]<=.04)continue;d=(ST[i].p[0]-p.x)*(ST[i].p[0]-p.x)+(ST[i].p[1]-p.y)*(ST[i].p[1]-p.y);if(d<bd){bd=d;tg=ST[i].s}}
     if(!tg&&LY.fire)for(i=0,bd=15*15;i<FR.length;i++){if(FR[i].p[2]<=.04)continue;d=(FR[i].p[0]-p.x)*(FR[i].p[0]-p.x)+(FR[i].p[1]-p.y)*(FR[i].p[1]-p.y);if(d<bd){bd=d;tg=FR[i].f}}
@@ -331,7 +333,10 @@ var WIND=(function(){
       g2.fillText('RADAR '+('0'+dt.getUTCHours()).slice(-2)+':'+('0'+dt.getUTCMinutes()).slice(-2),6*s,Hh-6*s)}
     g2.strokeStyle='rgba(255,179,71,.95)';g2.lineWidth=1.4*s;g2.beginPath();g2.arc(W/2,Hh/2,6*s,0,TAU);g2.stroke()}
   /* the lightning's score: on the sound's clock a little ahead for the ticks, on the picture's clock for the flashes */
-  function seq(s,when){if(!LY.bolt)return;var a=byStep[((s%STEPS)+STEPS)%STEPS];if(!a)return;var n=0;
+  /* (18 Nov) the rhythm of the place in view; it names itself only while nothing is being read (no place's reading, no card, no
+     flight to a place the finger asked for), so a reading is never covered by the beat's name */
+  function seq(s,when){try{BEAT.mapSeq(s,when,lat0,AS.n180(lon0),!!((probe&&!probe.ghost)||FLY||FOC||PCD.on||ORBIT.layer.sel()>=0))}catch(e){}
+    if(!LY.bolt)return;var a=byStep[((s%STEPS)+STEPS)%STEPS];if(!a)return;var n=0;
     for(var i=0;i<a.length&&n<2;i++){var k=a[i];if(k.p[2]<=.08)continue;hit('tick',.3+.3*Math.random(),pan(k.p[0]),.8+.5*Math.random(),when+n*.03);n++}}
   /* (18 Nov, the 12:37 run) a storm with thousands of flashes (4,139 within 300 km of Havana in the snapshot) lit a hundred glows at
      one spot at once, which added up to a white hole over the map. Now a flash is passed over while a young one glows within its own

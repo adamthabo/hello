@@ -47,13 +47,17 @@ Take, in this order: anything a previous run logged as broken; then anything new
 marked done. One thing, done properly and seen working, beats three half-done. Size it to build in about fifteen minutes: the tests
 take most of the hour.
 
-**Still to do from the owner** (his 18 Nov, 11:31 message, README rule 31; the sketchbook is done), top first, before the backlog:
+**Still to do from the owner** (his 18 Nov, 11:31 message, README rule 31; the sketchbook and the music following the map are
+done), before the backlog:
 
-1. **The music follows the map.** "Tie the music to the map. The various rhythms of the world." On the Earth, the part of the
-   world in view chooses the rhythm from Beat's 34 (son clave over Cuba, samba over Brazil, gahu over West Africa, teentaal over
-   India, and so on), changing at the bar as the Earth turns.
-2. **Local weather.** "Give me access to localized weather." A button on the Earth that goes to where you are, or a town you
-   type, and shows its weather (on the site the forecast and radar; in the artifact what it can have).
+1. **Local weather.** "Give me access to localized weather." A button on the Earth that goes to where you are, or a town you
+   type, and shows its weather (on the site the forecast and radar; in the artifact what it can have). What each can have, found
+   on 18 Nov: on the site, the phone's location (`navigator.geolocation`, asked once) and the place card's `/api/wx` forecast and
+   `/api/feed/radar`; a typed town from `CITIES` (`09-cities.js`) works everywhere, offline. The artifact has no location (no
+   capability for it) and no network: it has only `data/live.json`'s wind (GFS, from a GitHub mirror that carries only the wind),
+   so there a town gives its name, its sun and its wind, and nothing is promised that is not there (no word of the site either:
+   nothing about him on the page). A GitHub mirror of a global temperature and rain grid would let the artifact show more: look for
+   one (only raw.githubusercontent.com is reachable from the shell).
 
 ### Never, in a run
 
@@ -234,3 +238,9 @@ not ask for.
   suite's first pass failed once in PLAY: a real tap on a station took nothing. Traced (ten taps): a fire's or a storm's mark under
   the station takes the tap, as the page means, and the zoom's buttons cover the globe's right; the check now taps a station clear
   of the buttons with the fixed marks put away for the moment (ten of ten), what it checks unchanged.
+- 2026-11-18 17:49: his 11:31 message, part two: the music follows the map. On the Earth the band is joined by the rhythm of the
+  place in view (33 of Beat's 34, each tied to where it comes from), at the bar, on the band's time; the band alone over the seas.
+  First try heard nothing in the tests: the hints' ghost finger turned the globe away, and a busy page skipped the bar's first
+  sixteenth, where the place was looked at; now the place is looked at on the first sixteenth seen of each bar. The first suite
+  failed four of PLAY's readings: the beat's name, said when a tap's flight brought a new place, covered the reading. Now it is
+  never said over a reading, a card or a flight, and a finger's reading clears a passing line.

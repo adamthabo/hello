@@ -346,7 +346,62 @@ var BEAT=(function(){
     card(c,g,now);c.restore()}
   /* no standing words over it: a beat's name only when one is chosen or the middle is tapped, a row's when it is taken out */
   function hud(){return ''}
+  /* ---- (18 Nov, 11:31: "Tie the music to the map. The various rhythms of the world.") On the Earth the band is joined by the rhythm
+     of the part of the world in view: the place nearest the middle of the globe, within 2,600 km, chooses from the beats that come from
+     there. Each is played on the band's own time and swing (its sixteenths, or its eighths, or triplets for a beat in twelve: whichever
+     is nearest the beat's own speed), only its two upper rows (the main instrument and the second: the ticks would crowd the band's own
+     shaker and bells), softly under the band. A new place's beat comes in at the bar, and where a place has more than one, the next
+     comes in every eight bars. Over the seas, and where none of the 34 comes from, the band plays alone. Turning the globe to a new
+     beat names it and its place, for a moment ---- */
+  var PLACES=[
+    {n:'Chicago',la:41.88,lo:-87.63,r:['house','shuffle']},
+    {n:'New York',la:40.71,lo:-74.0,r:['boombap','swing','salsa','jersey']},
+    {n:'Atlanta and Georgia',la:33.75,lo:-84.39,r:['trap','funk']},
+    {n:'Memphis',la:35.15,lo:-90.05,r:['rock']},
+    {n:'New Orleans',la:29.95,lo:-90.07,r:['secondline']},
+    {n:'Cuba',la:22.0,lo:-79.5,r:['son','rumba','habanera','tresillo']},
+    {n:'Dominican Republic',la:18.73,lo:-70.16,r:['merengue','bachata','dembow']},
+    {n:'Colombia',la:10.39,lo:-75.51,r:['cumbia']},
+    {n:'Venezuela',la:8.0,lo:-66.0,r:['joropo']},
+    {n:'Rio de Janeiro',la:-22.91,lo:-43.17,r:['samba','bossa','carioca']},
+    {n:'Bahia',la:-12.97,lo:-38.5,r:['sambareggae']},
+    {n:'Ghana',la:6.69,lo:-1.62,r:['gahu','3over4']},
+    {n:'Nigeria',la:7.38,lo:3.95,r:['shiko','bembe']},
+    {n:'Congo',la:-4.32,lo:15.31,r:['soukous']},
+    {n:'Egypt and the Levant',la:31.5,lo:33.0,r:['malfuf']},
+    {n:'North India',la:26.85,lo:80.95,r:['teentaal']},
+    {n:'Mumbai',la:19.08,lo:72.88,r:['keherwa']},
+    {n:'South China',la:23.13,lo:113.26,r:['dongdong']},
+    {n:'Java',la:-7.8,lo:110.36,r:['lancaran']}],
+    MAPI={},MAP={p:-1,id:null,k0:0,bar:null,rot:{},g:null,spy:null},MAPV=.5,MAPR=2600;
+  RHY.forEach(function(R,i){MAPI[R.id]=i});
+  function km(a,b,c,d){var r=Math.PI/180,x=Math.sin((c-a)*r/2),y=Math.sin((d-b)*r/2);return 12742*Math.asin(Math.min(1,Math.sqrt(x*x+Math.cos(a*r)*Math.cos(c*r)*y*y)))}
+  /* the place in view (a place keeps its beat until another is clearly nearer, so a globe resting between two does not flicker) */
+  function placeAt(la,lo,cur){var b=-1,bd=MAPR,cd=1e9;for(var i=0;i<PLACES.length;i++){var d=km(la,lo,PLACES[i].la,PLACES[i].lo);if(i===cur)cd=d;if(d<bd){bd=d;b=i}}
+    if(cur>=0&&b!==cur&&cd<MAPR+150&&cd-(b<0?MAPR:bd)<180)return cur;return b}
+  /* steps of the band's time: 1 a sixteenth, 2 an eighth, 3 a triplet (three to a beat) */
+  function unitOf(R){if(R.N===12)return 3;var nat=60/R.bpm/R.b;return Math.abs(nat-2*SD)<Math.abs(nat-SD)?2:1}
+  function mapDst(){var B=bus();if(!B)return null;if(!MAP.g||MAP.g.context!==B.c){MAP.g=B.c.createGain();MAP.g.gain.value=MAPV;MAP.g.connect(B.i)}return MAP.g}
+  function mapStep(c,dst,R,k,t){var q=((k%R.N)+R.N)%R.N;for(var j=1;j<3;j++)if(R.r[j][2].indexOf(q+1)>=0){hitRow(c,dst,R,j,q,t,c===AU.c,0);if(MAP.spy&&c===AU.c)MAP.spy({id:R.id,j:j,q:q,t:t})}}
+  function mapPlay(c,dst,R,s,when){var u=unitOf(R);if(u===1)mapStep(c,dst,R,s,when);else if(u===2){if(s%2===0)mapStep(c,dst,R,s/2,when)}
+    else if(s%4===0){var b=s/4,tl=4*SD/3;for(var j=0;j<3;j++)mapStep(c,dst,R,b*3+j,when+j*tl)}}
+  /* (the place is looked at on the first sixteenth of each bar the clock gives out: a busy page can skip a few, the bar's first too) */
+  function mapSeq(s,when,la,lo,quiet){var c=AU.c;if(!c)return;var bar=Math.floor(s/16);
+    if(bar!==MAP.bar){MAP.bar=bar;var p=placeAt(la,lo,MAP.p),was=MAP.id;
+      if(p!==MAP.p){MAP.p=p;MAP.k0=s;MAP.id=p<0?null:PLACES[p].r[(MAP.rot[p]||0)%PLACES[p].r.length]}
+      else if(p>=0&&PLACES[p].r.length>1&&s-MAP.k0>=128){MAP.rot[p]=((MAP.rot[p]||0)+1)%PLACES[p].r.length;MAP.k0=s;MAP.id=PLACES[p].r[MAP.rot[p]]}
+      /* (its drums fetched as it is chosen: heard from the bar they arrive) */
+      if(MAP.id&&MAP.id!==was)try{SND.load(banksOf(RHY[MAPI[MAP.id]]))}catch(e){}
+      if(MAP.id&&MAP.id!==was&&!quiet&&performance.now()-lastTouch<15000)say(RHY[MAPI[MAP.id]].n+' · '+PLACES[p].n,'rgb('+RED+')')}
+    if(!MAP.id||VB>64)return;var dst=mapDst();if(dst)mapPlay(c,dst,RHY[MAPI[MAP.id]],s,when)}
   return {enter:enter,leave:leave,menu:menu,tick:tick,draw:draw,hud:hud,down:down,move:move,up:up,resize:function(){},
+    /* (18 Nov) the Earth's rhythm: called on each of the band's sixteenths while the Earth is shown, with the middle of the globe */
+    mapSeq:mapSeq,mapNow:function(){return {p:MAP.p,place:MAP.p>=0?PLACES[MAP.p].n:null,id:MAP.id,u:MAP.id?unitOf(RHY[MAPI[MAP.id]]):0}},
+    mapAt:function(la,lo){var p=placeAt(la,lo,-1);return p<0?null:{n:PLACES[p].n,r:PLACES[p].r.slice()}},places:function(){return PLACES.map(function(P){return {n:P.n,la:P.la,lo:P.lo,r:P.r.slice()}})},
+    mapSpy:function(f){MAP.spy=f||null},
+    /* for the loudness test: a place's beat as the Earth plays it (its two upper rows on the band's time) through a bus like Beat's */
+    mapOffline:function(c,g,dur,o){var B=busOn(c,{comp:g.comp,vs:g.vsend}),d=c.createGain(),R=RHY[o.i];d.gain.value=MAPV;d.connect(B.i);
+      for(var s=0;.05+s*SD<dur;s++)mapPlay(c,d,R,s,.05+s*SD+((s&1)?SD*SWING:0));return B},
     dbg:function(){var k=clock(),g=geo(),R=RHY[I];return {on:on,i:I,id:R.id,name:R.n,N:R.N,bpm:R.bpm,b:R.b,run:BT.run,sd:BT.sd,
       rows:R.r.map(function(row,j){return {n:row[0],s:row[1],hits:H[j].reduce(function(a,v,q){if(v)a.push(q+1);return a},[]),mute:muted(j)}}),
       played:PLAYED.slice(),pn:PN,notes:NT.map(function(n){return [n.u,n.p,n.v]}),cur:cur,sound:SN[cur][0],

@@ -307,7 +307,21 @@ Artifact: https://claude.ai/artifact/PCzaFJH2vjXe4Kv8KK4Xic (publish to this URL
    again as one SVG, shown as it is drawn, kept to drawing (no scripts, foreign content, embedded images, links, styles, animation
    or handlers; shown as an image), to "put it on the page" (the water and the sheet cleared, the picture over the screen, to draw
    on). The viewer's own usage pays, and their first use asks them to allow it; on the site and outside the app the row is not
-   there. Still to do from the same message: the music following the map, then local weather (HOURLY section 3).
+   there. **The music follows the map** (the 17:49 run): on the Earth, with the music on, the band is joined by the rhythm of the
+   part of the world in view. The place nearest the middle of the globe, within 2,600 km, chooses from the beats of Beat's 34 that
+   come from there (`PLACES` in `17-beat.js`: Chicago's house and shuffle, New York's boom bap, swing, salsa and Jersey club,
+   Georgia's trap and funk, Memphis's rock, New Orleans's second line, Cuba's son, rumba, habanera and tresillo, the Dominican
+   Republic's merengue, bachata and dembow, Colombia's cumbia, Venezuela's joropo, Rio's samba, bossa nova and funk carioca, Bahia's
+   samba-reggae, Ghana's gahu and three against four, Nigeria's shiko and bembé, Congo's soukous, the malfuf of Egypt and the
+   Levant, North India's teentaal, Mumbai's keherwa, South China's dong dong qiang, Java's lancaran: 33, all but the jazz waltz,
+   whose nine steps in three do not fit the band's bar). Each plays on the band's own time and swing (its sixteenths, or its eighths
+   where the beat is slow, or triplets for a beat in twelve, whichever is nearest the beat's own speed), only its two upper rows (the
+   main instrument and the second; the ticks would crowd the band's own shaker and bells), half as loud as on Beat. A new place's
+   beat comes in at the bar; where a place has more than one, the next comes every eight bars. Over the seas, and where none of the 34
+   comes from (Europe, Japan, Australia), the band plays alone. As the globe turns by itself the rhythms go by; turned by a hand, it
+   names the beat that comes in and its place for a moment ("Son Clave · Cuba"), but never over a place's reading, a card or a
+   flight to a place a finger asked for, and a reading a finger asks for shows at once over any passing line. Still to do: local
+   weather (HOURLY section 3).
 
 ## What the page is
 

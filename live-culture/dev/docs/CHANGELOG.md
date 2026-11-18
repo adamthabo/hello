@@ -1,6 +1,16 @@
 # Changelog
 
 ## For the owner
+18 Nov 2026, 14:20 (your 11:31 message, part two):
+
+- **The music follows the map.** On the Earth, with the music on, the band is joined by the rhythm of the part of the world facing
+  you: son clave or rumba over Cuba, merengue over the Dominican Republic, samba or bossa nova over Rio, gahu over Ghana, soukous
+  over the Congo, teentaal over North India, gamelan over Java, house over Chicago, second line over New Orleans, and so on: 33 of
+  Beat's 34 beats, each tied to where it comes from. A new rhythm comes in at the start of a bar. Where a place has several, they
+  take turns every eight bars. Over the oceans, and where none of the beats comes from, the band plays alone. When you turn the
+  globe yourself, the new rhythm's name and place show for a moment ("Son Clave · Cuba").
+- Next from the same message: local weather.
+
 18 Nov 2026, 12:55 (your 11:31 message, part one):
 
 - **Paint is a sketchbook now.** Its menu has a pen, a pencil, a marker and an eraser besides the paint, each in three sizes. They
@@ -417,6 +427,22 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 18 Nov 2026, 14:20 (New York), the hourly run: the music follows the map (README rule 31)
+
+- `17-beat.js`: `PLACES` (19 places, each with the beats that come from there: 33 of the 34; the jazz waltz's nine steps do not fit
+  the band's bar), `placeAt` (the nearest within 2,600 km by great circle, a place kept until another is 180 km nearer),
+  `unitOf` (a sixteenth of the band, an eighth where the beat's own step is nearer it, a triplet for twelve steps), `mapSeq`
+  (called by the Earth on each of the band's sixteenths: on the first sixteenth seen of each bar the place is looked at, a new
+  beat chosen and its sounds fetched, the next of a place's beats every eight bars; its two upper rows played through `hitRow` at
+  `MAPV` 0.5 into Beat's bus, with the band's swing on the odd sixteenths), `mapNow`, `mapAt`, `places`, `mapSpy`, `mapOffline`.
+  `12-wind.js`: `seq` calls `BEAT.mapSeq` with the middle of the globe and `quiet` (a reading a finger asked for, a flight, a card
+  or a chosen satellite); a new beat names itself and its place (`say`) only when not quiet and the page was touched in the last 15
+  seconds, and `read` clears a passing line (`SAYT=0`) for a finger's own reading. (The first suite failed four of PLAY's readings:
+  the beat's name, said as a tap's flight turned the globe to a new place, covered them.)
+- Tests: `t_beat.js` (over Cuba the son clave's clave and low drum, not its shaker, each on its step of the bar on the band's swing;
+  Rio's samba, the Dominican Republic's merengue, the Pacific's silence, the names said when turned by a hand, the 33 on the map);
+  `t_levels.js` (each of the map's beats alone, and the loudest with the band).
 
 ## 18 Nov 2026, 12:55 (New York): Paint's sketchbook, and asking Claude for the text or a quick picture (README rule 31)
 

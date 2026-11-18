@@ -136,6 +136,30 @@ const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') 
   // the Claude app's heights and a phone on its side: everything whole
   for (const [w, h] of [[390, 750], [375, 667], [360, 640], [844, 390]]) { await page.setViewportSize({ width: w, height: h }); await sleep(800); await page.evaluate(() => window.__lc.BEAT.pick(5)); await sleep(300); s = await D();
     ok(fits(s) && s.tools.every(t => t.l >= 0 && t.r <= w && t.b <= s.rail.t + 1) && s.d.geo.R >= (w > h ? 70 : 90), w + 'x' + h + ': the circle (R ' + Math.round(s.d.geo.R) + '), the grid and the row whole' + (s.d.geo.wide ? ', the grid beside the circle' : '')); await page.screenshot({ path: `shots/beat_${w}x${h}.png` }); }
+  // (18 Nov, 11:31: "Tie the music to the map. The various rhythms of the world.") on the Earth the band is joined by the rhythm of
+  // the place in view: over Cuba the son clave (its clave and low drum, not its shaker), over Rio the samba, over the Dominican
+  // Republic the merengue, over the open Pacific the band alone; each stroke on its own step of the band's bar, on the band's swing
+  await page.setViewportSize({ width: 390, height: 844 }); await sleep(500);
+  { const r = await page.evaluate(async () => { const L = window.__lc, sl = ms => new Promise(f => setTimeout(f, ms)), got = [], SD = L.STEML / 64, BAR = 16 * SD;
+      L.go(L.WORLDS.findIndex(w => w.id === 'earth'), true); L.musicOn(); await sl(800); L.BEAT.mapSpy(h => got.push(h));
+      // (a press on the Earth's own row of layers counts as a touch, so the hints' ghost finger does not turn the globe away meanwhile)
+      const touch = () => document.getElementById('lyd').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      const at = async (la, lo) => { touch(); L.WIND.look(la, lo); const c0 = L.AU.c.currentTime, from = L.AU.t0 + (Math.ceil((c0 + .3 - L.AU.t0) / BAR) + 1) * BAR; got.length = 0; const said = new Set(); for (let k = 0; k < 32; k++) { await sl(200); said.add(document.getElementById('data').textContent.slice(0, 90)); }
+        const h = got.filter(x => x.t >= from - .001); return { said: [...said], now: L.BEAT.mapNow(), hits: h.map(x => ({ id: x.id, j: x.j, q: x.q, off: +((((x.t - L.AU.t0) / SD) % 16) - x.q).toFixed(3) })) }; };
+      const cuba = await at(22, -79.5), rio = await at(-22.9, -43.2), dr = await at(18.7, -70.2), sea = await at(0, -150);
+      L.BEAT.mapSpy(null); L.WIND.look(16, -75);
+      return { cuba, rio, dr, sea, clave: !!L.SND.hit('clave'), places: L.BEAT.places(), lib: L.BEAT.lib.map(x => ({ id: x.id, N: x.N })) }; });
+    const on = (x, id) => x.now.id === id && x.hits.length >= 4 && x.hits.every(h => h.id === id && h.j > 0);
+    const son = r.cuba.hits, clave = son.filter(h => h.j === 2).map(h => h.q), low = son.filter(h => h.j === 1).map(h => h.q);
+    ok(on(r.cuba, 'son') && r.cuba.now.place === 'Cuba' && clave.length >= 4 && clave.every(q => [0, 3, 6, 10, 12].includes(q)) && low.every(q => [0, 8].includes(q)) && r.clave,
+      'over Cuba the son clave joins the band: its clave on 1, 4, 7, 11, 13 and its low drum, not its shaker (its sounds fetched): ' + JSON.stringify({ now: r.cuba.now, clave, low }));
+    ok(son.every(h => Math.abs(h.off - (h.q % 2 ? .16 : 0)) < .02), 'each stroke on its step of the band\'s bar, on the band\'s swing: ' + JSON.stringify(son.slice(0, 6).map(h => h.q + '@' + h.off)));
+    ok(on(r.rio, 'samba') && on(r.dr, 'merengue'), 'over Rio the samba, over the Dominican Republic the merengue: ' + JSON.stringify([r.rio.now, r.dr.now]));
+    ok(r.cuba.said.some(t => t.includes('Son Clave \u00b7 Cuba')) && r.rio.said.some(t => t.includes('Samba \u00b7 Rio de Janeiro')), 'turned by a hand, the globe names the beat that comes in and its place, for a moment: ' + JSON.stringify([r.cuba.said.find(t => t.includes('\u00b7 Cuba')), r.rio.said.find(t => t.includes('\u00b7 Rio'))]));
+    ok(r.sea.now.id === null && r.sea.hits.length === 0, 'over the open Pacific the band plays alone: ' + JSON.stringify(r.sea.now));
+    const onMap = [...new Set(r.places.flatMap(p => p.r))], off = r.lib.filter(x => !onMap.includes(x.id)).map(x => x.id);
+    ok(onMap.length === 33 && off.join() === 'waltz' && r.lib.filter(x => onMap.includes(x.id)).every(x => [8, 12, 16].includes(x.N)),
+      'all of the 34 are on the map but the jazz waltz (nine steps in three, which do not fit the band\'s bar): ' + onMap.length + ' places\' beats, off the map: ' + off.join()); }
   await page.evaluate(() => window.__lc.BEAT.spy(null));
   const e = [...new Set(errs)]; if (e.length) console.log('ERRORS', e.slice(0, 6));
   await ctx.close(); await browser.close(); console.log(fail.length || e.length ? 'BEAT FAILED' : 'BEAT OK'); process.exit(fail.length || e.length ? 1 : 0);

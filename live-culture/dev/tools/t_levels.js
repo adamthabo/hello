@@ -81,6 +81,12 @@ const { launch, open } = require('./lib');
     const FULLI = BL.findIndex(r => r.n === fullB.which); if (!FAST.includes(FULLI)) FAST.push(FULLI);
     for (const i of FAST) out['beat: ' + BL[i].n + ', all steps on, 48 notes, two fingers'] = await render(null, null, (O, g) => L.BEAT.offline(O, g, dur, { i, full: 1, notes: FULLN, rolls: [[2, 0], [6, 3]] }));
     for (let v = 0; v < 5; v++) out['beat: ' + L.BEAT.sounds[v][0] + ', 48 notes and two fingers, over House'] = await render(null, null, (O, g) => L.BEAT.offline(O, g, dur, { i: 0, notes: FULLN.map(n => [n[0], n[1], v]), rolls: [[2, v], [6, v]] }));
+    // (18 Nov) the Earth's rhythm: each place's beat as the map plays it (its two upper rows, on the band's time, softly) alone, and
+    // the loudest of them with the band
+    { let loudM = null; const MP = [...new Set(L.BEAT.places().flatMap(p => p.r))];
+      for (const id of MP) { const i = BL.findIndex(r => r.id === id), x = await render(null, null, (O, g) => L.BEAT.mapOffline(O, g, dur, { i })); each['map ' + id] = x.loudest; if (!loudM || x.loudest > loudM.loudest) { loudM = x; loudM.which = id; } }
+      out['earth: the loudest of the map\'s ' + MP.length + ' beats alone (' + loudM.which + ')'] = loudM;
+      out['band, all nine, WITH the map\'s loudest beat (' + loudM.which + ')'] = await render(all, null, (O, g) => L.BEAT.mapOffline(O, g, dur, { i: BL.findIndex(r => r.id === loudM.which) })); }
     out.__each = each;
     return out;
   });
