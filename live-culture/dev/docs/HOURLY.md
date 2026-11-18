@@ -198,3 +198,8 @@ not ask for.
   plays lighter), never by loosening the test.
 - 2026-11-18 06:16 (his 00:50 and 01:35 messages): one menu under the world's name instead of the worlds along the bottom; the bottom
   keeps only what a world is played with; Paint a still water whose paint stays, six colours, mirror, start over (README rule 28).
+- 2026-11-18 07:24: the 06:16 line's menu and Paint shipped, every check green. Then (his 02:04 message) every satellite on the
+  Earth can be tapped, over the face too; its card says what it is, steps through the ones within reach (‹ 1 of 30 here ›),
+  links to its page on N2YO and offers the place below (README rule 29).
+- 2026-11-18 08:30: the satellites of the 07:24 line shipped once the whole suite was green with them (t_play's new checks: any
+  satellite over the face, the steps, the N2YO link, the place below, the cross, a fire's mark before the swarm).

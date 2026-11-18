@@ -46,6 +46,9 @@ const fail = []; const ok = (c, m) => { console.log((c ? '  ok   ' : '  FAIL ') 
   for (const [x, y] of [[195, 300], [150, 330], [240, 310], [195, 520], [120, 450], [270, 470], [100, 380], [290, 360], [195, 250], [160, 560]]) { await page.mouse.click(x, y); await sleep(800); card = await page.evaluate(() => { const c = document.getElementById('card'); return c.hidden ? null : c.innerText; }); if (card) break; }
   for (let k = 0; k < 20 && card && !/LAUNCHED/i.test(card); k++) { await sleep(300); card = await page.evaluate(() => document.getElementById('card').innerText); }
   ok(card && /CATALOGUE/i.test(card) && /LAUNCHED/i.test(card) && /NOW OVER/i.test(card) && /km up/.test(card), 'a tapped satellite shows its card: ' + String(card).replace(/\n+/g, ' | ').slice(0, 300)); await page.screenshot({ path: 'shots/published_card.png' });
+  // (18 Nov) and the card links to the satellite's page on N2YO, in a new tab, with no arrow
+  { const ln = await page.evaluate(() => { const a = document.querySelector('#card a.cl'); return a ? [a.getAttribute('href'), a.target, a.textContent] : null; });
+    ok(ln && /^https:\/\/www\.n2yo\.com\/satellite\/\?s=\d+$/.test(ln[0]) && ln[1] === '_blank' && ln[2] === 'more on N2YO', 'the satellite\'s card links to its page on N2YO: ' + JSON.stringify(ln)); }
   // the mixer
   await goW('mix'); await sleep(1500); s = await look();
   ok(s.world === 'Mix' && s.hash === '#mix' && s.data === '' && await page.evaluate(() => !document.getElementById('mix').hidden && document.querySelectorAll('#mix .mxband .mxb').length === 9 && document.querySelectorAll('#mix .mxrow').length === 10 && document.querySelectorAll('#mix .mxrow .mxb').length === 20), 'Mix, the band and ten instruments, two loops each: ' + s.data);

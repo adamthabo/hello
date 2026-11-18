@@ -1,6 +1,18 @@
 # Changelog
 
 ## For the owner
+18 Nov 2026, 03:00 (your 02:04 message):
+
+- **Every satellite can be tapped, and each says what it is.** Tap anywhere in the swarm, over the Earth or in the dark around it,
+  and the nearest satellite's card opens: its name, what kind it is (internet, navigation, weather and Earth-watching, a space
+  station, wreckage and so on), whether it still works, whose it is, and its record.
+- **Step through the crowd.** Over the Earth dozens fly within reach of a fingertip, so the top of the card says "1 of 30 here",
+  and ‹ and › step through them, nearest first.
+- **A link for each one.** "More on N2YO" opens that satellite's own page there: a live map of where it is, its passes, what it is.
+- **The place is still one tap away.** With the satellites showing, a tap on the Earth now picks a satellite, so the card has "the
+  place below" to read the place under your finger instead. Turn the satellites layer off and a tap reads the place straight away,
+  as before. Fires, storms and the rings of small wars still come first when you tap right on them, and the × puts the card away.
+
 18 Nov 2026, 02:00 (your 00:50 and 01:35 messages):
 
 - **One clear menu instead of rows of buttons.** The worlds row is gone from the bottom of every page. Tap the world's name at the
@@ -348,6 +360,26 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 18 Nov 2026, 03:00 (New York): every satellite can be tapped; its card steps through the ones within reach, links to N2YO, offers the place below (README rule 29)
+
+- `13-orbit.js`: `nearList(p)` gives the satellites within reach of a tap (20 px over the face, 26 in the dark; a station's or a
+  telescope's mark within 18 px first, the stations and the few the sound follows counted nearer), nearest first, thirty at most,
+  only those drawn at the governor's level. `layer.pick(p, below)` takes the first and keeps the list (`HERE`, `hereI`) and the
+  Earth's reading of the place under the finger (`BELOW`); `step(k)` goes round the list; `letGo()` puts it all away. The card has a
+  cross, the stepper at the top when the list has more than one, and at the foot `a.cl` to `https://www.n2yo.com/satellite/?s=<id>`
+  (target `_blank`, no arrow) and `button.cp` "the place below". The focus stays on the button that rebuilt the card. The kind line
+  says what each kind is (`KD`). `layer.near(x, y)` for the tests. The standalone world's tap uses the same list.
+- `12-wind.js`: `up()` takes a fire's mark (10 px) and a small war's or blackout's ring (`ZONES.pick` with no place) before the
+  swarm, as it took a storm's wheel, but only over the face (a tap in the dark beside the rim, near a mark at the rim, read nothing
+  at all before: now it takes the satellites there); then `ORBIT.layer.pick(p, below(lat, lon))`. The rest of the tap is `read(p, w)`, which
+  `below` calls with the place's point on the screen now (the Earth turned to it if it has gone round the back). The place card sets
+  `dataset.k = 'place'` and `cardOff()` hides the card only while it is still the place's (before, a satellite picked while a place
+  card was open on the site was hidden at once by `cardOff`).
+- `style.css`: `.card .cw` (the stepper), `.card .ca` (the link and the place below), `.card .cn` leaves room for the cross.
+- Tests: `t_play.js` taps an ordinary satellite over the face (any kind), checks the card's steps (› ‹ and round), the N2YO link (new
+  tab, no arrow), "the place below" (the place read, the card away), the cross, and a fire's mark taken before the swarm with the
+  satellites on; `t_published.js` the link on the published page; `t_hosted.js` that "the place below" opens the place's own card.
 
 ## 18 Nov 2026, 02:00 (New York): one menu under the world's name; the bottom clear; Paint a still water to make pictures in (README rule 28)
 

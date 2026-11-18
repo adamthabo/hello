@@ -78,6 +78,13 @@ const clean = errs => [...new Set(errs)].filter(e => !/youtube\.com|requestfaile
     await page.screenshot({ path: 'shots/hosted_wind_card.png' });
     await page.evaluate(() => document.querySelector('#card .cx').click()); await sleep(300); ok(await page.evaluate(() => document.getElementById('card').hidden), 'the card\'s cross puts it away');
     await page.evaluate(() => window.__lc.WIND.layer('orbit', 1));
+    // (18 Nov) with the satellites shown a tap on the Earth takes the nearest satellite; its card's "the place below" opens the place's card
+    { await page.evaluate(() => window.__lc.WIND.look(36, -45, 1.4)); await sleep(1200); const d = await page.evaluate(() => window.__lc.WIND.dbg()); let sc = null;
+      for (let k = 0; k < 4 && !sc; k++) { await page.mouse.click(d.cx + 14 * k, d.cy); await sleep(600); sc = await page.evaluate(() => { const c = document.getElementById('card'); return !c.hidden && c.dataset.k === 'sat' && c.querySelector('.ca button.cp') ? c.innerText : null; }); }
+      ok(!!sc && /more on n2yo/i.test(sc), 'with the satellites shown, a tap on the Earth opens the nearest satellite\'s card, its link and the place below: ' + String(sc).replace(/\n+/g, ' | ').slice(0, 160));
+      let pc = { hidden: true, k: '', t: '' }; if (sc) { await page.click('#card .ca button.cp'); for (let k = 0; k < 30; k++) { await sleep(400); pc = await page.evaluate(() => { const c = document.getElementById('card'); return { hidden: c.hidden, k: c.dataset.k, t: c.innerText }; }); if (/NOW/.test(pc.t)) break; } }
+      ok(!pc.hidden && pc.k === 'place' && /NOW\s+8°C · 47°F/.test(pc.t), '"the place below" opens the place\'s own card: ' + pc.t.replace(/\n+/g, ' | ').slice(0, 160));
+      await page.evaluate(() => { const x = document.querySelector('#card .cx'); if (x) x.click(); }); await sleep(300); }
     // a storm tapped: the Earth turns to it and comes close
     { const st = await page.evaluate(() => window.__lc.WIND.dbg().storms); if (!st.length) console.log('   (no tropical storm today, in the data fetched)'); else {
       await page.evaluate(s => window.__lc.WIND.look(s.lat, s.lon + 20, 1), st[0]); await sleep(1200); const p0 = (await page.evaluate(() => window.__lc.WIND.dbg().storms))[0];

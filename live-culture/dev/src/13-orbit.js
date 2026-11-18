@@ -23,6 +23,8 @@ var ORBIT=(function(){
   var KIND=['satellite','Starlink','OneWeb','new constellation','navigation','geostationary','Earth-watching','space station','communications','wreckage','military'],
     KCOL=[[.52,.62,.74],[.36,.60,.80],[.62,.38,.95],[1,.22,.56],[1,.72,.30],[1,.86,.62],[.44,1,.66],[1,1,1],[.24,.94,1],[.80,.20,.15],[.85,.85,.9]],
     KSZ=[2.3,1.9,2.2,2.3,3.2,2.9,2.7,6,2.6,1.6,2.6],
+    /* (18 Nov) what each kind is, in the card's words */
+    KD=['satellite','internet satellite','internet satellite','internet satellite','navigation satellite','geostationary satellite','Earth-watching satellite','space station','communications satellite','wreckage','military satellite'],
     WRECK=['','Fengyun-1C wreckage (2007 missile test)','Cosmos 2251 wreckage (2009 collision)','Iridium 33 wreckage (2009 collision)','Cosmos 1408 wreckage (2021 missile test)'];
   /* one orbit, solved for the moment asked: the mean place moves on at its own rate, Kepler's equation turns it into a true place on
      the ellipse, and the ellipse is turned into position by its three angles (two of which the Earth's bulge slowly drags round).
@@ -85,7 +87,7 @@ var ORBIT=(function(){
     for(i=0;i<12&&watch.length;i++){notable.push(watch[Math.floor(i*watch.length/12)]);lit.push(0)}
     issI=-1;for(i=0;i<notable.length;i++){NOTE[notable[i]]=1;if(S.names[notable[i]]==='ISS (ZARYA)')issI=notable[i]}
     showI=[];SHOWF=new Uint8Array(satN);for(i=0;i<satN;i++){var sn=S.names[i]||'';for(var j=0;j<SHOWN.length;j++)if(sn===SHOWN[j][0]){showI.push([i,SHOWN[j][1]]);SHOWF[i]=1;NOTE[i]=1}}
-    sel=-1;path=null;cardBuild();rebase(simMs)}
+    sel=-1;path=null;HERE=[];BELOW=null;cardBuild();rebase(simMs)}
   /* the chip counts time from a moment not far off, so its numbers stay small and exact: every ten hours of shown time the angles are
      brought forward to a new moment */
   function rebase(ms){
@@ -110,15 +112,26 @@ var ORBIT=(function(){
      is SatNOGS's list of transmitters; the orbit's shape, where it is now, how fast, and whether it is in sunlight are worked out
      here from the orbit it was last measured on ---- */
   var cardFor=-2,cardHad=false,cardAt=0,cNow=null,cLight=null,MONS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
-    STAT=['','working','partly working','on standby','spare','on an extended mission','','no longer working'];
+    STAT=['','working','partly working','on standby','spare','on an extended mission','','no longer working'],
+    /* (18 Nov, 02:04: "Oh and ALL satélites have to be accessible to link and know what they are") the satellites within reach of the
+       finger when it tapped, nearest first (HERE), the one of them shown (hereI), and the place under the finger if the tap was on the
+       Earth's face (BELOW: the Earth's own reading of a place, given by 12-wind.js) */
+    HERE=[],hereI=0,BELOW=null;
   function row(dl,k,v){if(!v)return null;var a=document.createElement('dt'),b=document.createElement('dd');a.textContent=k;b.textContent=v;dl.appendChild(a);dl.appendChild(b);return b}
   function num(x){return Math.round(x).toLocaleString('en-US')}
   function cardBuild(){
-    var c=$('card');if(!c)return;if(sel<0||!EL){c.hidden=true;cardFor=-2;cNow=cLight=null;return}
+    var c=$('card');if(!c)return;if(sel<0||!EL){if(!c.dataset.k||c.dataset.k==='sat'){c.hidden=true;c.dataset.k=''}cardFor=-2;cNow=cLight=null;return}
     var S=LIVE.sats,id=S&&S.ids?S.ids[sel]:0,inf=satInfo(id),q=sel*11,a=EL[q]*RE,e=EL[q+1],gr=GRP[sel],el,dl,t;
-    cardFor=sel;cardHad=!!inf;c.hidden=false;while(c.firstChild)c.removeChild(c.firstChild);
-    el=document.createElement('p');el.className='cn';el.textContent=nameOf(sel);c.appendChild(el);
-    t=[gr===9?'wreckage':inf&&inf.type===2?'rocket stage':inf&&inf.type===3?'debris':KIND[gr]];if(inf&&STAT[inf.stat])t.push(STAT[inf.stat]);if(inf&&inf.owner)t.push(inf.owner);
+    var fa=document.activeElement,fk=fa&&c.contains(fa)&&fa.dataset?fa.dataset.f||'':'';
+    cardFor=sel;cardHad=!!inf;c.dataset.k='sat';c.hidden=false;while(c.firstChild)c.removeChild(c.firstChild);
+    function mk(tag,cls,txt,f,lab,fn,par){var e=document.createElement(tag);if(cls)e.className=cls;if(txt)e.textContent=txt;if(f)e.dataset.f=f;if(lab)e.setAttribute('aria-label',lab);
+      if(fn){e.type='button';e.addEventListener('click',fn)}(par||c).appendChild(e);return e}
+    /* (18 Nov) the others that were within reach of the finger, one after another, at the top; a cross to put the card away */
+    if(HERE.length>1){var cw=mk('div','cw');mk('button','st','\u2039','p','The one before',function(){step(-1)},cw);mk('span','hn',(hereI+1)+' of '+HERE.length+' here','','','',cw);
+      mk('button','st','\u203a','n','The next one',function(){step(1)},cw)}
+    mk('button','cx','\u00d7','x','Put the card away',function(){letGo()});
+    el=mk('p','cn',nameOf(sel));
+    t=[gr===9?'wreckage':inf&&inf.type===2?'rocket stage':inf&&inf.type===3?'debris':KD[gr]];if(inf&&STAT[inf.stat])t.push(STAT[inf.stat]);if(inf&&inf.owner)t.push(inf.owner);
     el=document.createElement('p');el.className='ck';el.textContent=t.join(' · ');c.appendChild(el);
     dl=document.createElement('dl');c.appendChild(dl);
     if(id)row(dl,'catalogue','no. '+id+(inf&&inf.intl?' · '+inf.intl:''));
@@ -128,7 +141,25 @@ var ORBIT=(function(){
     if(inf&&(inf.rcs>0||inf.mag!==null))row(dl,'size',[inf.rcs>0?'radar sees '+(inf.rcs>=10?num(inf.rcs):inf.rcs.toFixed(inf.rcs>=1?1:2))+' m²':'',inf.mag!==null?'magnitude '+inf.mag.toFixed(1).replace('-','\u2212')+' at 1,000 km':''].filter(Boolean).join(' · '));
     if(inf&&inf.tx)row(dl,'radio',inf.tx.slice(0,3).map(function(x){return (x[1]/1e6).toFixed(3)+' MHz'+(x[2]?' '+x[2]:'')}).join(' · '));
     row(dl,'measured','orbit of '+stampUTC(EL[q+10])+' · '+agoWords(Date.now()-EL[q+10]));
-    el=document.createElement('p');el.className='cs';el.textContent=inf?'CelesTrak catalogue · SatNOGS':(SATINFO?'CelesTrak':'CelesTrak · reading the catalogue');c.appendChild(el);cardAt=0}
+    el=document.createElement('p');el.className='cs';el.textContent=inf?'CelesTrak catalogue · SatNOGS':(SATINFO?'CelesTrak':'CelesTrak · reading the catalogue');c.appendChild(el);
+    /* the last row: this one on N2YO, which has a page for every object in the public catalogue (what it is, a live map of where it
+       is, its passes), and the place under the finger. No arrow on the link (his word, for everything made for him) */
+    if(id||BELOW){var ca=mk('div','ca');
+      if(id){el=mk('a','cl','more on N2YO','l','','',ca);el.href='https://www.n2yo.com/satellite/?s='+id;el.target='_blank';el.rel='noopener noreferrer'}
+      if(BELOW)mk('button','cp','the place below','b','',function(){var f=BELOW;letGo();f()},ca)}
+    if(fk){var fb=c.querySelector('[data-f="'+fk+'"]');if(fb)try{fb.focus()}catch(e){}}
+    cardAt=0}
+  /* the satellites near the tap: within reach of the finger (20 px over the Earth's face, 26 in the dark round it), nearest first, a
+     station's or a telescope's mark within 18 px before everything (at sixty times their speed one moves a few pixels between the touch
+     and the frame that reads it), the stations and the few the sound follows counted nearer than they are; thirty at most. Only the
+     satellites drawn (the governor draws fewer on a slow device) */
+  function nearList(p){var i,d,L=[],on=Math.hypot(p.x-g.cx,p.y-g.cy)<g.R,r2=on?20*20:26*26,n=[satN,Math.min(satN,12500),Math.min(satN,8000)][QL]||satN;
+    for(i=0;i<n;i++){view(place(i,simMs,tmp),tq);if(!shown(tq))continue;var x=g.cx+tq[0]*g.R-p.x,y=g.cy-tq[1]*g.R-p.y;d=x*x+y*y;if(d>=r2)continue;
+      if(SHOWF&&SHOWF[i]&&d<18*18)d=d/1e6-1;else if(GRP[i]===7||(FLG[i]&1)||(NOTE&&NOTE[i]))d*=.45;L.push([d,i])}
+    L.sort(function(a,b){return a[0]-b[0]});return L.slice(0,30).map(function(x){return x[1]})}
+  function choose(i,x,k){sel=i;path=null;selI=null;satInfoLoad();tone('glass',pent(clamp(Math.round(14-Math.log(EL[i*11])*9),2,14),52),k,pan(x));cardBuild()}
+  function step(k){if(HERE.length<2)return;hereI=(hereI+k+HERE.length)%HERE.length;choose(HERE[hereI],g.cx,.3)}
+  function letGo(){sel=-1;path=null;selI=null;HERE=[];BELOW=null;cardBuild()}
   function cardLive(t){
     if(sel<0||!selI||!cNow||t-cardAt<240)return;cardAt=t;var la=selI.lat,lo=selI.lon;
     cNow.textContent=Math.abs(la).toFixed(1)+'°'+(la>=0?'N':'S')+' '+Math.abs(lo).toFixed(1)+'°'+(lo>=0?'E':'W')+' · '+num(selI.alt)+' km up · '+num(selI.v)+' km/h';
@@ -155,9 +186,7 @@ var ORBIT=(function(){
   function key(e,dn){if(e.key==='ArrowRight')keyRate=dn?1:0;else if(e.key==='ArrowLeft')keyRate=dn?-1:0;else if(dn&&(e.key==='n'||e.key==='N'))toNow();else return false;return true}
   function pan(x){return clamp((x-g.cx)/Math.max(60,VW*.4),-1,1)}
   function up(p){
-    if(p.ghost||held(p)>600||p.moved>12||!EL)return;var i,best=-1,bd=24*24,d;
-    for(i=0;i<satN;i++){view(place(i,simMs,tmp),tq);if(!shown(tq))continue;var x=g.cx+tq[0]*g.R-p.x,y=g.cy-tq[1]*g.R-p.y;d=x*x+y*y;if(GRP[i]===7||(FLG[i]&1))d*=.45;if(d<bd){bd=d;best=i}}
-    sel=best;path=null;selI=null;if(best>=0){satInfoLoad();tone('glass',pent(clamp(Math.round(14-Math.log(EL[best*11])*9),2,14),52),.45,pan(p.x))}cardBuild()}
+    if(p.ghost||held(p)>600||p.moved>12||!EL)return;var L=nearList(p);if(!L.length){letGo();return}HERE=L;hereI=0;BELOW=null;choose(L[0],p.x,.45)}
   /* is a body in sunlight? (in the frame of the stars; the Earth's shadow taken as a cylinder) */
   function sunlit(p){var d=p[0]*sunE[0]+p[1]*sunE[1]+p[2]*sunE[2];if(d>0)return true;var r2=p[0]*p[0]+p[1]*p[1]+p[2]*p[2];return r2-d*d>1}
   /* the bells: a bright satellite passing between sunlight and the Earth's shadow */
@@ -254,7 +283,7 @@ var ORBIT=(function(){
   /* the hint: one finger turning the Earth (it no longer winds time: left alone, this is the present) */
   function ghost(t){var u=(t*.12)%1;if(u>.5)return [null];var e=smooth(u/.5),k=Math.floor(t*.12)%2?1:-1;return [{x:g.cx+k*g.R*(.55-1.1*e),y:g.cy+g.R*.2}]}
   return {enter:enter,leave:leave,resize:resize,down:down,move:move,up:up,gesture:gesture,ghostEnd:ghostEnd,wheel:wheel,key:key,seq:seq,tick:tick,draw:draw,hud:hud,ghost:ghost,toNow:toNow,gl:function(){gen=-1},
-    dbg:function(){var o={n:satN,off:off,spd:spd,want:want,live:live(),sel:sel,name:sel>=0?nameOf(sel):null,info:selI,card:$('card')&&!$('card').hidden?$('card').innerText:null,cat:!!SATINFO,zoom:zoom,R:g.R,lat0:lat0,lon0:lon0,stars:starN,notable:notable.length,base:baseT,sim:simMs,vis:[],shows:showI.map(function(q){view(place(q[0],simMs,tmp),tq);return {n:nameOf(q[0]),k:q[1],x:Math.round(g.cx+tq[0]*g.R),y:Math.round(g.cy-tq[1]*g.R),on:shown(tq)}})};
+    dbg:function(){var o={n:satN,off:off,spd:spd,want:want,live:live(),sel:sel,here:HERE.length,hi:hereI,below:!!BELOW,name:sel>=0?nameOf(sel):null,info:selI,card:$('card')&&!$('card').hidden?$('card').innerText:null,cat:!!SATINFO,zoom:zoom,R:g.R,lat0:lat0,lon0:lon0,stars:starN,notable:notable.length,base:baseT,sim:simMs,vis:[],shows:showI.map(function(q){view(place(q[0],simMs,tmp),tq);return {n:nameOf(q[0]),k:q[1],x:Math.round(g.cx+tq[0]*g.R),y:Math.round(g.cy-tq[1]*g.R),on:shown(tq)}})};
       if(EL)for(var i=0;i<satN&&o.vis.length<8;i+=Math.max(1,Math.floor(satN/1600))){view(place(i,simMs,tmp),tq);var hr=Math.hypot(tq[0],tq[1]);if(shown(tq)&&tq[2]>0&&hr<(STG.w/2-20)/g.R&&(hr>1.08||GRP[i]===7||(NOTE&&NOTE[i])))o.vis.push([Math.round(g.cx+tq[0]*g.R),Math.round(g.cy-tq[1]*g.R),i])}return o},
     place:function(i,ms){var p=place(i,ms,[0,0,0]);return [p[0]*RE,p[1]*RE,p[2]*RE]},nameOf:nameOf,
     look:function(la,lo,zm){lat0=la;lon0=lo;if(zm){zoom=zm;geo()}idle=-1e6;vlon=vlat=0},
@@ -270,11 +299,11 @@ var ORBIT=(function(){
     iss:function(ms){if(LIVE.sats&&satV!==LIVE.ver.sats)unpack();if(!EL||issI<0)return null;var th=AS.gmst(ms)*AS.D,p=place(issI,ms,[0,0,0]),q=place(issI,ms+1000,[0,0,0]),
       X=p[0]*Math.cos(th)+p[1]*Math.sin(th),Y=-p[0]*Math.sin(th)+p[1]*Math.cos(th),r=Math.sqrt(p[0]*p[0]+p[1]*p[1]+p[2]*p[2]);
       return {lat:Math.asin(p[2]/r)/AS.D,lon:Math.atan2(Y,X)/AS.D,alt:(r-1)*RE,kmh:Math.sqrt((q[0]-p[0])*(q[0]-p[0])+(q[1]-p[1])*(q[1]-p[1])+(q[2]-p[2])*(q[2]-p[2]))*RE*3600}},
-    pick:function(name){var S=LIVE.sats;for(var i=0;i<satN;i++)if((S.names[i]||'')===name){sel=i;path=null;selI=null;satInfoLoad();cardBuild();return i}return -1},
+    pick:function(name){var S=LIVE.sats;for(var i=0;i<satN;i++)if((S.names[i]||'')===name){sel=i;path=null;selI=null;HERE=[i];hereI=0;BELOW=null;satInfoLoad();cardBuild();return i}return -1},
     /* the satellites as a layer of the Earth world: its globe is theirs (the same Earth, the same turn of it), time is the present */
     layer:{
       on:function(){LAY=true;if(GLX.ok&&gen!==GLX.gen)glSetup();liveLoad()},
-      off:function(){if(sel<0)return;sel=-1;path=null;selI=null;cardBuild()},
+      off:function(){if(sel<0)return;letGo()},
       /* (15 Nov, 20:39: "Even just the satellites moving is more fun") on the Earth they fly at sixty times their speed, a minute a
          second, so the swarm is seen streaming round; one chosen brings the present back (its card's figures are its own, now), and
          when it is let go they speed up again. Two days ahead, they come back to now and set off again */
@@ -283,17 +312,12 @@ var ORBIT=(function(){
       pace:function(){return live()?'satellites now':ret?'satellites back to now':'satellites ×'+(Math.abs(spd-want)<3?want:Math.round(Math.abs(spd)))},
       /* (hide: the Earth's satellites layer is off; the stars are still drawn) */
       draw:function(t,hide){if(!GLX.ok||GLX.lost)return;if(gen!==GLX.gen)glSetup();if(!P)return;sky(t,hide)},
-      /* a tap near a satellite: the nearest within reach is chosen (true), or none is (false). Over the Earth's face a tap is for the
-         place under it (the swarm is so thick there that a satellite is within reach of every point), so only the space stations and the
-         few satellites the sound follows are taken there; in the dark round the Earth, any satellite */
-      pick:function(p){if(!EL)return false;var i,best=-1,on=Math.hypot(p.x-g.cx,p.y-g.cy)<g.R,bd=on?20*20:26*26,d;
-        /* (17 Nov) a station's or a telescope's mark within 18 px is what the finger meant, whatever flies nearer (at sixty times their
-           speed one moves a few pixels between the touch and the frame that reads it); a storm's wheel under the finger comes first
-           (12-wind.js) */
-        var bs=18*18,bm=-1;for(var m=0;m<showI.length;m++){view(place(showI[m][0],simMs,tmp),tq);if(!shown(tq))continue;var mx=g.cx+tq[0]*g.R-p.x,my=g.cy-tq[1]*g.R-p.y,md=mx*mx+my*my;if(md<bs){bs=md;bm=showI[m][0]}}
-        if(bm>=0){best=bm;bd=-1}
-        for(i=0;i<satN&&bd>=0;i++){if(on&&GRP[i]!==7&&!(NOTE&&NOTE[i]))continue;view(place(i,simMs,tmp),tq);if(!shown(tq))continue;var x=g.cx+tq[0]*g.R-p.x,y=g.cy-tq[1]*g.R-p.y;d=x*x+y*y;if(GRP[i]===7||(FLG[i]&1))d*=.45;if(d<bd){bd=d;best=i}}
-        if(best<0)return false;sel=best;path=null;selI=null;satInfoLoad();tone('glass',pent(clamp(Math.round(14-Math.log(EL[best*11])*9),2,14),52),.45,pan(p.x));cardBuild();return true},
+      /* a tap near a satellite: the nearest within reach is chosen (true), or none is (false). (18 Nov) Any satellite, over the Earth's
+         face too: the swarm is so thick there that a few dozen are within reach of every point, so the card steps through them, nearest
+         first, and offers the place under the finger (below), which the tap no longer reads by itself while the satellites are shown */
+      pick:function(p,below){if(!EL)return false;var L=nearList(p);if(!L.length)return false;HERE=L;hereI=0;BELOW=typeof below==='function'?below:null;choose(L[0],p.x,.45);return true},
+      /* (for the tests) the satellites a tap at x, y would offer, nearest first */
+      near:function(x,y){return EL?nearList({x:x,y:y}):[]},
       sel:function(){return sel},
       hud:function(){var S=LIVE.sats;if(!S||!EL)return LIVE.asked?'reading the orbits':'';return satN.toLocaleString('en-US')+' satellites, '+(live()?'where they are now':'at sixty times their speed')+' · orbits of '+stampUTC(S.fresh||S.asOf)}}}
 })();

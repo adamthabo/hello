@@ -221,15 +221,25 @@ var WIND=(function(){
     if(!p.ghost){turned=1;vlon=-p.vx*k/c;vlat=p.vy*k;if(p.moved>12)FOC=null}idle=0}
   /* a tap on a place reads it; a tap on the dark puts the reading away. A finger down up to 600 ms and not moved is a tap (a slow
      phone can be that long in passing the lifting on); the hints' ghost fingers keep to their own 320 */
-  function up(p){if(p.win){if(p.win===1)LIVEW.layer.up(p);return}idle=0;if(held(p)>(p.ghost?320:600)||p.moved>12)return;var w=GLOBE.at(p.x,p.y,g),i,bd,d,tg=null;
+  function up(p){if(p.win){if(p.win===1)LIVEW.layer.up(p);return}idle=0;if(held(p)>(p.ghost?320:600)||p.moved>12)return;var w=GLOBE.at(p.x,p.y,g),i;
     /* a camera, then a satellite (while they are shown), are what a tap meant before the place under it */
     if(!p.ghost)try{LIVEW.layer.cardOff()}catch(e){}
     if(!p.ghost&&camOn&&LIVEW.layer.near(p.x,p.y)>=0){probe=null;cardOff();try{ORBIT.layer.off()}catch(e){}LIVEW.layer.pick(p.x,p.y);return}
-    /* (17 Nov) a storm's wheel right under the finger is what it meant, before any satellite flying over it */
-    var stUnder=false;for(i=0;i<ST.length&&LY.storm;i++){if(ST[i].p[2]>.04&&(ST[i].p[0]-p.x)*(ST[i].p[0]-p.x)+(ST[i].p[1]-p.y)*(ST[i].p[1]-p.y)<16*16)stUnder=true}
-    if(!p.ghost&&LY.orbit&&!stUnder&&ORBIT.layer.pick(p)){probe=null;cardOff();return}
+    /* (17 Nov) a storm's wheel right under the finger is what it meant, before any satellite flying over it; (18 Nov) and so is a fire's
+       mark, or the ring of a small war or blackout: marks that stay where they are, under a swarm that flies */
+    /* (only over the face, where the mark is then read: a tap in the dark beside the Earth's rim, near a mark at the rim, is for the
+       satellites flying there) */
+    var stUnder=false;for(i=0;w&&i<ST.length&&LY.storm;i++){if(ST[i].p[2]>.04&&(ST[i].p[0]-p.x)*(ST[i].p[0]-p.x)+(ST[i].p[1]-p.y)*(ST[i].p[1]-p.y)<16*16)stUnder=true}
+    for(i=0;w&&i<FR.length&&LY.fire&&!stUnder;i++){if(FR[i].p[2]>.04&&(FR[i].p[0]-p.x)*(FR[i].p[0]-p.x)+(FR[i].p[1]-p.y)*(FR[i].p[1]-p.y)<10*10)stUnder=true}
+    if(w&&!stUnder&&(LY.war||LY.dark))try{if(ZONES.pick(p.x,p.y,null,null,g,!!LY.war,!!LY.dark))stUnder=true}catch(e){}
+    /* (18 Nov, 02:04: "Oh and ALL satélites have to be accessible to link and know what they are") any satellite within reach, over the
+       face too; its card steps through the others there and offers the place under the finger */
+    if(!p.ghost&&LY.orbit&&!stUnder&&ORBIT.layer.pick(p,w?below(w.lat,w.lon):null)){probe=null;cardOff();return}
     try{if(!p.ghost)ORBIT.layer.off()}catch(e){}
     if(!w){probe=null;cardOff();return}
+    read(p,w)}
+  /* the place tapped, read (or the place under a satellite whose card was asked for it) */
+  function read(p,w){var i,bd,d,tg=null;
     /* a storm's eye or a fire under the finger is what was meant: the reading goes to it */
     for(i=0,bd=26*26;i<ST.length&&LY.storm;i++){if(ST[i].p[2]<=.04)continue;d=(ST[i].p[0]-p.x)*(ST[i].p[0]-p.x)+(ST[i].p[1]-p.y)*(ST[i].p[1]-p.y);if(d<bd){bd=d;tg=ST[i].s}}
     if(!tg&&LY.fire)for(i=0,bd=15*15;i<FR.length;i++){if(FR[i].p[2]<=.04)continue;d=(FR[i].p[0]-p.x)*(FR[i].p[0]-p.x)+(FR[i].p[1]-p.y)*(FR[i].p[1]-p.y);if(d<bd){bd=d;tg=FR[i].f}}
@@ -240,6 +250,9 @@ var WIND=(function(){
     if(tg&&!tg.frp&&!p.ghost)FOC={s:tg,t:FT,lat:lat0,lon:lon0,z:zoom,tz:Math.max(zoom,2.9)};else if(!p.ghost)FOC=null;
     probe={lat:w.lat,lon:w.lon,v:AS.llv(w.lat,w.lon),p:[0,0,0],q:[0,0,0],t:FT,ghost:!!p.ghost,fire:tg&&tg.frp?tg:null,storm:tg&&!tg.frp?tg:null,zone:zh};
     if(!p.ghost){tone('glass',pent(5+clamp(Math.floor((w.lat+72)/144*9),0,8),40),.4,pan(p.x));if(!tg)placeCard(w.lat,w.lon);else cardOff()}}
+  /* (18 Nov) the place below a satellite that was tapped, read as if it were tapped where it is on the screen now; if the Earth has
+     turned it round the back, the Earth turns to it */
+  function below(la,lo){return function(){var q=[0,0,0];GLOBE.pr(AS.llv(la,lo),g,q);if(q[2]<=.05){flyTo(la,lo);q=[-1e4,-1e4,0]}idle=0;read({x:q[0],y:q[1],ghost:false},{lat:la,lon:lo})}}
   /* two fingers: sliding turns the globe too, a pinch comes closer */
   function gesture(e){var k=57.2958/g.R;lon0-=e.dx*k/Math.max(.35,Math.cos(lat0*AS.D));lat0=clamp(lat0+e.dy*k,-80,80);
     if(!e.ghost){zoom=clamp(zoom*e.scale,.16,ZMAX);geo();vlon=-e.dx/e.dt*k/Math.max(.35,Math.cos(lat0*AS.D))*.5;vlat=e.dy/e.dt*k*.5}idle=0}
@@ -267,9 +280,9 @@ var WIND=(function(){
   var PCD={lat:0,lon:0,seq:0,wx:null,err:'',fr:[],base:[],fi:0,ft:0,on:false},WMO={0:'clear',1:'mostly clear',2:'partly cloudy',3:'overcast',45:'fog',48:'freezing fog',51:'light drizzle',53:'drizzle',55:'heavy drizzle',
     56:'freezing drizzle',57:'freezing drizzle',61:'light rain',63:'rain',65:'heavy rain',66:'freezing rain',67:'freezing rain',71:'light snow',73:'snow',75:'heavy snow',77:'snow grains',80:'showers',81:'showers',82:'heavy showers',
     85:'snow showers',86:'heavy snow showers',95:'thunderstorms',96:'thunderstorms, hail',99:'thunderstorms, hail'},DAYS=['SUN','MON','TUE','WED','THU','FRI','SAT'];
-  function cardOff(){var c=$('card');if(c&&PCD.on){c.hidden=true;PCD.on=false;geo()}PCD.on=false;PCD.seq++;try{LIVEW.layer.cardOff()}catch(e){}}
+  function cardOff(){var c=$('card');if(c&&PCD.on){if(c.dataset.k==='place'){c.hidden=true;c.dataset.k=''}PCD.on=false;geo()}PCD.on=false;PCD.seq++;try{LIVEW.layer.cardOff()}catch(e){}}
   function placeCard(lat,lon){
-    if(!HOSTED)return;var my=++PCD.seq,c=$('card');if(!c)return;PCD.lat=lat;PCD.lon=lon;PCD.wx=null;PCD.err='';PCD.fr=[];PCD.base=[];PCD.on=true;cardDraw();c.hidden=false;
+    if(!HOSTED)return;var my=++PCD.seq,c=$('card');if(!c)return;PCD.lat=lat;PCD.lon=lon;PCD.wx=null;PCD.err='';PCD.fr=[];PCD.base=[];PCD.on=true;c.dataset.k='place';cardDraw();c.hidden=false;
     fetch('/api/wx?lat='+lat.toFixed(3)+'&lon='+lon.toFixed(3)).then(function(r){if(!r.ok)throw new Error(r.status);return r.json()}).then(function(d){if(my!==PCD.seq)return;if(!d||!d.current)throw new Error('empty');PCD.wx=d;cardDraw()})
       .catch(function(){if(my!==PCD.seq)return;PCD.err='the forecast could not be read just now';cardDraw()});
     fetch('/api/feed/radar').then(function(r){if(!r.ok)throw new Error(r.status);return r.json()}).then(function(d){if(my!==PCD.seq||!d||!d.radar||!Array.isArray(d.radar.past))return;

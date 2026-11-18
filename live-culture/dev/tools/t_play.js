@@ -205,6 +205,33 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await page.evaluate(() => window.__lc.ORBIT.pick('ISS (ZARYA)')); await sleep(900); o = await page.evaluate(() => window.__lc.ORBIT.dbg());
     ok(/1998-067A/.test(o.card) && /Baikonur/.test(o.card) && /20 Nov 1998/.test(o.card) && /51\.6°/.test(o.card), 'earth: the space station\'s card should hold its record: ' + String(o.card).replace(/\n+/g, ' | '));
     const age = /MEASURED\s*orbit of [^·]+ · (\d+) (min|h|days) ago/i.exec(o.card); ok(age && (age[2] !== 'days'), 'earth: the space station\'s orbit should have been measured within two days: ' + (age && age[0]));
+    // (18 Nov, 02:04: "Oh and ALL satélites have to be accessible to link and know what they are") any satellite, over the Earth's face
+    // too: a tap there takes the nearest within reach; its card steps through the others, links to N2YO, offers the place below, and its
+    // cross puts it away
+    { await page.evaluate(() => { const c = document.querySelector('#card .cx'); if (c) c.click(); window.__lc.WIND.look(12, -35, 1); }); await sleep(1400);
+      let s2 = await S(), pt = null, near = [];
+      for (const [a, b] of [[-.25, .1], [.2, -.15], [.1, .3], [-.3, -.25], [.05, .05]]) { const x = s2.dbg.cx + s2.dbg.R * a, y = s2.dbg.cy + s2.dbg.R * b; near = await page.evaluate(([x, y]) => window.__lc.ORBIT.layer.near(x, y), [x, y]); if (near.length >= 3) { pt = [x, y]; break; } }
+      ok(!!pt, 'earth: over the face a few satellites are within reach of a finger: ' + near.length);
+      let o4 = null; for (let k = 0; k < 4 && pt; k++) { await T.tap(pt[0], pt[1]); await sleep(600); o4 = await page.evaluate(() => window.__lc.ORBIT.dbg()); if (o4.sel >= 0) break; }
+      const cd = await page.evaluate(() => { const c = document.getElementById('card'), a = c.querySelector('a.cl'); return { shown: !c.hidden, k: c.dataset.k, text: c.innerText, href: a ? a.getAttribute('href') : '', tgt: a ? a.target : '', place: !!c.querySelector('.ca button.cp'), steps: c.querySelectorAll('.cw .st').length, x: !!c.querySelector('.cx'), arrow: /[\u2197\u2924\u279a\u21d7\u2b08]/.test(c.textContent) }; });
+      ok(o4 && o4.sel >= 0 && o4.here >= 2 && o4.below && cd.shown && cd.k === 'sat' && /\b1 of \d+ here/i.test(cd.text) && cd.steps === 2 && cd.x && cd.place && !/^(ISS|CSS)/.test(o4.name), 'earth: a tap on the face takes the nearest satellite, of any kind; its card steps through the ' + (o4 && o4.here) + ' within reach and offers the place below: ' + cd.text.replace(/\n+/g, ' | ').slice(0, 220));
+      ok(/^https:\/\/www\.n2yo\.com\/satellite\/\?s=\d+$/.test(cd.href) && cd.tgt === '_blank' && /more on n2yo/i.test(cd.text) && !cd.arrow, 'earth: the card links to the satellite\'s page on N2YO, in a new tab, with no arrow: ' + cd.href);
+      await shot('1g2_earth_satface');
+      if (o4 && o4.sel >= 0) { const i0 = o4.sel; await page.click('#card .cw .st[data-f="n"]'); await sleep(400); let o5 = await page.evaluate(() => window.__lc.ORBIT.dbg());
+        ok(o5.hi === 1 && o5.sel !== i0 && o5.sel >= 0 && /\b2 of \d+ here/i.test(o5.card) && await page.evaluate(() => document.activeElement && document.activeElement.dataset.f === 'n'), 'earth: \u203a steps to the next satellite within reach (the button keeps the focus): ' + o4.name + ' -> ' + o5.name);
+        await page.click('#card .cw .st[data-f="p"]'); await sleep(300); o5 = await page.evaluate(() => window.__lc.ORBIT.dbg()); ok(o5.hi === 0 && o5.sel === i0, 'earth: \u2039 steps back');
+        await page.click('#card .cw .st[data-f="p"]'); await sleep(300); o5 = await page.evaluate(() => window.__lc.ORBIT.dbg()); ok(o5.hi === o5.here - 1, 'earth: \u2039 from the first goes round to the last: ' + o5.hi + ' of ' + o5.here);
+        await page.click('#card .ca .cp'); await sleep(800); s2 = await S(); o5 = await page.evaluate(() => window.__lc.ORBIT.dbg());
+        ok(o5.sel < 0 && s2.dbg.probe && !s2.dbg.probe.ghost && /by the Sun/.test(s2.data) && await page.evaluate(() => document.getElementById('card').hidden), 'earth: "the place below" puts the card away and reads the place under the finger: ' + s2.data.replace(/\n/g, ' | '));
+        for (let k = 0; k < 4; k++) { await T.tap(pt[0], pt[1]); await sleep(600); if ((await page.evaluate(() => window.__lc.ORBIT.dbg())).sel >= 0) break; }
+        await page.click('#card .cx'); await sleep(300); o5 = await page.evaluate(() => window.__lc.ORBIT.dbg());
+        ok(o5.sel < 0 && o5.here === 0 && await page.evaluate(() => document.getElementById('card').hidden), 'earth: the satellite card\'s cross puts it away'); }
+      // a fire's mark right under the finger is still what it meant, with the satellites shown
+      await page.evaluate(() => { const L = window.__lc, f = L.LIVE.fires.list[0]; L.WIND.look(f.lat, f.lon, 1.6); }); await sleep(1200); s2 = await S();
+      const f1 = s2.dbg.fireAt.find(f => Math.hypot(f.x - s2.dbg.cx, f.y - s2.dbg.cy) < s2.dbg.R * .5) || s2.dbg.fireAt[0];
+      if (f1) { for (let k = 0; k < 3; k++) { await T.tap(f1.x, f1.y); await sleep(500); s2 = await S(); if (s2.dbg.probe) break; } const o6 = await page.evaluate(() => window.__lc.ORBIT.dbg());
+        ok(s2.dbg.probe && s2.dbg.probe.r.fire && o6.sel < 0, 'earth: with the satellites shown, a fire\'s mark under the finger still reads the fire: ' + s2.data.replace(/\n/g, ' | ')); }
+      await T.tap(X(.03), Y(.02)); await sleep(300); await page.evaluate(() => window.__lc.ORBIT.pick('ISS (ZARYA)')); await sleep(900); }
     await shot('1h_earth_iss'); await page.evaluate(() => window.__lc.WIND.layer('vid', 1));
     const box = await page.evaluate(() => { const c = document.getElementById('card').getBoundingClientRect(), f = document.getElementById('foot').getBoundingClientRect(), d = document.getElementById('data').getBoundingClientRect(); return { top: c.top, bottom: c.bottom, left: c.left, right: c.right, foot: f.top, data: d.bottom, vw: innerWidth }; });
     ok(box.bottom <= box.foot + 1 && box.left >= 8 && box.right <= box.vw - 8, 'earth: the card should sit above the bottom row: ' + JSON.stringify(box));
