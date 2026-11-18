@@ -310,6 +310,8 @@ var ORBIT=(function(){
            shortened to the screen's width) */
         if(tw>VW-22){while(nm.length>4&&c.measureText(nm+'\u2026').width>VW-22)nm=nm.slice(0,-1);nm+='\u2026';tw=c.measureText(nm).width}
         if(lx+tw>VW-8){lx=sx-14-tw;if(lx<8){lx=clamp(sx-tw/2,8,Math.max(8,VW-8-tw));ly=sy>40?sy-18:sy+18}}
+        /* (and clear of the Earth's zoom buttons, over the right of the globe) */
+        if(LAY)try{var zb=WIND.zmBox();if(zb&&lx<zb[2]&&lx+tw>zb[0]&&ly-7<zb[3]&&ly+7>zb[1])lx=Math.max(8,Math.min(sx-14-tw,zb[0]-tw-6))}catch(e){}
         /* (18 Nov, the 14:40 run) on the Earth the ring and the name are drawn last, over the names of the wars and the places cut off
            (which keep clear of it): they are what was asked about */
         TOPS={sx:sx,sy:sy,nm:nm,tw:tw,lx:lx,ly:ly};if(!LAY)top(c)}}else TOPS=null}

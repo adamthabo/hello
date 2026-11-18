@@ -76,7 +76,7 @@ var ZONES=(function(){
   function tex(){if(!GLX.ok||(!W.length&&!K.length))return null;if(ZT&&ztV===ver&&ztG===GLX.gen)return ZT.tex;var old=ztG===GLX.gen?ZT:null;
     try{var t=glImageTex(raster(),true,false,true);if(!t)return null;if(old)glFree(old);ZT=t;ztV=ver;ztG=GLX.gen;return t.tex}catch(e){ztV=ver;ztG=GLX.gen;return ZT?ZT.tex:null}}
   /* ---- over the globe: the edges (a dashed grey for the places cut off, red for the wars), the front, the small ones, the names ---- */
-  var LB=[];
+  var LB=[],LBX=[];
   function draw(c,g,t,war,dark){
     if(!W.length&&!K.length)return;var i,o;LB.length=0;c.save();c.lineJoin='round';
     /* (17 Nov, the fifth hourly run) both alive at a glance on a phone: the places cut off with their dashes slowly crawling round them
@@ -95,17 +95,20 @@ var ZONES=(function(){
     c.beginPath();c.arc(o.p[0],o.p[1],r,0,TAU);if(war){c.fillStyle='rgba(255,44,30,'+(.35+.3*u).toFixed(3)+')';c.fill();c.strokeStyle='rgba(255,120,90,.95)'}else{c.fillStyle='rgba(0,1,4,.85)';c.fill();c.strokeStyle='rgba(200,214,235,.85)'}
     c.lineWidth=1.2;c.stroke()}
   /* the names: the wars by their dead, then the places cut off; none over another */
-  function labels(c,g){var box=[],n=0,tw={};c.font='600 9px '+MONO;c.textBaseline='middle';c.lineJoin='round';
+  function labels(c,g){var box=[],n=0,tw={};LBX=[];c.font='600 9px '+MONO;c.textBaseline='middle';c.lineJoin='round';
     /* (18 Nov) clear of the satellite asked about, whose name is drawn over everything */
     try{var sb=ORBIT.layer.box();if(sb)box.push(sb)}catch(e){}
+    /* and clear of the zoom's buttons over the right of the globe: a name that would go under them goes to their left, or is left out */
+    var zb=null;try{zb=WIND.zmBox()}catch(e){}
     /* a war first, by its dead; a place both at war and cut off has one name, the war's, with what it is cut off from */
     var L=LB.filter(function(o){return o.war}).concat(LB.filter(function(o){return !o.war}));
     L.forEach(function(o){if(o.war)tw[o.id]=o});L.forEach(function(o){var twin=!o.war&&tw[o.id];if(twin)return;var dk=null;if(o.war)for(var q=0;q<LB.length;q++)if(!LB[q].war&&LB[q].id===o.id)dk=LB[q];
       if(n>=14)return;GLOBE.pr(o.lv,g,o.p);if(o.p[2]<=.2)return;if(o.sz>0&&o.sz<8&&g.R<300&&!o.war&&o.kind!=='closed'&&o.kind!=='power'&&o.kind!=='out')return;
       var t=o.name.toUpperCase()+(o.war?(dk?' · '+KW[dk.kind].toUpperCase():''):' · '+KW[o.kind].toUpperCase()),w=c.measureText(t).width,x=o.p[0]-w/2,y=o.p[1]+(o.sz<14?13:0);
       if(o.sz>=8&&o.sz<w*.7&&!o.war&&o.kind==='blocked')return;
+      if(zb&&x<zb[2]&&x+w>zb[0]&&y-6<zb[3]&&y+6>zb[1]){var x2=zb[0]-w-4;if(x2<4)return;x=x2}
       for(var i=0;i<box.length;i++){var b=box[i];if(x<b[2]&&x+w>b[0]&&y-6<b[3]&&y+6>b[1])return}
-      if(x<4||x+w>VW-4||y<STG.y0+8||y>STG.y1-8)return;box.push([x-3,y-7,x+w+3,y+7]);n++;
+      if(x<4||x+w>VW-4||y<STG.y0+8||y>STG.y1-8)return;box.push([x-3,y-7,x+w+3,y+7]);LBX.push([Math.round(x),Math.round(y-6),Math.round(x+w),Math.round(y+6),t]);n++;
       c.lineWidth=3;c.strokeStyle='rgba(1,4,10,.75)';c.strokeText(t,x,y);c.fillStyle=o.war?'rgba(255,112,88,.98)':'rgba(214,224,240,.9)';c.fillText(t,x,y)})}
   /* ---- a tap: the zone under the finger (a small one's ring within reach of it first), war and cut off; and the front ---- */
   function inside(r,lo,la){var L=r.L,n=r.n,i,j,c=false;for(i=0,j=n-1;i<n;j=i++){var xi=L[i*2],yi=L[i*2+1],xj=L[j*2],yj=L[j*2+1];if((yi>la)!==(yj>la)&&lo<(xj-xi)*(la-yi)/(yj-yi)+xi)c=!c}return c}
@@ -130,5 +133,5 @@ var ZONES=(function(){
     count:function(k){return k==='war'?W.length:K.length+IO.length},
     first:function(k){var o=k==='war'?W[0]:K[0];return o&&o.lab?{lat:o.lab[0],lon:o.lab[1],name:o.name}:null},
     dbg:function(){return {ver:ver,asOf:asOf,march:+(MARCH*.014%12).toFixed(2),war:W.map(function(o){return o.id}),dark:K.map(function(o){return o.id+':'+o.kind}),ioda:IO.map(function(o){return o.cc}),front:FR?{km2:FR.km2,date:FR.date,rings:FR.R.length}:null,
-      shown:LB.map(function(o){return {id:o.id,x:Math.round(o.p[0]),y:Math.round(o.p[1]),z:+o.p[2].toFixed(2),sz:Math.round(o.sz||0),war:!!o.war}})}}}
+      shown:LB.map(function(o){return {id:o.id,x:Math.round(o.p[0]),y:Math.round(o.p[1]),z:+o.p[2].toFixed(2),sz:Math.round(o.sz||0),war:!!o.war}}),names:LBX.slice()}}}
 })();

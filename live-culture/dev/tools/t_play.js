@@ -179,6 +179,12 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await page.evaluate(() => window.__lc.WIND.look(10, -80, 1));
     let fl = 0; for (let k = 0; k < 14; k++) { await sleep(250); fl = Math.max(fl, (await S()).dbg.flashes); } ok(fl > 0, 'earth: the lightning should be flashing, most at once ' + fl);
     await page.evaluate(() => window.__lc.WIND.look(68, -40, 1.4)); await sleep(1500); await shot('1f_earth_aurora');
+    // (18 Nov, the 15:41 run) the names drawn on the globe keep clear of the zoom's buttons over its right ("DARFUR AND KORDO" was cut by
+    // the minus): with the Earth turned to Africa and the Middle East, no war's or blackout's name under them
+    { await page.evaluate(() => window.__lc.WIND.look(20, -10, 1)); await sleep(1500);
+      const zz = await page.evaluate(() => { const r = document.getElementById('zm').getBoundingClientRect(), d = window.__lc.ZONES.dbg(); return { zm: [r.left, r.top, r.right, r.bottom].map(Math.round), shown: !document.getElementById('zm').hidden, names: d.names }; });
+      const under = zz.names.filter(b => b[0] < zz.zm[2] && b[2] > zz.zm[0] && b[1] < zz.zm[3] && b[3] > zz.zm[1]);
+      ok(zz.shown && zz.names.length >= 4 && !under.length, 'earth: no name on the globe under the zoom buttons: ' + zz.names.length + ' names, under: ' + JSON.stringify(under.map(b => b[4]))); }
     // the satellites: a layer of the Earth, on, every one where it is this second
     let o = await page.evaluate(() => window.__lc.ORBIT.dbg()); s = await S();
     ok(o.n > 10000 && s.dbg.LY.orbit === 1, 'earth: the satellites are on the globe: ' + o.n);

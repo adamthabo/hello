@@ -1,6 +1,12 @@
 # Changelog
 
 ## For the owner
+18 Nov 2026, 10:50 (the hourly run):
+
+- **No more names hidden behind the zoom buttons.** The + and − buttons sit over the right side of the globe, and names like
+  "Darfur and Kordofan" or "Gaza · no power" were getting cut off under them. Those names now move to the left of the buttons, as
+  do a storm's name and the name of the satellite you picked.
+
 18 Nov 2026, 09:50 (the hourly run):
 
 - **The satellite you picked keeps its name readable.** Its name beside the ring on the globe used to get covered by the names of
@@ -400,6 +406,15 @@ clouds and rain, any place up close, dramatic storms, more layers; artifact and 
 
 Tested by machine. Not seen from here: the real cameras, the real radar and forecast, and the real weather model's files (only a
 sample of the same format).
+
+## 18 Nov 2026, 10:50 (New York), the hourly run: the names on the globe keep clear of the zoom buttons
+
+- Seen in this run's screenshots (and the last few): "DARFUR AND KORDO" cut by the minus, "NO POWER" by the plus.
+- `12-wind.js`: `zmBox()` (once a frame, exported as `WIND.zmBox`) gives the zoom's box while it shows; a storm's name that would
+  fall under it goes to the wheel's left. `12-zones.js`: a war's or blackout's name that would fall under it goes to its left, or is
+  left out when there is no room; the names drawn are kept for the tests (`dbg().names`). `13-orbit.js`: the chosen satellite's name
+  goes left of the ring and of the buttons.
+- `t_play.js`: with the Earth turned to Africa and the Middle East, no zone's name under the zoom buttons.
 
 ## 18 Nov 2026, 09:50 (New York), the hourly run: the chosen satellite's name over the zones' names
 

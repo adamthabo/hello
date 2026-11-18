@@ -195,6 +195,9 @@ var WIND=(function(){
     tone('glass',pent(9,40),.4,0)}
   /* ---- the zoom buttons, at the right of the globe ---- */
   /* (17 Nov) the zoom buttons step aside while a card stands where they would be (a place's card on a short screen is tall) */
+  /* (18 Nov, the 15:41 run) the zoom's two buttons stand over the right of the globe, and names drawn there went under them ("DARFUR
+     AND KORDO" cut by the minus): the names drawn on the globe keep clear of their box (worked out once a frame) */
+  var ZMB=null,ZMT=-1;function zmBox(){if(ZMT===FT)return ZMB;ZMT=FT;ZMB=null;var z=$('zm');if(z&&zmOn&&!z.hidden){var r=z.getBoundingClientRect();if(r.width>0)ZMB=[r.left-6,r.top-6,r.right+6,r.bottom+6]}return ZMB}
   function zmSync(v){var z=$('zm');if(!z)return;zmOn=v;var top=Math.round(g.cy-46),cd=$('card'),hide=false;
     if(v&&cd&&!cd.hidden){var r=cd.getBoundingClientRect();hide=r.height>0&&top<r.bottom&&top+92>r.top}
     z.hidden=!v||hide;if(v&&!hide)z.style.top=top+'px'}
@@ -432,7 +435,7 @@ var WIND=(function(){
       for(j=0;j<2;j++){c.strokeStyle=j?'rgba('+SL.col+',.95)':'rgba(1,4,10,.6)';c.lineWidth=j?1.4:3.4;for(a2=0;a2<SL.arms;a2++){var a0=rot+a2*TAU/SL.arms;c.beginPath();c.arc(sx,sy,rad,a0,a0+TAU/SL.arms*.62);c.stroke()}}
       if(SL.arms===3&&SL.col===STC[2]){c.strokeStyle='rgba('+SL.col+',.38)';c.lineWidth=1;c.beginPath();c.arc(sx,sy,rad+3.5,0,TAU);c.stroke()}
       c.fillStyle='rgba('+SL.col+',.95)';c.beginPath();c.arc(sx,sy,1.6,0,TAU);c.fill();c.fillStyle='rgba(234,249,255,.95)';
-      var tw=c.measureText(nm).width,lx=sx+rad+6+tw>VW-8?sx-rad-6-tw:sx+rad+6;c.lineWidth=3;c.strokeStyle='rgba(1,4,10,.7)';c.strokeText(nm,lx,sy);c.fillText(nm,lx,sy)}
+      var tw=c.measureText(nm).width,lx=sx+rad+6+tw>VW-8?sx-rad-6-tw:sx+rad+6,zb=zmBox();if(zb&&lx<zb[2]&&lx+tw>zb[0]&&sy-7<zb[3]&&sy+7>zb[1])lx=sx-rad-6-tw;c.lineWidth=3;c.strokeStyle='rgba(1,4,10,.7)';c.strokeText(nm,lx,sy);c.fillText(nm,lx,sy)}
     /* the highs and lows of the pressure, while its isobars show */
     if(LY.pres&&wxT&&typeof WX!=='undefined'&&WX.hl&&WX.hl.length){var HL=WX.hl,q4=[0,0,0];c.textAlign='center';c.textBaseline='middle';for(i=0;i<HL.length;i++){var h=HL[i];GLOBE.pr(h.v,g,q4);if(q4[2]<=.15)continue;
       c.font='700 12px '+MONO;c.lineWidth=3;c.strokeStyle='rgba(1,4,10,.75)';c.fillStyle=h.h?'rgba(255,179,71,.95)':'rgba(62,240,255,.95)';c.strokeText(h.h?'H':'L',q4[0],q4[1]);c.fillText(h.h?'H':'L',q4[0],q4[1]);
@@ -484,5 +487,6 @@ var WIND=(function(){
     windAt:windAt,
     /* (for the checks) a layer switched as its button would, or read */
     layer:function(k,v){if(!(k in LY))return null;if(v!==undefined&&!!v!==!!LY[k])lyTap(k);return LY[k]},
+    zmBox:zmBox,
     look:function(la,lo,zm){FOC=null;FLY=null;lat0=la;lon0=lo;if(zm){zoom=zm;geo()}idle=-1e6;vlon=vlat=0}}
 })();

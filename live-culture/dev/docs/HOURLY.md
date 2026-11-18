@@ -219,3 +219,5 @@ not ask for.
   in one plain sentence what it is for, where its name or kind tells it for sure, and nothing where nothing is known.
 - 2026-11-18 14:40: no new word from him. The screenshots' most visible flaw: the chosen satellite's name ran under the zones'
   names on the smaller Earth above its card. It is drawn last now, and the zones' names keep clear of it.
+- 2026-11-18 15:41: no new word from him. The screenshots' most visible flaw: names on the globe under the zoom's buttons
+  ("DARFUR AND KORDO"). The zones', the storms' and the chosen satellite's names now keep clear of them.
